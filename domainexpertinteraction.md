@@ -15,7 +15,7 @@ The expert explained that customers commonly struggle to find reliable service p
 
 **Publicly accessible Video link:**  https://drive.google.com/file/d/1AhXORpDv0tw2zjuZwB021fofUlKTz9oZ/view?usp=drive\_link
 
-Domain Expert Details:
+**Domain Expert Details**:
 
 Role/ designation:  Operations Manager (Service Aggregation Platforms) at Urban Company
 
