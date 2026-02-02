@@ -1,0 +1,105 @@
+# Domain: Digital Marketplace for Services (Non-Retail)
+# Problem Statement: Service Provider Discovery & Booking Platform
+# Last Updated: 2026-02-02
+
+Customer:
+  definition: >
+    An individual who uses the platform to discover service providers,
+    book services, make payments, and manage service requests.
+  examples:
+    - A customer booking a home cleaning service
+    - A customer checking booking status and notifications
+  aliases:
+    - Service Seeker
+
+ServiceProvider:
+  definition: >
+    An individual or organization that offers professional services
+    to customers through the platform and manages service fulfillment.
+  examples:
+    - A plumber accepting a service booking
+    - A tutor completing a booked session
+  aliases:
+    - Provider
+
+Service:
+  definition: >
+    A professional activity offered by a service provider that can be
+    discovered and booked by customers.
+  examples:
+    - Electrical repair service
+    - Home cleaning service
+  aliases:
+    - Offering
+
+ServiceCategory:
+  definition: >
+    A classification used to organize services into logical groups
+    for easier discovery by customers.
+  examples:
+    - Electrical
+    - Tutoring
+  aliases:
+    - Category
+    - ServiceType
+
+Booking:
+  definition: >
+    A service request created by a customer to receive a specific
+    service from a service provider at a selected date and time.
+  examples:
+    - Booking a plumber for tomorrow morning
+    - Booking a tutor for a weekend class
+  aliases:
+    - Service Booking
+
+Payment:
+  definition: >
+    A simulated transaction representing the payment made by a customer
+    for a booked service.
+  examples:
+    - Completing payment after booking confirmation
+    - Viewing payment status for a service
+  aliases:
+    - Transaction
+
+SupportRequest:
+  definition: >
+    A request raised by a customer to report or resolve issues related
+    to bookings, services, or payments.
+  examples:
+    - Reporting a delayed service
+    - Raising a payment-related issue
+  aliases:
+    - Ticket
+    - Complaint  
+
+Notification:
+  definition: >
+    A system-generated message that informs users about booking updates,
+    payment status, or support resolution.
+  examples:
+    - Notification sent when booking is accepted
+    - Notification sent after service completion
+  aliases:
+    - Alert
+
+CustomerSupport:
+  definition: >
+    A role responsible for handling support requests, resolving user
+    issues, and escalating unresolved cases to the admin.
+  examples:
+    - Resolving a booking dispute
+    - Escalating a payment issue to admin
+  aliases:
+    - Support Team
+
+Admin:
+  definition: >
+    A system authority responsible for managing users, service providers,
+    service categories, and overall platform governance.
+  examples:
+    - Approving a new service provider
+    - Monitoring platform activity
+  aliases:
+    - Administrator
