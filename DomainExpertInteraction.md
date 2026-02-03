@@ -21,7 +21,7 @@ The expert explained that customers commonly struggle to find reliable service p
 
 ## Domain Expert Details:
 
-**Role/ designation:**  Operations Manager (Service Aggregation Platforms) at Urban Company
+**Role/ designation:**  Associative Director at Urban Company
 
 **Experience in the domain:** Over 7 years of experience at Urban Company as Director.
 
