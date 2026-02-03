@@ -1,6 +1,155 @@
 # Domain: Digital Marketplace for Services (Non-Retail)
 # Problem Statement: Service Provider Discovery & Booking Platform
-# Last Updated: 2026-02-02
+# Last Updated: 2026-02-03
+ServiceScope:
+  definition: >
+    A clear description of what is included and excluded in a service
+    to avoid ambiguity between customer and service provider.
+  examples:
+    - Electrical repair excluding spare parts
+    - Cleaning service limited to specific rooms
+  aliases:
+    - Scope of Work
+
+ServiceFee:
+  definition: >
+    The base charge defined by a service provider for delivering
+    a specific service, excluding additional costs.
+  examples:
+    - Inspection fee for plumbing
+    - Hourly tutoring charge
+  aliases:
+    - Base Fee
+
+AdditionalCharge:
+  definition: >
+    An extra cost applied when service requirements exceed the
+    originally defined service scope.
+  examples:
+    - Extra charge for replacement parts
+    - Extended service duration fee
+  aliases:
+    - Extra Cost
+
+ProviderAvailabilityStatus:
+  definition: >
+    The current service readiness of a service provider indicating
+    whether they can accept new bookings.
+  examples:
+    - Available for bookings
+    - Temporarily unavailable
+  aliases:
+    - Availability Status
+
+ServiceCoverageArea:
+  definition: >
+    The geographical region within which a service provider
+    is willing to deliver services.
+  examples:
+    - Service available only within city limits
+    - Provider covering selected neighborhoods
+  aliases:
+    - Coverage Area
+
+CancellationWindow:
+  definition: >
+    A defined time period before a scheduled service during which
+    a booking can be cancelled without penalty.
+  examples:
+    - Free cancellation up to 2 hours before service
+    - No cancellation allowed after provider arrival
+  aliases:
+    - Cancellation Period
+
+NoShow:
+  definition: >
+    A situation where either the customer or service provider
+    fails to appear at the scheduled service time.
+  examples:
+    - Customer not present at service location
+    - Provider failing to arrive
+  aliases:
+    - Missed Appointment
+
+ServiceOutcome:
+  definition: >
+    The final result of a service delivery as acknowledged
+    by both customer and service provider.
+  examples:
+    - Issue resolved successfully
+    - Partial service completion
+  aliases:
+    - Outcome
+
+ProviderReputation:
+  definition: >
+    An aggregated perception of a service provider’s reliability
+    based on ratings, feedback, and service history.
+  examples:
+    - Highly rated electrician
+    - Trusted long-term tutor
+  aliases:
+    - Reputation Score
+
+Dispute:
+  definition: >
+    A formal disagreement raised by a customer regarding
+    service quality, pricing, or fulfillment.
+  examples:
+    - Dispute over incomplete service
+    - Disagreement on charged amount
+  aliases:
+    - Service Dispute
+
+DisputeOutcome:
+  definition: >
+    The final decision made after investigating a dispute
+    between customer and service provider.
+  examples:
+    - Partial refund approved
+    - Dispute rejected
+  aliases:
+    - Dispute Resolution
+
+ProviderOnboarding:
+  definition: >
+    The process through which a service provider is registered,
+    verified, and approved to offer services on the platform.
+  examples:
+    - Submitting documents for approval
+    - Completing provider verification
+  aliases:
+    - Provider Registration
+
+ServicePause:
+  definition: >
+    A temporary suspension of a service listing by a provider
+    without permanently removing it from the platform.
+  examples:
+    - Pausing services during vacation
+    - Temporarily stopping new bookings
+  aliases:
+    - Temporary Suspension
+
+ServiceCompletionConfirmation:
+  definition: >
+    An explicit acknowledgment by the customer that a booked
+    service has been delivered satisfactorily.
+  examples:
+    - Customer confirming job completion
+    - Approving service outcome in app
+  aliases:
+    - Completion Confirmation
+
+Penalty:
+  definition: >
+    A charge or restriction applied due to violation of
+    platform policies or repeated service failures.
+  examples:
+    - Penalty for repeated no-shows
+    - Temporary suspension after complaints
+  aliases:
+    - Sanction
 
 Customer:
   definition: >
@@ -21,7 +170,19 @@ ServiceProvider:
     - A tutor completing a booked session
   aliases:
     - Provider
-
+    
+ ServiceListing:
+  definition: >
+    A published representation of a service offered by a service provider,
+    including category, pricing, availability, and service description,
+    visible to customers during service discovery.
+  examples:
+    - A plumber’s profile showing services and rates
+    - A tutor’s listing with subjects and availability
+  aliases:
+    - Listing
+    - Provider Listing
+    
 Service:
   definition: >
     A professional activity offered by a service provider that can be
@@ -94,12 +255,13 @@ CustomerSupport:
   aliases:
     - Support Team
 
-Admin:
+Escalation:
   definition: >
-    A system authority responsible for managing users, service providers,
-    service categories, and overall platform governance.
+    The act of forwarding an unresolved support request to a
+    higher authority for further action.
   examples:
-    - Approving a new service provider
-    - Monitoring platform activity
+    - Escalating a payment dispute to admin
+    - Escalating repeated service complaints
   aliases:
-    - Administrator
+    - Issue Escalation
+
