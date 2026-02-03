@@ -23,9 +23,9 @@ The expert explained that customers commonly struggle to find reliable service p
 
 **Role/ designation:**  Operations Manager (Service Aggregation Platforms) at Urban Company
 
-**Experience in the domain:** Over 8 years managing service marketplaces, provider onboarding, service quality audits, and customer escalations.
+**Experience in the domain:** Over 7 years of experience at Urban Company as Director.
 
-**Nature of work:** Managerial and Operational. 
+**Nature of work:** Managerial and Associative Director. 
 
 ## Domain Context and Terminology :
 Q) How would you describe the overall purpose of this problem statement in your daily work?
