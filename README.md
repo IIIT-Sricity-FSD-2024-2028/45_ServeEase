@@ -47,7 +47,7 @@ ServeEase aims to provide a unified web-based platform where customers can disco
 ### Service Provider 
 
 1. **Provider Account Management**  
-   Registration, login, and provider profile management
+   Registration,Verification, login, and provider profile management
 
 2. **Service Management**  
    Add and manage services including pricing, availability, and location
