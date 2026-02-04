@@ -38,8 +38,11 @@ ServeEase aims to provide a unified web-based platform where customers can disco
 
 6. **Payment Processing**  
    Make simulated online payments for booked services
-
-7. **Support Request Submission**  
+   
+7. **Feedback**
+   Gives feedback and ratings
+   
+8. **Support Request Submission**  
    Raise service-related or payment-related issues and receive notifications
 
 ---
@@ -74,7 +77,7 @@ ServeEase aims to provide a unified web-based platform where customers can disco
 3. **User Communication Management**  
    Communicate with customers and service providers
 
-4. **Issue Escalation Management**  
+4. **Issue Escalation**  
    Escalate unresolved issues to admin
 
 ---
