@@ -40,10 +40,11 @@ ServeEase aims to provide a unified web-based platform where customers can disco
    Make simulated online payments for booked services
    
 7. **Feedback**
+
    Gives feedback and ratings
-   
-8. **Support Request Submission**  
-   Raise service-related or payment-related issues and receive notifications
+
+9. **Support Request Submission**  
+Raise service-related or payment-related issues and receive notifications
 
 ---
 
