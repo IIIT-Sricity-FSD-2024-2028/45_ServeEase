@@ -34,16 +34,15 @@ ServeEase aims to provide a unified web-based platform where customers can disco
    Select service provider, date, and time
 
 5. **Booking Management**  
-   View booking status,notifications and booking history
+   View booking status, notifications, booking history, cancellation and modifications
 
 6. **Payment Processing**  
    Make simulated online payments for booked services
    
-7. **Feedback**
-
+7. **Feedback**  
    Gives feedback and ratings
 
-9. **Support Request Submission**  
+8. **Support Request Submission**  
 Raise service-related or payment-related issues and receive notifications
 
 ---
