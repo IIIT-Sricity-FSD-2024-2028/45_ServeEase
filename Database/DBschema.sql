@@ -340,7 +340,7 @@ CREATE TABLE SUPPORT_TICKET (
 CREATE TABLE NOTIFICATION (
     notification_id     INT AUTO_INCREMENT PRIMARY KEY,
     user_id             INT NOT NULL,
-    user_role           ENUM('customer','provider','admin') NOT NULL,
+    user_role           ENUM('customer','provider','admin','customer_support') NOT NULL,
     message             TEXT NOT NULL,
     notification_type   VARCHAR(50) NOT NULL,
     status              ENUM('unread','read','archived')
