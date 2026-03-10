@@ -23,29 +23,6 @@ CREATE TABLE CUSTOMER (
                     NOT NULL DEFAULT 'active'
 );
 
--- TABLE: CUSTOMER_ADDRESS
-CREATE TABLE CUSTOMER_ADDRESS (
-    customer_address_id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_id         INT NOT NULL,
-    address_id          INT NOT NULL,
-    address_type        ENUM('home','work','other') NOT NULL DEFAULT 'home',
-
-    CONSTRAINT uq_customer_address
-        UNIQUE (customer_id, address_id),
-
-    CONSTRAINT fk_customer_address_customer
-        FOREIGN KEY (customer_id)
-        REFERENCES CUSTOMER(customer_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_customer_address_address
-        FOREIGN KEY (address_id)
-        REFERENCES ADDRESS(address_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-);
-
 -- TABLE: ADMIN
 CREATE TABLE ADMIN (
     admin_id    INT AUTO_INCREMENT PRIMARY KEY,
@@ -111,28 +88,6 @@ CREATE TABLE SERVICE_LISTING (
         FOREIGN KEY (category_id)
         REFERENCES SERVICE_CATEGORY(category_id)
         ON DELETE RESTRICT
-        ON UPDATE CASCADE
-);
-
--- TABLE: PROVIDER_SERVICE_LOCATION
-CREATE TABLE PROVIDER_SERVICE_LOCATION (
-    provider_location_id INT AUTO_INCREMENT PRIMARY KEY,
-    provider_id          INT NOT NULL,
-    address_id           INT NOT NULL,
-
-    CONSTRAINT uq_provider_address
-        UNIQUE (provider_id, address_id),
-
-    CONSTRAINT fk_provider_location_provider
-        FOREIGN KEY (provider_id)
-        REFERENCES SERVICE_PROVIDER(provider_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_provider_location_address
-        FOREIGN KEY (address_id)
-        REFERENCES ADDRESS(address_id)
-        ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
