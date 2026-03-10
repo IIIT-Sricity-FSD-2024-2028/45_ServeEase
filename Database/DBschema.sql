@@ -1,4 +1,3 @@
--- Create Database
 CREATE DATABASE ServeEaseDB;
 USE ServeEaseDB;
 
@@ -22,6 +21,29 @@ CREATE TABLE CUSTOMER (
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     account_status  ENUM('active','inactive','blocked')
                     NOT NULL DEFAULT 'active'
+);
+
+-- TABLE: CUSTOMER_ADDRESS
+CREATE TABLE CUSTOMER_ADDRESS (
+    customer_address_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id         INT NOT NULL,
+    address_id          INT NOT NULL,
+    address_type        ENUM('home','work','other') NOT NULL DEFAULT 'home',
+
+    CONSTRAINT uq_customer_address
+        UNIQUE (customer_id, address_id),
+
+    CONSTRAINT fk_customer_address_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES CUSTOMER(customer_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_customer_address_address
+        FOREIGN KEY (address_id)
+        REFERENCES ADDRESS(address_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 
 -- TABLE: ADMIN
@@ -92,6 +114,28 @@ CREATE TABLE SERVICE_LISTING (
         ON UPDATE CASCADE
 );
 
+-- TABLE: PROVIDER_SERVICE_LOCATION
+CREATE TABLE PROVIDER_SERVICE_LOCATION (
+    provider_location_id INT AUTO_INCREMENT PRIMARY KEY,
+    provider_id          INT NOT NULL,
+    address_id           INT NOT NULL,
+
+    CONSTRAINT uq_provider_address
+        UNIQUE (provider_id, address_id),
+
+    CONSTRAINT fk_provider_location_provider
+        FOREIGN KEY (provider_id)
+        REFERENCES SERVICE_PROVIDER(provider_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_provider_location_address
+        FOREIGN KEY (address_id)
+        REFERENCES ADDRESS(address_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
 -- TABLE: AVAILABILITY_SLOT
 CREATE TABLE AVAILABILITY_SLOT (
     slot_id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -112,7 +156,7 @@ CREATE TABLE AVAILABILITY_SLOT (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
 
-  CONSTRAINT fk_slot_service
+    CONSTRAINT fk_slot_service
         FOREIGN KEY (service_id)
         REFERENCES SERVICE_LISTING(service_id)
         ON DELETE CASCADE
@@ -159,6 +203,7 @@ CREATE TABLE SERVICE_REQUEST (
 -- TABLE: BOOKING
 CREATE TABLE BOOKING (
     booking_id      INT AUTO_INCREMENT PRIMARY KEY,
+    request_id      INT UNIQUE,
     customer_id     INT NOT NULL,
     provider_id     INT NOT NULL,
     service_id      INT NOT NULL,
@@ -168,6 +213,12 @@ CREATE TABLE BOOKING (
     booking_status  ENUM('pending','confirmed','in_progress','completed','cancelled') NOT NULL DEFAULT 'pending',
     total_price     DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     completion_time DATETIME DEFAULT NULL,
+
+    CONSTRAINT fk_booking_request
+        FOREIGN KEY (request_id)
+        REFERENCES SERVICE_REQUEST(request_id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
 
     CONSTRAINT fk_booking_customer
         FOREIGN KEY (customer_id)
@@ -226,6 +277,7 @@ CREATE TABLE CANCELLATION (
     cancellation_reason TEXT NOT NULL,
     cancellation_time   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     refund_status       ENUM('not_applicable','pending','processed','rejected') NOT NULL DEFAULT 'not_applicable',
+
     CONSTRAINT fk_cancellation_booking
         FOREIGN KEY (booking_id)
         REFERENCES BOOKING(booking_id)
@@ -307,7 +359,6 @@ CREATE TABLE REVIEW_RATING (
         ON UPDATE CASCADE
 );
 
-
 -- TABLE: SUPPORT_TICKET
 CREATE TABLE SUPPORT_TICKET (
     ticket_id       INT AUTO_INCREMENT PRIMARY KEY,
@@ -317,7 +368,8 @@ CREATE TABLE SUPPORT_TICKET (
     issue_type      VARCHAR(100) NOT NULL,
     description     TEXT NOT NULL,
     ticket_status   ENUM('open','in_progress','resolved','closed','escalated') NOT NULL DEFAULT 'open',
- CONSTRAINT fk_ticket_customer
+
+    CONSTRAINT fk_ticket_customer
         FOREIGN KEY (customer_id)
         REFERENCES CUSTOMER(customer_id)
         ON DELETE CASCADE
