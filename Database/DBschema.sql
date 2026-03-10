@@ -69,7 +69,6 @@ CREATE TABLE SERVICE_LISTING (
     provider_id         INT NOT NULL,
     category_id         INT NOT NULL,
     service_name        VARCHAR(150) NOT NULL,
-    description         TEXT NOT NULL,
     service_inclusions  TEXT,
     base_price          DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     service_duration    INT NOT NULL,
@@ -246,8 +245,6 @@ CREATE TABLE BOOKING_MODIFICATION (
     booking_id          INT NOT NULL,
     old_slot_id         INT DEFAULT NULL,
     new_slot_id         INT DEFAULT NULL,
-    old_service_id      INT DEFAULT NULL,
-    new_service_id      INT DEFAULT NULL,
     modification_reason TEXT NOT NULL,
     modification_time   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -267,18 +264,6 @@ CREATE TABLE BOOKING_MODIFICATION (
         FOREIGN KEY (new_slot_id)
         REFERENCES AVAILABILITY_SLOT(slot_id)
         ON DELETE SET NULL
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_mod_old_service
-        FOREIGN KEY (old_service_id)
-        REFERENCES SERVICE_LISTING(service_id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_mod_new_service
-        FOREIGN KEY (new_service_id)
-        REFERENCES SERVICE_LISTING(service_id)
-        ON DELETE SET NULL
         ON UPDATE CASCADE
 );
 
@@ -286,8 +271,6 @@ CREATE TABLE BOOKING_MODIFICATION (
 CREATE TABLE REVIEW_RATING (
     review_id       INT AUTO_INCREMENT PRIMARY KEY,
     booking_id      INT NOT NULL UNIQUE,
-    customer_id     INT NOT NULL,
-    provider_id     INT NOT NULL,
     rating          INT NOT NULL,
     review_text     TEXT,
     review_date     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -298,18 +281,6 @@ CREATE TABLE REVIEW_RATING (
     CONSTRAINT fk_review_booking
         FOREIGN KEY (booking_id)
         REFERENCES BOOKING(booking_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_review_customer
-        FOREIGN KEY (customer_id)
-        REFERENCES CUSTOMER(customer_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_review_provider
-        FOREIGN KEY (provider_id)
-        REFERENCES SERVICE_PROVIDER(provider_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
@@ -349,7 +320,6 @@ CREATE TABLE NOTIFICATION (
     user_id             INT NOT NULL,
     user_role           ENUM('customer','provider','admin','customer_support') NOT NULL,
     message             TEXT NOT NULL,
-    notification_type   VARCHAR(50) NOT NULL,
     status              ENUM('unread','read','archived')
                         NOT NULL DEFAULT 'unread'
 );
