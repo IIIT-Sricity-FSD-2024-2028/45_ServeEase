@@ -7,7 +7,7 @@ CREATE TABLE ADDRESS (
     address_line    VARCHAR(255) NOT NULL,
     city            VARCHAR(100) NOT NULL,
     state           VARCHAR(100) NOT NULL,
-    pincode         VARCHAR(20)  NOT NULL,
+    pincode         INT  NOT NULL,
     country         VARCHAR(100) NOT NULL
 );
 
