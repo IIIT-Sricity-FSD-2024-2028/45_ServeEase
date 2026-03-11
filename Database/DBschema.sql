@@ -210,7 +210,7 @@ CREATE TABLE PAYMENT (
     payment_id      INT AUTO_INCREMENT PRIMARY KEY,
     booking_id      INT NOT NULL UNIQUE,
     amount          DECIMAL(10,2) NOT NULL,
-    payment_method  ENUM('upi','card','net_banking','wallet','cash') NOT NULL,
+    payment_method  ENUM('upi','card','net_banking') NOT NULL,
     payment_status  ENUM('pending','success','failed','refunded')
                     NOT NULL DEFAULT 'pending',
     transaction_id  VARCHAR(150) NOT NULL UNIQUE,
