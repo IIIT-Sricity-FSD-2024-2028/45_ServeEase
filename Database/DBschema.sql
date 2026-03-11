@@ -29,7 +29,7 @@ CREATE TABLE ADMIN (
     name        VARCHAR(100) NOT NULL,
     email       VARCHAR(150) NOT NULL UNIQUE,
     password    VARCHAR(255) NOT NULL,
-    role        ENUM('super_admin','verification_admin','category_manager','operations_admin') NOT NULL DEFAULT 'operations_admin'
+    role        ENUM('super_admin','category_manager','operations_admin') NOT NULL DEFAULT 'operations_admin'
 );
 
 -- TABLE: CUSTOMER_SUPPORT_STAFF
