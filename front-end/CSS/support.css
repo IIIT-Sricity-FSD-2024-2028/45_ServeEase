@@ -1,0 +1,593 @@
+.profile-menu-wrap {
+  position: relative;
+}
+
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  width: 220px;
+  background: #fff;
+  border: 1px solid #dbe2ec;
+  border-radius: 14px;
+  box-shadow: 0 14px 30px rgba(17, 40, 75, 0.14);
+  z-index: 20;
+  overflow: hidden;
+}
+
+.profile-dropdown button,
+.profile-dropdown a {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.profile-dropdown button:hover,
+.profile-dropdown a:hover {
+  background: #f6f8fc;
+}
+
+.support-profile-card {
+  padding: 16px;
+  border-bottom: 1px solid #edf1f6;
+  display: grid;
+  gap: 2px;
+}
+
+.support-profile-card strong {
+  font-size: 16px;
+  color: #12284a;
+}
+
+.support-profile-card span,
+.support-ticket-meta,
+.support-ticket-desc,
+.support-ticket-created,
+.support-notification-time,
+.support-complaint-label,
+.support-attachment-row,
+.support-history-time,
+.support-message-time,
+.support-page-title-block p {
+  color: #667a97;
+}
+
+.support-page {
+  background: #f4f6f8;
+}
+
+.support-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.support-bell-btn {
+  position: relative;
+}
+
+.support-dot {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
+.support-hero-card {
+  background: linear-gradient(90deg, #2563eb, #a21caf);
+  border-radius: 18px;
+  padding: 26px 28px;
+  color: #fff;
+  margin-bottom: 22px;
+}
+
+.support-hero-card h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.support-stats-grid .stat-card-dashboard {
+  min-height: 150px;
+}
+
+.support-dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+
+.support-section-head {
+  margin-bottom: 14px;
+}
+
+.support-section-head h2,
+.support-sidebar-head h2,
+.support-card-title h2,
+.support-sidebar-section-title,
+.support-page-title-block h1 {
+  color: #111827;
+}
+
+.support-ticket-list {
+  display: grid;
+  gap: 18px;
+}
+
+.support-ticket-card {
+  background: #fff;
+  border: 1px solid #e6ebf2;
+  border-radius: 18px;
+  box-shadow: 0 8px 20px rgba(17, 40, 75, 0.06);
+  padding: 22px;
+}
+
+.support-ticket-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.support-ticket-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.support-ticket-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.support-role-badge,
+.support-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+.support-role-badge.provider {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.support-status-badge.open {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.support-status-badge.in-progress {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.support-status-badge.resolved {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.support-status-badge.escalated {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.support-ticket-body {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.support-ticket-action {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #e6ebf2;
+  border-radius: 10px;
+  background: #fff;
+  color: #12284a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.support-ticket-action:hover {
+  background: #f8fbff;
+}
+
+.support-sidebar-panel {
+  padding: 18px;
+}
+
+.support-sidebar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.support-notification-chip {
+  background: #ffedd5;
+  color: #ea580c;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.support-notification-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.support-notification-item {
+  border: 1px solid #dbe7fb;
+  background: #eef4ff;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.support-notification-item.read {
+  background: #f8fafc;
+  border-color: #edf2f7;
+}
+
+.support-notification-text {
+  color: #12284a;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.support-empty-state {
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  padding: 28px;
+  text-align: center;
+}
+
+.support-empty-state h3 {
+  margin-bottom: 8px;
+}
+
+.support-page-title-block {
+  margin-bottom: 22px;
+}
+
+.support-page-title-block h1 {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.support-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: 22px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+
+.support-card {
+  padding: 20px;
+}
+
+.support-card + .support-card {
+  margin-top: 20px;
+}
+
+.support-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.support-ticket-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.support-detail-box,
+.support-complaint-box,
+.support-contact-card,
+.support-attachment-box {
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+}
+
+.support-detail-box {
+  padding: 16px;
+}
+
+.support-detail-box span {
+  display: block;
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.support-detail-box strong {
+  font-size: 16px;
+  color: #111827;
+}
+
+.support-contact-card {
+  padding: 16px;
+  background: #eef4ff;
+  border-color: #cfe0ff;
+}
+
+.support-contact-card h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.support-contact-card p {
+  margin-bottom: 6px;
+}
+
+.support-contact-card a {
+  color: #2563eb;
+}
+
+.support-complaint-box {
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.support-complaint-box.subject-box {
+  background: #fff5f5;
+  border-color: #fecaca;
+}
+
+.support-attachment-box {
+  padding: 14px 16px;
+}
+
+.support-message-thread {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.support-message-bubble {
+  max-width: 78%;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.support-message-bubble.agent {
+  margin-left: auto;
+  background: #2563eb;
+  color: #fff;
+}
+
+.support-message-author {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.support-message-time {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.support-message-bubble.agent .support-message-time {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.support-reply-form {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+}
+
+.support-reply-form input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #e3e8f1;
+  border-radius: 10px;
+  background: #f7f9fd;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.support-status-options {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.support-status-option {
+  position: relative;
+}
+
+.support-status-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.support-status-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.support-status-label.open { background: #ffedd5; color: #ea580c; }
+.support-status-label.in-progress { background: #dbeafe; color: #2563eb; }
+.support-status-label.resolved { background: #dcfce7; color: #16a34a; }
+.support-status-label.escalated { background: #fee2e2; color: #dc2626; }
+
+.support-status-option input:checked + .support-status-label {
+  border-color: #12284a;
+  box-shadow: inset 0 0 0 1px #12284a;
+}
+
+.support-action-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.support-danger-btn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.support-danger-btn:hover {
+  background: #dc2626;
+}
+
+.support-danger-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.support-history-list {
+  display: grid;
+  gap: 16px;
+}
+
+.support-history-item {
+  position: relative;
+  padding-left: 22px;
+}
+
+.support-history-item::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #16a34a;
+}
+
+.support-history-item.active::before {
+  background: #2563eb;
+}
+
+.support-history-item::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 16px;
+  bottom: -16px;
+  width: 2px;
+  background: #d1d5db;
+}
+
+.support-history-item:last-child::after {
+  display: none;
+}
+
+.support-history-item strong {
+  display: block;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.support-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 50;
+}
+
+.support-modal-card {
+  width: min(460px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.support-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.support-modal-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.support-modal-card p {
+  color: #4b5563;
+  margin-bottom: 18px;
+}
+
+.support-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 1080px) {
+  .support-dashboard-layout,
+  .support-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-topbar {
+    grid-template-columns: 1fr;
+    height: auto;
+    padding: 16px;
+  }
+
+  .support-ticket-detail-grid,
+  .dashboard-stats-grid,
+  .support-reply-form,
+  .support-modal-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .support-message-bubble {
+    max-width: 100%;
+  }
+}
+
+
+.support-panel-highlight {
+  box-shadow: 0 0 0 3px rgba(55, 102, 255, 0.18);
+  transition: box-shadow 0.25s ease;
+}

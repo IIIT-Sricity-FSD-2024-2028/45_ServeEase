@@ -1,0 +1,143 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7fb;
+  color: #11284b;
+  line-height: 1.5;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  width: 100%;
+  display: block;
+}
+
+.container {
+  width: min(1180px, 92%);
+  margin: 0 auto;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #2f6df6, #8c35ff);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+}
+
+.btn-outline {
+  background: #fff;
+  color: #2f6df6;
+  border: 1px solid #d8dfea;
+}
+
+.btn-outline:hover {
+  background: #eef4ff;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #4254f4;
+  font-weight: 700;
+}
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #386bff, #8d34ff);
+  color: transparent;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.brand-icon::before {
+  content: "⌂";
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.error {
+  display: block;
+  min-height: 16px;
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.success-message {
+  display: block;
+  min-height: 16px;
+  color: #16a34a;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.profile-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e3e8f1;
+  background-color: #f8fafe;
+  border-radius: 50%;
+  cursor: pointer;
+  text-indent: -9999px;
+  overflow: hidden;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233d58f7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 20px;
+  transition: all 0.2s ease;
+}
+
+.profile-btn:hover {
+  background-color: #edf2fc;
+  border-color: #b8caff;
+}
+
+.home-profile-btn {
+  width: 42px;
+  height: 42px;
+}

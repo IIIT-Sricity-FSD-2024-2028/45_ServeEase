@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Provider Dashboard</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/provider.css" />
+</head>
+<body>
+  <header class="dashboard-topbar provider-topbar">
+    <div class="dashboard-brand">
+      <div class="brand-icon">⌂</div>
+      <span>ServeEase</span>
+    </div>
+
+    <div class="dashboard-search">
+      <input type="text" placeholder="Search for bookings, services..." />
+    </div>
+
+    <div class="dashboard-topbar-actions">
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="providerProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="providerProfileDropdown">
+          <a href="provider-account.html">My Profile</a>
+          <a href="provider-dashboard.html">Go to Dashboard</a>
+          <button type="button" id="providerLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page provider-page">
+    <div class="container">
+      <div class="breadcrumb-row"><strong>Provider Dashboard</strong></div>
+
+      <section class="provider-hero-card">
+        <div>
+          <h1 id="providerWelcomeText">Welcome, Provider!</h1>
+          <p>Manage bookings, services, availability, earnings, and support from one place.</p>
+        </div>
+
+        <div class="provider-hero-side">
+          <div class="provider-hero-line"><strong>Provider ID:</strong> <span id="providerHeroId">PRO001</span></div>
+          <div class="provider-hero-line"><strong>Status:</strong> <span class="status-pill status-accepted">Active</span></div>
+        </div>
+      </section>
+
+     <section class="dashboard-actions-grid provider-actions-grid">
+  <div class="feature-card" onclick="window.location.href='provider-services.html'" style="cursor: pointer;">
+    <div class="feature-icon blue">🧰</div>
+    <h3>Manage Services</h3>
+    <p>Add, edit, activate, and manage availability slots.</p>
+  </div>
+
+  <div class="feature-card" onclick="window.location.href='provider-bookings.html'" style="cursor: pointer;">
+    <div class="feature-icon orange">📋</div>
+    <h3>Booking Management</h3>
+    <p>Accept, reject, and track service booking requests.</p>
+  </div>
+
+  <div class="feature-card" onclick="window.location.href='provider-earnings.html'" style="cursor: pointer;">
+    <div class="feature-icon green">💰</div>
+    <h3>Earnings & Payments</h3>
+    <p>Track payments, earnings, and transaction details.</p>
+  </div>
+
+  <div class="feature-card" onclick="window.location.href='provider-support.html'" style="cursor: pointer;">
+    <div class="feature-icon purple">🎧</div>
+    <h3>Get Support</h3>
+    <p>Raise support tickets and contact the support team.</p>
+  </div>
+</section>
+
+      <section class="dashboard-stats-grid" id="providerStatsGrid"></section>
+
+      <section class="dashboard-two-column provider-two-column">
+        <div class="panel-card">
+          <div class="panel-head">
+            <h2>Service Performance</h2>
+            <a href="provider-bookings.html">View Bookings</a>
+          </div>
+          <div id="providerPerformanceList"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <h2>Notifications</h2>
+            <a href="provider-support.html">Open Support</a>
+          </div>
+          <div id="providerNotificationPreview"></div>
+        </div>
+      </section>
+
+      <section class="dashboard-two-column provider-two-column">
+        <div class="panel-card gradient-panel">
+          <h2>Earnings This Month</h2>
+          <p id="providerEarningsPreview">₹25,000</p>
+          <div class="provider-earnings-mini">
+            <div>
+              <span>Total Earnings</span>
+              <strong id="providerTotalEarningsMini">₹25,000</strong>
+            </div>
+            <div>
+              <span>Pending Payout</span>
+              <strong id="providerPendingPayoutMini">₹5,092</strong>
+            </div>
+          </div>
+          <a class="btn btn-light" href="provider-earnings.html">View Earnings</a>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <h2>Quick Links</h2>
+          </div>
+         <div class="provider-quick-links">
+  <a href="provider-services.html">Manage Services</a>
+  <a href="provider-bookings.html">Booking Management</a>
+  <a href="provider-earnings.html">Earnings & Payments</a>
+  <a href="provider-support.html">Support Center</a>
+  <a href="provider-account.html">My Profile</a>
+</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div><h4>Company</h4><a href="index.html#about-us">About Us</a></div>
+      <div><h4>Support</h4><a href="customer-support-center.html">Help Center</a><a href="customer-support-center.html">Contact Support</a><a href="my-bookings.html">Track Booking</a><a href="customer-support-center.html">Raise Ticket</a></div>
+      <div><h4>Legal</h4><a href="index.html#terms-and-conditions">Terms & Conditions</a><a href="index.html#privacy-policy">Privacy Policy</a><a href="index.html#cancellation-policy">Cancellation Policy</a></div>
+    </div>
+    <div class="container footer-bottom-row">
+      <p>© 2026 ServeEase. All rights reserved.</p>
+      <div class="footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div>
+    </div>
+  </footer>
+
+  <script src="JavaScript/provider.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

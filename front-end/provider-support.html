@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Provider Support Center</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/provider.css" />
+</head>
+<body>
+  <header class="dashboard-topbar provider-topbar">
+    <div class="dashboard-brand">
+      <div class="brand-icon">⌂</div>
+      <span>ServeEase</span>
+    </div>
+    <div class="dashboard-search">
+      <input type="text" placeholder="Search support..." />
+    </div>
+    <div class="dashboard-topbar-actions">
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="providerProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="providerProfileDropdown">
+          <a href="provider-account.html">My Profile</a>
+          <a href="provider-dashboard.html">Go to Dashboard</a>
+          <button type="button" id="providerLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page provider-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="provider-dashboard.html">Provider Dashboard</a> &nbsp;›&nbsp;
+        <strong>Provider Support Center</strong>
+      </div>
+
+      <section class="page-title-block provider-page-title">
+        <h1>Provider Support Center</h1>
+        <p>Get help with payments, bookings, account issues, and platform support.</p>
+      </section>
+
+      <section class="support-layout">
+        <div class="provider-support-left">
+          <div class="panel-card">
+            <h2 class="panel-title">Quick Contact</h2>
+            <div class="provider-quick-contact-box">
+              <p><strong>Phone Support</strong></p>
+              <p>1800-123-4567</p>
+            </div>
+            <div class="provider-quick-contact-box">
+              <p><strong>Email Support</strong></p>
+              <p>provider.support@serveease.com</p>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <h2 class="panel-title">Common Issues</h2>
+            <div class="provider-common-issues" id="providerCommonIssuesList"></div>
+          </div>
+        </div>
+
+        <div class="provider-support-right">
+          <div class="panel-card">
+            <h2 class="panel-title">Create Support Ticket</h2>
+            <form id="providerSupportTicketForm" class="support-form">
+              <label>Issue Category</label>
+              <select id="providerTicketCategory">
+                <option value="">Select category</option>
+                <option value="Payment Issue">Payment Issue</option>
+                <option value="Booking Issue">Booking Issue</option>
+                <option value="Account Issue">Account Issue</option>
+                <option value="Technical Issue">Technical Issue</option>
+              </select>
+
+              <label>Subject</label>
+              <input type="text" id="providerTicketSubject" placeholder="Enter ticket subject" />
+
+              <label>Description</label>
+              <textarea id="providerTicketDescription" placeholder="Please provide detailed description about your issue."></textarea>
+
+              <small class="error" id="providerTicketError"></small>
+              <small class="success-message" id="providerTicketSuccess"></small>
+
+              <button class="btn btn-primary btn-full" type="submit">Submit Ticket</button>
+            </form>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-head">
+              <h2>My Support Tickets</h2>
+            </div>
+            <div id="providerSupportTicketsList"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="modal-backdrop hidden" id="providerTicketModalBackdrop">
+    <div class="modal-card provider-ticket-modal-card">
+      <div class="modal-head">
+        <h2>Support Ticket Details</h2>
+        <button type="button" class="close-modal-btn" id="closeProviderTicketModalBtn">×</button>
+      </div>
+      <div id="providerTicketModalContent"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="providerChatModalBackdrop">
+    <div class="modal-card provider-chat-modal-card">
+      <div class="modal-head">
+        <h2>Chat with Support</h2>
+        <button type="button" class="close-modal-btn" id="closeProviderChatModalBtn">×</button>
+      </div>
+      <div class="provider-chat-thread" id="providerChatThread"></div>
+      <form class="provider-chat-form" id="providerChatForm">
+        <input type="text" id="providerChatInput" placeholder="Type your message here" />
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="JavaScript/provider.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Monitor Bookings</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/superuser.css" />
+</head>
+<body>
+  <header class="dashboard-topbar superuser-topbar">
+    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
+    <div class="dashboard-search"><input type="text" id="superuserBookingSearch" placeholder="Search bookings by ID, customer, provider, or service..." /></div>
+    <div class="dashboard-topbar-actions">
+      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" type="button">🔔<span class="superuser-dot"></span></button>
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="superuserProfileBtn" aria-label="Profile">👤</button>
+        <div class="profile-dropdown hidden" id="superuserProfileDropdown">
+          <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>
+          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
+          <button type="button" id="superuserLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page superuser-page">
+    <div class="container">
+      <div class="breadcrumb-row"><a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp; <strong>Monitor Bookings</strong></div>
+
+      <section class="panel-card superuser-title-card left-accent-blue">
+        <h1>Monitor All Bookings</h1>
+        <p>View and manage all bookings across the platform organized by status.</p>
+      </section>
+
+      <section class="superuser-booking-stat-grid" id="superuserBookingStatsGrid"></section>
+      <section id="superuserBookingSections"></section>
+      <div class="superuser-return-row"><a class="btn btn-outline" href="superuser-dashboard.html">‹ Return to Dashboard</a></div>
+    </div>
+  </main>
+
+  <div class="superuser-modal-backdrop hidden" id="superuserBookingModalBackdrop">
+    <div class="superuser-modal superuser-booking-modal">
+      <div class="superuser-modal-header gradient-header">
+        <div><h3 id="superuserBookingModalTitle">BOOK-2026-1045</h3><p>Booking Details</p></div>
+        <button class="superuser-modal-close" type="button" data-close-modal="superuserBookingModalBackdrop">⊗</button>
+      </div>
+      <div class="superuser-modal-body">
+        <div id="superuserBookingModalStatusBadges" class="superuser-badge-row"></div>
+        <section>
+          <h4>Service Information</h4>
+          <div class="superuser-detail-grid" id="superuserBookingServiceInfo"></div>
+        </section>
+        <section>
+          <h4>Customer Information</h4>
+          <div class="superuser-detail-card" id="superuserBookingCustomerInfo"></div>
+        </section>
+      </div>
+      <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="superuserBookingModalBackdrop">Close</button></div>
+    </div>
+  </div>
+
+  <div class="superuser-modal-backdrop hidden" id="superuserNotificationModalBackdrop">
+    <div class="superuser-modal superuser-notification-modal">
+      <div class="superuser-modal-header gradient-header">
+        <div>
+          <h3>Notifications</h3>
+          <p>Latest platform updates</p>
+        </div>
+        <button class="superuser-modal-close" type="button" id="superuserCloseNotificationModalBtn">×</button>
+      </div>
+      <div class="superuser-modal-body">
+        <div class="panel-head superuser-modal-panel-head">
+          <h4>Recent Notifications</h4>
+          <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
+        </div>
+        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div><h4>Company</h4><a href="index.html#about-us">About Us</a></div>
+      <div><h4>Support</h4><a href="customer-support-center.html">Help Center</a><a href="customer-support-center.html">Contact Support</a><a href="my-bookings.html">Track Booking</a><a href="customer-support-center.html">Raise Ticket</a></div>
+      <div><h4>Legal</h4><a href="index.html#terms-and-conditions">Terms &amp; Conditions</a><a href="index.html#privacy-policy">Privacy Policy</a><a href="index.html#cancellation-policy">Cancellation Policy</a></div>
+    </div>
+    <div class="container footer-bottom-row">
+      <p>© 2026 ServeEase. All rights reserved.</p>
+      <div class="footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div>
+    </div>
+  </footer>
+
+  <script src="JavaScript/superuser.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

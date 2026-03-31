@@ -1,0 +1,855 @@
+.listing-page,
+.profile-page {
+  padding: 24px 0 0;
+}
+
+.breadcrumbs {
+  font-size: 14px;
+  color: #637793;
+  margin-bottom: 14px;
+}
+
+.listing-hero h1 {
+  font-size: 34px;
+  color: #12284a;
+  margin-bottom: 8px;
+}
+
+.listing-hero p {
+  color: #60748f;
+  font-size: 16px;
+  margin-bottom: 28px;
+}
+
+.listing-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.filter-card,
+.provider-summary-card,
+.pricing-card,
+.reviews-card,
+.booking-card,
+.benefit-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(17, 40, 75, 0.06);
+}
+
+.filter-card {
+  padding: 20px;
+  position: sticky;
+  top: 94px;
+}
+
+.filter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.filter-head h3 {
+  font-size: 18px;
+  color: #12284a;
+}
+
+.text-btn {
+  border: none;
+  background: transparent;
+  color: #394a63;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.filter-block {
+  margin-bottom: 18px;
+}
+
+.filter-block label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: #22395d;
+}
+
+.filter-block select,
+.filter-block input[type="date"] {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #f8faff;
+}
+
+.range-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: #637793;
+  font-size: 14px;
+}
+
+.results-count {
+  color: #5f7390;
+  margin-bottom: 14px;
+  font-size: 18px;
+}
+
+.empty-state-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  padding: 28px;
+  color: #637793;
+}
+
+.provider-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+}
+
+.provider-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(17, 40, 75, 0.06);
+}
+
+.provider-card img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+}
+
+.provider-card-body {
+  padding: 16px;
+}
+
+.provider-status {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #1fd46a;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}
+
+.provider-image-wrap {
+  position: relative;
+}
+
+.provider-card h3 {
+  font-size: 18px;
+  color: #12284a;
+  margin-bottom: 6px;
+}
+
+.provider-muted {
+  color: #667a97;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.provider-offered {
+  margin-bottom: 10px;
+}
+
+.provider-offered strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #22395d;
+}
+
+.tag-pill {
+  display: inline-block;
+  background: #eef3ff;
+  color: #4863ff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+.rating-row {
+  color: #304867;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.provider-bottom {
+  border-top: 1px solid #e8edf5;
+  padding-top: 12px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  color: #627690;
+}
+
+.provider-price {
+  text-align: right;
+}
+
+.provider-price strong {
+  display: block;
+  color: #2563eb;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.provider-cta {
+  margin-top: 14px;
+  width: 100%;
+}
+
+.back-inline {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: #394a63;
+  font-size: 14px;
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.provider-summary-card,
+.pricing-card,
+.reviews-card {
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.summary-top {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.summary-top img {
+  width: 90px;
+  height: 90px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.provider-summary-card h1 {
+  font-size: 30px;
+  color: #12284a;
+  margin-bottom: 10px;
+}
+
+.verified-badge {
+  display: inline-block;
+  background: #eaf7ef;
+  color: #20965b;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.summary-services {
+  margin-bottom: 12px;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid #e8edf5;
+}
+
+.metric-item strong {
+  display: block;
+  color: #12284a;
+  margin-bottom: 3px;
+}
+
+.metric-item span {
+  color: #627690;
+  font-size: 13px;
+}
+
+.location-line {
+  margin-top: 14px;
+  color: #50627c;
+}
+
+.pricing-card h2,
+.reviews-card h2,
+.benefits-section h2,
+.similar-section h2 {
+  font-size: 18px;
+  color: #12284a;
+  margin-bottom: 16px;
+}
+
+.price-table-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid #e8edf5;
+  color: #22395d;
+}
+
+.info-note {
+  margin-top: 16px;
+  background: #f0f5ff;
+  color: #516984;
+  border: 1px solid #dbe6ff;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.review-item {
+  padding: 14px 0;
+  border-top: 1px solid #e8edf5;
+}
+
+.review-stars {
+  color: #f5b400;
+  margin-bottom: 8px;
+}
+
+.review-meta {
+  margin-top: 10px;
+  color: #627690;
+  font-size: 14px;
+}
+
+.view-all-btn,
+.secondary-btn {
+  width: 100%;
+  margin-top: 16px;
+  height: 42px;
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.booking-card {
+  padding: 18px;
+  position: sticky;
+  top: 94px;
+}
+
+.booking-card h2 {
+  font-size: 22px;
+  color: #12284a;
+  margin-bottom: 16px;
+}
+
+.booking-card label {
+  display: block;
+  font-weight: 700;
+  color: #22395d;
+  margin-bottom: 8px;
+  margin-top: 12px;
+}
+
+.booking-card select,
+.booking-card input[type="date"] {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #f8faff;
+}
+
+.booking-card .btn {
+  width: 100%;
+  margin-top: 18px;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.benefit-card {
+  padding: 24px 18px;
+  text-align: center;
+}
+
+.benefit-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #eef3ff;
+  color: #4863ff;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 14px;
+  font-size: 22px;
+}
+
+.benefit-card h3 {
+  font-size: 16px;
+  color: #12284a;
+  margin-bottom: 8px;
+}
+
+.benefit-card p {
+  color: #677b98;
+  font-size: 14px;
+}
+
+.similar-section {
+  margin: 30px 0 18px;
+}
+
+.similar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.similar-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.similar-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.similar-card-body {
+  padding: 14px;
+}
+
+.similar-card h3 {
+  font-size: 16px;
+  color: #12284a;
+  margin-bottom: 10px;
+}
+
+.similar-card .rating-row {
+  margin-bottom: 10px;
+}
+
+.similar-card .provider-price {
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1100px) {
+  .listing-layout,
+  .profile-layout,
+  .provider-grid,
+  .benefits-grid,
+  .similar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-card,
+  .booking-card {
+    position: static;
+  }
+
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.brand {
+  text-decoration: none;
+}
+
+.nav-actions .profile-menu-wrap {
+  position: relative;
+}
+
+.nav-actions .profile-dropdown {
+  position: absolute;
+  top: 54px;
+  right: 0;
+  min-width: 190px;
+  background: #ffffff;
+  border: 1px solid #e6ebf2;
+  border-radius: 14px;
+  box-shadow: 0 14px 32px rgba(17, 40, 75, 0.12);
+  padding: 10px;
+  z-index: 100;
+}
+
+.nav-actions .profile-dropdown a,
+.nav-actions .profile-dropdown button {
+  width: 100%;
+  display: block;
+  padding: 12px 14px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: #12284a;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.nav-actions .profile-dropdown a:hover,
+.nav-actions .profile-dropdown button:hover {
+  background: #f5f7fb;
+}
+
+.checkout-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+  padding: 24px 0 0;
+}
+
+.booking-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e6ebf2;
+}
+
+.booking-breadcrumbs {
+  font-size: 14px;
+  color: #6b7c95;
+  margin-bottom: 14px;
+}
+
+.booking-breadcrumbs a {
+  color: #6b7c95;
+}
+
+.checkout-title {
+  font-size: 46px;
+  color: #12284a;
+  margin-bottom: 24px;
+}
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1.45fr 0.7fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.checkout-main,
+.checkout-sidebar {
+  display: grid;
+  gap: 18px;
+}
+
+.checkout-card,
+.checkout-side-card,
+.checkout-note-card,
+.success-info-card,
+.awaiting-box,
+.next-steps-box {
+  background: #fff;
+  border: 1px solid #e6ebf2;
+  border-radius: 18px;
+  box-shadow: 0 8px 20px rgba(17, 40, 75, 0.06);
+}
+
+.checkout-card {
+  padding: 18px;
+}
+
+.checkout-side-card {
+  padding: 18px;
+}
+
+.checkout-card h2,
+.checkout-side-card h2,
+.checkout-note-card h3 {
+  color: #12284a;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.checkout-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #edf1f6;
+  color: #50627c;
+}
+
+.checkout-info-row strong {
+  color: #12284a;
+}
+
+.checkout-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 18px;
+  margin-top: 16px;
+  border-top: 1px solid #edf1f6;
+  font-size: 18px;
+  color: #12284a;
+}
+
+.checkout-total-row strong {
+  color: #2563eb;
+  font-size: 34px;
+}
+
+.checkout-total-row.compact strong {
+  font-size: 24px;
+}
+
+.checkout-card label,
+.payment-form-box label,
+.promo-box label {
+  display: block;
+  font-weight: 700;
+  color: #22395d;
+  margin: 14px 0 8px;
+}
+
+.checkout-card input,
+.checkout-card textarea,
+.payment-form-box input,
+.promo-row input {
+  width: 100%;
+  border: 1px solid #dfe6ef;
+  border-radius: 10px;
+  background: #f8faff;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+}
+
+.checkout-card textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.payment-option {
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #fff;
+  font-weight: 600;
+  color: #12284a;
+}
+
+.active-option {
+  background: #eef5ff;
+  border-color: #99b9ff;
+}
+
+.payment-form-box {
+  background: #f8faff;
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 16px;
+}
+
+.two-col-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.promo-box {
+  margin-top: 16px;
+}
+
+.promo-row {
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  gap: 10px;
+  margin: 10px 0 8px;
+}
+
+.promo-row button {
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.full-width-btn {
+  width: 100%;
+}
+
+.trust-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #1f9d55;
+  display: grid;
+  gap: 10px;
+}
+
+.checkout-note-card {
+  padding: 18px;
+  background: linear-gradient(90deg, #f2f8ff, #f9f2ff);
+}
+
+.checkout-note-card p {
+  color: #667a97;
+  margin-bottom: 6px;
+}
+
+.checkout-note-card small {
+  color: #7d8da4;
+}
+
+.booking-success-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 16px;
+}
+
+.booking-success-card {
+  width: min(680px, 100%);
+  background: #fff;
+  border: 1px solid #e6ebf2;
+  border-radius: 20px;
+  box-shadow: 0 18px 40px rgba(17, 40, 75, 0.14);
+  padding: 30px 26px;
+  text-align: center;
+}
+
+.success-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fdf1df;
+  color: #d97706;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  font-size: 34px;
+}
+
+.booking-success-card h1 {
+  color: #12284a;
+  font-size: 28px;
+  margin-bottom: 16px;
+}
+
+.success-subtext {
+  color: #667a97;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.success-subtext strong {
+  color: #d97706;
+}
+
+.awaiting-box {
+  padding: 18px;
+  background: #fff8eb;
+  border-color: #f4d8a6;
+  margin-bottom: 18px;
+  display: grid;
+  gap: 8px;
+  color: #b45309;
+}
+
+.awaiting-box span {
+  color: #667a97;
+}
+
+.success-info-card {
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.highlight-text {
+  color: #2563eb;
+}
+
+.pending-pill {
+  color: #d97706;
+}
+
+.next-steps-box {
+  text-align: left;
+  padding: 18px;
+  background: #eef5ff;
+  border-color: #bfd6ff;
+  margin-bottom: 20px;
+}
+
+.next-steps-box h3 {
+  color: #1d4ed8;
+  margin-bottom: 10px;
+}
+
+.next-steps-box ul {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  color: #1e40af;
+}
+
+.success-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.success-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+@media (max-width: 1100px) {
+  .checkout-layout,
+  .success-actions,
+  .two-col-form {
+    grid-template-columns: 1fr;
+  }
+}
+.payment-option {
+  cursor: pointer;
+}
+
+.payment-option select {
+  width: 100%;
+  border: 1px solid #dfe6ef;
+  border-radius: 10px;
+  background: #f8faff;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+}

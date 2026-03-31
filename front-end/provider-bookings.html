@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Booking Management</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/provider.css" />
+</head>
+<body>
+  <header class="dashboard-topbar provider-topbar">
+    <div class="dashboard-brand">
+      <div class="brand-icon">⌂</div>
+      <span>ServeEase</span>
+    </div>
+    <div class="dashboard-search">
+      <input type="text" placeholder="Search bookings..." />
+    </div>
+    <div class="dashboard-topbar-actions">
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="providerProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="providerProfileDropdown">
+          <a href="provider-account.html">My Profile</a>
+          <a href="provider-dashboard.html">Go to Dashboard</a>
+          <button type="button" id="providerLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page provider-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="provider-dashboard.html">Provider Dashboard</a> &nbsp;›&nbsp;
+        <strong>Booking Management</strong>
+      </div>
+
+      <section class="page-title-block provider-page-title">
+        <h1>Booking Management</h1>
+        <p>View all booking requests, accept or reject requests, and track service progress.</p>
+      </section>
+
+      <section class="tabs-row" id="providerBookingTabs"></section>
+
+      <section class="panel-card">
+        <div id="providerBookingsList"></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="modal-backdrop hidden" id="providerBookingModalBackdrop">
+    <div class="modal-card provider-booking-modal-card">
+      <div class="modal-head">
+        <h2>Booking Details</h2>
+        <button type="button" class="close-modal-btn" id="closeProviderBookingModalBtn">×</button>
+      </div>
+      <div id="providerBookingModalContent"></div>
+    </div>
+  </div>
+
+  <script src="JavaScript/provider.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

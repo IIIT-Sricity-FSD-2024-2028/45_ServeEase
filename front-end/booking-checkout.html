@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Booking & Checkout</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/pages.css" />
+</head>
+<body>
+  <header class="dashboard-topbar booking-topbar">
+    <a class="dashboard-brand" href="index.html">
+      <div class="brand-icon">⌂</div>
+      <span>ServeEase</span>
+    </a>
+
+    <div class="dashboard-search">
+      <input type="text" placeholder="Search for services..." />
+    </div>
+
+    <div class="dashboard-topbar-actions">
+      <button class="icon-btn" type="button">🔔</button>
+      <div class="profile-menu-wrap" id="sharedProfileMenuWrap">
+        <button class="profile-btn" type="button" id="sharedProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="sharedProfileDropdown">
+          <a href="customer-profile.html">My Profile</a>
+          <a href="customer-dashboard.html">Go to Dashboard</a>
+          <button type="button" id="sharedLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="checkout-page">
+    <div class="container">
+      <div class="breadcrumb-row booking-breadcrumbs" id="checkoutBreadcrumbs"></div>
+      <h1 class="checkout-title">Booking & Checkout</h1>
+
+      <section class="checkout-layout">
+        <div class="checkout-main">
+          <div class="checkout-card" id="bookingSummaryCard"></div>
+          <div class="checkout-card" id="customerDetailsCard"></div>
+          <div class="checkout-card" id="paymentMethodCard"></div>
+          <div class="checkout-note-card">
+            <h3>Booking Reference Number</h3>
+            <p>Booking Reference Number will be generated after payment confirmation.</p>
+            <small>Example format: BOOK-2026-1054</small>
+          </div>
+        </div>
+
+        <aside class="checkout-sidebar">
+          <div class="checkout-side-card" id="pricingBreakdownCard"></div>
+          <div class="checkout-side-card" id="confirmBookingCard"></div>
+          <div class="checkout-side-card trust-card">
+            <h3>Safety & Trust</h3>
+            <ul>
+              <li>Secure Payment Gateway</li>
+              <li>Verified Service Providers</li>
+              <li>24/7 Customer Support Available</li>
+            </ul>
+          </div>
+        </aside>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div><h4>Company</h4><a href="index.html#about-us">About Us</a></div>
+      <div><h4>Support</h4><a href="customer-support-center.html">Help Center</a><a href="customer-support-center.html">Contact Support</a><a href="my-bookings.html">Track Booking</a><a href="customer-support-center.html">Raise Ticket</a></div>
+      <div><h4>Legal</h4><a href="index.html#terms-and-conditions">Terms & Conditions</a><a href="index.html#privacy-policy">Privacy Policy</a><a href="index.html#cancellation-policy">Cancellation Policy</a></div>
+    </div>
+    <div class="container footer-bottom-row">
+      <p>© 2026 ServeEase. All rights reserved.</p>
+      <div class="footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div>
+    </div>
+  </footer>
+
+  <script src="JavaScript/mockdata.js"></script>
+  <script src="JavaScript/app.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

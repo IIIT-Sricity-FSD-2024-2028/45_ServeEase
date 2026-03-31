@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Category Services</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/pages.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="container nav-content">
+      <a class="brand" href="index.html">
+        <div class="brand-icon">⌂</div>
+        <span>ServeEase</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="index.html#services">Services</a>
+        <a href="index.html#categories">Categories</a>
+      </nav>
+
+      <div class="nav-actions" id="sharedNavActions">
+        <a class="btn btn-primary" href="login.html" id="sharedLoginRegisterBtn">Login / Register</a>
+
+        <div class="profile-menu-wrap hidden" id="sharedProfileMenuWrap">
+          <button class="profile-btn home-profile-btn" type="button" id="sharedProfileBtn">👤</button>
+          <div class="profile-dropdown hidden" id="sharedProfileDropdown">
+            <a href="customer-profile.html">My Profile</a>
+            <a href="customer-dashboard.html">Go to Dashboard</a>
+            <button type="button" id="sharedLogoutBtn">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="listing-page">
+    <div class="container">
+      <a class="back-home-link" href="index.html">← Previous Page / Home</a>
+      <div class="breadcrumbs" id="categoryBreadcrumbs"></div>
+
+      <section class="listing-hero">
+        <h1 id="categoryTitle">Available Service Providers</h1>
+        <p id="categorySubtitle">Choose from trusted professionals near your location.</p>
+      </section>
+
+      <section class="listing-layout">
+        <aside class="filter-card">
+          <div class="filter-head">
+            <h3>Filters</h3>
+            <button type="button" class="text-btn" id="resetFiltersBtn">Reset All</button>
+          </div>
+
+          <div class="filter-block">
+            <label for="serviceTypeFilter">Service Type</label>
+            <select id="serviceTypeFilter"></select>
+          </div>
+
+          <div class="filter-block">
+            <label for="priceFilter">Price Range</label>
+            <input type="range" id="priceFilter" min="0" max="10000" step="50" value="10000" />
+            <div class="range-row">
+              <span>₹0</span>
+              <span id="priceValue">₹10000</span>
+            </div>
+          </div>
+        </aside>
+
+        <div class="listing-content">
+          <p class="results-count" id="resultsCount"></p>
+          <div class="provider-grid" id="providerGrid"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <h4>Company</h4>
+        <a href="index.html#about-us">About Us</a>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="customer-support-center.html">Help Center</a>
+        <a href="customer-support-center.html">Contact Support</a>
+        <a href="my-bookings.html">Track Booking</a>
+        <a href="customer-support-center.html">Raise Ticket</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="index.html#terms-and-conditions">Terms & Conditions</a>
+        <a href="index.html#privacy-policy">Privacy Policy</a>
+        <a href="index.html#cancellation-policy">Cancellation Policy</a>
+      </div>
+    </div>
+    <div class="container footer-bottom-row">
+      <p>© 2026 ServeEase. All rights reserved.</p>
+      <div class="footer-socials">
+        <span>f</span>
+        <span>◎</span>
+        <span>𝕏</span>
+        <span>in</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="JavaScript/mockdata.js"></script>
+  <script src="JavaScript/app.js"></script>
+  <script src="JavaScript/navigation.js"></script>
+</body>
+</html>

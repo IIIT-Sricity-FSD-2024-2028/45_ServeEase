@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Customer Support Dashboard</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/support.css" />
+</head>
+<body>
+  <header class="dashboard-topbar support-topbar">
+    <div class="dashboard-brand">
+      <div class="brand-icon">⌂</div>
+      <span>ServeEase</span>
+    </div>
+
+    <div class="dashboard-search">
+      <input type="text" id="supportSearchInput" placeholder="Search tickets or booking references..." />
+    </div>
+
+    <div class="dashboard-topbar-actions">
+      <button class="icon-btn support-bell-btn" id="supportNotificationBtn" type="button" aria-label="Notifications">🔔<span class="support-dot"></span></button>
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="supportProfileBtn" aria-label="Profile">👤</button>
+        <div class="profile-dropdown hidden" id="supportProfileDropdown">
+          <div class="support-profile-card">
+            <strong id="supportAgentName">Priya Sharma</strong>
+            <span>Support Agent</span>
+          </div>
+          <button type="button" id="supportLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page support-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <strong>Customer Support Dashboard</strong>
+      </div>
+
+      <section class="support-hero-card">
+        <div>
+          <h1 id="supportWelcomeText">Welcome, Support Agent Priya Sharma!</h1>
+          <p>Monitor and resolve customer issues efficiently.</p>
+        </div>
+      </section>
+
+      <section class="dashboard-stats-grid support-stats-grid" id="supportStatsGrid"></section>
+
+      <section class="support-dashboard-layout">
+        <div>
+          <div class="support-section-head">
+            <h2>Ticket Overview (<span id="supportTicketCount">0</span>)</h2>
+          </div>
+          <div id="supportDashboardTicketList" class="support-ticket-list"></div>
+          <div class="support-empty-state hidden" id="supportDashboardEmptyState">
+            <h3>No tickets found</h3>
+            <p>Try another search term or clear the search to see all tickets.</p>
+            <button class="btn btn-outline" type="button" id="clearSupportSearchBtn">Clear Search</button>
+          </div>
+        </div>
+
+        <aside class="support-sidebar-panel panel-card">
+          <div class="support-sidebar-head">
+            <h2>Notifications</h2>
+            <span class="support-notification-chip" id="supportNewNotificationCount">0 New</span>
+          </div>
+          <div id="supportNotificationList" class="support-notification-list"></div>
+          <button class="btn btn-outline btn-full" type="button" id="viewAllNotificationsBtn">View All Notifications</button>
+        </aside>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div><h4>Company</h4><a href="index.html#about-us">About Us</a></div>
+      <div><h4>Support</h4><a href="customer-support-center.html">Help Center</a><a href="customer-support-center.html">Contact Support</a><a href="my-bookings.html">Track Booking</a><a href="customer-support-center.html">Raise Ticket</a></div>
+      <div><h4>Legal</h4><a href="index.html#terms-and-conditions">Terms &amp; Conditions</a><a href="index.html#privacy-policy">Privacy Policy</a><a href="index.html#cancellation-policy">Cancellation Policy</a></div>
+    </div>
+    <div class="container footer-bottom-row">
+      <p>© 2026 ServeEase. All rights reserved.</p>
+      <div class="footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div>
+    </div>
+  </footer>
+
+  <script src="JavaScript/support.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>
