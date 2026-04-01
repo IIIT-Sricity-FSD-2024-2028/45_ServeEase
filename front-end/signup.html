@@ -27,17 +27,17 @@
 
           <form id="signupForm" novalidate>
             <div class="form-group">
-              <input type="text" id="fullName" placeholder="Full Name" />
+              <input type="text" id="fullName" placeholder="Full Name" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" />
               <small class="error" id="fullNameError"></small>
             </div>
 
             <div class="form-group">
-              <input type="text" id="email" placeholder="Email" />
+              <input type="email" id="email" placeholder="Email" />
               <small class="error" id="emailError"></small>
             </div>
 
             <div class="form-group">
-              <input type="text" id="phone" placeholder="Phone Number" />
+              <input type="tel" id="phone" placeholder="Phone Number" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
               <small class="error" id="phoneError"></small>
             </div>
 
@@ -94,8 +94,8 @@
           <a href="index.html#about-us">About Us</a>
           <a href="index.html#privacy-policy">Privacy Policy</a>
           <a href="index.html#terms-and-conditions">Terms & Conditions</a>
-          <a href="customer-support-center.html">Help Center</a>
           <a href="customer-support-center.html">Contact Support</a>
+          <a href="my-bookings.html">Track Booking</a>
         </div>
       </div>
 

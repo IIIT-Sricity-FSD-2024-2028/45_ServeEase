@@ -391,6 +391,7 @@
   border-radius: 20px;
   box-shadow: 0 10px 24px rgba(17, 40, 75, 0.06);
   padding: 24px;
+  scroll-margin-top: 100px;
 }
 
 .info-content-card h2 {

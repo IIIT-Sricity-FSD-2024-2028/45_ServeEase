@@ -315,15 +315,18 @@
     const max = Math.max.apply(null, points) * 1.1;
     const width = 640;
     const height = 220;
-    const stepX = width / (points.length - 1);
+    const paddingX = 25;
+    const innerWidth = width - (paddingX * 2);
+    const stepX = innerWidth / (points.length - 1);
+    const drawHeight = 175;
     let path = "";
     let labelsMarkup = "";
     points.forEach(function (point, index) {
-      const x = index * stepX;
-      const y = height - (point / max) * (height - 18) - 10;
+      const x = paddingX + index * stepX;
+      const y = 195 - (point / max) * drawHeight;
       path += (index === 0 ? 'M' : ' L') + x + ' ' + y;
       labelsMarkup += '<text x="' + x + '" y="215" text-anchor="middle" font-size="12" fill="#6c7b92">' + labels[index] + '</text>';
-      labelsMarkup += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="#3766ff"></circle>';
+      labelsMarkup += '<circle cx="' + x + '" cy="' + y + '" r="5" fill="#3766ff"></circle>';
     });
     host.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none"><path d="' + path + '" fill="none" stroke="#3766ff" stroke-width="3"></path>' + labelsMarkup + '</svg>';
   }
@@ -337,11 +340,11 @@
     const slot = width / items.length;
     let body = "";
     items.forEach(function (item, index) {
-      const barHeight = (item.bookings / max) * 150;
-      const x = index * slot + 22;
-      const y = 170 - barHeight;
-      body += '<rect x="' + x + '" y="' + y + '" width="90" height="' + barHeight + '" rx="4" fill="#8a5cf6"></rect>';
-      body += '<text x="' + (x + 45) + '" y="196" text-anchor="middle" font-size="12" fill="#6c7b92">' + item.name + '</text>';
+      const barHeight = (item.bookings / max) * 175;
+      const x = index * slot + (slot - 70) / 2;
+      const y = 195 - barHeight;
+      body += '<rect x="' + x + '" y="' + y + '" width="70" height="' + barHeight + '" rx="4" fill="#8a5cf6"></rect>';
+      body += '<text x="' + (x + 35) + '" y="215" text-anchor="middle" font-size="12" fill="#6c7b92">' + item.name + '</text>';
     });
     host.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none">' + body + '</svg>';
   }

@@ -402,6 +402,10 @@ function setupSignupForm() {
       showText("fullNameError", "Enter a valid full name.");
       setErrorState(fullNameInput);
       valid = false;
+    } else if (!/^[A-Za-z\s]+$/.test(fullName)) {
+      showText("fullNameError", "Name must contain letters only.");
+      setErrorState(fullNameInput);
+      valid = false;
     } else {
       setSuccessState(fullNameInput);
     }
