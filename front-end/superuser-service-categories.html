@@ -1,115 +1,99 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Service Categories</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/home.css" />
-  <link rel="stylesheet" href="CSS/dashboard.css" />
-  <link rel="stylesheet" href="CSS/superuser.css" />
-</head>
-<body>
-  <header class="dashboard-topbar superuser-topbar">
-    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
-    <div class="dashboard-search"><input type="text" id="superuserCategorySearch" placeholder="Search service categories..." /></div>
-    <div class="dashboard-topbar-actions">
-      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" type="button">🔔<span class="superuser-dot"></span></button>
-      <div class="profile-menu-wrap">
-        <button class="profile-btn" type="button" id="superuserProfileBtn" aria-label="Profile">👤</button>
-        <div class="profile-dropdown hidden" id="superuserProfileDropdown">
-          <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>
-          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
-          <button type="button" id="superuserLogoutBtn">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="dashboard-page superuser-page">
-    <div class="container">
-      <div class="breadcrumb-row">
-        <a href="index.html">Home</a> &nbsp;›&nbsp;
-        <a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp;
-        <strong>Service Categories</strong>
-      </div>
-
-      <section class="panel-card superuser-title-card left-accent-blue">
-        <h1>Service Categories</h1>
-        <p>Manage platform service categories from a dedicated page.</p>
-      </section>
-
-      <section class="superuser-category-page-layout">
-        <section class="panel-card superuser-category-page-panel">
-          <div class="panel-head">
-            <h2>Service Category Management</h2>
-            <button class="btn btn-primary" type="button" id="superuserOpenCategoryPageFormBtn">＋ Add Category</button>
-          </div>
-          <div class="superuser-inline-category-form hidden" id="superuserCategoryInlinePanel">
-            <div class="superuser-inline-category-form-head">
-              <h3 id="superuserCategoryModalTitle">Add New Category</h3>
-              <button class="superuser-modal-close" type="button" id="superuserCloseCategoryPageFormBtn">×</button>
-            </div>
-            <form id="superuserCategoryForm" class="superuser-category-form">
-              <label>Category Name
-                <input type="text" id="superuserCategoryName" placeholder="Car Washing" />
-              </label>
-              <small class="error" id="superuserCategoryNameError"></small>
-              <label>Category Description
-                <textarea id="superuserCategoryDescription" rows="3" placeholder="House Cleaning"></textarea>
-              </label>
-              <small class="error" id="superuserCategoryDescriptionError"></small>
-              <small class="success-message" id="superuserCategorySuccess"></small>
-              <div class="superuser-modal-actions left-align">
-                <button class="btn btn-primary" type="submit" id="superuserCategorySubmitBtn">Add Category</button>
-                <button class="btn btn-outline" type="button" id="superuserCategoryInlineCancelBtn">Cancel</button>
-              </div>
-            </form>
-          </div>
-          <div id="superuserCategoryGrid" class="superuser-category-grid superuser-category-grid-page"></div>
-        </section>
-
-        <div class="superuser-return-row" style="gap:12px;"><a class="btn btn-outline" href="superuser-management.html">‹ Back to Management</a><a class="btn btn-outline" href="superuser-dashboard.html">Back to Dashboard</a></div>
-      </section>
-    </div>
-  </main>
-
-  <div class="superuser-modal-backdrop hidden" id="superuserNotificationModalBackdrop">
-    <div class="superuser-modal superuser-notification-modal">
-      <div class="superuser-modal-header gradient-header">
-        <div>
-          <h3>Notifications</h3>
-          <p>Latest platform updates</p>
-        </div>
-        <button class="superuser-modal-close" type="button" id="superuserCloseNotificationModalBtn">×</button>
-      </div>
-      <div class="superuser-modal-body">
-        <div class="panel-head superuser-modal-panel-head">
-          <h4>Recent Notifications</h4>
-          <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
-        </div>
-        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
-      </div>
-    </div>
-  </div>
-
-
-  <footer class="footer">
-    <div class="container footer-grid">
-      <div><h4>Company</h4><a href="index.html#about-us">About Us</a></div>
-      <div><h4>Support</h4>
-        <a href="customer-support-center.html">Contact Support</a>
-        <a href="my-bookings.html">Track Booking</a>
-      </div>
-      <div><h4>Legal</h4><a href="index.html#terms-and-conditions">Terms &amp; Conditions</a><a href="index.html#privacy-policy">Privacy Policy</a><a href="index.html#cancellation-policy">Cancellation Policy</a></div>
-    </div>
-    <div class="container footer-bottom-row">
-      <p>© 2026 ServeEase. All rights reserved.</p>
-      <div class="footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div>
-    </div>
-  </footer>
-
-  <script src="JavaScript/superuser.js"></script>
-  <script src="JavaScript/search.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Service Categories</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/superuser.css" />
+</head>
+<body>
+  <header class="dashboard-topbar superuser-topbar">
+    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
+    <div class="dashboard-search"><input type="text" id="superuserCategorySearch" placeholder="Search service categories..." /></div>
+    <div class="dashboard-topbar-actions">
+      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn">🔔<span class="superuser-dot"></span></button>
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="superuserProfileDropdown">
+          <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>
+          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
+          <button type="button" id="superuserLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page superuser-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp;
+        <strong>Service Categories</strong>
+      </div>
+
+      <section class="panel-card superuser-title-card left-accent-blue">
+        <h1>Service Categories</h1>
+        <p>Manage platform service categories from a dedicated page.</p>
+      </section>
+
+      <section class="superuser-category-page-layout">
+        <section class="panel-card superuser-category-page-panel">
+          <div class="panel-head">
+            <h2>Service Category Management</h2>
+            <button class="btn btn-primary" type="button" id="superuserOpenCategoryPageFormBtn">＋ Add Category</button>
+          </div>
+          <div class="superuser-inline-category-form hidden" id="superuserCategoryInlinePanel">
+            <div class="superuser-inline-category-form-head">
+              <h3 id="superuserCategoryModalTitle">Add New Category</h3>
+              <button class="superuser-modal-close" type="button" id="superuserCloseCategoryPageFormBtn">×</button>
+            </div>
+            <form id="superuserCategoryForm" class="superuser-category-form">
+              <label>Category Name
+                <input type="text" id="superuserCategoryName" placeholder="Car Washing" />
+              </label>
+              <small class="error" id="superuserCategoryNameError"></small>
+              <label>Category Description
+                <textarea id="superuserCategoryDescription" rows="3" placeholder="House Cleaning"></textarea>
+              </label>
+              <small class="error" id="superuserCategoryDescriptionError"></small>
+              <small class="success-message" id="superuserCategorySuccess"></small>
+              <div class="superuser-modal-actions left-align">
+                <button class="btn btn-primary" type="submit" id="superuserCategorySubmitBtn">Add Category</button>
+                <button class="btn btn-outline" type="button" id="superuserCategoryInlineCancelBtn">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div id="superuserCategoryGrid" class="superuser-category-grid superuser-category-grid-page"></div>
+        </section>
+
+        <div class="superuser-return-row" style="gap:12px;"><a class="btn btn-outline" href="superuser-management.html">‹ Back to Management</a><a class="btn btn-outline" href="superuser-dashboard.html">Back to Dashboard</a></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="superuser-modal-backdrop hidden" id="superuserNotificationModalBackdrop">
+    <div class="superuser-modal superuser-notification-modal">
+      <div class="superuser-modal-header gradient-header">
+        <div>
+          <h3>Notifications</h3>
+          <p>Latest platform updates</p>
+        </div>
+        <button class="superuser-modal-close" type="button" id="superuserCloseNotificationModalBtn">×</button>
+      </div>
+      <div class="superuser-modal-body">
+        <div class="panel-head superuser-modal-panel-head">
+          <h4>Recent Notifications</h4>
+          <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
+        </div>
+        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="JavaScript/superuser.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

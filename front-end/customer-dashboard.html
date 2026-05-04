@@ -1,175 +1,175 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Customer Dashboard</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/home.css" />
-  <link rel="stylesheet" href="CSS/dashboard.css" />
-</head>
-<body>
-  <header class="dashboard-topbar">
-    <a class="dashboard-brand" href="index.html">
-      <div class="brand-icon">⌂</div>
-      <span>ServeEase</span>
-    </a>
-
-    <div class="dashboard-search">
-      <input type="text" placeholder="Search for services..." />
-    </div>
-
-    <div class="dashboard-topbar-actions">
-      <button class="icon-btn" type="button" id="customerNotificationBtn">🔔</button>
-      <div class="profile-menu-wrap">
-        <button class="profile-btn" type="button" id="customerProfileBtn">👤</button>
-        <div class="profile-dropdown hidden" id="customerProfileDropdown">
-          <a href="customer-profile.html">My Profile</a>
-          <a href="index.html">Go to Home</a>
-          <button type="button" id="customerLogoutBtn">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="dashboard-page">
-    <div class="container">
-      <div class="breadcrumb-row">
-        <a href="index.html">Home</a> &nbsp;›&nbsp; <strong>Customer Dashboard</strong>
-      </div>
-
-      <section class="dashboard-hero">
-        <div>
-          <h1 id="customerWelcome">Welcome back!</h1>
-          <p>Manage your bookings, payments, and support requests from one place.</p>
-        </div>
-      </section>
-
-      <section class="dashboard-actions-grid">
-        <a class="feature-card" href="index.html">
-          <div class="feature-icon blue">🛎</div>
-          <h3>Book a Service</h3>
-          <p>Browse services and book professionals instantly.</p>
-        </a>
-
-        <a class="feature-card" href="my-bookings.html">
-          <div class="feature-icon green">📅</div>
-          <h3>View My Bookings</h3>
-          <p>Track upcoming and past service bookings.</p>
-        </a>
-
-        <a class="feature-card" href="payment-history.html">
-          <div class="feature-icon orange">💳</div>
-          <h3>Payment History</h3>
-          <p>See all your service payments and transaction records.</p>
-        </a>
-
-        <a class="feature-card" href="customer-support-center.html">
-          <div class="feature-icon purple">🎧</div>
-          <h3>Contact Support</h3>
-          <p>Raise tickets and get help with issues quickly.</p>
-        </a>
-      </section>
-
-      <section class="dashboard-stats-grid" id="customerStats"></section>
-
-      <section class="dashboard-two-column">
-        <div class="panel-card">
-          <div class="panel-head">
-            <h2>Upcoming Bookings</h2>
-            <a href="my-bookings.html">View All</a>
-          </div>
-          <div id="dashboardUpcomingBookings"></div>
-        </div>
-
-        <div class="panel-card">
-          <div class="panel-head">
-            <h2>Recent Payments</h2>
-            <a href="payment-history.html">View All</a>
-          </div>
-          <div id="dashboardRecentPayments"></div>
-        </div>
-      </section>
-
-      <section class="dashboard-two-column">
-        <div class="panel-card">
-          <div class="panel-head">
-            <h2>Support Center</h2>
-            <a href="customer-support-center.html">Open Support</a>
-          </div>
-          <div id="dashboardSupportPreview"></div>
-        </div>
-
-        <div class="panel-card gradient-panel">
-          <h2>Need Immediate Help?</h2>
-          <p>Our support team is available 24/7 to assist you.</p>
-          <p>📞 +91 1800-123-4567</p>
-          <p>✉ support@serveease.com</p>
-          <a class="btn btn-light" href="customer-support-center.html">Open Support Center</a>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <div class="notification-panel hidden" id="customerNotificationPanel">
-    <div class="notification-head">
-      <h3>Notifications</h3>
-      <span class="notification-badge">2 New</span>
-    </div>
-
-    <div class="notification-item unread">
-      <p>Your booking for Kitchen Cleaning has been confirmed.</p>
-      <span>2 hours ago</span>
-    </div>
-
-    <div class="notification-item unread">
-      <p>Your service provider is arriving soon for AC Repair.</p>
-      <span>5 hours ago</span>
-    </div>
-
-    <div class="notification-item">
-      <p>Payment completed successfully for booking #BK-10234.</p>
-      <span>1 day ago</span>
-    </div>
-
-    <div class="notification-item">
-      <p>Your support ticket #T-5678 has been resolved.</p>
-      <span>2 days ago</span>
-    </div>
-
-    <button class="view-notifications-btn" type="button">View All Notifications</button>
-  </div>
-
-  <footer class="footer">
-    <div class="container footer-grid">
-      <div>
-        <h4>Company</h4>
-        <a href="index.html#about-us">About Us</a>
-      </div>
-      <div>
-        <h4>Support</h4>
-        <a href="customer-support-center.html">Contact Support</a>
-        <a href="my-bookings.html">Track Booking</a>
-      </div>
-      <div>
-        <h4>Legal</h4>
-        <a href="index.html#terms-and-conditions">Terms &amp; Conditions</a>
-        <a href="index.html#privacy-policy">Privacy Policy</a>
-        <a href="index.html#cancellation-policy">Cancellation Policy</a>
-      </div>
-    </div>
-    <div class="container footer-bottom-row">
-      <p>© 2026 ServeEase. All rights reserved.</p>
-      <div class="footer-socials">
-        <span>f</span>
-        <span>◎</span>
-        <span>𝕏</span>
-        <span>in</span>
-      </div>
-    </div>
-  </footer>
-
-  <script src="JavaScript/customer.js"></script>
-  <script src="JavaScript/search.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Customer Dashboard</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+</head>
+<body>
+  <header class="dashboard-topbar">
+    <a class="dashboard-brand" href="index.html">
+      <div class="brand-icon">SE</div>
+      <span>ServeEase</span>
+    </a>
+
+    <div class="dashboard-search">
+      <input type="text" placeholder="Search for services..." />
+    </div>
+
+    <div class="dashboard-topbar-actions">
+      <button class="icon-btn" type="button" id="customerNotificationBtn">🔔</button>
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="customerProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="customerProfileDropdown">
+          <a href="customer-profile.html">My Profile</a>
+          <a href="index.html">Go to Home</a>
+          <button type="button" id="customerLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="index.html">Home</a> &nbsp;›&nbsp; <strong>Customer Dashboard</strong>
+      </div>
+
+      <section class="dashboard-hero">
+        <div>
+          <h1 id="customerWelcome">Welcome back!</h1>
+          <p>Manage your bookings, payments, and support requests from one place.</p>
+        </div>
+      </section>
+
+      <section class="dashboard-actions-grid">
+        <a class="feature-card" href="index.html">
+          <div class="feature-icon blue">🗓</div>
+          <h3>Book a Service</h3>
+          <p>Browse services and book professionals instantly.</p>
+        </a>
+
+        <a class="feature-card" href="my-bookings.html">
+          <div class="feature-icon green">📋</div>
+          <h3>View My Bookings</h3>
+          <p>Track upcoming and past service bookings.</p>
+        </a>
+
+        <a class="feature-card" href="payment-history.html">
+          <div class="feature-icon orange">💲</div>
+          <h3>Payment History</h3>
+          <p>See all your service payments and transaction records.</p>
+        </a>
+
+        <a class="feature-card" href="customer-support-center.html">
+          <div class="feature-icon purple">🎧</div>
+          <h3>Contact Support</h3>
+          <p>Raise tickets and get help with issues quickly.</p>
+        </a>
+      </section>
+
+      <section class="dashboard-stats-grid" id="customerStats"></section>
+
+      <section class="dashboard-two-column">
+        <div class="panel-card">
+          <div class="panel-head">
+            <h2>Upcoming Bookings</h2>
+            <a href="my-bookings.html">View All</a>
+          </div>
+          <div id="dashboardUpcomingBookings"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <h2>Recent Payments</h2>
+            <a href="payment-history.html">View All</a>
+          </div>
+          <div id="dashboardRecentPayments"></div>
+        </div>
+      </section>
+
+      <section class="dashboard-two-column">
+        <div class="panel-card">
+          <div class="panel-head">
+            <h2>Support Center</h2>
+            <a href="customer-support-center.html">Open Support</a>
+          </div>
+          <div id="dashboardSupportPreview"></div>
+        </div>
+
+        <div class="panel-card gradient-panel">
+          <h2>Need Immediate Help?</h2>
+          <p>Our support team is available 24/7 to assist you.</p>
+          <p>📞 +91 1800-123-4567</p>
+          <p>📧 support@serveease.com</p>
+          <a class="btn btn-light" href="customer-support-center.html">Open Support Center</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="notification-panel hidden" id="customerNotificationPanel">
+    <div class="notification-head">
+      <h3>Notifications</h3>
+      <span class="notification-badge">2 New</span>
+    </div>
+
+    <div class="notification-item unread">
+      <p>Your booking for Kitchen Cleaning has been confirmed.</p>
+      <span>2 hours ago</span>
+    </div>
+
+    <div class="notification-item unread">
+      <p>Your service provider is arriving soon for AC Repair.</p>
+      <span>5 hours ago</span>
+    </div>
+
+    <div class="notification-item">
+      <p>Payment completed successfully for booking #BK-10234.</p>
+      <span>1 day ago</span>
+    </div>
+
+    <div class="notification-item">
+      <p>Your support ticket #T-5678 has been resolved.</p>
+      <span>2 days ago</span>
+    </div>
+
+    <button class="view-notifications-btn" type="button">View All Notifications</button>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <h4>Company</h4>
+        <a href="index.html#about-us">About Us</a>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="customer-support-center.html">Contact Support</a>
+        <a href="my-bookings.html">Track Booking</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="index.html#terms-and-conditions">Terms &amp; Conditions</a>
+        <a href="index.html#privacy-policy">Privacy Policy</a>
+        <a href="index.html#cancellation-policy">Cancellation Policy</a>
+      </div>
+    </div>
+    <div class="container footer-bottom-row">
+      <p>© 2026 ServeEase. All rights reserved.</p>
+      <div class="footer-socials">
+        <span>f</span>
+        <span>𝕏</span>
+        <span>𝕏</span>
+        <span>in</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="JavaScript/customer.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

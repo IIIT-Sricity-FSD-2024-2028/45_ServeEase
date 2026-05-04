@@ -525,3 +525,18 @@
   color: #667a97;
   font-size: 13px;
 }
+
+.provider-edit-input {
+  width: 100%;
+  border: 1px solid #d7e0eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: #fbfdff;
+  margin-top: 4px;
+}
+.provider-edit-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}

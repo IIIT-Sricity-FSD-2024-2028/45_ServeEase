@@ -1,115 +1,119 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Sign Up</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/auth.css" />
-</head>
-<body>
-  <main class="auth-page">
-    <div class="auth-wrapper">
-      <div class="auth-left">
-        <div class="brand auth-brand">
-          <div class="brand-icon">S</div>
-          <span>ServeEase</span>
-        </div>
-
-        <div class="auth-card auth-card-large">
-          <h1>Welcome to ServeEase</h1>
-          <p class="auth-subtitle">Create an account to continue</p>
-
-          <div class="role-tabs signup-tabs" id="signupRoleTabs">
-            <button class="role-tab active" type="button" data-role="customer">Customer</button>
-            <button class="role-tab" type="button" data-role="provider">Provider</button>
-          </div>
-
-          <form id="signupForm" novalidate>
-            <div class="form-group">
-              <input type="text" id="fullName" placeholder="Full Name" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" />
-              <small class="error" id="fullNameError"></small>
-            </div>
-
-            <div class="form-group">
-              <input type="email" id="email" placeholder="Email" />
-              <small class="error" id="emailError"></small>
-            </div>
-
-            <div class="form-group">
-              <input type="tel" id="phone" placeholder="Phone Number" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
-              <small class="error" id="phoneError"></small>
-            </div>
-
-            <div id="providerFields" class="hidden">
-              <div class="form-group">
-                <select id="serviceType" class="service-category-select">
-                  <option value="">Select Service Category</option>
-                  <option value="Home cleaning">Home cleaning</option>
-                  <option value="Carpentry">Carpentry</option>
-                  <option value="Painting">Painting</option>
-                  <option value="Salon at Home">Salon at Home</option>
-                  <option value="Plumbing">Plumbing</option>
-                  <option value="Electrician">Electrician</option>
-                  <option value="Appliance Repair / Installation">Appliance Repair / Installation</option>
-                  <option value="Pest Control">Pest Control</option>
-                </select>
-                <small class="error" id="serviceTypeError"></small>
-              </div>
-
-              <div class="form-group">
-                <input type="number" id="experience" placeholder="Experience" />
-                <small class="error" id="experienceError"></small>
-              </div>
-
-              <div class="form-group">
-                <input type="text" id="address" placeholder="Address" />
-                <small class="error" id="addressError"></small>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <input type="password" id="password" placeholder="Password" />
-              <small class="error" id="passwordError"></small>
-            </div>
-
-            <div class="form-group">
-              <input type="password" id="confirmPassword" placeholder="Confirm Password" />
-              <small class="error" id="confirmPasswordError"></small>
-            </div>
-
-            <small class="error form-error" id="signupFormError"></small>
-            <small class="success-message" id="signupSuccess"></small>
-
-            <button class="btn btn-primary btn-full" type="submit">Create an account</button>
-          </form>
-
-          <p class="auth-switch">
-            Already have an account?
-            <a href="login.html">Sign In</a>
-          </p>
-        </div>
-
-        <div class="auth-footer-links">
-          <a href="index.html#about-us">About Us</a>
-          <a href="index.html#privacy-policy">Privacy Policy</a>
-          <a href="index.html#terms-and-conditions">Terms & Conditions</a>
-          <a href="customer-support-center.html">Contact Support</a>
-          <a href="my-bookings.html">Track Booking</a>
-        </div>
-      </div>
-
-      <div class="auth-right">
-        <div class="promo-image">
-          <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=80" alt="ServeEase service" />
-        </div>
-        <h2>Book Trusted Home Services Easily</h2>
-        <p>Connect with verified professionals for your home service needs.</p>
-      </div>
-    </div>
-  </main>
-
-  <script src="JavaScript/mockdata.js"></script>
-  <script src="JavaScript/auth.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Sign Up</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/auth.css" />
+</head>
+<body>
+  <main class="auth-page">
+    <div class="auth-wrapper">
+      <div class="auth-left">
+        <div class="brand auth-brand">
+          <div class="brand-icon">SE</div>
+          <span>ServeEase</span>
+        </div>
+
+        <div class="auth-card auth-card-large">
+          <h1>Welcome to ServeEase</h1>
+          <p class="auth-subtitle">Create an account to continue</p>
+
+          <div class="role-tabs signup-tabs" id="signupRoleTabs">
+            <button class="role-tab active" type="button" data-role="customer">Customer</button>
+            <button class="role-tab" type="button" data-role="provider">Provider</button>
+          </div>
+
+          <form id="signupForm" novalidate>
+            <div class="form-group">
+              <input type="text" id="fullName" placeholder="Full Name" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" />
+              <small class="error" id="fullNameError"></small>
+            </div>
+
+            <div class="form-group">
+              <input type="email" id="email" placeholder="Email" />
+              <small class="error" id="emailError"></small>
+            </div>
+
+            <div class="form-group">
+              <input type="tel" id="phone" placeholder="Phone Number" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+              <small class="error" id="phoneError"></small>
+            </div>
+
+            <div id="providerFields" class="hidden">
+              <div class="form-group">
+                <input type="text" id="organisationName" placeholder="Organisation Name" />
+                <small class="error" id="organisationNameError"></small>
+              </div>
+              <div class="form-group">
+                <select id="serviceType" class="service-category-select">
+                  <option value="">Select Service Category</option>
+                  <option value="Home cleaning">Home cleaning</option>
+                  <option value="Carpentry">Carpentry</option>
+                  <option value="Painting">Painting</option>
+                  <option value="Salon at Home">Salon at Home</option>
+                  <option value="Plumbing">Plumbing</option>
+                  <option value="Electrician">Electrician</option>
+                  <option value="Appliance Repair / Installation">Appliance Repair / Installation</option>
+                  <option value="Pest Control">Pest Control</option>
+                </select>
+                <small class="error" id="serviceTypeError"></small>
+              </div>
+
+              <div class="form-group">
+                <input type="number" id="experience" placeholder="Experience" />
+                <small class="error" id="experienceError"></small>
+              </div>
+
+              <div class="form-group">
+                <input type="text" id="address" placeholder="Address" />
+                <small class="error" id="addressError"></small>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <input type="password" id="password" placeholder="Password" />
+              <small class="error" id="passwordError"></small>
+            </div>
+
+            <div class="form-group">
+              <input type="password" id="confirmPassword" placeholder="Confirm Password" />
+              <small class="error" id="confirmPasswordError"></small>
+            </div>
+
+            <small class="error form-error" id="signupFormError"></small>
+            <small class="success-message" id="signupSuccess"></small>
+
+            <button class="btn btn-primary btn-full" type="submit">Create an account</button>
+          </form>
+
+          <p class="auth-switch">
+            Already have an account?
+            <a href="login.html">Sign In</a>
+          </p>
+        </div>
+
+        <div class="auth-footer-links">
+          <a href="index.html#about-us">About Us</a>
+          <a href="index.html#privacy-policy">Privacy Policy</a>
+          <a href="index.html#terms-and-conditions">Terms & Conditions</a>
+          <a href="customer-support-center.html">Contact Support</a>
+          <a href="my-bookings.html">Track Booking</a>
+        </div>
+      </div>
+
+      <div class="auth-right">
+        <div class="promo-image">
+          <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=80" alt="ServeEase service" />
+        </div>
+        <h2>Book Trusted Home Services Easily</h2>
+        <p>Connect with verified professionals for your home service needs.</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="JavaScript/mockdata.js"></script>
+  <script src="JavaScript/auth.js"></script>
+</body>
+</html>

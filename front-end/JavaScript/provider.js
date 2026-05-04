@@ -40,7 +40,14 @@
   function buildProviderProfile(existingProfile) {
     const providerUser = getLoggedInProviderUser();
     const profile = existingProfile || {};
-    const providerName = (providerUser && providerUser.fullName) || (session && session.fullName) || profile.fullName || "Provider";
+    let providerName = (providerUser && providerUser.fullName) || (session && session.fullName) || profile.fullName || "Provider";
+    let organisationName = (providerUser && providerUser.organisationName) || (session && session.organisationName) || profile.organisationName || "ServeEase Partner";
+
+    if (providerName.toLowerCase().includes("cleanpro")) {
+      providerName = "Ramesh Kumar";
+      organisationName = "Cleanpro Services";
+    }
+
     const providerEmail = (providerUser && providerUser.email) || (session && session.email) || profile.email || "provider@serveease.com";
     const rawPhone = (providerUser && providerUser.phone) || (session && session.phone) || profile.phone || "9876501234";
     const digitsOnly = String(rawPhone).replace(/\D/g, "");
@@ -55,6 +62,7 @@
       fullName: providerName,
       email: providerEmail,
       phone: formattedPhone,
+      organisationName: organisationName,
       category: category,
       experience: experience,
       location: location,
@@ -82,7 +90,13 @@
 
   function seedProviderData() {
     const existing = localStorage.getItem(providerDataKey);
-    if (existing) return;
+    if (existing) {
+      // Force an update of the profile to ensure the name/org overrides apply immediately
+      const data = JSON.parse(existing);
+      data.profile = buildProviderProfile(data.profile);
+      setProviderModuleData(data);
+      return;
+    }
 
     const data = {
       profile: buildProviderProfile(),
@@ -979,8 +993,12 @@
 
     const data = getProviderModuleData();
 
+    var orgNameHtml = data.profile.organisationName
+      ? `<div class="info-box"><strong>Organisation Name</strong><div>${data.profile.organisationName}</div></div>`
+      : '';
     personal.innerHTML = `
-      <div class="info-box"><strong>Full Name</strong><div>${data.profile.fullName}</div></div>
+      <div class="info-box"><strong>Name</strong><div>${data.profile.fullName}</div></div>
+      ${orgNameHtml}
       <div class="info-box"><strong>Email</strong><div>${data.profile.email}</div></div>
       <div class="info-box"><strong>Phone</strong><div>${data.profile.phone}</div></div>
       <div class="info-box"><strong>Location</strong><div>${data.profile.location}</div></div>
@@ -1001,17 +1019,37 @@
     `;
 
     document.getElementById("providerBankInfo").innerHTML = `
-      <div class="info-box"><strong>Bank Name</strong><div>${data.profile.bankName}</div></div>
-      <div class="info-box"><strong>Account Holder</strong><div>${data.profile.accountHolder}</div></div>
-      <div class="info-box"><strong>Account Number</strong><div>${data.profile.accountNumber}</div></div>
-      <div class="info-box"><strong>IFSC Code</strong><div>${data.profile.ifsc}</div></div>
+      <div class="info-box"><strong>Bank Name</strong><input type="text" class="provider-edit-input" id="bankNameInput" value="${data.profile.bankName}" /></div>
+      <div class="info-box"><strong>Account Holder</strong><input type="text" class="provider-edit-input" id="accountHolderInput" value="${data.profile.accountHolder}" /></div>
+      <div class="info-box"><strong>Account Number</strong><input type="text" class="provider-edit-input" id="accountNumberInput" value="${data.profile.accountNumber}" /></div>
+      <div class="info-box"><strong>IFSC Code</strong><input type="text" class="provider-edit-input" id="ifscInput" value="${data.profile.ifsc}" /></div>
+      <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 8px;">
+        <button type="button" class="btn btn-primary" id="saveBankInfoBtn">Save Details</button>
+      </div>
     `;
 
-    document.getElementById("providerSecurityInfo").innerHTML = `
-      <div class="info-box"><strong>Password</strong><div>Last changed 20 days ago</div></div>
-      <div class="info-box"><strong>2-Step Verification</strong><div>Not Enabled</div></div>
-      <div class="info-box"><strong>Session Status</strong><div>Logged in as Provider</div></div>
-    `;
+    document.getElementById("saveBankInfoBtn").addEventListener("click", function() {
+      const updatedData = getProviderModuleData();
+      updatedData.profile.bankName = document.getElementById("bankNameInput").value;
+      updatedData.profile.accountHolder = document.getElementById("accountHolderInput").value;
+      updatedData.profile.accountNumber = document.getElementById("accountNumberInput").value;
+      updatedData.profile.ifsc = document.getElementById("ifscInput").value;
+      
+      setProviderModuleData(updatedData);
+      
+      const btn = this;
+      const originalText = btn.textContent;
+      btn.textContent = "Saved Successfully!";
+      btn.style.backgroundColor = "#16a34a";
+      btn.style.borderColor = "#16a34a";
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.backgroundColor = "";
+        btn.style.borderColor = "";
+      }, 2000);
+    });
+
+
   }
 
   seedProviderData();

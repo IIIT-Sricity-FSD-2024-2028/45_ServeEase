@@ -1,129 +1,129 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Payment History</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/home.css" />
-  <link rel="stylesheet" href="CSS/dashboard.css" />
-</head>
-<body>
-  <header class="dashboard-topbar">
-    <a class="dashboard-brand" href="index.html">
-      <div class="brand-icon">⌂</div>
-      <span>ServeEase</span>
-    </a>
-    <div class="dashboard-search">
-      <input type="text" placeholder="Search for services..." />
-    </div>
-    <div class="dashboard-topbar-actions">
-      <button class="icon-btn" type="button" id="customerNotificationBtn">🔔</button>
-      <div class="profile-menu-wrap">
-        <button class="profile-btn" type="button" id="customerProfileBtn">👤</button>
-        <div class="profile-dropdown hidden" id="customerProfileDropdown">
-          <a href="customer-profile.html">My Profile</a>
-          <a href="customer-dashboard.html">Go to Dashboard</a>
-          <button type="button" id="customerLogoutBtn">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="dashboard-page">
-    <div class="container">
-      <div class="breadcrumb-row">
-        <a href="index.html">Home</a> &nbsp;›&nbsp;
-        <a href="customer-dashboard.html">Customer Dashboard</a> &nbsp;›&nbsp;
-        <strong>Payment History</strong>
-      </div>
-
-      <section class="page-title-block">
-        <h1>Payment History</h1>
-        <p>View all your service payment transactions.</p>
-      </section>
-
-      <section class="dashboard-stats-grid" id="paymentSummaryCards"></section>
-
-      <section class="table-section">
-        <h2 class="section-title-left">Transaction History</h2>
-        <div class="table-card">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Transaction ID</th>
-                <th>Booking Reference</th>
-                <th>Service Name</th>
-                <th>Service Provider</th>
-                <th>Payment Method</th>
-                <th>Amount Paid</th>
-                <th>Transaction Date</th>
-                <th>Payment Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="paymentHistoryTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <div class="modal-backdrop hidden" id="paymentModalBackdrop">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h2>Payment Details</h2>
-        <button type="button" class="close-modal-btn" id="closePaymentModal">×</button>
-      </div>
-      <div id="paymentModalContent"></div>
-    </div>
-  </div>
-
-  <div class="notification-panel hidden" id="customerNotificationPanel">
-    <div class="notification-head">
-      <h3>Notifications</h3>
-      <span class="notification-badge">2 New</span>
-    </div>
-
-    <div class="notification-item unread">
-      <p>Your booking for Kitchen Cleaning has been confirmed.</p>
-      <span>2 hours ago</span>
-    </div>
-
-    <div class="notification-item unread">
-      <p>Your service provider is arriving soon for AC Repair.</p>
-      <span>5 hours ago</span>
-    </div>
-
-    <div class="notification-item">
-      <p>Payment completed successfully for booking #BK-10234.</p>
-      <span>1 day ago</span>
-    </div>
-
-    <div class="notification-item">
-      <p>Your support ticket #T-5678 has been resolved.</p>
-      <span>2 days ago</span>
-    </div>
-
-    <button class="view-notifications-btn" type="button">View All Notifications</button>
-  </div>
-
-  <footer class="footer">
-    <div class="container footer-grid">
-      <div><h4>Company</h4><a href="index.html#about-us">About Us</a></div>
-      <div><h4>Support</h4>
-        <a href="customer-support-center.html">Contact Support</a>
-        <a href="my-bookings.html">Track Booking</a>
-      </div>
-      <div><h4>Legal</h4><a href="index.html#terms-and-conditions">Terms &amp; Conditions</a><a href="index.html#privacy-policy">Privacy Policy</a><a href="index.html#cancellation-policy">Cancellation Policy</a></div>
-    </div>
-    <div class="container footer-bottom-row">
-      <p>© 2026 ServeEase. All rights reserved.</p>
-      <div class="footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div>
-    </div>
-  </footer>
-
-  <script src="JavaScript/customer.js"></script>
-  <script src="JavaScript/search.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Payment History</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+</head>
+<body>
+  <header class="dashboard-topbar">
+    <a class="dashboard-brand" href="index.html">
+      <div class="brand-icon">SE</div>
+      <span>ServeEase</span>
+    </a>
+    <div class="dashboard-search">
+      <input type="text" placeholder="Search for services..." />
+    </div>
+    <div class="dashboard-topbar-actions">
+      <button class="icon-btn" type="button" id="customerNotificationBtn">🔔</button>
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="customerProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="customerProfileDropdown">
+          <a href="customer-profile.html">My Profile</a>
+          <a href="customer-dashboard.html">Go to Dashboard</a>
+          <button type="button" id="customerLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="index.html">Home</a> &nbsp;›&nbsp;
+        <a href="customer-dashboard.html">Customer Dashboard</a> &nbsp;›&nbsp;
+        <strong>Payment History</strong>
+      </div>
+
+      <section class="page-title-block">
+        <h1>Payment History</h1>
+        <p>View all your service payment transactions.</p>
+      </section>
+
+      <section class="dashboard-stats-grid" id="paymentSummaryCards"></section>
+
+      <section class="table-section">
+        <h2 class="section-title-left">Transaction History</h2>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Booking Reference</th>
+                <th>Service Name</th>
+                <th>Service Provider</th>
+                <th>Payment Method</th>
+                <th>Amount Paid</th>
+                <th>Transaction Date</th>
+                <th>Payment Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="paymentHistoryTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="modal-backdrop hidden" id="paymentModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Payment Details</h2>
+        <button type="button" class="close-modal-btn" id="closePaymentModal">×</button>
+      </div>
+      <div id="paymentModalContent"></div>
+    </div>
+  </div>
+
+  <div class="notification-panel hidden" id="customerNotificationPanel">
+    <div class="notification-head">
+      <h3>Notifications</h3>
+      <span class="notification-badge">2 New</span>
+    </div>
+
+    <div class="notification-item unread">
+      <p>Your booking for Kitchen Cleaning has been confirmed.</p>
+      <span>2 hours ago</span>
+    </div>
+
+    <div class="notification-item unread">
+      <p>Your service provider is arriving soon for AC Repair.</p>
+      <span>5 hours ago</span>
+    </div>
+
+    <div class="notification-item">
+      <p>Payment completed successfully for booking #BK-10234.</p>
+      <span>1 day ago</span>
+    </div>
+
+    <div class="notification-item">
+      <p>Your support ticket #T-5678 has been resolved.</p>
+      <span>2 days ago</span>
+    </div>
+
+    <button class="view-notifications-btn" type="button">View All Notifications</button>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div><h4>Company</h4><a href="index.html#about-us">About Us</a></div>
+      <div><h4>Support</h4>
+        <a href="customer-support-center.html">Contact Support</a>
+        <a href="my-bookings.html">Track Booking</a>
+      </div>
+      <div><h4>Legal</h4><a href="index.html#terms-and-conditions">Terms &amp; Conditions</a><a href="index.html#privacy-policy">Privacy Policy</a><a href="index.html#cancellation-policy">Cancellation Policy</a></div>
+    </div>
+    <div class="container footer-bottom-row">
+      <p>© 2026 ServeEase. All rights reserved.</p>
+      <div class="footer-socials"><span>f</span><span>𝕏</span><span>in</span></div>
+    </div>
+  </footer>
+
+  <script src="JavaScript/customer.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

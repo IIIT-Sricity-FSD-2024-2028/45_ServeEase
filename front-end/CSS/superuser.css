@@ -113,6 +113,8 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  grid-column: 2;
+  grid-row: 1 / span 5;
 }
 
 .superuser-chart-wide,
@@ -211,7 +213,7 @@
 }
 
 .superuser-chart-card {
-  min-height: 300px;
+  min-height: auto;
 }
 
 .superuser-line-chart,
@@ -457,6 +459,26 @@
 .superuser-chip.danger, .superuser-chip.cancelled, .superuser-chip.blocked, .superuser-chip.escalated { background: #fde2df; color: #dd3c2f; }
 .superuser-chip.upcoming, .superuser-chip.progress, .superuser-chip.in-progress { background: #e7f0ff; color: #2662ff; }
 .superuser-chip.refunded { background: #eef1f4; color: #6b7280; }
+
+.superuser-status-filter {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #dce3ee;
+  border-radius: 8px;
+  background: #f8faff;
+  color: #12284a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  min-width: 120px;
+}
+
+.superuser-status-filter:focus {
+  border-color: #4254f4;
+  box-shadow: 0 0 0 3px rgba(66, 84, 244, 0.1);
+}
 
 .superuser-inline-action,
 .superuser-card-icon-btn {
@@ -970,4 +992,136 @@
 
 .superuser-pie-highlight {
   flex-wrap: nowrap !important;
+}
+
+/* Organisation name in pending provider approval cards */
+.superuser-provider-org {
+  color: #3c63ff;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+/* Provider name block in management table */
+.superuser-provider-name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.superuser-provider-name-block span {
+  font-weight: 600;
+  color: #13294b;
+}
+
+/* Ensure action button in provider table matches customer table */
+.superuser-table td .superuser-inline-action {
+  width: auto;
+  min-width: 70px;
+  padding: 0 10px;
+}
+
+/* Block / Activate reason field inside user modal */
+.superuser-block-reason-wrap {
+  margin-bottom: 14px;
+}
+
+.superuser-block-reason-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #22395d;
+  margin-bottom: 6px;
+}
+
+.superuser-block-reason-required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.superuser-block-reason-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d7e0ec;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  color: #11284b;
+  background: #f6f8fc;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.superuser-block-reason-textarea:focus {
+  border-color: #7e97ff;
+  background: #fff;
+}
+
+.superuser-block-reason-textarea.error-field {
+  border-color: #ef4444;
+  background: #fff8f8;
+}
+
+.superuser-block-reason-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+  min-height: 18px;
+}
+
+.superuser-block-reason-counter {
+  font-size: 12px;
+  color: #8a9ab5;
+  flex-shrink: 0;
+}
+
+/* Read-only "Blocked Reason" display card (shown when activating a blocked user) */
+.superuser-block-reason-display-card {
+  background: #fff1f0;
+  border: 1px solid #f7b4ad;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #7a1a14;
+  line-height: 1.55;
+  margin-top: 6px;
+  word-break: break-word;
+}
+
+/* Interactive Chart Tooltips */
+.superuser-chart-tooltip {
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  font-size: 13px;
+  font-weight: 700;
+  fill: #11284b;
+  transform: translateY(4px);
+}
+
+.superuser-chart-point {
+  cursor: pointer;
+}
+.superuser-chart-point:hover circle {
+  r: 7;
+  fill: #1a40c4;
+}
+.superuser-chart-point:hover .superuser-chart-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.superuser-chart-bar {
+  cursor: pointer;
+}
+.superuser-chart-bar:hover rect {
+  fill: #7344d9;
+}
+.superuser-chart-bar:hover .superuser-chart-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }

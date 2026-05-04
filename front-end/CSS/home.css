@@ -409,3 +409,44 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── City Selector ──────────────────────────────────────── */
+.city-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f4f7fd;
+  border: 1px solid #dce5f0;
+  border-radius: 10px;
+  padding: 0 12px;
+  height: 42px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.city-selector-wrap:focus-within {
+  border-color: #4254f4;
+  box-shadow: 0 0 0 3px rgba(66, 84, 244, 0.1);
+}
+
+.city-pin-icon {
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.city-selector {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #12284a;
+  outline: none;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.city-selector-slot {
+  display: flex;
+  align-items: center;
+}

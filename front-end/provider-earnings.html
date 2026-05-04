@@ -1,76 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Earnings & Payments</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/home.css" />
-  <link rel="stylesheet" href="CSS/dashboard.css" />
-  <link rel="stylesheet" href="CSS/provider.css" />
-</head>
-<body>
-  <header class="dashboard-topbar provider-topbar">
-    <div class="dashboard-brand">
-      <div class="brand-icon">⌂</div>
-      <span>ServeEase</span>
-    </div>
-    <div class="dashboard-search">
-      <input type="text" placeholder="Search transactions..." />
-    </div>
-    <div class="dashboard-topbar-actions">
-      <div class="profile-menu-wrap">
-        <button class="profile-btn" type="button" id="providerProfileBtn">👤</button>
-        <div class="profile-dropdown hidden" id="providerProfileDropdown">
-          <a href="provider-account.html">My Profile</a>
-          <a href="provider-dashboard.html">Go to Dashboard</a>
-          <button type="button" id="providerLogoutBtn">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="dashboard-page provider-page">
-    <div class="container">
-      <div class="breadcrumb-row">
-        <a href="provider-dashboard.html">Provider Dashboard</a> &nbsp;›&nbsp;
-        <strong>Earnings & Payments</strong>
-      </div>
-
-      <section class="page-title-block provider-page-title">
-        <h1>Earnings & Payments</h1>
-        <p>Track total earnings, pending payouts, and payment transaction history.</p>
-      </section>
-
-      <section class="dashboard-stats-grid" id="providerEarningStats"></section>
-
-      <section class="panel-card">
-        <div class="panel-head">
-          <h2>Payment Transaction History</h2>
-        </div>
-        <div class="table-card">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Transaction ID</th>
-                <th>Booking Reference</th>
-                <th>Service Name</th>
-                <th>Customer</th>
-                <th>Payment Method</th>
-                <th>Amount</th>
-                <th>Service Date</th>
-                <th>Payment Date</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="providerTransactionsTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <script src="JavaScript/provider.js"></script>
-  <script src="JavaScript/search.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Earnings & Payments</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/provider.css" />
+</head>
+<body>
+  <header class="dashboard-topbar provider-topbar">
+    <div class="dashboard-brand">
+      <div class="brand-icon">SE</div>
+      <span>ServeEase</span>
+    </div>
+    <div class="dashboard-search">
+      <input type="text" placeholder="Search transactions..." />
+    </div>
+    <div class="dashboard-topbar-actions">
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="providerProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="providerProfileDropdown">
+          <a href="provider-account.html">My Profile</a>
+          <a href="provider-dashboard.html">Go to Dashboard</a>
+          <button type="button" id="providerLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page provider-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="provider-dashboard.html">Provider Dashboard</a> &nbsp;›&nbsp;
+        <strong>Earnings & Payments</strong>
+      </div>
+
+      <section class="page-title-block provider-page-title">
+        <h1>Earnings & Payments</h1>
+        <p>Track total earnings, pending payouts, and payment transaction history.</p>
+      </section>
+
+      <section class="dashboard-stats-grid" id="providerEarningStats"></section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <h2>Payment Transaction History</h2>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Booking Reference</th>
+                <th>Service Name</th>
+                <th>Customer</th>
+                <th>Payment Method</th>
+                <th>Amount</th>
+                <th>Service Date</th>
+                <th>Payment Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="providerTransactionsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="JavaScript/provider.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

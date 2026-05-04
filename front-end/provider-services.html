@@ -1,108 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Manage Services & Availability</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/home.css" />
-  <link rel="stylesheet" href="CSS/dashboard.css" />
-  <link rel="stylesheet" href="CSS/provider.css" />
-</head>
-<body>
-  <header class="dashboard-topbar provider-topbar">
-    <div class="dashboard-brand">
-      <div class="brand-icon">⌂</div>
-      <span>ServeEase</span>
-    </div>
-    <div class="dashboard-search">
-      <input type="text" placeholder="Search services..." />
-    </div>
-    <div class="dashboard-topbar-actions">
-      <div class="profile-menu-wrap">
-        <button class="profile-btn" type="button" id="providerProfileBtn">👤</button>
-        <div class="profile-dropdown hidden" id="providerProfileDropdown">
-          <a href="provider-account.html">My Profile</a>
-          <a href="provider-dashboard.html">Go to Dashboard</a>
-          <button type="button" id="providerLogoutBtn">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="dashboard-page provider-page">
-    <div class="container">
-      <div class="breadcrumb-row">
-        <a href="provider-dashboard.html">Provider Dashboard</a> &nbsp;›&nbsp;
-        <strong>Manage Services & Availability</strong>
-      </div>
-
-      <section class="page-title-block provider-page-title">
-        <h1>Manage Services</h1>
-        <p>Manage your service listings, activation status, and availability slots.</p>
-      </section>
-
-      <section class="provider-services-layout">
-        <div class="panel-card">
-          <div class="panel-head">
-            <h2>Your Services</h2>
-            <button class="btn btn-primary" type="button" id="openAddServiceModalBtn">+ Add New Service</button>
-          </div>
-          <div class="provider-service-grid" id="providerServiceGrid"></div>
-        </div>
-
-        <div class="panel-card">
-          <div class="panel-head">
-            <h2>Availability Management</h2>
-          </div>
-          <div id="providerAvailabilityPanel"></div>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <div class="modal-backdrop hidden" id="providerServiceModalBackdrop">
-    <div class="modal-card provider-modal-card">
-      <div class="modal-head">
-        <h2 id="providerServiceModalTitle">Add New Service</h2>
-        <button type="button" class="close-modal-btn" id="closeProviderServiceModalBtn">×</button>
-      </div>
-      <form id="providerServiceForm" class="provider-modal-form">
-        <input type="hidden" id="providerServiceEditId" />
-        <label>Service Name</label>
-        <input type="text" id="providerServiceName" placeholder="Enter service name" />
-
-        <label>Service Category</label>
-        <input type="text" id="providerServiceCategory" placeholder="Enter category" />
-
-        <label>Service Description</label>
-        <textarea id="providerServiceDescription" placeholder="Enter service description"></textarea>
-
-        <div class="two-col-form">
-          <div>
-            <label>Price (₹)</label>
-            <input type="number" id="providerServicePrice" placeholder="799" />
-          </div>
-          <div>
-            <label>Service Duration</label>
-            <input type="text" id="providerServiceDuration" placeholder="2 hours" />
-          </div>
-        </div>
-
-        <label>Service Location</label>
-        <input type="text" id="providerServiceLocation" placeholder="Bangalore" />
-
-        <small class="error" id="providerServiceError"></small>
-
-        <div class="provider-modal-actions">
-          <button class="btn btn-primary" type="submit">Save Changes</button>
-          <button class="secondary-btn" type="button" id="cancelProviderServiceModalBtn">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script src="JavaScript/provider.js"></script>
-  <script src="JavaScript/search.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Manage Services & Availability</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/provider.css" />
+</head>
+<body>
+  <header class="dashboard-topbar provider-topbar">
+    <div class="dashboard-brand">
+      <div class="brand-icon">SE</div>
+      <span>ServeEase</span>
+    </div>
+    <div class="dashboard-search">
+      <input type="text" placeholder="Search services..." />
+    </div>
+    <div class="dashboard-topbar-actions">
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="providerProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="providerProfileDropdown">
+          <a href="provider-account.html">My Profile</a>
+          <a href="provider-dashboard.html">Go to Dashboard</a>
+          <button type="button" id="providerLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page provider-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="provider-dashboard.html">Provider Dashboard</a> &nbsp;›&nbsp;
+        <strong>Manage Services & Availability</strong>
+      </div>
+
+      <section class="page-title-block provider-page-title">
+        <h1>Manage Services</h1>
+        <p>Manage your service listings, activation status, and availability slots.</p>
+      </section>
+
+      <section class="provider-services-layout">
+        <div class="panel-card">
+          <div class="panel-head">
+            <h2>Your Services</h2>
+            <button class="btn btn-primary" type="button" id="openAddServiceModalBtn">+ Add New Service</button>
+          </div>
+          <div class="provider-service-grid" id="providerServiceGrid"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <h2>Availability Management</h2>
+          </div>
+          <div id="providerAvailabilityPanel"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="modal-backdrop hidden" id="providerServiceModalBackdrop">
+    <div class="modal-card provider-modal-card">
+      <div class="modal-head">
+        <h2 id="providerServiceModalTitle">Add New Service</h2>
+        <button type="button" class="close-modal-btn" id="closeProviderServiceModalBtn">×</button>
+      </div>
+      <form id="providerServiceForm" class="provider-modal-form">
+        <input type="hidden" id="providerServiceEditId" />
+        <label>Service Name</label>
+        <input type="text" id="providerServiceName" placeholder="Enter service name" />
+
+        <label>Service Category</label>
+        <input type="text" id="providerServiceCategory" placeholder="Enter category" />
+
+        <label>Service Description</label>
+        <textarea id="providerServiceDescription" placeholder="Enter service description"></textarea>
+
+        <div class="two-col-form">
+          <div>
+            <label>Price (₹)</label>
+            <input type="number" id="providerServicePrice" placeholder="799" />
+          </div>
+          <div>
+            <label>Service Duration</label>
+            <input type="text" id="providerServiceDuration" placeholder="2 hours" />
+          </div>
+        </div>
+
+        <label>Service Location</label>
+        <input type="text" id="providerServiceLocation" placeholder="Bangalore" />
+
+        <small class="error" id="providerServiceError"></small>
+
+        <div class="provider-modal-actions">
+          <button class="btn btn-primary" type="submit">Save Changes</button>
+          <button class="secondary-btn" type="button" id="cancelProviderServiceModalBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="JavaScript/provider.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

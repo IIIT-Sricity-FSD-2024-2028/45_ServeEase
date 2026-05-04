@@ -1,173 +1,183 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Superuser Dashboard</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/home.css" />
-  <link rel="stylesheet" href="CSS/dashboard.css" />
-  <link rel="stylesheet" href="CSS/superuser.css" />
-</head>
-<body>
-  <header class="dashboard-topbar superuser-topbar">
-    <div class="dashboard-brand">
-      <div class="brand-icon">SE</div>
-      <span>ServeEase</span>
-    </div>
-    <div class="dashboard-search">
-      <input type="text" id="superuserGlobalSearch" placeholder="Search users, providers, or bookings..." />
-    </div>
-    <div class="dashboard-topbar-actions">
-      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" type="button" aria-label="Notifications">🔔<span class="superuser-dot"></span></button>
-      <div class="profile-menu-wrap">
-        <button class="profile-btn" type="button" id="superuserProfileBtn" aria-label="Profile">👤</button>
-        <div class="profile-dropdown hidden" id="superuserProfileDropdown">
-          <div class="support-profile-card superuser-profile-card">
-            <strong id="superuserHeaderName">Superuser</strong>
-            <span>Superuser</span>
-          </div>
-          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
-          <button type="button" id="superuserLogoutBtn">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="dashboard-page superuser-page">
-    <div class="container">
-      <div class="breadcrumb-row">
-        <strong>Superuser Dashboard</strong>
-      </div>
-
-      <section class="dashboard-hero superuser-hero">
-        <h1>Welcome, Superuser</h1>
-        <p>Monitor platform performance and manage system operations.</p>
-      </section>
-
-      <section class="panel-card superuser-quick-actions">
-        <div class="panel-head">
-          <h2>Quick Actions</h2>
-        </div>
-        <div class="superuser-action-grid">
-          <a class="superuser-action-btn" href="superuser-management.html">👥 Manage Users</a>
-          <a class="superuser-action-btn" href="superuser-service-categories.html">⚙ Service Categories</a>
-          <a class="superuser-action-btn" href="superuser-bookings.html">▣ Monitor Bookings</a>
-          <a class="superuser-action-btn" href="superuser-escalated-tickets.html">⚠ Escalated Tickets</a>
-        </div>
-      </section>
-
-      <section class="dashboard-stats-grid superuser-stats-grid" id="superuserStatsGrid"></section>
-
-      <section class="superuser-dashboard-grid">
-        <div class="panel-card superuser-chart-card superuser-chart-wide">
-          <div class="panel-head"><h2>Monthly Bookings Trend</h2></div>
-          <div class="superuser-line-chart" id="superuserLineChart"></div>
-          <div class="superuser-chart-legend">⤳ Bookings</div>
-        </div>
-
-        <aside class="superuser-sidebar-stack">
-          <section class="panel-card superuser-notification-card">
-            <div class="panel-head"><h2>Notifications</h2><span class="support-notification-chip" id="superuserNewBadge">0 New</span></div>
-            <div id="superuserNotificationList"></div>
-            <button class="btn btn-outline btn-full" type="button" id="superuserViewAllNotificationsBtn">View All Notifications</button>
-          </section>
-
-          <section class="panel-card superuser-system-stat-card">
-            <h2>System Statistics</h2>
-            <div class="superuser-system-stat-row"><span>Active Sessions</span><strong id="superuserActiveSessions">0</strong></div>
-            <div class="superuser-system-stat-row"><span>Avg Response Time</span><strong id="superuserResponseTime">0s</strong></div>
-            <div class="superuser-system-stat-row"><span>System Uptime</span><strong id="superuserUptime">0%</strong></div>
-          </section>
-        </aside>
-
-        <div class="panel-card superuser-chart-card superuser-chart-wide">
-          <div class="panel-head"><h2>Bookings per Service Category</h2></div>
-          <div class="superuser-bar-chart" id="superuserBarChart"></div>
-          <div class="superuser-chart-legend">■ Bookings</div>
-        </div>
-
-        <div class="panel-card superuser-chart-card superuser-chart-wide">
-          <div class="panel-head"><h2>〽 Booking Status Distribution</h2></div>
-          <div class="superuser-pie-wrap">
-            <div class="superuser-pie-chart" id="superuserPieChart"></div>
-            <div class="superuser-pie-label superuser-pie-label-green" id="pieCompletedLabel"></div>
-            <div class="superuser-pie-label superuser-pie-label-blue" id="pieProgressLabel"></div>
-            <div class="superuser-pie-label superuser-pie-label-red" id="pieCancelledLabel"></div>
-          </div>
-        </div>
-
-        <div class="panel-card superuser-activity-card superuser-chart-wide">
-          <div class="panel-head"><h2>Platform Activity Overview</h2></div>
-          <div id="superuserActivityList" class="superuser-activity-list"></div>
-        </div>
-
-        <div class="panel-card superuser-table-panel superuser-chart-wide">
-          <div class="panel-head"><h2>Recent Registrations</h2></div>
-          <div class="superuser-table-wrap">
-            <table class="superuser-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Registration Date</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="superuserRecentRegistrations"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <div class="superuser-modal-backdrop hidden" id="superuserUserModalBackdrop">
-    <div class="superuser-modal superuser-user-modal">
-      <div class="superuser-modal-header gradient-header">
-        <div>
-          <h3 id="superuserUserModalName">User Name</h3>
-          <p id="superuserUserModalRole">Customer Details</p>
-        </div>
-        <button class="superuser-modal-close" type="button" data-close-modal="superuserUserModalBackdrop">×</button>
-      </div>
-      <div class="superuser-modal-body">
-        <section>
-          <h4>Registration Information</h4>
-          <div class="superuser-detail-card"><span>Registration Date</span><strong id="superuserUserRegistrationDate"></strong></div>
-        </section>
-        <section>
-          <h4>Account Status</h4>
-          <div class="superuser-detail-card superuser-detail-row"><span>Current Status:</span><strong id="superuserUserStatusBadge"></strong></div>
-        </section>
-        <section>
-          <h4>Actions</h4>
-          <button class="btn btn-full" type="button" id="superuserUserStatusToggleBtn"></button>
-        </section>
-      </div>
-      <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="superuserUserModalBackdrop">Close</button></div>
-    </div>
-  </div>
-
-  
-
-  <footer class="footer">
-    <div class="container footer-grid">
-      <div><h4>Company</h4><a href="index.html#about-us">About Us</a></div>
-      <div><h4>Support</h4>
-        <a href="customer-support-center.html">Contact Support</a>
-        <a href="my-bookings.html">Track Booking</a>
-      </div>
-      <div><h4>Legal</h4><a href="index.html#terms-and-conditions">Terms &amp; Conditions</a><a href="index.html#privacy-policy">Privacy Policy</a><a href="index.html#cancellation-policy">Cancellation Policy</a></div>
-    </div>
-    <div class="container footer-bottom-row">
-      <p>© 2026 ServeEase. All rights reserved.</p>
-      <div class="footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div>
-    </div>
-  </footer>
-
-  <script src="JavaScript/superuser.js"></script>
-  <script src="JavaScript/search.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Superuser Dashboard</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/superuser.css" />
+</head>
+<body>
+  <header class="dashboard-topbar superuser-topbar">
+    <div class="dashboard-brand">
+      <div class="brand-icon">SE</div>
+      <span>ServeEase</span>
+    </div>
+    <div class="dashboard-search">
+      <input type="text" id="superuserGlobalSearch" placeholder="Search users, providers, or bookings..." />
+    </div>
+    <div class="dashboard-topbar-actions">
+      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn">🔔<span class="superuser-dot"></span></button>
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="superuserProfileDropdown">
+          <div class="support-profile-card superuser-profile-card">
+            <strong id="superuserHeaderName">Superuser</strong>
+            <span>Superuser</span>
+          </div>
+          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
+          <button type="button" id="superuserLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page superuser-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <strong>Superuser Dashboard</strong>
+      </div>
+
+      <section class="dashboard-hero superuser-hero">
+        <h1>Welcome, Superuser</h1>
+        <p>Monitor platform performance and manage system operations.</p>
+      </section>
+
+      <section class="panel-card superuser-quick-actions">
+        <div class="panel-head">
+          <h2>Quick Actions</h2>
+        </div>
+        <div class="superuser-action-grid">
+          <a class="superuser-action-btn" href="superuser-management.html">👥 Manage Users</a>
+          <a class="superuser-action-btn" href="superuser-service-categories.html">⚙ Service Categories</a>
+          <a class="superuser-action-btn" href="superuser-bookings.html">▣ Monitor Bookings</a>
+          <a class="superuser-action-btn" href="superuser-escalated-tickets.html">⚠ Escalated Tickets</a>
+        </div>
+      </section>
+
+      <section class="dashboard-stats-grid superuser-stats-grid" id="superuserStatsGrid"></section>
+
+      <section class="superuser-dashboard-grid">
+        <div class="panel-card superuser-chart-card superuser-chart-wide">
+          <div class="panel-head"><h2>Monthly Bookings Trend</h2></div>
+          <div class="superuser-line-chart" id="superuserLineChart"></div>
+          <div class="superuser-chart-legend">⤳ Bookings</div>
+        </div>
+
+        <aside class="superuser-sidebar-stack">
+          <section class="panel-card superuser-notification-card">
+            <div class="panel-head"><h2>Notifications</h2><span class="support-notification-chip" id="superuserNewBadge">0 New</span></div>
+            <div id="superuserNotificationList"></div>
+            <button class="btn btn-outline btn-full" type="button" id="superuserViewAllNotificationsBtn">View All Notifications</button>
+          </section>
+
+          <section class="panel-card superuser-system-stat-card">
+            <h2>System Statistics</h2>
+            <div class="superuser-system-stat-row"><span>Active Sessions</span><strong id="superuserActiveSessions">0</strong></div>
+            <div class="superuser-system-stat-row"><span>Avg Response Time</span><strong id="superuserResponseTime">0s</strong></div>
+            <div class="superuser-system-stat-row"><span>System Uptime</span><strong id="superuserUptime">0%</strong></div>
+          </section>
+
+          <div class="panel-card superuser-chart-card">
+            <div class="panel-head"><h2>〽 Booking Status Distribution</h2></div>
+            <div class="superuser-pie-wrap">
+              <div class="superuser-pie-chart" id="superuserPieChart"></div>
+              <div class="superuser-pie-label superuser-pie-label-green" id="pieCompletedLabel"></div>
+              <div class="superuser-pie-label superuser-pie-label-blue" id="pieProgressLabel"></div>
+              <div class="superuser-pie-label superuser-pie-label-red" id="pieCancelledLabel"></div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="panel-card superuser-chart-card superuser-chart-wide">
+          <div class="panel-head"><h2>Bookings per Service Category</h2></div>
+          <div class="superuser-bar-chart" id="superuserBarChart"></div>
+          <div class="superuser-chart-legend">■ Bookings</div>
+        </div>
+
+        <div class="panel-card superuser-activity-card superuser-chart-wide">
+          <div class="panel-head"><h2>📈 Platform Activity Overview</h2></div>
+          <div id="superuserActivityList" class="superuser-activity-list"></div>
+        </div>
+
+        <div class="panel-card superuser-table-panel superuser-chart-wide">
+          <div class="panel-head"><h2>Recent Registrations</h2></div>
+          <div class="superuser-table-wrap">
+            <table class="superuser-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Registration Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="superuserRecentRegistrations"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="superuser-modal-backdrop hidden" id="superuserUserModalBackdrop">
+    <div class="superuser-modal superuser-user-modal">
+      <div class="superuser-modal-header gradient-header">
+        <div>
+          <h3 id="superuserUserModalName">User Name</h3>
+          <p id="superuserUserModalRole">Customer Details</p>
+        </div>
+        <button class="superuser-modal-close" type="button" data-close-modal="superuserUserModalBackdrop">×</button>
+      </div>
+      <div class="superuser-modal-body">
+        <section>
+          <h4>Registration Information</h4>
+          <div class="superuser-detail-card"><span>Registration Date</span><strong id="superuserUserRegistrationDate"></strong></div>
+        </section>
+        <section>
+          <h4>Account Status</h4>
+          <div class="superuser-detail-card superuser-detail-row"><span>Current Status:</span><strong id="superuserUserStatusBadge"></strong></div>
+        </section>
+        <section>
+          <h4>Actions</h4>
+          <div class="superuser-block-reason-wrap hidden" id="superuserBlockReasonWrap">
+
+            <!-- Shown when BLOCKING an active user -->
+            <div id="superuserBlockReasonInputSection">
+              <label class="superuser-block-reason-label" for="superuserBlockReasonInput">Reason for Blocking <span class="superuser-block-reason-required">*</span></label>
+              <textarea
+                id="superuserBlockReasonInput"
+                class="superuser-block-reason-textarea"
+                rows="3"
+                maxlength="200"
+                placeholder="Enter a reason (max 200 characters)..."
+              ></textarea>
+              <div class="superuser-block-reason-meta">
+                <small class="error" id="superuserBlockReasonError"></small>
+                <span class="superuser-block-reason-counter" id="superuserBlockReasonCounter">0 / 200</span>
+              </div>
+            </div>
+
+            <!-- Shown when ACTIVATING a blocked user -->
+            <div id="superuserBlockReasonDisplay" class="hidden">
+              <span class="superuser-block-reason-label">Blocked Reason</span>
+              <div class="superuser-block-reason-display-card" id="superuserBlockReasonText">—</div>
+            </div>
+
+          </div>
+          <button class="btn btn-full" type="button" id="superuserUserStatusToggleBtn"></button>
+        </section>
+      </div>
+      <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="superuserUserModalBackdrop">Close</button></div>
+    </div>
+  </div>
+
+  
+
+  <script src="JavaScript/superuser.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

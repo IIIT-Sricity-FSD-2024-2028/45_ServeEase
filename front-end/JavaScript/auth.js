@@ -91,6 +91,7 @@ function setSession(user) {
     fullName: user.fullName,
     email: user.email,
     phone: user.phone || "",
+    organisationName: user.organisationName || "",
     serviceType: user.serviceType || "",
     experience: user.experience || "",
     address: user.address || ""
@@ -356,6 +357,7 @@ function setupSignupForm() {
       "fullNameError",
       "emailError",
       "phoneError",
+      "organisationNameError",
       "serviceTypeError",
       "experienceError",
       "addressError",
@@ -368,6 +370,7 @@ function setupSignupForm() {
     const fullNameInput = document.getElementById("fullName");
     const emailInput = document.getElementById("email");
     const phoneInput = document.getElementById("phone");
+    const organisationNameInput = document.getElementById("organisationName");
     const serviceTypeInput = document.getElementById("serviceType");
     const experienceInput = document.getElementById("experience");
     const addressInput = document.getElementById("address");
@@ -378,6 +381,7 @@ function setupSignupForm() {
       fullNameInput,
       emailInput,
       phoneInput,
+      organisationNameInput,
       serviceTypeInput,
       experienceInput,
       addressInput,
@@ -390,6 +394,7 @@ function setupSignupForm() {
     const fullName = fullNameInput.value.trim();
     const email = emailInput.value.trim();
     const phone = phoneInput.value.trim();
+    const organisationName = organisationNameInput ? organisationNameInput.value.trim() : "";
     const serviceType = serviceTypeInput ? serviceTypeInput.value.trim() : "";
     const experience = experienceInput ? experienceInput.value.trim() : "";
     const address = addressInput ? addressInput.value.trim() : "";
@@ -427,6 +432,14 @@ function setupSignupForm() {
     }
 
     if (role === "provider") {
+      if (!organisationName || organisationName.length < 2) {
+        showText("organisationNameError", "Enter a valid organisation name.");
+        setErrorState(organisationNameInput);
+        valid = false;
+      } else {
+        setSuccessState(organisationNameInput);
+      }
+
       if (!serviceType) {
         showText("serviceTypeError", "Service category is required.");
         setErrorState(serviceTypeInput);
@@ -500,6 +513,7 @@ function setupSignupForm() {
     };
 
     if (role === "provider") {
+      newUser.organisationName = organisationName;
       newUser.serviceType = serviceType;
       newUser.experience = Number(experience);
       newUser.address = address;

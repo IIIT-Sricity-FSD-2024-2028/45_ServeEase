@@ -92,20 +92,20 @@
       ],
       recentRegistrations: ["CUS011", "PRO013", "CUS002", "PRO001", "CUS003"],
       pendingProviders: [
-        { id: "PRO013", fullName: "Anita Verma", email: "anita.verma@email.com", phone: "+91 9876543230", category: "Salon Services", experience: 5, location: "Mumbai", registrationDate: "8 Mar 2026", approvalStatus: "Pending Approval" },
-        { id: "PRO014", fullName: "Deepak Kumar", email: "deepak.kumar@email.com", phone: "+91 9876543233", category: "Electrical", experience: 4, location: "Pune", registrationDate: "7 Mar 2026", approvalStatus: "Pending Approval" },
-        { id: "PRO015", fullName: "Manoj Singh", email: "manoj.singh@email.com", phone: "+91 9876543237", category: "Appliance Repair", experience: 5, location: "Ahmedabad", registrationDate: "10 Feb 2026", approvalStatus: "Pending Approval" },
-        { id: "PRO016", fullName: "Rekha Joshi", email: "rekha.joshi@email.com", phone: "+91 9876543240", category: "Salon Services", experience: 3, location: "Jaipur", registrationDate: "25 Feb 2026", approvalStatus: "Pending Approval" }
+        { id: "PRO013", fullName: "Anita Verma", organisationName: "Anita Beauty Studio", email: "anita.verma@email.com", phone: "+91 9876543230", category: "Salon Services", experience: 5, location: "Mumbai", registrationDate: "8 Mar 2026", approvalStatus: "Pending Approval" },
+        { id: "PRO014", fullName: "Deepak Kumar", organisationName: "Deepak Electricals", email: "deepak.kumar@email.com", phone: "+91 9876543233", category: "Electrical", experience: 4, location: "Pune", registrationDate: "7 Mar 2026", approvalStatus: "Pending Approval" },
+        { id: "PRO015", fullName: "Manoj Singh", organisationName: "Singh Appliance Care", email: "manoj.singh@email.com", phone: "+91 9876543237", category: "Appliance Repair", experience: 5, location: "Ahmedabad", registrationDate: "10 Feb 2026", approvalStatus: "Pending Approval" },
+        { id: "PRO016", fullName: "Rekha Joshi", organisationName: "Rekha Salon Services", email: "rekha.joshi@email.com", phone: "+91 9876543240", category: "Salon Services", experience: 3, location: "Jaipur", registrationDate: "25 Feb 2026", approvalStatus: "Pending Approval" }
       ],
       providers: [
-        { id: "PRO001", fullName: "Priya Sharma", email: "priya.sharma@email.com", category: "Cleaning Services", experience: 3, location: "Delhi", registrationDate: "15 Feb 2026", approvalStatus: "Active" },
-        { id: "PRO002", fullName: "Rajesh Yadav", email: "rajesh.yadav@email.com", category: "Plumbing", experience: 8, location: "Bangalore", registrationDate: "20 Jan 2026", approvalStatus: "Active" },
-        { id: "PRO003", fullName: "Lakshmi Menon", email: "lakshmi.menon@email.com", category: "Salon Services", experience: 6, location: "Chennai", registrationDate: "22 Feb 2026", approvalStatus: "Active" },
-        { id: "PRO004", fullName: "Ravi Verma", email: "ravi.verma@email.com", category: "Pest Control", experience: 7, location: "Hyderabad", registrationDate: "28 Jan 2026", approvalStatus: "Active" },
-        { id: "PRO005", fullName: "Sunita Rao", email: "sunita.rao@email.com", category: "Cleaning Services", experience: 4, location: "Kolkata", registrationDate: "5 Mar 2026", approvalStatus: "Active" },
-        { id: "PRO006", fullName: "Geeta Patel", email: "geeta.patel@email.com", category: "Painting Services", experience: 9, location: "Surat", registrationDate: "18 Jan 2026", approvalStatus: "Active" },
-        { id: "PRO007", fullName: "Anil Deshmukh", email: "anil.deshmukh@email.com", category: "Home Repair", experience: 10, location: "Nagpur", registrationDate: "1 Mar 2026", approvalStatus: "Active" },
-        { id: "PRO008", fullName: "Vijay Kumar", email: "vijay.kumar@email.com", category: "Plumbing", experience: 6, location: "Lucknow", registrationDate: "9 Mar 2026", approvalStatus: "Active" }
+        { id: "PRO001", fullName: "Priya Sharma", organisationName: "Priya Clean Solutions", email: "priya.sharma@email.com", category: "Cleaning Services", experience: 3, location: "Delhi", registrationDate: "15 Feb 2026", approvalStatus: "Active" },
+        { id: "PRO002", fullName: "Rajesh Yadav", organisationName: "Yadav Plumbing Co.", email: "rajesh.yadav@email.com", category: "Plumbing", experience: 8, location: "Bangalore", registrationDate: "20 Jan 2026", approvalStatus: "Active" },
+        { id: "PRO003", fullName: "Lakshmi Menon", organisationName: "LM Beauty Parlour", email: "lakshmi.menon@email.com", category: "Salon Services", experience: 6, location: "Chennai", registrationDate: "22 Feb 2026", approvalStatus: "Active" },
+        { id: "PRO004", fullName: "Ravi Verma", organisationName: "Verma Pest Control", email: "ravi.verma@email.com", category: "Pest Control", experience: 7, location: "Hyderabad", registrationDate: "28 Jan 2026", approvalStatus: "Active" },
+        { id: "PRO005", fullName: "Sunita Rao", organisationName: "Sunita Home Cleaners", email: "sunita.rao@email.com", category: "Cleaning Services", experience: 4, location: "Kolkata", registrationDate: "5 Mar 2026", approvalStatus: "Active" },
+        { id: "PRO006", fullName: "Geeta Patel", organisationName: "Patel Painting Works", email: "geeta.patel@email.com", category: "Painting Services", experience: 9, location: "Surat", registrationDate: "18 Jan 2026", approvalStatus: "Active" },
+        { id: "PRO007", fullName: "Anil Deshmukh", organisationName: "Deshmukh Home Repair", email: "anil.deshmukh@email.com", category: "Home Repair", experience: 10, location: "Nagpur", registrationDate: "1 Mar 2026", approvalStatus: "Active" },
+        { id: "PRO008", fullName: "Vijay Kumar", organisationName: "Kumar Plumb & Fit", email: "vijay.kumar@email.com", category: "Plumbing", experience: 6, location: "Lucknow", registrationDate: "9 Mar 2026", approvalStatus: "Active" }
       ],
       categories: [
         { id: "CAT001", name: "Cleaning Services", description: "Professional home cleaning" },
@@ -144,6 +144,39 @@
       ]
     };
     setData(data);
+  }
+
+  function migrateProviderOrgNames() {
+    var data = getData();
+    if (!data) return;
+    var orgMap = {
+      "PRO001": "Priya Clean Solutions",
+      "PRO002": "Yadav Plumbing Co.",
+      "PRO003": "LM Beauty Parlour",
+      "PRO004": "Verma Pest Control",
+      "PRO005": "Sunita Home Cleaners",
+      "PRO006": "Patel Painting Works",
+      "PRO007": "Deshmukh Home Repair",
+      "PRO008": "Kumar Plumb & Fit",
+      "PRO013": "Anita Beauty Studio",
+      "PRO014": "Deepak Electricals",
+      "PRO015": "Singh Appliance Care",
+      "PRO016": "Rekha Salon Services"
+    };
+    var changed = false;
+    (data.providers || []).forEach(function (p) {
+      if (!p.organisationName && orgMap[p.id]) {
+        p.organisationName = orgMap[p.id];
+        changed = true;
+      }
+    });
+    (data.pendingProviders || []).forEach(function (p) {
+      if (!p.organisationName && orgMap[p.id]) {
+        p.organisationName = orgMap[p.id];
+        changed = true;
+      }
+    });
+    if (changed) setData(data);
   }
 
   function byId(id) { return document.getElementById(id); }
@@ -326,7 +359,8 @@
       const y = 195 - (point / max) * drawHeight;
       path += (index === 0 ? 'M' : ' L') + x + ' ' + y;
       labelsMarkup += '<text x="' + x + '" y="215" text-anchor="middle" font-size="12" fill="#6c7b92">' + labels[index] + '</text>';
-      labelsMarkup += '<circle cx="' + x + '" cy="' + y + '" r="5" fill="#3766ff"></circle>';
+      labelsMarkup += '<g class="superuser-chart-point"><circle cx="' + x + '" cy="' + y + '" r="5" fill="#3766ff"></circle>';
+      labelsMarkup += '<text class="superuser-chart-tooltip" x="' + x + '" y="' + (y - 12) + '" text-anchor="middle">' + point + '</text></g>';
     });
     host.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none"><path d="' + path + '" fill="none" stroke="#3766ff" stroke-width="3"></path>' + labelsMarkup + '</svg>';
   }
@@ -343,7 +377,8 @@
       const barHeight = (item.bookings / max) * 175;
       const x = index * slot + (slot - 70) / 2;
       const y = 195 - barHeight;
-      body += '<rect x="' + x + '" y="' + y + '" width="70" height="' + barHeight + '" rx="4" fill="#8a5cf6"></rect>';
+      body += '<g class="superuser-chart-bar"><rect x="' + x + '" y="' + y + '" width="70" height="' + barHeight + '" rx="4" fill="#8a5cf6"></rect>';
+      body += '<text class="superuser-chart-tooltip" x="' + (x + 35) + '" y="' + (y - 10) + '" text-anchor="middle">' + item.bookings + '</text></g>';
       body += '<text x="' + (x + 35) + '" y="215" text-anchor="middle" font-size="12" fill="#6c7b92">' + item.name + '</text>';
     });
     host.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none">' + body + '</svg>';
@@ -429,6 +464,7 @@
     const data = getData();
     tbody.innerHTML = data.recentRegistrations.map(function (id) {
       const item = findRegistration(id);
+      if (!item) return ''; /* skip if user was deleted (e.g. rejected provider) */
       const role = item.id.startsWith("CUS") ? "Customer" : "Provider";
       const status = item.status || item.approvalStatus || 'Active';
       return '<tr><td>' + item.fullName + '</td><td><span class="superuser-chip ' + role.toLowerCase() + '">' + role + '</span></td><td>' + item.registrationDate + '</td><td><span class="superuser-chip ' + chipClass(status) + '">' + status + '</span></td><td><button class="superuser-inline-action" type="button" data-user-id="' + item.id + '">◉ View Details</button></td></tr>';
@@ -484,15 +520,43 @@
     setupCategorySearch();
   }
 
+  function getManagementSearchTerm() {
+    var input = byId('superuserManagementSearch');
+    return input ? input.value.trim().toLowerCase() : '';
+  }
+
+  function getCustomerStatusFilter() {
+    var sel = byId('superuserCustomerStatusFilter');
+    return sel ? sel.value : 'all';
+  }
+
+  function getProviderStatusFilter() {
+    var sel = byId('superuserProviderStatusFilter');
+    return sel ? sel.value : 'all';
+  }
+
+  function refreshManagementTables() {
+    var term = getManagementSearchTerm();
+    renderCustomers(false, term);
+    renderPendingProviders(term);
+    renderProviders(term);
+    if (byId('superuserCategoryGrid')) renderCategories(term);
+    updateManagementCounts();
+  }
+
   function setupManagementSearch() {
     const input = byId("superuserManagementSearch");
-    if (!input) return;
-    input.addEventListener("input", function () {
-      renderCustomers(false, input.value.trim().toLowerCase());
-      renderPendingProviders(input.value.trim().toLowerCase());
-      renderProviders(input.value.trim().toLowerCase());
-      if (byId('superuserCategoryGrid')) renderCategories(input.value.trim().toLowerCase());
-    });
+    if (input) {
+      input.addEventListener("input", refreshManagementTables);
+    }
+    var custFilter = byId('superuserCustomerStatusFilter');
+    if (custFilter) {
+      custFilter.addEventListener('change', refreshManagementTables);
+    }
+    var provFilter = byId('superuserProviderStatusFilter');
+    if (provFilter) {
+      provFilter.addEventListener('change', refreshManagementTables);
+    }
   }
 
   function renderCustomers(showAll, term) {
@@ -500,14 +564,18 @@
     const showMoreBtn = byId("superuserShowMoreCustomersBtn");
     if (!tbody) return;
     const data = getData();
+    var statusFilter = getCustomerStatusFilter();
     const filtered = data.customers.filter(function (item) {
+      if (statusFilter !== 'all' && item.status !== statusFilter) return false;
       const hay = [item.fullName, item.email, item.phone, item.status].join(' ').toLowerCase();
       return !term || hay.includes(term);
     });
+    var countEl = byId('superuserCustomerCount');
+    if (countEl) countEl.textContent = filtered.length;
     const rows = (showAll ? filtered : filtered.slice(0, 10)).map(function (item) {
       return '<tr><td>' + item.fullName + '</td><td>' + item.email + '</td><td>' + item.phone + '</td><td>' + item.registrationDate + '</td><td><span class="superuser-chip ' + chipClass(item.status) + '">' + item.status + '</span></td><td><button class="superuser-inline-action" type="button" data-user-id="' + item.id + '">◉</button></td></tr>';
     }).join('');
-    tbody.innerHTML = rows || '<tr><td colspan="6"><div class="superuser-empty-state">No customers found for the current search.</div></td></tr>';
+    tbody.innerHTML = rows || '<tr><td colspan="6"><div class="superuser-empty-state">No customers found for the current filter.</div></td></tr>';
     tbody.querySelectorAll('button[data-user-id]').forEach(function (button) {
       button.addEventListener('click', function () {
         openUserModal(button.dataset.userId);
@@ -528,7 +596,8 @@
       return !term || hay.includes(term);
     });
     list.innerHTML = filtered.map(function (item) {
-      return '<article class="superuser-provider-card"><div class="superuser-provider-main"><h3>' + item.fullName + ' <span class="superuser-chip pending">Pending Approval</span></h3><p>✉ ' + item.email + '</p><p>🏬 ' + item.category + '</p><p>◷ ' + item.experience + ' years Experience</p></div><div class="superuser-provider-meta"><p>☎ ' + item.phone + '</p><p>⌖ ' + item.location + '</p><p>🗓 Registered: ' + item.registrationDate + '</p></div><div class="superuser-provider-actions"><button class="superuser-inline-action" type="button" data-provider-id="' + item.id + '">◉ View Details</button><button class="btn superuser-success-btn" type="button" data-provider-approve="' + item.id + '">✓ Approve</button><button class="btn superuser-danger-outline-btn" type="button" data-provider-reject="' + item.id + '">⊘ Reject</button></div></article>';
+      var orgLine = item.organisationName ? '<p class="superuser-provider-org">🏢 ' + item.organisationName + '</p>' : '';
+      return '<article class="superuser-provider-card"><div class="superuser-provider-main"><h3>' + item.fullName + ' <span class="superuser-chip pending">Pending Approval</span></h3>' + orgLine + '<p>✉ ' + item.email + '</p><p>🏬 ' + item.category + '</p><p>◷ ' + item.experience + ' years Experience</p></div><div class="superuser-provider-meta"><p>☎ ' + item.phone + '</p><p>⌖ ' + item.location + '</p><p>🗓 Registered: ' + item.registrationDate + '</p></div><div class="superuser-provider-actions"><button class="superuser-inline-action" type="button" data-provider-id="' + item.id + '">◉ View Details</button><button class="btn superuser-success-btn" type="button" data-provider-approve="' + item.id + '">✓ Approve</button><button class="btn superuser-danger-outline-btn" type="button" data-provider-reject="' + item.id + '">⊘ Reject</button></div></article>';
     }).join('') || '<div class="superuser-empty-state">No pending providers found.</div>';
     list.querySelectorAll('[data-provider-id]').forEach(function (button) {
       button.addEventListener('click', function () { openProviderModal(button.dataset.providerId); });
@@ -545,13 +614,25 @@
     const tbody = byId("superuserProviderTableBody");
     if (!tbody) return;
     const data = getData();
+    var statusFilter = getProviderStatusFilter();
     const filtered = data.providers.filter(function (item) {
+      var providerStatus = item.status || item.approvalStatus || 'Active';
+      if (statusFilter !== 'all' && providerStatus !== statusFilter) return false;
       const hay = [item.fullName, item.email, item.category, item.location].join(' ').toLowerCase();
       return !term || hay.includes(term);
     });
+    var countEl = byId('superuserProviderCount');
+    if (countEl) countEl.textContent = filtered.length;
     tbody.innerHTML = filtered.map(function (item) {
-      return '<tr><td>' + item.fullName + '</td><td>' + item.email + '</td><td>' + item.category + '</td><td>' + item.experience + ' years</td><td>' + item.location + '</td><td>' + item.registrationDate + '</td></tr>';
-    }).join('') || '<tr><td colspan="6"><div class="superuser-empty-state">No providers found.</div></td></tr>';
+      var orgName = item.organisationName || '—';
+      var providerStatus = item.status || item.approvalStatus || 'Active';
+      return '<tr><td><div class="superuser-provider-name-block"><span>' + item.fullName + '</span></div></td><td>' + orgName + '</td><td>' + item.email + '</td><td>' + item.category + '</td><td>' + item.experience + ' years</td><td>' + item.location + '</td><td>' + item.registrationDate + '</td><td><span class="superuser-chip ' + chipClass(providerStatus) + '">' + providerStatus + '</span></td><td><button class="superuser-inline-action" type="button" data-provider-action-id="' + item.id + '">◉ View</button></td></tr>';
+    }).join('') || '<tr><td colspan="9"><div class="superuser-empty-state">No providers found for the current filter.</div></td></tr>';
+    tbody.querySelectorAll('[data-provider-action-id]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        openUserModal(button.dataset.providerActionId);
+      });
+    });
   }
 
   function renderCategories(term) {
@@ -613,28 +694,100 @@
     const user = data.customers.find(function (item) { return item.id === userId; }) || data.providers.find(function (item) { return item.id === userId; });
     if (!user) return;
     selectedUserId = user.id;
+    const isProvider = user.id.startsWith('PRO');
     byId('superuserUserModalName').textContent = user.fullName;
-    byId('superuserUserModalRole').textContent = (user.id.startsWith('CUS') ? 'Customer Details' : 'Provider Details');
+    byId('superuserUserModalRole').textContent = (isProvider ? 'Provider Details' : 'Customer Details');
     byId('superuserUserRegistrationDate').textContent = user.registrationDate;
     const badge = byId('superuserUserStatusBadge');
     badge.className = 'superuser-chip ' + chipClass(user.status || user.approvalStatus || 'Active');
     badge.textContent = user.status || user.approvalStatus || 'Active';
+
+    const isBlocked = (user.status || user.approvalStatus || '') === 'Blocked';
+    const entityLabel = isProvider ? 'Provider' : 'Customer';
+
+    /* Show reason field only when about to block (not when activating) */
+    var reasonWrap = byId('superuserBlockReasonWrap');
+    var inputSection = byId('superuserBlockReasonInputSection');
+    var displaySection = byId('superuserBlockReasonDisplay');
+    var displayText = byId('superuserBlockReasonText');
+    var reasonInput = byId('superuserBlockReasonInput');
+    var reasonError = byId('superuserBlockReasonError');
+    var reasonCounter = byId('superuserBlockReasonCounter');
+
+    if (reasonWrap && reasonInput && inputSection && displaySection && displayText) {
+      reasonWrap.classList.remove('hidden');
+      if (!isBlocked) {
+        inputSection.classList.remove('hidden');
+        displaySection.classList.add('hidden');
+        reasonInput.value = '';
+        reasonInput.classList.remove('error-field');
+        if (reasonError) reasonError.textContent = '';
+        if (reasonCounter) reasonCounter.textContent = '0 / 200';
+        /* Wire character counter once — use a flag to avoid duplicate listeners */
+        if (!reasonInput.dataset.counterBound) {
+          reasonInput.dataset.counterBound = 'true';
+          reasonInput.addEventListener('input', function () {
+            /* Only allow letters, numbers, spaces, and basic punctuation */
+            this.value = this.value.replace(/[^a-zA-Z0-9 .,!?'"()\-:;\n]/g, '');
+            var len = this.value.length;
+            if (reasonCounter) reasonCounter.textContent = len + ' / 200';
+            if (reasonError && this.value.trim().length >= 5) {
+              reasonError.textContent = '';
+              this.classList.remove('error-field');
+            }
+          });
+        }
+      } else {
+        inputSection.classList.add('hidden');
+        displaySection.classList.remove('hidden');
+        displayText.textContent = user.blockReason || 'No reason provided.';
+      }
+    }
+
     const toggleBtn = byId('superuserUserStatusToggleBtn');
-    const isBlocked = (user.status || '') === 'Blocked';
     toggleBtn.className = 'btn btn-full ' + (isBlocked ? 'superuser-success-btn' : 'superuser-danger-btn');
-    toggleBtn.textContent = isBlocked ? '◎ Activate Customer' : '⊘ Block Customer';
+    toggleBtn.textContent = isBlocked ? ('◎ Activate ' + entityLabel) : ('⊘ Block ' + entityLabel);
     toggleBtn.onclick = toggleUserStatus;
     openModal('superuserUserModalBackdrop');
   }
 
   function toggleUserStatus() {
     const data = getData();
-    const user = data.customers.find(function (item) { return item.id === selectedUserId; });
+    var user = data.customers.find(function (item) { return item.id === selectedUserId; });
+    var isProvider = false;
+    if (!user) {
+      user = data.providers.find(function (item) { return item.id === selectedUserId; });
+      isProvider = true;
+    }
     if (!user) return;
-    user.status = user.status === 'Blocked' ? 'Active' : 'Blocked';
+    var currentStatus = user.status || user.approvalStatus || 'Active';
+    var isCurrentlyBlocked = currentStatus === 'Blocked';
+    var newStatus = isCurrentlyBlocked ? 'Active' : 'Blocked';
+
+    /* Validate reason only when blocking (not activating) */
+    if (!isCurrentlyBlocked) {
+      var reasonInput = byId('superuserBlockReasonInput');
+      var reasonError = byId('superuserBlockReasonError');
+      var reason = reasonInput ? reasonInput.value.trim() : '';
+      if (!reason || reason.length < 5) {
+        if (reasonError) reasonError.textContent = 'Please enter a reason (minimum 5 characters).';
+        if (reasonInput) reasonInput.classList.add('error-field');
+        if (reasonInput) reasonInput.focus();
+        return;
+      }
+      user.blockReason = reason;
+    } else {
+      user.blockReason = '';
+    }
+
+    if (isProvider) {
+      user.approvalStatus = newStatus;
+      user.status = newStatus;
+    } else {
+      user.status = newStatus;
+    }
     setData(data);
-    renderCustomers(false, byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
-    updateManagementCounts();
+    refreshManagementTables();
     openUserModal(selectedUserId);
     renderRecentRegistrations();
   }
@@ -645,7 +798,8 @@
     if (!provider) return;
     selectedProviderId = provider.id;
     byId('superuserProviderModalName').textContent = provider.fullName;
-    byId('superuserProviderModalBody').innerHTML = '<section><h4>Provider Information</h4><div class="superuser-detail-grid"><div class="superuser-detail-field"><span>Email:</span><strong>' + provider.email + '</strong></div><div class="superuser-detail-field"><span>Phone:</span><strong>' + provider.phone + '</strong></div><div class="superuser-detail-field"><span>Category:</span><strong>' + provider.category + '</strong></div><div class="superuser-detail-field"><span>Location:</span><strong>' + provider.location + '</strong></div><div class="superuser-detail-field"><span>Experience:</span><strong>' + provider.experience + ' years</strong></div><div class="superuser-detail-field"><span>Registered:</span><strong>' + provider.registrationDate + '</strong></div></div></section>';
+    var orgInfo = provider.organisationName ? '<div class="superuser-detail-field"><span>Organisation:</span><strong>' + provider.organisationName + '</strong></div>' : '';
+    byId('superuserProviderModalBody').innerHTML = '<section><h4>Provider Information</h4><div class="superuser-detail-grid">' + orgInfo + '<div class="superuser-detail-field"><span>Email:</span><strong>' + provider.email + '</strong></div><div class="superuser-detail-field"><span>Phone:</span><strong>' + provider.phone + '</strong></div><div class="superuser-detail-field"><span>Category:</span><strong>' + provider.category + '</strong></div><div class="superuser-detail-field"><span>Location:</span><strong>' + provider.location + '</strong></div><div class="superuser-detail-field"><span>Experience:</span><strong>' + provider.experience + ' years</strong></div><div class="superuser-detail-field"><span>Registered:</span><strong>' + provider.registrationDate + '</strong></div></div></section>';
     byId('superuserApproveProviderFromModalBtn').onclick = function () { approveProvider(provider.id, true); };
     byId('superuserRejectProviderFromModalBtn').onclick = function () { rejectProvider(provider.id, true); };
     openModal('superuserProviderApprovalModalBackdrop');
@@ -809,6 +963,10 @@
     const wrapper = byId('superuserBookingSections');
     if (!wrapper) return;
     const data = getData();
+    const allProviders = (data.providers || []).concat(data.pendingProviders || []);
+    const providerMap = {};
+    allProviders.forEach(function (p) { providerMap[p.fullName] = p.organisationName; });
+
     const groups = [
       { key: 'Requested', title: 'Requested Bookings', subtitle: 'bookings awaiting provider approval', className: 'requested', icon: '◔' },
       { key: 'Upcoming', title: 'Upcoming Bookings', subtitle: 'bookings scheduled', className: 'upcoming', icon: '🕘' },
@@ -820,18 +978,21 @@
         const hay = [booking.id, booking.customer, booking.provider, booking.category, booking.serviceType].join(' ').toLowerCase();
         return booking.status === group.key && (!term || hay.includes(term));
       });
-      return '<section class="superuser-booking-section ' + group.className + '"><div class="superuser-section-header"><span>' + group.icon + '</span><div><h2>' + group.title + '</h2><p>' + items.length + ' ' + group.subtitle + '</p></div></div><div class="superuser-booking-card-list">' + (items.map(bookingCardMarkup).join('') || '<div class="superuser-empty-state">No bookings found in this section.</div>') + '</div></section>';
+      return '<section class="superuser-booking-section ' + group.className + '"><div class="superuser-section-header"><span>' + group.icon + '</span><div><h2>' + group.title + '</h2><p>' + items.length + ' ' + group.subtitle + '</p></div></div><div class="superuser-booking-card-list">' + (items.map(function (item) { return bookingCardMarkup(item, providerMap); }).join('') || '<div class="superuser-empty-state">No bookings found in this section.</div>') + '</div></section>';
     }).join('');
     wrapper.querySelectorAll('[data-booking-id]').forEach(function (button) {
       button.addEventListener('click', function () { openBookingModal(button.dataset.bookingId); });
     });
   }
 
-  function bookingCardMarkup(item) {
+  function bookingCardMarkup(item, providerMap) {
+    providerMap = providerMap || {};
+    const orgName = providerMap[item.provider];
+    const providerDisplay = orgName ? item.provider + ' (' + orgName + ')' : item.provider;
     const reasonLabel = item.status === 'Cancelled' ? 'Reason' : 'Service Time';
     const reasonValue = item.status === 'Cancelled' ? item.reason : item.serviceTime;
     const leftDateLabel = item.status === 'Completed' ? 'Completed' : 'Service Date';
-    return '<article class="superuser-booking-card"><div><h3>' + item.id + ' <span class="superuser-chip ' + chipClass(item.status) + '">' + item.status + '</span> <span class="superuser-chip ' + chipClass(item.paymentStatus) + '">' + item.paymentStatus + '</span></h3><p><strong>' + item.category + '</strong> - ' + item.serviceType + '</p><div class="superuser-booking-meta"><span>Customer: ' + item.customer + '</span><span>Provider: ' + item.provider + '</span><span>' + leftDateLabel + ': ' + item.serviceDate + '</span><span>' + reasonLabel + ': ' + reasonValue + '</span><span>Amount: ₹' + item.amount + '</span></div></div><div></div><div class="superuser-booking-action-col"><button class="superuser-inline-action" type="button" data-booking-id="' + item.id + '">◉ View Details</button></div></article>';
+    return '<article class="superuser-booking-card"><div><h3>' + item.id + ' <span class="superuser-chip ' + chipClass(item.status) + '">' + item.status + '</span> <span class="superuser-chip ' + chipClass(item.paymentStatus) + '">' + item.paymentStatus + '</span></h3><p><strong>' + item.category + '</strong> - ' + item.serviceType + '</p><div class="superuser-booking-meta"><span>Customer: ' + item.customer + '</span><span>Provider: ' + providerDisplay + '</span><span>' + leftDateLabel + ': ' + item.serviceDate + '</span><span>' + reasonLabel + ': ' + reasonValue + '</span><span>Amount: ₹' + item.amount + '</span></div></div><div></div><div class="superuser-booking-action-col"><button class="superuser-inline-action" type="button" data-booking-id="' + item.id + '">◉ View Details</button></div></article>';
   }
 
   function openBookingModal(bookingId) {
@@ -959,6 +1120,7 @@
   }
 
   seedData();
+  migrateProviderOrgNames();
   requireAccess();
   setupCommonHeader();
   setupNotificationModal();

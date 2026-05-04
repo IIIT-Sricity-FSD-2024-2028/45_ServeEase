@@ -146,9 +146,7 @@ function setupFooterLinks() {
     if (label === "privacy policy") anchor.href = "index.html#privacy-policy";
     if (label === "cancellation policy") anchor.href = "index.html#cancellation-policy";
   });
-}
-
-function initCategoryServicesPage() {
+}function initCategoryServicesPage() {
   const providerGrid = document.getElementById("providerGrid");
   if (!providerGrid) return;
 
@@ -182,25 +180,41 @@ function initCategoryServicesPage() {
     })
   ].join("");
 
+  /* ── Core rendering — uses ServeEaseLocation.getProvidersByCity() ── */
   function renderProviders() {
     const selectedService = serviceTypeFilter.value;
     const selectedPrice = Number(priceFilter.value);
 
-    const filteredProviders = data.providers.filter(function (provider) {
-      if (provider.category !== categoryId) return false;
+    /* Get city from location module (single function, no duplication) */
+    var cityId = (window.ServeEaseLocation && window.ServeEaseLocation.getSelectedCity())
+      ? window.ServeEaseLocation.getSelectedCity().id
+      : 1;
+
+    /* Use getProvidersByCity() — ready to swap for API call later */
+    var cityProviders = window.ServeEaseLocation
+      ? window.ServeEaseLocation.getProvidersByCity(cityId)
+      : (data.providers || []);
+
+    var allCategoryProviders = cityProviders.filter(function (p) {
+      return p.category === categoryId;
+    });
+
+    var filteredProviders = allCategoryProviders.filter(function (provider) {
       if (provider.startingPrice > selectedPrice) return false;
       if (selectedService !== "all" && !provider.subServices.includes(selectedService)) return false;
       return true;
     });
 
-    const totalProviders = data.providers.filter(function (provider) {
-      return provider.category === categoryId;
-    }).length;
+    var cityName = (window.ServeEaseLocation && window.ServeEaseLocation.getSelectedCity())
+      ? window.ServeEaseLocation.getSelectedCity().name
+      : 'your city';
 
-    resultsCount.textContent = `Showing ${filteredProviders.length} of ${totalProviders} providers`;
+    resultsCount.textContent = `Showing ${filteredProviders.length} of ${allCategoryProviders.length} providers in ${cityName}`;
 
     if (!filteredProviders.length) {
-      providerGrid.innerHTML = `<div class="empty-state-card">No providers found for the selected filters.</div>`;
+      providerGrid.innerHTML = allCategoryProviders.length === 0
+        ? `<div class="empty-state-card">No services available in this city yet</div>`
+        : `<div class="empty-state-card">No providers found for the selected filters.</div>`;
       return;
     }
 
@@ -234,7 +248,7 @@ function initCategoryServicesPage() {
               </div>
             </div>
 
-            <a class="btn btn-primary provider-cta" href="provider-profile.html?provider=${encodeURIComponent(provider.id)}">View Profile & Book</a>
+            <a class="btn btn-primary provider-cta" href="provider-profile.html?provider=${encodeURIComponent(provider.id)}">View Profile &amp; Book</a>
           </div>
         </div>
       `;
@@ -255,6 +269,13 @@ function initCategoryServicesPage() {
     priceValue.textContent = "₹10000";
     renderProviders();
   });
+
+  /* Re-render when city changes (no page reload) */
+  if (window.ServeEaseLocation) {
+    window.ServeEaseLocation.onCityChange(function () {
+      renderProviders();
+    });
+  }
 
   renderProviders();
 }
@@ -354,7 +375,6 @@ function initProviderProfilePage() {
           </div>
         `;
       }).join("")}
-      <button class="view-all-btn" type="button">View All ${provider.reviews} Reviews</button>
     `;
   }
 
