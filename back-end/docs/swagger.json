@@ -1,0 +1,2305 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/tasks": {
+      "get": {
+        "operationId": "TasksController_findAll",
+        "summary": "Get all tasks",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tasks returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Task"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tasks"
+        ]
+      },
+      "post": {
+        "operationId": "TasksController_create",
+        "summary": "Create a task",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
+    "/api/tasks/{id}": {
+      "get": {
+        "operationId": "TasksController_findById",
+        "summary": "Get one task by UUID",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tasks"
+        ]
+      },
+      "put": {
+        "operationId": "TasksController_updateWithPut",
+        "summary": "Replace task fields",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tasks"
+        ]
+      },
+      "patch": {
+        "operationId": "TasksController_updateWithPatch",
+        "summary": "Partially update a task",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tasks"
+        ]
+      },
+      "delete": {
+        "operationId": "TasksController_delete",
+        "summary": "Delete a task",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
+    "/api/bookings": {
+      "get": {
+        "operationId": "BookingsController_findAll",
+        "summary": "Get all bookings",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bookings returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Booking"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      },
+      "post": {
+        "operationId": "BookingsController_create",
+        "summary": "Create a booking",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Booking"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/api/bookings/{id}": {
+      "get": {
+        "operationId": "BookingsController_findById",
+        "summary": "Get one booking by UUID",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Booking"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      },
+      "put": {
+        "operationId": "BookingsController_updateWithPut",
+        "summary": "Replace booking fields",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Booking"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      },
+      "patch": {
+        "operationId": "BookingsController_updateWithPatch",
+        "summary": "Partially update a booking",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Booking"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      },
+      "delete": {
+        "operationId": "BookingsController_delete",
+        "summary": "Delete a booking",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Booking"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/api/catalog": {
+      "get": {
+        "operationId": "CatalogController_findAll",
+        "summary": "Get ServeEase service catalog",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CatalogState"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/providers/{id}": {
+      "get": {
+        "operationId": "CatalogController_findById",
+        "summary": "Get one provider from the catalog",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CatalogProvider"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      },
+      "patch": {
+        "operationId": "CatalogController_update",
+        "summary": "Update a provider in the catalog",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CatalogProvider"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      },
+      "delete": {
+        "operationId": "CatalogController_delete",
+        "summary": "Delete a provider from the catalog",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CatalogProvider"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/sync": {
+      "post": {
+        "operationId": "CatalogController_create",
+        "summary": "Sync frontend catalog into backend memory",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncCatalogDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Catalog synced successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CatalogState"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/activities": {
+      "get": {
+        "operationId": "ActivitiesController_findAll",
+        "summary": "Get frontend/backend activity logs",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activities returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Activity"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "activities"
+        ]
+      },
+      "post": {
+        "operationId": "ActivitiesController_create",
+        "summary": "Create an activity log entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateActivityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Activity logged successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "activities"
+        ]
+      }
+    },
+    "/api/activities/{id}": {
+      "get": {
+        "operationId": "ActivitiesController_findById",
+        "summary": "Get one activity by UUID",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "activities"
+        ]
+      },
+      "patch": {
+        "operationId": "ActivitiesController_update",
+        "summary": "Update an activity log entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActivityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Activity updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "activities"
+        ]
+      },
+      "delete": {
+        "operationId": "ActivitiesController_delete",
+        "summary": "Delete an activity log entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Activity"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "activities"
+        ]
+      }
+    },
+    "/api/state": {
+      "get": {
+        "operationId": "StateController_findAll",
+        "summary": "Get all frontend state entries mirrored in backend memory",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "State entries returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StateEntry"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      },
+      "post": {
+        "operationId": "StateController_create",
+        "summary": "Create or replace a frontend state entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStateEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "State entry saved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      }
+    },
+    "/api/state/{id}": {
+      "get": {
+        "operationId": "StateController_findById",
+        "summary": "Get one frontend state entry by key",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "State entry returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      },
+      "put": {
+        "operationId": "StateController_updateWithPut",
+        "summary": "Replace a frontend state entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStateEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "State entry updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      },
+      "patch": {
+        "operationId": "StateController_updateWithPatch",
+        "summary": "Partially update a frontend state entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStateEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "State entry updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      },
+      "delete": {
+        "operationId": "StateController_delete",
+        "summary": "Delete a frontend state entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "State entry deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "ServeEase API",
+    "description": "In-memory NestJS backend with CRUD, DTO validation, RBAC, and Swagger.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "role": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "role",
+        "description": "Role-based access header. Use admin for full access or user for read-only GET access."
+      }
+    },
+    "schemas": {
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "b0965962-ee6d-4990-9a54-fb43c58a54b2"
+          },
+          "title": {
+            "type": "string",
+            "example": "Confirm service booking"
+          },
+          "description": {
+            "type": "string",
+            "example": "Call the customer and confirm the selected service slot."
+          },
+          "status": {
+            "type": "string",
+            "example": "pending"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status"
+        ]
+      },
+      "CreateTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Confirm service booking"
+          },
+          "description": {
+            "type": "string",
+            "example": "Call the customer and confirm the selected service slot."
+          },
+          "status": {
+            "type": "string",
+            "example": "pending",
+            "enum": [
+              "pending",
+              "in-progress",
+              "completed"
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "status"
+        ]
+      },
+      "UpdateTaskDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Confirm service booking"
+          },
+          "description": {
+            "type": "string",
+            "example": "Call the customer and confirm the selected service slot."
+          },
+          "status": {
+            "type": "string",
+            "example": "pending",
+            "enum": [
+              "pending",
+              "in-progress",
+              "completed"
+            ]
+          }
+        }
+      },
+      "Booking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "0691fb87-3660-4eca-82d4-b56e1c09f51e"
+          },
+          "service": {
+            "type": "string",
+            "example": "Kitchen Cleaning"
+          },
+          "provider": {
+            "type": "string",
+            "example": "CleanPro Services"
+          },
+          "providerId": {
+            "type": "string",
+            "example": "cleanpro-services"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
+          "time": {
+            "type": "string",
+            "example": "10:00 AM - 12:00 PM"
+          },
+          "address": {
+            "type": "string",
+            "example": "123 MG Road, Chennai, Tamil Nadu"
+          },
+          "status": {
+            "type": "string",
+            "example": "Pending"
+          },
+          "category": {
+            "type": "string",
+            "example": "Pending"
+          },
+          "amount": {
+            "type": "number",
+            "example": 889
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Raghava Kumar"
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "+91 98765 43210"
+          },
+          "customerEmail": {
+            "type": "string",
+            "example": "customer@example.com"
+          }
+        },
+        "required": [
+          "id",
+          "service",
+          "provider",
+          "date",
+          "time",
+          "address",
+          "status",
+          "category",
+          "amount",
+          "customerName",
+          "customerPhone",
+          "customerEmail"
+        ]
+      },
+      "CreateBookingDto": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "example": "Kitchen Cleaning"
+          },
+          "provider": {
+            "type": "string",
+            "example": "CleanPro Services"
+          },
+          "providerId": {
+            "type": "string",
+            "example": "cleanpro-services"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
+          "time": {
+            "type": "string",
+            "example": "10:00 AM - 12:00 PM"
+          },
+          "address": {
+            "type": "string",
+            "example": "123 MG Road, Chennai, Tamil Nadu"
+          },
+          "amount": {
+            "type": "number",
+            "example": 889
+          },
+          "status": {
+            "type": "string",
+            "example": "Pending",
+            "enum": [
+              "Pending",
+              "Accepted",
+              "Completed",
+              "Cancelled"
+            ]
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Raghava Kumar"
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "+91 98765 43210"
+          },
+          "customerEmail": {
+            "type": "string",
+            "example": "customer@example.com"
+          }
+        },
+        "required": [
+          "service",
+          "provider",
+          "date",
+          "time",
+          "address",
+          "amount",
+          "customerName",
+          "customerPhone",
+          "customerEmail"
+        ]
+      },
+      "UpdateBookingDto": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "example": "Kitchen Cleaning"
+          },
+          "provider": {
+            "type": "string",
+            "example": "CleanPro Services"
+          },
+          "providerId": {
+            "type": "string",
+            "example": "cleanpro-services"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
+          "time": {
+            "type": "string",
+            "example": "10:00 AM - 12:00 PM"
+          },
+          "address": {
+            "type": "string",
+            "example": "123 MG Road, Chennai, Tamil Nadu"
+          },
+          "amount": {
+            "type": "number",
+            "example": 889
+          },
+          "status": {
+            "type": "string",
+            "example": "Pending",
+            "enum": [
+              "Pending",
+              "Accepted",
+              "Completed",
+              "Cancelled"
+            ]
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Raghava Kumar"
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "+91 98765 43210"
+          },
+          "customerEmail": {
+            "type": "string",
+            "example": "customer@example.com"
+          }
+        }
+      },
+      "ApiSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "CatalogCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "home-cleaning"
+          },
+          "name": {
+            "type": "string",
+            "example": "Home Cleaning"
+          },
+          "description": {
+            "type": "string",
+            "example": "Cleaning services for homes"
+          },
+          "icon": {
+            "type": "string",
+            "example": "🧹"
+          },
+          "bgImage": {
+            "type": "string",
+            "example": "assets/images/home-cleaning/clean1.jpg"
+          },
+          "subServices": {
+            "example": [
+              "Kitchen Cleaning",
+              "Bathroom Cleaning"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "subServices"
+        ]
+      },
+      "CatalogProvider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cleanpro-service"
+          },
+          "name": {
+            "type": "string",
+            "example": "CleanPro Services"
+          },
+          "category": {
+            "type": "string",
+            "example": "home-cleaning"
+          },
+          "subServices": {
+            "example": [
+              "Kitchen Cleaning",
+              "Bathroom Cleaning"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "years": {
+            "type": "number",
+            "example": 6
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.8
+          },
+          "reviews": {
+            "type": "number",
+            "example": 245
+          },
+          "distance": {
+            "type": "string",
+            "example": "2.5 km"
+          },
+          "startingPrice": {
+            "type": "number",
+            "example": 799
+          },
+          "location": {
+            "type": "string",
+            "example": "Chennai, Tamil Nadu"
+          },
+          "jobsDone": {
+            "type": "number",
+            "example": 520
+          },
+          "availableToday": {
+            "type": "boolean",
+            "example": true
+          },
+          "verified": {
+            "type": "boolean",
+            "example": true
+          },
+          "cityId": {
+            "type": "number",
+            "example": 1
+          },
+          "image": {
+            "type": "string",
+            "example": "assets/images/home-cleaning/clean1.jpg"
+          },
+          "availabilitySlots": {
+            "example": [
+              "09:00 AM - 11:00 AM"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ownerProviderId": {
+            "type": "string",
+            "example": "PRO002"
+          },
+          "ownerProviderEmail": {
+            "type": "string",
+            "example": "fresh@example.com"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "subServices",
+          "years",
+          "rating",
+          "reviews",
+          "distance",
+          "startingPrice",
+          "location",
+          "jobsDone",
+          "availableToday",
+          "verified",
+          "cityId",
+          "image"
+        ]
+      },
+      "PopularService": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Kitchen Cleaning"
+          },
+          "description": {
+            "type": "string",
+            "example": "Deep kitchen cleaning service"
+          },
+          "price": {
+            "type": "string",
+            "example": "₹799"
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.8
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "home-cleaning"
+          },
+          "image": {
+            "type": "string",
+            "example": "assets/images/home-cleaning/clean1.jpg"
+          }
+        },
+        "required": [
+          "title",
+          "categoryId"
+        ]
+      },
+      "CatalogState": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogCategory"
+            }
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogProvider"
+            }
+          },
+          "popularServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PopularService"
+            }
+          }
+        },
+        "required": [
+          "categories",
+          "providers",
+          "popularServices"
+        ]
+      },
+      "CatalogCategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "home-cleaning"
+          },
+          "name": {
+            "type": "string",
+            "example": "Home Cleaning"
+          },
+          "description": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "bgImage": {
+            "type": "string"
+          },
+          "subServices": {
+            "example": [
+              "Kitchen Cleaning",
+              "Bathroom Cleaning"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "subServices"
+        ]
+      },
+      "CatalogProviderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cleanpro-service"
+          },
+          "name": {
+            "type": "string",
+            "example": "CleanPro Services"
+          },
+          "category": {
+            "type": "string",
+            "example": "home-cleaning"
+          },
+          "subServices": {
+            "example": [
+              "Kitchen Cleaning",
+              "Bathroom Cleaning"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "years": {
+            "type": "number",
+            "example": 6
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.8
+          },
+          "reviews": {
+            "type": "number",
+            "example": 245
+          },
+          "distance": {
+            "type": "string",
+            "example": "2.5 km"
+          },
+          "startingPrice": {
+            "type": "number",
+            "example": 799
+          },
+          "location": {
+            "type": "string",
+            "example": "Chennai, Tamil Nadu"
+          },
+          "jobsDone": {
+            "type": "number",
+            "example": 520
+          },
+          "availableToday": {
+            "type": "boolean",
+            "example": true
+          },
+          "verified": {
+            "type": "boolean",
+            "example": true
+          },
+          "cityId": {
+            "type": "number",
+            "example": 1
+          },
+          "image": {
+            "type": "string",
+            "example": "assets/images/home-cleaning/clean1.jpg"
+          },
+          "availabilitySlots": {
+            "example": [
+              "09:00 AM - 11:00 AM"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ownerProviderId": {
+            "type": "string",
+            "example": "PRO002"
+          },
+          "ownerProviderEmail": {
+            "type": "string",
+            "example": "fresh@example.com"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "subServices",
+          "years",
+          "rating",
+          "reviews",
+          "distance",
+          "startingPrice",
+          "location",
+          "jobsDone",
+          "availableToday",
+          "verified",
+          "cityId",
+          "image"
+        ]
+      },
+      "PopularServiceDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Kitchen Cleaning"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "string",
+            "example": "₹799"
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.8
+          },
+          "categoryId": {
+            "type": "string",
+            "example": "home-cleaning"
+          },
+          "image": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "categoryId"
+        ]
+      },
+      "SyncCatalogDto": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogCategoryDto"
+            }
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogProviderDto"
+            }
+          },
+          "popularServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PopularServiceDto"
+            }
+          }
+        },
+        "required": [
+          "categories",
+          "providers"
+        ]
+      },
+      "UpdateProviderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cleanpro-service"
+          },
+          "name": {
+            "type": "string",
+            "example": "CleanPro Services"
+          },
+          "category": {
+            "type": "string",
+            "example": "home-cleaning"
+          },
+          "subServices": {
+            "example": [
+              "Kitchen Cleaning",
+              "Bathroom Cleaning"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "years": {
+            "type": "number",
+            "example": 6
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.8
+          },
+          "reviews": {
+            "type": "number",
+            "example": 245
+          },
+          "distance": {
+            "type": "string",
+            "example": "2.5 km"
+          },
+          "startingPrice": {
+            "type": "number",
+            "example": 799
+          },
+          "location": {
+            "type": "string",
+            "example": "Chennai, Tamil Nadu"
+          },
+          "jobsDone": {
+            "type": "number",
+            "example": 520
+          },
+          "availableToday": {
+            "type": "boolean",
+            "example": true
+          },
+          "verified": {
+            "type": "boolean",
+            "example": true
+          },
+          "cityId": {
+            "type": "number",
+            "example": 1
+          },
+          "image": {
+            "type": "string",
+            "example": "assets/images/home-cleaning/clean1.jpg"
+          },
+          "availabilitySlots": {
+            "example": [
+              "09:00 AM - 11:00 AM"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ownerProviderId": {
+            "type": "string",
+            "example": "PRO002"
+          },
+          "ownerProviderEmail": {
+            "type": "string",
+            "example": "fresh@example.com"
+          }
+        }
+      },
+      "Activity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "9f809193-3af0-4ca4-9e86-f6543f1c9b8a"
+          },
+          "action": {
+            "type": "string",
+            "example": "login_success"
+          },
+          "page": {
+            "type": "string",
+            "example": "login.html"
+          },
+          "details": {
+            "type": "string",
+            "example": "customer user@serveease.com"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-05-05T04:30:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "page",
+          "details",
+          "createdAt"
+        ]
+      },
+      "CreateActivityDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "example": "login_success"
+          },
+          "page": {
+            "type": "string",
+            "example": "login.html"
+          },
+          "details": {
+            "type": "string",
+            "example": "customer user@serveease.com"
+          }
+        },
+        "required": [
+          "action",
+          "page"
+        ]
+      },
+      "UpdateActivityDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "example": "login_success"
+          },
+          "page": {
+            "type": "string",
+            "example": "login.html"
+          },
+          "details": {
+            "type": "string",
+            "example": "customer user@serveease.com"
+          }
+        }
+      },
+      "StateEntry": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "serveEaseCustomerModuleData"
+          },
+          "value": {
+            "type": "object",
+            "example": {
+              "bookings": [],
+              "payments": [],
+              "tickets": []
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-05-05T05:20:00.000Z"
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "updatedAt"
+        ]
+      },
+      "CreateStateEntryDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "serveEaseCustomerModuleData:CUS002"
+          },
+          "value": {
+            "type": "object",
+            "example": {
+              "bookings": [],
+              "payments": [],
+              "tickets": []
+            }
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ]
+      },
+      "UpdateStateEntryDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "serveEaseCustomerModuleData:CUS002"
+          },
+          "value": {
+            "type": "object",
+            "example": {
+              "bookings": [],
+              "payments": [],
+              "tickets": []
+            }
+          }
+        }
+      }
+    }
+  }
+}
