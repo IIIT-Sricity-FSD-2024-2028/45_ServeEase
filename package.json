@@ -1,0 +1,11 @@
+{
+  "name": "serveease",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix back-end run start:dev",
+    "start:dev": "npm --prefix back-end run start:dev",
+    "build": "npm --prefix back-end run build",
+    "start": "npm --prefix back-end run start:dev"
+  }
+}
