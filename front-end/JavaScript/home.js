@@ -141,5 +141,17 @@ function renderPopularServices() {
 }
 
 setupHomeHeaderSession();
-renderHomeCategories();
-renderPopularServices();
+
+if (window.ServeEaseApi && typeof window.ServeEaseApi.hydrateCatalog === "function") {
+  window.ServeEaseApi.hydrateCatalog()
+    .catch(function (error) {
+      console.warn("ServeEase backend catalog unavailable, using local catalog.", error);
+    })
+    .finally(function () {
+      renderHomeCategories();
+      renderPopularServices();
+    });
+} else {
+  renderHomeCategories();
+  renderPopularServices();
+}

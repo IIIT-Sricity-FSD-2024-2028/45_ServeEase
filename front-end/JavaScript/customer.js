@@ -4,13 +4,23 @@
     return;
   }
 
-  const seedKey = "serveEaseCustomerModuleData";
+  function isDemoCustomerAccount() {
+    return session.email === "user@serveease.com" || session.userId === "CUS001";
+  }
+
+  function getAccountStorageSuffix() {
+    return session.userId || String(session.email || "customer").toLowerCase();
+  }
+
+  const seedKey = isDemoCustomerAccount()
+    ? "serveEaseCustomerModuleData"
+    : "serveEaseCustomerModuleData:" + getAccountStorageSuffix();
 
   function seedCustomerData() {
     const existing = localStorage.getItem(seedKey);
     if (existing) return;
 
-    const data = {
+    const data = isDemoCustomerAccount() ? {
       bookings: [
         {
           id: "BOOK-2026-1046",
@@ -128,6 +138,12 @@
           status: "Open"
         }
       ]
+    } : {
+      ownerCustomerId: session.userId || "",
+      ownerEmail: session.email || "",
+      bookings: [],
+      payments: [],
+      tickets: []
     };
 
     localStorage.setItem(seedKey, JSON.stringify(data));
@@ -139,6 +155,159 @@
 
   function setCustomerData(data) {
     localStorage.setItem(seedKey, JSON.stringify(data));
+  }
+
+  function getSupportData() {
+    return JSON.parse(localStorage.getItem("serveEaseSupportModuleData") || '{"agent":{"fullName":"Priya Sharma"},"tickets":[],"notifications":[]}');
+  }
+
+  function setSupportData(data) {
+    localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(data));
+    if (window.ServeEaseApi && typeof window.ServeEaseApi.saveState === "function") {
+      window.ServeEaseApi.saveState("serveEaseSupportModuleData", data).catch(function () { return null; });
+    }
+  }
+
+  function createCustomerTicketId() {
+    return "TICKET-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(Math.random() * 900 + 100);
+  }
+
+  function customerMessageStamp() {
+    return new Date().toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).replace(",", "");
+  }
+
+  function syncCustomerTicketsFromSupport(data) {
+    const supportData = getSupportData();
+    if (!Array.isArray(supportData.tickets)) return;
+    let changed = false;
+
+    data.tickets.forEach(function (ticket) {
+      const supportTicket = supportData.tickets.find(function (item) {
+        return item.id === ticket.id;
+      });
+      if (!supportTicket) return;
+      ticket.status = supportTicket.status || ticket.status;
+      ticket.solution = supportTicket.solution || ticket.solution || "";
+      ticket.supportUpdate = supportTicket.supportUpdate || ticket.supportUpdate || "";
+      ticket.messages = Array.isArray(supportTicket.messages) ? supportTicket.messages : ticket.messages;
+      changed = true;
+    });
+
+    if (changed) setCustomerData(data);
+  }
+
+  function pushCustomerTicketToSupport(ticket) {
+    const supportData = getSupportData();
+    if (!Array.isArray(supportData.tickets)) supportData.tickets = [];
+    if (!Array.isArray(supportData.notifications)) supportData.notifications = [];
+    while (supportData.tickets.some(function (item) { return item.id === ticket.id; })) {
+      ticket.id = createCustomerTicketId();
+    }
+
+    supportData.tickets.unshift({
+      id: ticket.id,
+      bookingReference: ticket.bookingRef || "N/A",
+      raisedByType: "customer",
+      raisedByLabel: "Customer",
+      customerName: session.fullName || "Customer",
+      providerName: ticket.provider || "ServeEase Provider",
+      issueCategory: ticket.category,
+      subject: ticket.subject,
+      description: ticket.description,
+      attachmentName: "No attachment",
+      phone: session.phone || "",
+      email: session.email || "",
+      status: "Open",
+      supportUpdate: ticket.supportUpdate,
+      solution: ticket.solution || "",
+      createdDate: ticket.date,
+      createdAtIso: new Date().toISOString(),
+      assignedTo: supportData.agent && supportData.agent.fullName || "Priya Sharma",
+      messages: [
+        { sender: session.fullName || "Customer", senderType: "customer", text: ticket.description, time: ticket.date }
+      ],
+      history: [
+        { label: "Ticket created by customer", time: ticket.date, active: true }
+      ]
+    });
+    supportData.notifications.unshift({ id: "NT" + Date.now(), text: "New support ticket created - " + ticket.id, time: "Just now", isNew: true, ticketId: ticket.id });
+    setSupportData(supportData);
+  }
+
+  function addCustomerChatMessageToSupport(ticket, message) {
+    const supportData = getSupportData();
+    if (!Array.isArray(supportData.tickets)) supportData.tickets = [];
+    if (!Array.isArray(supportData.notifications)) supportData.notifications = [];
+
+    let supportTicket = supportData.tickets.find(function (item) { return item.id === ticket.id; });
+    if (!supportTicket) {
+      pushCustomerTicketToSupport(ticket);
+      supportTicket = getSupportData().tickets.find(function (item) { return item.id === ticket.id; });
+    }
+    if (!supportTicket) return;
+
+    if (!Array.isArray(supportTicket.messages)) supportTicket.messages = [];
+    if (!Array.isArray(supportTicket.history)) supportTicket.history = [];
+    const solutionText = supportTicket.solution || supportTicket.supportUpdate;
+    const defaultUpdateText = "Your ticket has been received and is currently being reviewed by the support team.";
+    if (solutionText && solutionText !== defaultUpdateText && !supportTicket.messages.some(function (item) {
+      return item.senderType === "agent" && item.text === solutionText;
+    })) {
+      supportTicket.messages.push({
+        sender: supportTicket.assignedTo || "Support Agent",
+        senderType: "agent",
+        text: solutionText,
+        time: supportTicket.updatedAt || "Just now"
+      });
+    }
+    supportTicket.messages.push({
+      sender: session.fullName || "Customer",
+      senderType: "customer",
+      text: message,
+      time: customerMessageStamp()
+    });
+    supportTicket.history.push({
+      label: "Customer replied in support chat",
+      time: customerMessageStamp(),
+      active: true
+    });
+    supportTicket.history.forEach(function (entry, index) {
+      entry.active = index === supportTicket.history.length - 1;
+    });
+    supportData.notifications.unshift({
+      id: "NT" + Date.now(),
+      text: "Customer replied to ticket " + supportTicket.id,
+      time: "Just now",
+      isNew: true,
+      ticketId: supportTicket.id
+    });
+    setSupportData(supportData);
+  }
+
+  function hydrateSupportDataFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getState !== "function") {
+      if (typeof done === "function") done();
+      return;
+    }
+
+    window.ServeEaseApi.getState("serveEaseSupportModuleData")
+      .then(function (entry) {
+        if (entry && entry.value) {
+          localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(entry.value));
+        }
+      })
+      .catch(function () {
+        return null;
+      })
+      .finally(function () {
+        if (typeof done === "function") done();
+      });
   }
 
   function statusClass(status) {
@@ -343,6 +512,7 @@
     if (!welcome) return;
 
     const data = getCustomerData();
+    syncCustomerTicketsFromSupport(data);
     welcome.textContent = `Welcome back, ${session.fullName}!`;
 
     const statsContainer = document.getElementById("customerStats");
@@ -519,6 +689,11 @@
               booking.status = "Cancelled";
               booking.category = "Cancelled";
               setCustomerData(data);
+              if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+                window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
+                  console.warn("ServeEase backend cancellation sync failed.", error);
+                });
+              }
               renderTabs();
               renderBookings();
               cancelModal.classList.add("hidden");
@@ -543,6 +718,11 @@
               booking.status = "Cancelled";
               booking.category = "Cancelled";
               setCustomerData(data);
+              if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+                window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
+                  console.warn("ServeEase backend cancellation sync failed.", error);
+                });
+              }
               renderTabs();
               renderBookings();
             }
@@ -554,6 +734,65 @@
     renderTabs();
     renderBookings();
     setupBookingModal();
+
+    if (window.ServeEaseApi && typeof window.ServeEaseApi.getBookings === "function") {
+      window.ServeEaseApi.getBookings()
+        .then(function (apiBookings) {
+          if (!Array.isArray(apiBookings) || !apiBookings.length) return;
+
+          apiBookings.forEach(function (booking) {
+            if (
+              booking.customerEmail &&
+              session.email &&
+              booking.customerEmail.toLowerCase() !== session.email.toLowerCase()
+            ) {
+              return;
+            }
+
+            const existingBooking = data.bookings.find(function (item) {
+              return item.id === booking.id;
+            });
+
+            if (existingBooking) {
+              existingBooking.service = booking.service;
+              existingBooking.provider = booking.provider;
+              existingBooking.providerId = booking.providerId || existingBooking.providerId;
+              existingBooking.date = booking.date;
+              existingBooking.time = booking.time;
+              existingBooking.address = booking.address;
+              existingBooking.status = booking.status;
+              existingBooking.amount = booking.amount;
+              existingBooking.customerName = booking.customerName || existingBooking.customerName;
+              existingBooking.customerPhone = booking.customerPhone || existingBooking.customerPhone;
+              existingBooking.customerEmail = booking.customerEmail || existingBooking.customerEmail;
+              existingBooking.category = booking.category || booking.status;
+            } else {
+              data.bookings.unshift({
+                id: booking.id,
+                service: booking.service,
+                provider: booking.provider,
+                providerId: booking.providerId,
+                date: booking.date,
+                time: booking.time,
+                address: booking.address,
+                status: booking.status,
+                amount: booking.amount,
+                customerName: booking.customerName,
+                customerPhone: booking.customerPhone,
+                customerEmail: booking.customerEmail,
+                category: booking.category || booking.status
+              });
+            }
+          });
+
+          setCustomerData(data);
+          renderTabs();
+          renderBookings();
+        })
+        .catch(function (error) {
+          console.warn("ServeEase backend unavailable, showing local bookings.", error);
+        });
+    }
   }
 
   function setupBookingModal() {
@@ -745,6 +984,7 @@
       const chatForm = document.getElementById("supportChatForm");
       const chatInput = document.getElementById("supportChatInput");
       const chatThread = document.getElementById("supportChatThread");
+      let activeChatTicketId = "";
 
       if (ticketModalClose && ticketModalBackdrop) {
         ticketModalClose.addEventListener("click", function () { ticketModalBackdrop.classList.add("hidden"); });
@@ -759,13 +999,37 @@
       if (chatForm && chatInput && chatThread) {
         chatForm.addEventListener("submit", function (e) {
           e.preventDefault();
-          const message = chatInput.value.trim();
+          const message = chatInput.value.replace(/[<>]/g, "").trim();
           if (!message) return;
-          chatThread.insertAdjacentHTML("beforeend", `<div class="chat-bubble user">${message}</div>`);
-          chatThread.insertAdjacentHTML("beforeend", `<div class="chat-bubble support">Thanks for the update. Our support team will review this and respond shortly.</div>`);
+          const ticket = data.tickets.find(function (item) { return item.id === activeChatTicketId; });
+          if (!ticket) return;
+          addCustomerChatMessageToSupport(ticket, message);
           chatInput.value = "";
-          chatThread.scrollTop = chatThread.scrollHeight;
+          renderChatThread(ticket);
         });
+      }
+
+      function renderChatThread(ticket) {
+        const supportData = getSupportData();
+        const supportTicket = supportData.tickets.find(function (item) { return item.id === ticket.id; });
+        const messages = supportTicket && Array.isArray(supportTicket.messages) && supportTicket.messages.length
+          ? supportTicket.messages
+          : [
+            { senderType: "agent", text: "Hello! You are connected to ServeEase support for ticket " + ticket.id + ".", time: "Just now" },
+            { senderType: "agent", text: "We can help with " + ticket.subject.toLowerCase() + ". Please share any extra details here.", time: "Just now" }
+          ];
+        const solutionText = supportTicket && (supportTicket.solution || supportTicket.supportUpdate);
+        const defaultUpdateText = "Your ticket has been received and is currently being reviewed by the support team.";
+        if (solutionText && solutionText !== defaultUpdateText && !messages.some(function (message) { return message.senderType === "agent" && message.text === solutionText; })) {
+          messages.push({ senderType: "agent", text: solutionText, time: supportTicket.updatedAt || "Just now" });
+        }
+
+        chatThread.innerHTML = messages.map(function (message) {
+          const className = message.senderType === "customer" ? "user" : "support";
+          const label = message.senderType === "admin" ? "<strong>Admin reply:</strong> " : "";
+          return `<div class="chat-bubble ${className}">${label}${message.text}</div>`;
+        }).join("");
+        chatThread.scrollTop = chatThread.scrollHeight;
       }
 
       list.addEventListener("click", function (e) {
@@ -791,7 +1055,7 @@
               </div>
               <div class="info-box">
                 <strong>Support Update</strong>
-                <div>Your ticket has been received and is currently being reviewed by the support team.</div>
+                <div>${ticket.supportUpdate || ticket.solution || "Your ticket has been received and is currently being reviewed by the support team."}</div>
               </div>
             </div>`;
           ticketModalBackdrop.classList.remove("hidden");
@@ -800,9 +1064,8 @@
         if (chatButton && chatModalBackdrop && chatThread) {
           const ticket = data.tickets.find(function (item) { return item.id === chatButton.dataset.chatTicket; });
           if (!ticket) return;
-          chatThread.innerHTML = `
-            <div class="chat-bubble support">Hello! You are connected to ServeEase support for ticket ${ticket.id}.</div>
-            <div class="chat-bubble support">We can help with ${ticket.subject.toLowerCase()}. Please share any extra details here.</div>`;
+          activeChatTicketId = ticket.id;
+          renderChatThread(ticket);
           chatModalBackdrop.classList.remove("hidden");
         }
       });
@@ -824,16 +1087,20 @@
       }
 
       const newTicket = {
-        id: `TICKET-2026-${2100 + data.tickets.length + 1}`,
+        id: createCustomerTicketId(),
         subject: subject,
         bookingRef: bookingRef,
         category: category,
-        date: "9 Mar 2026",
-        status: "Open"
+        description: description,
+        date: "Just now",
+        status: "Open",
+        solution: "",
+        supportUpdate: "Your ticket has been received and is currently being reviewed by the support team."
       };
 
       data.tickets.unshift(newTicket);
       setCustomerData(data);
+      pushCustomerTicketToSupport(newTicket);
       success.textContent = "Support ticket submitted successfully.";
       form.reset();
       renderTickets();
@@ -842,6 +1109,10 @@
     renderTickets();
     setupFaqAccordion();
     setupTicketInteractions();
+    hydrateSupportDataFromBackend(function () {
+      syncCustomerTicketsFromSupport(data);
+      renderTickets();
+    });
   }
 
   seedCustomerData();
@@ -891,5 +1162,3 @@
     panel.addEventListener("touchstart", onTouchStart, { passive: true });
     panel.addEventListener("touchmove", onTouchMove, { passive: false });
   }
-
-

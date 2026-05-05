@@ -6,6 +6,156 @@ function setData(data) {
   localStorage.setItem("serveEaseData", JSON.stringify(data));
 }
 
+function getProviderApprovalRequests(data) {
+  if (!Array.isArray(data.providerApprovalRequests)) {
+    data.providerApprovalRequests = [];
+  }
+  return data.providerApprovalRequests;
+}
+
+function getCategoryIdFromServiceType(serviceType) {
+  const categoryMap = {
+    "home cleaning": "home-cleaning",
+    "carpentry": "carpentry",
+    "painting": "painting",
+    "salon at home": "salon-at-home",
+    "plumbing": "plumbing",
+    "electrician": "electrician",
+    "appliance repair / installation": "appliance-repair-installation",
+    "pest control": "pest-control"
+  };
+
+  return categoryMap[String(serviceType || "").trim().toLowerCase()] || "home-cleaning";
+}
+
+function getImageForCategory(categoryId) {
+  const imageMap = {
+    "home-cleaning": "assets/images/home-cleaning/clean1.jpg",
+    "carpentry": "assets/images/carpentry/carpentry1.jpg.jpeg",
+    "painting": "assets/images/painting/painting1.jpg.jpeg",
+    "salon-at-home": "assets/images/salon-at-home/salon1.jpg",
+    "plumbing": "assets/images/plumbing/plumbing1.jpg.jpeg",
+    "electrician": "assets/images/electrician/ele1.jpg.jpeg",
+    "appliance-repair-installation": "assets/images/appliance-repair/ACrepair.jpg.jpeg",
+    "pest-control": "assets/images/pest-control/pest1.jpg.jpeg"
+  };
+
+  return imageMap[categoryId] || imageMap["home-cleaning"];
+}
+
+function getBaseServeEaseCities() {
+  return [
+    { id: 1, name: "Chennai" },
+    { id: 2, name: "Bangalore" },
+    { id: 3, name: "Hyderabad" },
+    { id: 4, name: "Delhi" },
+    { id: 5, name: "Mumbai" }
+  ];
+}
+
+function getCustomServeEaseCities() {
+  try {
+    const customCities = JSON.parse(localStorage.getItem("serveEaseCustomCities"));
+    return Array.isArray(customCities) ? customCities : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveCustomServeEaseCities(cities) {
+  localStorage.setItem("serveEaseCustomCities", JSON.stringify(cities));
+}
+
+function getAllServeEaseCities() {
+  const seen = {};
+  return getBaseServeEaseCities().concat(getCustomServeEaseCities()).filter(function (city) {
+    const key = String(city.name || "").toLowerCase();
+    if (!key || seen[key]) return false;
+    seen[key] = true;
+    return true;
+  });
+}
+
+function getCityById(cityId) {
+  return getAllServeEaseCities().find(function (city) {
+    return Number(city.id) === Number(cityId);
+  }) || getBaseServeEaseCities()[0];
+}
+
+function extractCityNameFromAddress(address) {
+  const rawAddress = String(address || "").trim();
+  const loweredAddress = rawAddress.toLowerCase();
+  const knownCity = getBaseServeEaseCities().find(function (city) {
+    return loweredAddress.indexOf(city.name.toLowerCase()) !== -1 ||
+      (city.name === "Bangalore" && loweredAddress.indexOf("bengaluru") !== -1);
+  });
+
+  if (knownCity) return knownCity.name;
+
+  const firstPart = rawAddress.split(",")[0] || rawAddress;
+  return firstPart.replace(/\d+/g, "").trim().replace(/\s+/g, " ") || "Chennai";
+}
+
+function getOrCreateCityIdFromAddress(address) {
+  const cityName = extractCityNameFromAddress(address);
+  const allCities = getBaseServeEaseCities().concat(getCustomServeEaseCities());
+  const existingCity = allCities.find(function (city) {
+    return city.name.toLowerCase() === cityName.toLowerCase();
+  });
+
+  if (existingCity) return Number(existingCity.id);
+
+  const nextId = allCities.reduce(function (max, city) {
+    return Math.max(max, Number(city.id) || 0);
+  }, 0) + 1;
+  const customCities = getCustomServeEaseCities();
+  customCities.push({ id: nextId, name: cityName });
+  saveCustomServeEaseCities(customCities);
+  return nextId;
+}
+
+function inferCityIdFromAddress(address) {
+  const value = String(address || "").toLowerCase();
+  if (value.includes("bangalore") || value.includes("bengaluru")) return 2;
+  if (value.includes("hyderabad")) return 3;
+  if (value.includes("delhi")) return 4;
+  if (value.includes("mumbai")) return 5;
+  return getOrCreateCityIdFromAddress(address);
+}
+
+function slugifyProviderName(value) {
+  return String(value || "provider")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "provider";
+}
+
+function normalizeProviderText(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function isRemovedProviderRecord(record) {
+  if (!record) return false;
+  return [
+    record.id,
+    record.email,
+    record.fullName,
+    record.organisationName,
+    record.name,
+    record.providerCatalogId
+  ].some(function (value) {
+    return normalizeProviderText(value).indexOf("koushikpestcontrol") !== -1;
+  });
+}
+
+function syncCatalogToBackend(data) {
+  if (window.ServeEaseApi && typeof window.ServeEaseApi.syncCatalog === "function") {
+    window.ServeEaseApi.syncCatalog(data).catch(function (error) {
+      console.warn("ServeEase catalog sync skipped.", error);
+    });
+  }
+}
+
 function seedDefaultUsers() {
   const data = getData();
   if (!Array.isArray(data.users)) {
@@ -28,9 +178,14 @@ function seedDefaultUsers() {
       email: "provider@serveease.com",
       phone: "9876501234",
       password: "Password@123",
+      organisationName: "Cleanpro Services",
       serviceType: "Home Cleaning",
       experience: 6,
-      address: "No. 22, Anna Nagar, Chennai"
+      cityId: 1,
+      cityName: "Chennai",
+      location: "Chennai",
+      address: "No. 22, Anna Nagar, Chennai",
+      providerCatalogId: "cleanpro-service"
     },
     {
       id: "SUP001",
@@ -53,7 +208,7 @@ function seedDefaultUsers() {
   const mergedUsers = [];
 
   data.users.forEach(function (user) {
-    if (!user || !user.email) return;
+    if (!user || !user.email || isRemovedProviderRecord(user)) return;
     const emailKey = user.email.toLowerCase();
     const alreadyTracked = mergedUsers.some(function (existingUser) {
       return existingUser.email && existingUser.email.toLowerCase() === emailKey;
@@ -79,6 +234,46 @@ function seedDefaultUsers() {
     }
   });
 
+  if (Array.isArray(data.providers)) {
+    data.providers.forEach(function (provider, index) {
+      if (!provider || !provider.id || !provider.name || provider.ownerProviderId || isRemovedProviderRecord(provider)) return;
+
+      const category = Array.isArray(data.categories)
+        ? data.categories.find(function (item) { return item.id === provider.category; })
+        : null;
+      const providerEmail = provider.id + "@serveease.com";
+      const generatedUser = {
+        id: "PRO-CAT-" + String(index + 1).padStart(3, "0"),
+        role: "provider",
+        fullName: provider.name,
+        organisationName: provider.name,
+        email: providerEmail,
+        phone: "9" + String(100000000 + index).slice(-9),
+        password: "Password@123",
+        serviceType: category ? category.name : provider.category,
+        experience: Number(provider.years) || 1,
+        cityId: provider.cityId || inferCityIdFromAddress(provider.location),
+        cityName: getCityById(provider.cityId || inferCityIdFromAddress(provider.location)).name,
+        location: getCityById(provider.cityId || inferCityIdFromAddress(provider.location)).name,
+        address: provider.location,
+        providerCatalogId: provider.id
+      };
+
+      const existingIndex = mergedUsers.findIndex(function (user) {
+        return user.email && user.email.toLowerCase() === providerEmail.toLowerCase();
+      });
+
+      if (existingIndex !== -1) {
+        mergedUsers[existingIndex] = {
+          ...mergedUsers[existingIndex],
+          ...generatedUser
+        };
+      } else {
+        mergedUsers.push(generatedUser);
+      }
+    });
+  }
+
   data.users = mergedUsers;
   setData(data);
 }
@@ -94,9 +289,23 @@ function setSession(user) {
     organisationName: user.organisationName || "",
     serviceType: user.serviceType || "",
     experience: user.experience || "",
-    address: user.address || ""
+    cityId: user.cityId || "",
+    cityName: user.cityName || user.location || "",
+    location: user.location || user.cityName || "",
+    address: user.address || "",
+    providerCatalogId: user.providerCatalogId || ""
   };
   sessionStorage.setItem("serveEaseSession", JSON.stringify(sessionData));
+}
+
+function logServeEaseActivity(action, details) {
+  if (window.ServeEaseApi && typeof window.ServeEaseApi.logActivity === "function") {
+    window.ServeEaseApi.logActivity({
+      action: action,
+      page: window.location.pathname.replace("/", "") || "auth",
+      details: details || ""
+    });
+  }
 }
 
 function clearText(id) {
@@ -148,11 +357,15 @@ function generateUserId(role, users) {
   };
 
   const prefix = prefixMap[role] || "USR";
-  const count = users.filter(function (user) {
-    return user.role === role;
-  }).length + 1;
+  const data = getData();
+  const candidates = users.concat(getProviderApprovalRequests(data));
+  const maxId = candidates.reduce(function (max, user) {
+    if (!user || user.role !== role || !String(user.id || "").startsWith(prefix)) return max;
+    const numberPart = Number(String(user.id).replace(prefix, ""));
+    return Number.isFinite(numberPart) ? Math.max(max, numberPart) : max;
+  }, 0);
 
-  return prefix + String(count).padStart(3, "0");
+  return prefix + String(maxId + 1).padStart(3, "0");
 }
 
 function setupLoginTabs() {
@@ -257,6 +470,7 @@ function setupLoginForm() {
     if (!valid) return;
 
     const data = getData();
+    const approvalRequests = getProviderApprovalRequests(data);
     const matchedUser = data.users.find(function (user) {
       return (
         user.role === activeRole &&
@@ -266,19 +480,47 @@ function setupLoginForm() {
     });
 
     if (!matchedUser) {
+      const pendingProvider = activeRole === "provider"
+        ? approvalRequests.find(function (request) {
+            return request.email &&
+              request.email.toLowerCase() === email.toLowerCase() &&
+              request.password === password;
+          })
+        : null;
+
+      if (pendingProvider) {
+        if (pendingProvider.approvalStatus === "Rejected") {
+          showText("loginFormError", "Your provider registration was rejected by the superuser.");
+          logServeEaseActivity("provider_login_rejected", email);
+        } else {
+          showText("loginFormError", "Your provider profile is pending superuser approval. Please try again after approval.");
+          logServeEaseActivity("provider_login_pending_approval", email);
+        }
+        return;
+      }
+
       const roleMismatchUser = data.users.find(function (user) {
         return user.email.toLowerCase() === email.toLowerCase() && user.password === password;
       });
 
       if (roleMismatchUser) {
         showText("loginFormError", "Credentials are correct, but the selected role is different. Please choose the " + roleMismatchUser.role + " tab.");
+        logServeEaseActivity("login_role_mismatch", activeRole + " " + email);
       } else {
         showText("loginFormError", "Invalid credentials for selected role.");
+        logServeEaseActivity("login_failed", activeRole + " " + email);
       }
       return;
     }
 
+    if (matchedUser.role === "provider" && matchedUser.approvalStatus && matchedUser.approvalStatus !== "Active") {
+      showText("loginFormError", "Your provider profile is not active yet. Current status: " + matchedUser.approvalStatus + ".");
+      logServeEaseActivity("provider_login_inactive", matchedUser.email);
+      return;
+    }
+
     setSession(matchedUser);
+    logServeEaseActivity("login_success", matchedUser.role + " " + matchedUser.email);
     showText("loginSuccess", "Login successful. Redirecting...");
 
     setTimeout(function () {
@@ -321,6 +563,19 @@ function populateProviderServiceCategories() {
   serviceTypeSelect.innerHTML = '<option value="">Select Service Category</option>' + options;
 }
 
+function populateProviderCities() {
+  const citySelect = document.getElementById("providerCity");
+  if (!citySelect) return;
+
+  const options = getAllServeEaseCities()
+    .map(function (city) {
+      return '<option value="' + city.id + '">' + city.name + '</option>';
+    })
+    .join("");
+
+  citySelect.innerHTML = '<option value="">Select City</option>' + options;
+}
+
 
 function setupSignupTabs() {
   const tabsContainer = document.getElementById("signupRoleTabs");
@@ -360,6 +615,7 @@ function setupSignupForm() {
       "organisationNameError",
       "serviceTypeError",
       "experienceError",
+      "providerCityError",
       "addressError",
       "passwordError",
       "confirmPasswordError",
@@ -373,6 +629,7 @@ function setupSignupForm() {
     const organisationNameInput = document.getElementById("organisationName");
     const serviceTypeInput = document.getElementById("serviceType");
     const experienceInput = document.getElementById("experience");
+    const providerCityInput = document.getElementById("providerCity");
     const addressInput = document.getElementById("address");
     const passwordInput = document.getElementById("password");
     const confirmPasswordInput = document.getElementById("confirmPassword");
@@ -384,6 +641,7 @@ function setupSignupForm() {
       organisationNameInput,
       serviceTypeInput,
       experienceInput,
+      providerCityInput,
       addressInput,
       passwordInput,
       confirmPasswordInput
@@ -397,6 +655,8 @@ function setupSignupForm() {
     const organisationName = organisationNameInput ? organisationNameInput.value.trim() : "";
     const serviceType = serviceTypeInput ? serviceTypeInput.value.trim() : "";
     const experience = experienceInput ? experienceInput.value.trim() : "";
+    const providerCityId = providerCityInput ? providerCityInput.value.trim() : "";
+    const providerCity = getCityById(providerCityId);
     const address = addressInput ? addressInput.value.trim() : "";
     const password = passwordInput.value.trim();
     const confirmPassword = confirmPasswordInput.value.trim();
@@ -456,6 +716,14 @@ function setupSignupForm() {
         setSuccessState(experienceInput);
       }
 
+      if (!providerCityId) {
+        showText("providerCityError", "City is required.");
+        setErrorState(providerCityInput);
+        valid = false;
+      } else {
+        setSuccessState(providerCityInput);
+      }
+
       if (!address || address.length < 5) {
         showText("addressError", "Enter a valid address.");
         setErrorState(addressInput);
@@ -485,12 +753,17 @@ function setupSignupForm() {
 
     const data = getData();
 
+    const approvalRequests = getProviderApprovalRequests(data);
     const duplicateEmail = data.users.some(function (user) {
       return user.email.toLowerCase() === email.toLowerCase();
+    }) || approvalRequests.some(function (request) {
+      return request.email && request.email.toLowerCase() === email.toLowerCase() && request.approvalStatus !== "Rejected";
     });
 
     const duplicatePhone = data.users.some(function (user) {
       return user.phone === phone;
+    }) || approvalRequests.some(function (request) {
+      return request.phone === phone && request.approvalStatus !== "Rejected";
     });
 
     if (duplicateEmail) {
@@ -516,13 +789,33 @@ function setupSignupForm() {
       newUser.organisationName = organisationName;
       newUser.serviceType = serviceType;
       newUser.experience = Number(experience);
+      newUser.cityId = Number(providerCity.id);
+      newUser.cityName = providerCity.name;
+      newUser.location = providerCity.name;
       newUser.address = address;
+      newUser.providerCatalogId = slugifyProviderName(organisationName || fullName);
+      newUser.approvalStatus = "Pending Approval";
+      newUser.registrationDate = new Date().toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
     }
 
-    data.users.push(newUser);
+    if (role === "provider") {
+      approvalRequests.push(newUser);
+    } else {
+      data.users.push(newUser);
+    }
     setData(data);
+    logServeEaseActivity("signup_success", newUser.role + " " + newUser.email);
 
-    showText("signupSuccess", "Registration successful. Redirecting to login...");
+    showText(
+      "signupSuccess",
+      role === "provider"
+        ? "Registration submitted for superuser approval. You can login after approval."
+        : "Registration successful. Redirecting to login..."
+    );
 
     setTimeout(function () {
       window.location.href = "login.html";
@@ -582,6 +875,7 @@ function setupForgotPasswordForm() {
 }
 
 seedDefaultUsers();
+populateProviderCities();
 setupLoginTabs();
 setupLoginForm();
 setupSignupTabs();

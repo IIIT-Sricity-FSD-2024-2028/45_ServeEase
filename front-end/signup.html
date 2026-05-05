@@ -58,7 +58,7 @@
                   <option value="Appliance Repair / Installation">Appliance Repair / Installation</option>
                   <option value="Pest Control">Pest Control</option>
                 </select>
-                <small class="error" id="serviceTypeError"></small>
+                <small class="error" id="serviceTypeError"></small>
               </div>
 
               <div class="form-group">
@@ -67,7 +67,13 @@
               </div>
 
               <div class="form-group">
-                <input type="text" id="address" placeholder="Address" />
+                <select id="providerCity" class="service-category-select">
+                  <option value="">Select City</option>
+                </select>
+                <small class="error" id="providerCityError"></small>
+              </div>
+              <div class="form-group">
+                <input type="text" id="address" placeholder="Address" />
                 <small class="error" id="addressError"></small>
               </div>
             </div>
@@ -111,9 +117,9 @@
         <p>Connect with verified professionals for your home service needs.</p>
       </div>
     </div>
-  </main>
-
-  <script src="JavaScript/mockdata.js"></script>
-  <script src="JavaScript/auth.js"></script>
+  </main>
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/mockdata.js"></script>
+<script src="JavaScript/auth.js"></script>
 </body>
 </html>

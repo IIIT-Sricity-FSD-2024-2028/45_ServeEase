@@ -69,11 +69,13 @@
       </div>
       <form id="providerServiceForm" class="provider-modal-form">
         <input type="hidden" id="providerServiceEditId" />
-        <label>Service Name</label>
-        <input type="text" id="providerServiceName" placeholder="Enter service name" />
+        <label>Service Sub Category</label>
+        <select id="providerServiceName">
+          <option value="">Select service sub category</option>
+        </select>
 
-        <label>Service Category</label>
-        <input type="text" id="providerServiceCategory" placeholder="Enter category" />
+        <label>Registered Main Category</label>
+        <input type="text" id="providerServiceCategory" placeholder="Home Cleaning" readonly />
 
         <label>Service Description</label>
         <textarea id="providerServiceDescription" placeholder="Enter service description"></textarea>
@@ -90,7 +92,9 @@
         </div>
 
         <label>Service Location</label>
-        <input type="text" id="providerServiceLocation" placeholder="Bangalore" />
+        <select id="providerServiceLocation">
+          <option value="">Select service city</option>
+        </select>
 
         <small class="error" id="providerServiceError"></small>
 
@@ -100,9 +104,9 @@
         </div>
       </form>
     </div>
-  </div>
-
-  <script src="JavaScript/provider.js"></script>
-  <script src="JavaScript/search.js"></script>
+  </div>
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/provider.js"></script>
+<script src="JavaScript/search.js"></script>
 </body>
 </html>

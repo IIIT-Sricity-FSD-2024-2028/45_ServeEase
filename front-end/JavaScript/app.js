@@ -20,6 +20,16 @@ function getCurrentSession() {
   return JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
 }
 
+function isDemoCustomerSession(session) {
+  return session && (session.email === "user@serveease.com" || session.userId === "CUS001");
+}
+
+function getCustomerModuleStorageKey(session) {
+  if (isDemoCustomerSession(session)) return "serveEaseCustomerModuleData";
+  const suffix = (session && (session.userId || session.email)) || "guest";
+  return "serveEaseCustomerModuleData:" + String(suffix).toLowerCase();
+}
+
 function setupSharedHeaderSession() {
   const session = getCurrentSession();
   const loginBtn = document.getElementById("sharedLoginRegisterBtn");
@@ -461,7 +471,7 @@ function initProviderProfilePage() {
   }
 }
 
-function submitBookingCheckout() {
+async function submitBookingCheckout() {
   const session = getCurrentSession();
   if (!(session && session.role === "customer")) {
     window.location.href = "login.html";
@@ -569,29 +579,73 @@ function submitBookingCheckout() {
     }
   }
 
+  const checkoutSession = getCurrentSession();
+  const customerModuleKey = getCustomerModuleStorageKey(checkoutSession);
   const customerModuleData = JSON.parse(
-    localStorage.getItem("serveEaseCustomerModuleData") ||
+    localStorage.getItem(customerModuleKey) ||
     '{"bookings":[],"payments":[],"tickets":[]}'
   );
 
   const bookingRef = `BOOK-2026-${8000 + customerModuleData.bookings.length + 1}`;
   const paymentRef = `TXN-2026-${4500 + customerModuleData.payments.length + 1}`;
 
-  const bookingEntry = {
+  let bookingEntry = {
     id: bookingRef,
     service: service,
     provider: provider.name,
+    providerId: provider.id,
     date: date,
     time: time,
     address: address,
     status: "Pending",
     amount: total,
-    category: "Pending"
+    category: "Pending",
+    customerName: name,
+    customerPhone: phone,
+    customerEmail: email
   };
+
+  if (window.ServeEaseApi && typeof window.ServeEaseApi.createBooking === "function") {
+    try {
+      const apiBooking = await window.ServeEaseApi.createBooking({
+        service: service,
+        provider: provider.name,
+        providerId: provider.id,
+        date: date,
+        time: time,
+        address: address,
+        amount: total,
+        status: "Pending",
+        customerName: name,
+        customerPhone: phone,
+        customerEmail: email
+      });
+
+      if (apiBooking && apiBooking.id) {
+        bookingEntry = {
+          id: apiBooking.id,
+          service: apiBooking.service,
+          provider: apiBooking.provider,
+          providerId: apiBooking.providerId || provider.id,
+          date: apiBooking.date,
+          time: apiBooking.time,
+          address: apiBooking.address,
+          status: apiBooking.status,
+          amount: apiBooking.amount,
+          customerName: apiBooking.customerName || name,
+          customerPhone: apiBooking.customerPhone || phone,
+          customerEmail: apiBooking.customerEmail || email,
+          category: apiBooking.category || apiBooking.status
+        };
+      }
+    } catch (error) {
+      console.warn("ServeEase backend unavailable, using local booking storage.", error);
+    }
+  }
 
   const paymentEntry = {
     id: paymentRef,
-    bookingRef: bookingRef,
+    bookingRef: bookingEntry.id,
     service: service,
     provider: provider.name,
     method: paymentMethod,
@@ -602,11 +656,11 @@ function submitBookingCheckout() {
 
   customerModuleData.bookings.unshift(bookingEntry);
   customerModuleData.payments.unshift(paymentEntry);
-  localStorage.setItem("serveEaseCustomerModuleData", JSON.stringify(customerModuleData));
+  localStorage.setItem(customerModuleKey, JSON.stringify(customerModuleData));
 
   window.location.href =
     "booking-request-submitted.html" +
-    `?bookingRef=${encodeURIComponent(bookingRef)}` +
+    `?bookingRef=${encodeURIComponent(bookingEntry.id)}` +
     `&service=${encodeURIComponent(service)}` +
     `&provider=${encodeURIComponent(provider.name)}` +
     `&date=${encodeURIComponent(date)}` +
@@ -879,9 +933,21 @@ function initBookingSubmittedPage() {
   `;
 }
 
-setupSharedHeaderSession();
-initCategoryServicesPage();
-initProviderProfilePage();
-initBookingCheckoutPage();
-initBookingSubmittedPage();
-setupFooterLinks();
+function startServeEasePages() {
+  setupSharedHeaderSession();
+  initCategoryServicesPage();
+  initProviderProfilePage();
+  initBookingCheckoutPage();
+  initBookingSubmittedPage();
+  setupFooterLinks();
+}
+
+if (window.ServeEaseApi && typeof window.ServeEaseApi.hydrateCatalog === "function") {
+  window.ServeEaseApi.hydrateCatalog()
+    .catch(function (error) {
+      console.warn("ServeEase backend catalog unavailable, using local catalog.", error);
+    })
+    .finally(startServeEasePages);
+} else {
+  startServeEasePages();
+}

@@ -362,6 +362,48 @@
   padding: 14px 16px;
 }
 
+.support-solution-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 14px;
+}
+
+.support-solution-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.support-solution-form textarea {
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #fff;
+  padding: 12px 14px;
+  font: inherit;
+  color: #111827;
+}
+
+.support-solution-form textarea:focus {
+  outline: none;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14);
+}
+
+.support-solution-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-solution-footer small {
+  color: #667a97;
+}
+
 .support-message-thread {
   display: grid;
   gap: 14px;

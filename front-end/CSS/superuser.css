@@ -759,6 +759,47 @@
   margin-bottom: 12px;
 }
 
+.superuser-ticket-solution-section {
+  display: grid;
+  gap: 10px;
+}
+
+.superuser-ticket-solution-form {
+  display: grid;
+  gap: 8px;
+}
+
+.superuser-ticket-solution-form textarea {
+  width: 100%;
+  min-height: 118px;
+  border: 1px solid #dbe2ec;
+  border-radius: 10px;
+  padding: 12px 14px;
+  resize: vertical;
+  font: inherit;
+  color: #12284a;
+  background: #f8fafc;
+}
+
+.superuser-ticket-solution-form textarea:focus {
+  outline: none;
+  border-color: #4254f4;
+  box-shadow: 0 0 0 3px rgba(66, 84, 244, 0.12);
+  background: #fff;
+}
+
+.superuser-ticket-solution-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 22px;
+}
+
+.superuser-ticket-solution-footer small:first-child {
+  color: #6b7280;
+}
+
 .superuser-detail-card,
 .superuser-detail-grid {
   background: #f5f7fb;

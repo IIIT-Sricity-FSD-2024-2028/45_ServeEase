@@ -7,7 +7,7 @@
     name: "Home Cleaning",
     icon: "🧹",
     bgImage: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=80",
-    subServices: ["Full Home Cleaning", "Kitchen Cleaning", "Bathroom Cleaning"]
+    subServices: ["Full Home Cleaning", "Kitchen Cleaning", "Bathroom Cleaning", "Floor Cleaning Service"]
   },
   {
     id: "salon-at-home",
@@ -114,7 +114,7 @@
   // cityId mapping: 1=Chennai, 2=Bangalore, 3=Hyderabad, 4=Delhi, 5=Mumbai
   const updatedProviders = [
     // ── Chennai (cityId: 1) ──────────────────────────────────────────────────
-    { id: "cleanpro-service", name: "Cleanpro Service", category: "home-cleaning", subServices: ["Full Home Cleaning"], years: 8, rating: 4.9, reviews: 487, distance: "2.1 km", startingPrice: 999, location: "Chennai, Tamil Nadu", jobsDone: 1217, availableToday: true, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean1.jpg" },
+    { id: "cleanpro-service", name: "Cleanpro Services", category: "home-cleaning", subServices: ["Kitchen Cleaning", "Bathroom Cleaning", "Floor Cleaning Service"], years: 8, rating: 4.9, reviews: 487, distance: "2.1 km", startingPrice: 599, location: "Chennai, Tamil Nadu", jobsDone: 1217, availableToday: true, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean1.jpg" },
     { id: "fresh-space-cleaning", name: "Fresh Space Cleaning", category: "home-cleaning", subServices: ["Kitchen Cleaning"], years: 6, rating: 4.8, reviews: 392, distance: "3.0 km", startingPrice: 699, location: "Chennai, Tamil Nadu", jobsDone: 932, availableToday: true, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean2.jpg" },
     { id: "urban-shine-cleaner", name: "Urban Shine Cleaner", category: "home-cleaning", subServices: ["Bathroom Cleaning"], years: 5, rating: 4.7, reviews: 301, distance: "1.9 km", startingPrice: 499, location: "Chennai, Tamil Nadu", jobsDone: 743, availableToday: false, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean3.jpg" },
     { id: "sparkle-home-care", name: "Sparkle Home Care", category: "home-cleaning", subServices: ["Full Home Cleaning", "Bathroom Cleaning"], years: 7, rating: 4.8, reviews: 418, distance: "2.6 km", startingPrice: 899, location: "Chennai, Tamil Nadu", jobsDone: 1083, availableToday: true, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean4.jpg" },
@@ -263,12 +263,210 @@
     { id: "furnirepair-experts-mum3", name: "FurniRepair Experts", category: "carpentry", subServices: ["Furniture Repair", "Door Repair / Installation"], years: 9, rating: 4.8, reviews: 498, distance: "2.1 km", startingPrice: 549, location: "Mumbai, Maharashtra", jobsDone: 872, availableToday: true, verified: true, cityId: 5, image: "assets/images/carpentry/carpentry1.jpg.jpeg" }
   ];
 
+  function normalizeProviderText(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  function isRemovedProvider(value) {
+    return normalizeProviderText(value).indexOf("koushikpestcontrol") !== -1;
+  }
+
+  function isRemovedProviderRecord(record) {
+    return !!record && (
+      isRemovedProvider(record.id) ||
+      isRemovedProvider(record.name) ||
+      isRemovedProvider(record.fullName) ||
+      isRemovedProvider(record.organisationName) ||
+      isRemovedProvider(record.email) ||
+      isRemovedProvider(record.providerCatalogId)
+    );
+  }
+
+  function isCleanproProviderRecord(record) {
+    if (!record) return false;
+    return [
+      record.id,
+      record.name,
+      record.fullName,
+      record.organisationName,
+      record.email,
+      record.providerCatalogId,
+      record.ownerProviderEmail
+    ].some(function (value) {
+      return normalizeProviderText(value).indexOf("cleanpro") !== -1;
+    });
+  }
+
+  function normalizeProviderRecord(provider) {
+    if (!provider) return provider;
+    if (isCleanproProviderRecord(provider)) {
+      provider.name = "Cleanpro Services";
+      if (provider.fullName) provider.fullName = "Cleanpro Services";
+      if (provider.organisationName) provider.organisationName = "Cleanpro Services";
+    }
+    return provider;
+  }
+
+  function getProviderBaseId(provider) {
+    const id = String(provider && provider.id || "");
+    if (!provider || !provider.category || !provider.cityId) return id;
+    return id.replace(new RegExp("-" + provider.category + "-" + provider.cityId + "$"), "");
+  }
+
+  function getProviderDedupeKey(provider) {
+    if (!provider) return "";
+    const owner = provider.ownerProviderId || getProviderBaseId(provider);
+    return [
+      normalizeProviderText(owner),
+      provider.category || "",
+      Number(provider.cityId) || 0
+    ].join("|");
+  }
+
+  function dedupeProviders(providers) {
+    const byKey = {};
+
+    providers.forEach(function (provider) {
+      normalizeProviderRecord(provider);
+      if (!provider || !provider.id || isRemovedProviderRecord(provider)) return;
+
+      const key = getProviderDedupeKey(provider);
+      const existing = byKey[key];
+      if (!existing) {
+        byKey[key] = provider;
+        return;
+      }
+
+      const existingIsOwned = !!existing.ownerProviderId;
+      const providerIsOwned = !!provider.ownerProviderId;
+      const providerHasMoreServices = Array.isArray(provider.subServices) &&
+        (!Array.isArray(existing.subServices) || provider.subServices.length > existing.subServices.length);
+
+      if ((!existingIsOwned && providerIsOwned) || (existingIsOwned === providerIsOwned && providerHasMoreServices)) {
+        byKey[key] = provider;
+      }
+    });
+
+    return Object.keys(byKey).map(function (key) { return byKey[key]; });
+  }
+
+  function cleanupRemovedProviderStorage() {
+    if (Array.isArray(existingData.users)) {
+      existingData.users = existingData.users.filter(function (user) {
+        return !isRemovedProviderRecord(user);
+      });
+    }
+
+    Object.keys(localStorage).forEach(function (key) {
+      if (isRemovedProvider(key)) {
+        localStorage.removeItem(key);
+        return;
+      }
+
+      if (key.indexOf("serveEaseProviderModuleData") !== 0) return;
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "null");
+        if (data && isRemovedProviderRecord(data.profile)) {
+          localStorage.removeItem(key);
+        }
+      } catch (error) {
+        /* ignore invalid local module data */
+      }
+    });
+  }
+
+  cleanupRemovedProviderStorage();
+
+  function collectOwnedProviderCatalogRows() {
+    const rows = [];
+    const providers = Array.isArray(existingData.providers) ? existingData.providers : [];
+
+    providers.forEach(function (provider) {
+      normalizeProviderRecord(provider);
+      if (provider && provider.ownerProviderId && !isRemovedProviderRecord(provider)) rows.push(provider);
+    });
+
+    Object.keys(localStorage).forEach(function (key) {
+      if (key.indexOf("serveEaseProviderModuleData") !== 0) return;
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "null");
+        if (!data || !data.profile || !Array.isArray(data.services) || isRemovedProviderRecord(data.profile)) return;
+        normalizeProviderRecord(data.profile);
+
+        const grouped = {};
+        data.services.forEach(function (service) {
+          if (!service || service.status !== "Active") return;
+          const categoryId = String(service.category || data.profile.category || "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s*\/\s*/g, "-")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+          const normalizedCategoryId = categoryId === "cleaning-services" || categoryId === "home-cleaning" ? "home-cleaning" : categoryId;
+          const cityId = Number(service.cityId || data.profile.cityId || 1);
+          const cityName = service.cityName || data.profile.cityName || service.location || data.profile.location || "Chennai";
+          const baseId = data.profile.providerCatalogId || String(data.profile.organisationName || data.profile.fullName || "provider")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+          const id = baseId + "-" + normalizedCategoryId + "-" + cityId;
+
+          if (!grouped[id]) {
+            grouped[id] = {
+              id: id,
+              name: isCleanproProviderRecord(data.profile) ? "Cleanpro Services" : data.profile.organisationName || data.profile.fullName,
+              category: normalizedCategoryId,
+              subServices: [],
+              years: Number(String(data.profile.experience || "").match(/\d+/)?.[0]) || 1,
+              rating: data.profile.rating || 4.5,
+              reviews: 0,
+              distance: "1.0 km",
+              startingPrice: Number(service.price) || 499,
+              location: cityName,
+              jobsDone: 0,
+              availableToday: true,
+              verified: true,
+              cityId: cityId,
+              image: "assets/images/home-cleaning/clean1.jpg",
+              ownerProviderId: data.profile.providerId,
+              ownerProviderEmail: data.profile.email
+            };
+          }
+
+          if (grouped[id].subServices.indexOf(service.name) === -1) {
+            grouped[id].subServices.push(service.name);
+          }
+          grouped[id].startingPrice = Math.min(grouped[id].startingPrice, Number(service.price) || 499);
+        });
+
+        Object.keys(grouped).forEach(function (id) { rows.push(grouped[id]); });
+      } catch (error) {
+        /* ignore invalid local module data */
+      }
+    });
+
+    return dedupeProviders(rows);
+  }
+
+  const ownedProviderRows = collectOwnedProviderCatalogRows();
+  const ownedIds = new Set(ownedProviderRows.map(function (provider) { return provider.id; }));
+  const ownedBaseIds = new Set(ownedProviderRows.map(getProviderBaseId));
+  const mergedProviders = dedupeProviders(ownedProviderRows.concat(updatedProviders.filter(function (provider) {
+    return provider && !ownedIds.has(provider.id) && !ownedBaseIds.has(provider.id) && !isRemovedProviderRecord(provider);
+  })));
+
   const finalData = {
     ...existingData,
     categories: updatedCategories,
     popularServices: updatedPopularServices,
-    providers: updatedProviders
+    providers: mergedProviders
   };
 
   localStorage.setItem("serveEaseData", JSON.stringify(finalData));
+
+  if (window.ServeEaseApi && typeof window.ServeEaseApi.syncCatalog === "function") {
+    window.ServeEaseApi.syncCatalog(finalData).catch(function (error) {
+      console.warn("ServeEase backend catalog sync skipped.", error);
+    });
+  }
 })();

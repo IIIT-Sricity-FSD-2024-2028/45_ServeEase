@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Escalated Tickets</title>
+  <title>ServeEase | Tickets</title>
   <link rel="stylesheet" href="CSS/global.css" />
   <link rel="stylesheet" href="CSS/home.css" />
   <link rel="stylesheet" href="CSS/dashboard.css" />
@@ -28,10 +28,10 @@
 
   <main class="dashboard-page superuser-page">
     <div class="container">
-      <div class="breadcrumb-row"><a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp; <strong>Escalated Tickets</strong></div>
+      <div class="breadcrumb-row"><a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp; <strong>Tickets</strong></div>
 
       <section class="dashboard-hero superuser-ticket-hero danger-hero">
-        <h1>Escalated Tickets</h1>
+        <h1>Tickets</h1>
         <p>Manage and resolve high-priority support tickets requiring superuser intervention.</p>
       </section>
 
@@ -56,11 +56,22 @@
           <h4>Contact Information</h4>
           <div class="superuser-detail-grid" id="superuserTicketContactGrid"></div>
         </section>
-        <section>
-          <h4>Description</h4>
-          <div class="superuser-detail-card" id="superuserTicketDescriptionBlock"></div>
-        </section>
-      </div>
+        <section>
+          <h4>Description</h4>
+          <div class="superuser-detail-card" id="superuserTicketDescriptionBlock"></div>
+        </section>
+
+        <section class="superuser-ticket-solution-section hidden" id="superuserTicketSolutionSection">
+          <h4>Solution</h4>
+          <form class="superuser-ticket-solution-form" id="superuserTicketSolutionForm">
+            <textarea id="superuserTicketSolutionInput" maxlength="600" placeholder="Type the final solution to share with the customer/provider..."></textarea>
+            <div class="superuser-ticket-solution-footer">
+              <small id="superuserTicketSolutionCounter">0 / 600</small>
+              <small class="error" id="superuserTicketSolutionError"></small>
+            </div>
+          </form>
+        </section>
+      </div>
       <div class="superuser-modal-actions split-actions" id="superuserTicketActionRow"></div>
     </div>
   </div>
@@ -82,10 +93,9 @@
         <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
       </div>
     </div>
-  </div>
-
-
-  <script src="JavaScript/superuser.js"></script>
-  <script src="JavaScript/search.js"></script>
+  </div>
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/superuser.js"></script>
+<script src="JavaScript/search.js"></script>
 </body>
 </html>

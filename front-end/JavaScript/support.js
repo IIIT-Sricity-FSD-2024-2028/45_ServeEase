@@ -27,6 +27,233 @@
     localStorage.setItem(supportStorageKey, JSON.stringify(data));
   }
 
+  function createImportedTicketId(sourceType) {
+    const prefix = sourceType === "provider" ? "PT" : "TICKET";
+    return prefix + "-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(Math.random() * 900 + 100);
+  }
+
+  function isSameSupportTicket(existing, incoming) {
+    if (!existing || !incoming) return false;
+    return existing.raisedByType === incoming.raisedByType &&
+      existing.subject === incoming.subject &&
+      existing.description === incoming.description;
+  }
+
+  function mergeUniqueBySignature(currentItems, incomingItems, signatureBuilder) {
+    const merged = Array.isArray(currentItems) ? currentItems.slice() : [];
+    const signatures = new Set(merged.map(signatureBuilder));
+    (Array.isArray(incomingItems) ? incomingItems : []).forEach(function (item) {
+      const signature = signatureBuilder(item);
+      if (signatures.has(signature)) return;
+      merged.push(item);
+      signatures.add(signature);
+    });
+    return merged;
+  }
+
+  function mergeTicketState(current, incoming, preferIncoming) {
+    if (!current) return incoming;
+    if (!incoming) return current;
+    const base = preferIncoming ? { ...current, ...incoming } : { ...incoming, ...current };
+
+    return {
+      ...base,
+      messages: mergeUniqueBySignature(current.messages, incoming.messages, function (message) {
+        return [message.senderType, message.sender, message.text, message.time].join("|");
+      }),
+      history: mergeUniqueBySignature(current.history, incoming.history, function (entry) {
+        return [entry.label, entry.time].join("|");
+      })
+    };
+  }
+
+  function getAllLocalStorageKeys(prefix) {
+    return Object.keys(localStorage).filter(function (key) {
+      return key === prefix || key.indexOf(prefix + ":") === 0;
+    });
+  }
+
+  function normalizeExternalTicket(ticket, sourceType, ownerData) {
+    if (!ticket || !ticket.id) return null;
+    const raisedByType = ticket.raisedByType || sourceType;
+    const isProvider = raisedByType === "provider";
+    const ownerName = isProvider
+      ? (ownerData && ownerData.profile && (ownerData.profile.organisationName || ownerData.profile.fullName)) || ticket.customerName || ticket.providerName || "Provider"
+      : ticket.customerName || (ownerData && ownerData.ownerName) || "Customer";
+
+    return {
+      id: ticket.id,
+      bookingReference: ticket.bookingReference || ticket.bookingRef || "N/A",
+      raisedByType: raisedByType,
+      raisedByLabel: isProvider ? "Provider" : "Customer",
+      customerName: ownerName,
+      providerName: ticket.providerName || (isProvider ? ownerName : ticket.provider || "ServeEase Provider"),
+      issueCategory: ticket.issueCategory || ticket.category || "General Support",
+      subject: ticket.subject || "Support request",
+      description: ticket.description || ticket.subject || "No description provided.",
+      attachmentName: ticket.attachmentName || "No attachment",
+      phone: ticket.phone || (ownerData && ownerData.profile && ownerData.profile.phone) || "",
+      email: ticket.email || (ownerData && ownerData.profile && ownerData.profile.email) || (ownerData && ownerData.ownerEmail) || "",
+      status: ticket.status || "Open",
+      solution: ticket.solution || "",
+      supportUpdate: ticket.supportUpdate || "Your ticket has been received and is currently being reviewed by the support team.",
+      createdDate: ticket.createdDate || ticket.date || ticket.createdOn || ticket.created || "Just now",
+      createdAtIso: ticket.createdAtIso || new Date().toISOString(),
+      assignedTo: ticket.assignedTo || "Priya Sharma",
+      messages: Array.isArray(ticket.messages) ? ticket.messages : [
+        { sender: ownerName, senderType: raisedByType, text: ticket.description || ticket.subject || "Support request created.", time: ticket.createdDate || ticket.date || ticket.created || "Just now" }
+      ],
+      history: Array.isArray(ticket.history) ? ticket.history : [
+        { label: "Ticket created by " + (isProvider ? "provider" : "customer"), time: ticket.createdDate || ticket.date || ticket.created || "Just now", active: true }
+      ]
+    };
+  }
+
+  function mergeSupportTicketsFromUserModules() {
+    const data = getSupportData();
+    if (!data || !Array.isArray(data.tickets)) return;
+    const existingIds = new Set(data.tickets.map(function (ticket) { return ticket.id; }));
+    let changed = false;
+
+    getAllLocalStorageKeys("serveEaseCustomerModuleData").forEach(function (key) {
+      try {
+        const customerData = JSON.parse(localStorage.getItem(key) || "null");
+        if (!customerData || !Array.isArray(customerData.tickets)) return;
+        let moduleChanged = false;
+        customerData.tickets.forEach(function (ticket) {
+          const normalized = normalizeExternalTicket(ticket, "customer", customerData);
+          if (!normalized) return;
+          const existingTicket = data.tickets.find(function (item) { return item.id === normalized.id; });
+          if (existingTicket && isSameSupportTicket(existingTicket, normalized)) {
+            Object.assign(existingTicket, mergeTicketState(existingTicket, normalized, false));
+            changed = true;
+            return;
+          }
+          if (!existingTicket && data.tickets.some(function (item) { return isSameSupportTicket(item, normalized); })) return;
+          if (existingTicket) {
+            normalized.id = createImportedTicketId("customer");
+            ticket.id = normalized.id;
+            moduleChanged = true;
+          }
+          data.tickets.unshift(normalized);
+          data.notifications.unshift({ id: "NT" + Date.now() + ticket.id, text: "New support ticket created - " + ticket.id, time: "Just now", isNew: true, ticketId: ticket.id });
+          existingIds.add(ticket.id);
+          changed = true;
+        });
+        if (moduleChanged) localStorage.setItem(key, JSON.stringify(customerData));
+      } catch (error) {
+        /* ignore invalid customer module data */
+      }
+    });
+
+    getAllLocalStorageKeys("serveEaseProviderModuleData").forEach(function (key) {
+      try {
+        const providerData = JSON.parse(localStorage.getItem(key) || "null");
+        if (!providerData || !Array.isArray(providerData.supportTickets)) return;
+        let moduleChanged = false;
+        providerData.supportTickets.forEach(function (ticket) {
+          const normalized = normalizeExternalTicket(ticket, "provider", providerData);
+          if (!normalized) return;
+          const existingTicket = data.tickets.find(function (item) { return item.id === normalized.id; });
+          if (existingTicket && isSameSupportTicket(existingTicket, normalized)) {
+            Object.assign(existingTicket, mergeTicketState(existingTicket, normalized, false));
+            changed = true;
+            return;
+          }
+          if (!existingTicket && data.tickets.some(function (item) { return isSameSupportTicket(item, normalized); })) return;
+          if (existingTicket) {
+            normalized.id = createImportedTicketId("provider");
+            ticket.id = normalized.id;
+            moduleChanged = true;
+          }
+          data.tickets.unshift(normalized);
+          data.notifications.unshift({ id: "NT" + Date.now() + ticket.id, text: "New provider support ticket created - " + ticket.id, time: "Just now", isNew: true, ticketId: ticket.id });
+          existingIds.add(ticket.id);
+          changed = true;
+        });
+        if (moduleChanged) localStorage.setItem(key, JSON.stringify(providerData));
+      } catch (error) {
+        /* ignore invalid provider module data */
+      }
+    });
+
+    if (changed) setSupportData(data);
+  }
+
+  function hydrateSupportDataFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getState !== "function") {
+      if (typeof done === "function") done();
+      return;
+    }
+
+    window.ServeEaseApi.getState(supportStorageKey)
+      .then(function (entry) {
+        const backendData = entry && entry.value ? entry.value : null;
+        if (!backendData || !Array.isArray(backendData.tickets)) return;
+
+        const data = getSupportData();
+        const ticketMap = {};
+        (data.tickets || []).forEach(function (ticket) { ticketMap[ticket.id] = ticket; });
+        backendData.tickets.forEach(function (ticket) {
+          if (!ticket || !ticket.id) return;
+          if (ticketMap[ticket.id]) {
+            ticketMap[ticket.id] = mergeTicketState(ticketMap[ticket.id], ticket, true);
+            return;
+          }
+          if ((data.tickets || []).some(function (item) { return isSameSupportTicket(item, ticket); })) return;
+          if (ticketMap[ticket.id] && !isSameSupportTicket(ticketMap[ticket.id], ticket)) {
+            const importedTicket = { ...ticket, id: createImportedTicketId(ticket.raisedByType) };
+            ticketMap[importedTicket.id] = importedTicket;
+            return;
+          }
+          ticketMap[ticket.id] = ticketMap[ticket.id] || ticket;
+        });
+        data.tickets = Object.keys(ticketMap).map(function (id) { return ticketMap[id]; });
+        data.notifications = (data.notifications && data.notifications.length) ? data.notifications : (backendData.notifications || []);
+        data.agent = data.agent || backendData.agent || { fullName: "Priya Sharma" };
+        setSupportData(data);
+      })
+      .catch(function () {
+        return null;
+      })
+      .finally(function () {
+        if (typeof done === "function") done();
+      });
+  }
+
+  function updateTicketInUserModules(ticket) {
+    if (!ticket || !ticket.id) return;
+    const keys = ticket.raisedByType === "provider"
+      ? getAllLocalStorageKeys("serveEaseProviderModuleData")
+      : getAllLocalStorageKeys("serveEaseCustomerModuleData");
+
+    keys.forEach(function (key) {
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "null");
+        const tickets = ticket.raisedByType === "provider" ? data && data.supportTickets : data && data.tickets;
+        if (!Array.isArray(tickets)) return;
+        const localTicket = tickets.find(function (item) { return item.id === ticket.id; });
+        if (!localTicket) return;
+        localTicket.status = ticket.status;
+        localTicket.solution = ticket.solution || "";
+        localTicket.supportUpdate = ticket.supportUpdate || ticket.solution || "Support team updated your ticket.";
+        localTicket.messages = Array.isArray(ticket.messages) ? ticket.messages : localTicket.messages;
+        localTicket.updatedAt = todayStamp();
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch (error) {
+        /* ignore invalid module data */
+      }
+    });
+  }
+
+  function persistTicketUpdate(data, ticket) {
+    setSupportData(data);
+    updateTicketInUserModules(ticket);
+    if (window.ServeEaseApi && typeof window.ServeEaseApi.saveState === "function") {
+      window.ServeEaseApi.saveState(supportStorageKey, data).catch(function () { return null; });
+    }
+  }
+
   function formatStatusClass(status) {
     return String(status).toLowerCase().replace(/\s+/g, "-");
   }
@@ -300,7 +527,8 @@ function setupHeader(agentName) {
       node.textContent = agentName;
     });
 
-    if (profileBtn && dropdown) {
+    if (profileBtn && dropdown && profileBtn.dataset.bound !== "true") {
+      profileBtn.dataset.bound = "true";
       profileBtn.addEventListener("click", function (event) {
         event.stopPropagation();
         dropdown.classList.toggle("hidden");
@@ -308,12 +536,23 @@ function setupHeader(agentName) {
       });
     }
 
-    document.addEventListener("click", function () {
+    if (dropdown && dropdown.dataset.bound !== "true") {
+      dropdown.dataset.bound = "true";
+      dropdown.addEventListener("click", function (event) {
+        event.stopPropagation();
+      });
+    }
+
+    if (document.body && document.body.dataset.supportHeaderBound !== "true") {
+      document.body.dataset.supportHeaderBound = "true";
+      document.addEventListener("click", function () {
       if (dropdown) dropdown.classList.add("hidden");
       if (notificationPanel) notificationPanel.classList.add("hidden");
-    });
+      });
+    }
 
-    if (notificationBtn) {
+    if (notificationBtn && notificationBtn.dataset.bound !== "true") {
+      notificationBtn.dataset.bound = "true";
       notificationBtn.addEventListener("click", function (event) {
         event.stopPropagation();
 
@@ -335,13 +574,15 @@ function setupHeader(agentName) {
       });
     }
 
-    if (notificationPanel) {
+    if (notificationPanel && notificationPanel.dataset.clickBound !== "true") {
+      notificationPanel.dataset.clickBound = "true";
       notificationPanel.addEventListener("click", function (event) {
         event.stopPropagation();
       });
     }
 
-    if (logoutBtn) {
+    if (logoutBtn && logoutBtn.dataset.bound !== "true") {
+      logoutBtn.dataset.bound = "true";
       logoutBtn.addEventListener("click", function () {
         sessionStorage.removeItem("serveEaseSession");
         window.location.href = "login.html";
@@ -523,18 +764,63 @@ function setupHeader(agentName) {
       </div>
     `;
 
+    renderSolutionBlock(ticket);
+
     renderMessages(ticket);
     renderStatusOptions(ticket);
     renderHistory(ticket);
     setupDetailActions(ticketId);
   }
 
+  function renderSolutionBlock(ticket) {
+    const complaintBlock = document.getElementById("supportComplaintBlock");
+    if (!complaintBlock) return;
+
+    complaintBlock.insertAdjacentHTML("beforeend", `
+      <div class="support-solution-box">
+        <div class="support-complaint-label">Solution</div>
+        <form id="supportSolutionForm" class="support-solution-form">
+          <textarea id="supportSolutionInput" maxlength="600" placeholder="Type the resolution customers/providers will see as Support Update...">${ticket.solution || ""}</textarea>
+          <div class="support-solution-footer">
+            <small id="supportSolutionCounter">${String(ticket.solution || "").length} / 600</small>
+            <button class="btn btn-primary" type="submit">Save Solution</button>
+          </div>
+          <small class="error" id="supportSolutionError"></small>
+          <small class="success-message" id="supportSolutionSuccess"></small>
+        </form>
+      </div>
+    `);
+  }
+
   function renderMessages(ticket) {
     const thread = document.getElementById("supportMessageThread");
     if (!thread) return;
 
+    if (!Array.isArray(ticket.messages)) ticket.messages = [];
+    const solutionText = ticket.solution || ticket.supportUpdate;
+    const defaultUpdateText = "Your ticket has been received and is currently being reviewed by the support team.";
+    if (solutionText && solutionText !== defaultUpdateText) {
+      const hasSolutionMessage = ticket.messages.some(function (message) {
+        return message.senderType === "agent" && message.text === solutionText;
+      });
+      if (!hasSolutionMessage) {
+        ticket.messages.push({
+          sender: ticket.assignedTo || "Support Agent",
+          senderType: "agent",
+          text: solutionText,
+          time: ticket.updatedAt || todayStamp()
+        });
+        const data = getSupportData();
+        const storedTicket = data.tickets.find(function (item) { return item.id === ticket.id; });
+        if (storedTicket) {
+          storedTicket.messages = ticket.messages;
+          setSupportData(data);
+        }
+      }
+    }
+
     thread.innerHTML = ticket.messages.map(function (message) {
-      const bubbleClass = message.senderType === "agent" ? "support-message-bubble agent" : "support-message-bubble";
+      const bubbleClass = message.senderType === "agent" || message.senderType === "admin" ? "support-message-bubble agent" : "support-message-bubble";
       return `
         <div class="${bubbleClass}">
           <div class="support-message-author">${message.sender}</div>
@@ -592,6 +878,11 @@ function setupHeader(agentName) {
     const replyError = document.getElementById("supportReplyError");
     const replySuccess = document.getElementById("supportReplySuccess");
     const statusForm = document.getElementById("supportStatusForm");
+    const solutionForm = document.getElementById("supportSolutionForm");
+    const solutionInput = document.getElementById("supportSolutionInput");
+    const solutionError = document.getElementById("supportSolutionError");
+    const solutionSuccess = document.getElementById("supportSolutionSuccess");
+    const solutionCounter = document.getElementById("supportSolutionCounter");
     const escalateBtn = document.getElementById("supportEscalateBtn");
     const modal = document.getElementById("supportEscalationModal");
     const confirmEscalationBtn = document.getElementById("confirmEscalationBtn");
@@ -611,6 +902,61 @@ function setupHeader(agentName) {
         <div class="support-detail-box"><span>Current Status</span><strong><span class="support-status-badge ${formatStatusClass(ticket.status)}">${ticket.status}</span></strong></div>
       `;
       escalateBtn.disabled = ticket.status === "Escalated";
+    }
+
+    if (solutionInput && solutionCounter) {
+      solutionInput.addEventListener("input", function () {
+        this.value = this.value.replace(/[<>]/g, "");
+        solutionCounter.textContent = this.value.length + " / 600";
+        if (solutionError && this.value.trim().length >= 10) solutionError.textContent = "";
+      });
+    }
+
+    if (solutionForm && solutionInput) {
+      solutionForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        solutionError.textContent = "";
+        solutionSuccess.textContent = "";
+        const solution = solutionInput.value.trim();
+
+        if (solution.length < 10) {
+          solutionError.textContent = "Solution must contain at least 10 characters.";
+          solutionInput.focus();
+          return;
+        }
+
+        const data = getSupportData();
+        const ticket = data.tickets.find(function (item) { return item.id === ticketId; });
+        if (!ticket) return;
+
+        ticket.solution = solution;
+        ticket.supportUpdate = solution;
+        ticket.updatedAt = todayStamp();
+        if (!Array.isArray(ticket.messages)) ticket.messages = [];
+        const solutionMessageExists = ticket.messages.some(function (message) {
+          return message.senderType === "agent" && message.text === solution;
+        });
+        if (!solutionMessageExists) {
+          ticket.messages.push({
+            sender: data.agent.fullName,
+            senderType: "agent",
+            text: solution,
+            time: todayStamp()
+          });
+        }
+        ticket.history.push({
+          label: "Support solution updated",
+          time: todayStamp(),
+          active: true
+        });
+        ticket.history.forEach(function (entry, index) {
+          entry.active = index === ticket.history.length - 1;
+        });
+        addNotification(data, `Support update saved - ${ticket.id}`, ticket.id, true);
+        persistTicketUpdate(data, ticket);
+        solutionSuccess.textContent = "Solution saved and shared with the user.";
+        refreshPage();
+      });
     }
 
     if (replyForm) {
@@ -647,7 +993,7 @@ function setupHeader(agentName) {
           entry.active = index === ticket.history.length - 1;
         });
         addNotification(data, `New reply sent for ${ticket.id}`, ticket.id, true);
-        setSupportData(data);
+        persistTicketUpdate(data, ticket);
         replyInput.value = "";
         replySuccess.textContent = "Reply sent successfully.";
         refreshPage();
@@ -678,7 +1024,7 @@ function setupHeader(agentName) {
           entry.active = index === ticket.history.length - 1;
         });
         addNotification(data, `Ticket status updated - ${ticket.id}`, ticket.id, true);
-        setSupportData(data);
+        persistTicketUpdate(data, ticket);
         replyError.textContent = "";
         replySuccess.textContent = "Ticket status updated successfully.";
         refreshPage();
@@ -721,7 +1067,7 @@ function setupHeader(agentName) {
           entry.active = index === ticket.history.length - 1;
         });
         addNotification(data, `Ticket escalated to superuser - ${ticket.id}`, ticket.id, true);
-        setSupportData(data);
+        persistTicketUpdate(data, ticket);
         replySuccess.textContent = "Ticket escalated to superuser successfully.";
         replyError.textContent = "";
         hideModal();
@@ -733,6 +1079,7 @@ function setupHeader(agentName) {
   const session = requireSupportAccess();
   if (document.getElementById("supportWelcomeText") || document.getElementById("supportTicketDetailGrid")) {
     seedSupportData();
+    mergeSupportTicketsFromUserModules();
     if (session) {
       const data = getSupportData();
       data.agent.fullName = session.fullName || data.agent.fullName;
@@ -740,5 +1087,10 @@ function setupHeader(agentName) {
     }
     renderDashboard();
     renderDetailPage();
+    hydrateSupportDataFromBackend(function () {
+      mergeSupportTicketsFromUserModules();
+      renderDashboard();
+      renderDetailPage();
+    });
   }
 })();

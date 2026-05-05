@@ -15,7 +15,7 @@
   'use strict';
 
   /* ── 1. City catalogue ─────────────────────────────────── */
-  var CITIES = [
+  var BASE_CITIES = [
     { id: 1, name: 'Chennai' },
     { id: 2, name: 'Bangalore' },
     { id: 3, name: 'Hyderabad' },
@@ -24,19 +24,85 @@
   ];
 
   var LS_KEY = 'serveEaseSelectedCity';
-  var DEFAULT_CITY = CITIES[0]; // Chennai
+  var CUSTOM_CITIES_KEY = 'serveEaseCustomCities';
+  var DEFAULT_CITY = BASE_CITIES[0]; // Chennai
+
+  function normalizeCityName(value) {
+    return String(value || '').trim().replace(/\s+/g, ' ');
+  }
+
+  function loadCustomCities() {
+    try {
+      var customCities = JSON.parse(localStorage.getItem(CUSTOM_CITIES_KEY));
+      if (Array.isArray(customCities)) {
+        return customCities.filter(function (city) {
+          return city && city.id && city.name;
+        });
+      }
+    } catch (e) { /* ignore */ }
+    return [];
+  }
+
+  function saveCustomCities(cities) {
+    localStorage.setItem(CUSTOM_CITIES_KEY, JSON.stringify(cities));
+  }
+
+  function getAllCities() {
+    var seen = {};
+    return BASE_CITIES.concat(loadCustomCities()).filter(function (city) {
+      var key = String(city.name || '').toLowerCase();
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function registerCity(cityName) {
+    var name = normalizeCityName(cityName);
+    if (!name) return DEFAULT_CITY;
+
+    var existing = getAllCities().find(function (city) {
+      return city.name.toLowerCase() === name.toLowerCase();
+    });
+    if (existing) return existing;
+
+    var allCities = getAllCities();
+    var nextId = allCities.reduce(function (max, city) {
+      return Math.max(max, Number(city.id) || 0);
+    }, 0) + 1;
+    var city = { id: nextId, name: name };
+    var customCities = loadCustomCities();
+    customCities.push(city);
+    saveCustomCities(customCities);
+    return city;
+  }
+
+  function getLocationStorageKey() {
+    try {
+      var session = JSON.parse(sessionStorage.getItem('serveEaseSession') || 'null');
+      if (session && session.userId && session.email !== 'user@serveease.com' && session.email !== 'provider@serveease.com') {
+        return LS_KEY + ':' + session.role + ':' + session.userId;
+      }
+    } catch (e) { /* ignore */ }
+    return LS_KEY;
+  }
 
   /* ── 2. State helpers ─────────────────────────────────────
    *  City is stored as { id, name } — never as a plain string.
    * ─────────────────────────────────────────────────────── */
   function saveCity(city) {
-    localStorage.setItem(LS_KEY, JSON.stringify(city));
+    localStorage.setItem(getLocationStorageKey(), JSON.stringify(city));
   }
 
   function loadCity() {
     try {
-      var stored = JSON.parse(localStorage.getItem(LS_KEY));
-      if (stored && stored.id && stored.name) return stored;
+      var stored = JSON.parse(localStorage.getItem(getLocationStorageKey()));
+      if (stored && stored.id && stored.name) {
+        var cityExists = getAllCities().some(function (city) {
+          return Number(city.id) === Number(stored.id);
+        });
+        if (cityExists) return stored;
+      }
     } catch (e) { /* ignore */ }
     return DEFAULT_CITY;
   }
@@ -55,7 +121,7 @@
     }
     var providers = data.providers || [];
     return providers.filter(function (p) {
-      return p.cityId === cityId;
+      return Number(p.cityId) === Number(cityId);
     });
   }
 
@@ -97,7 +163,8 @@
     select.className = 'city-selector';
     select.setAttribute('aria-label', 'Choose your city');
 
-    CITIES.forEach(function (city) {
+    var cities = getAllCities();
+    cities.forEach(function (city) {
       var option = document.createElement('option');
       option.value = city.id;
       option.textContent = city.name;
@@ -107,7 +174,7 @@
 
     select.addEventListener('change', function () {
       var chosenId = Number(this.value);
-      var chosenCity = CITIES.find(function (c) { return c.id === chosenId; });
+      var chosenCity = getAllCities().find(function (c) { return Number(c.id) === chosenId; });
       if (chosenCity) setSelectedCity(chosenCity);
     });
 
@@ -133,7 +200,9 @@
 
   /* ── 8. Public API ─────────────────────────────────────── */
   global.ServeEaseLocation = {
-    cities: CITIES,
+    cities: getAllCities(),
+    getCities: getAllCities,
+    registerCity: registerCity,
     getSelectedCity: getSelectedCity,
     setSelectedCity: setSelectedCity,
     getProvidersByCity: getProvidersByCity,

@@ -29,6 +29,281 @@
     localStorage.setItem(storageKey, JSON.stringify(data));
   }
 
+  function getSupportData() {
+    return JSON.parse(localStorage.getItem("serveEaseSupportModuleData") || '{"agent":{"fullName":"Priya Sharma"},"tickets":[],"notifications":[]}');
+  }
+
+  function setSupportData(data) {
+    localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(data));
+    if (window.ServeEaseApi && typeof window.ServeEaseApi.saveState === "function") {
+      window.ServeEaseApi.saveState("serveEaseSupportModuleData", data).catch(function () { return null; });
+    }
+  }
+
+  function superuserStamp() {
+    return new Date().toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).replace(",", "");
+  }
+
+  function getAllLocalStorageKeys(prefix) {
+    return Object.keys(localStorage).filter(function (key) {
+      return key === prefix || key.indexOf(prefix + ":") === 0;
+    });
+  }
+
+  function mapSupportTicketToSuperuser(ticket) {
+    return {
+      id: ticket.id,
+      status: ticket.status || "Open",
+      userType: ticket.raisedByType === "provider" ? "Provider" : "Customer",
+      customer: ticket.customerName || ticket.providerName || "User",
+      bookingId: ticket.bookingReference || "N/A",
+      created: ticket.createdDate || "Just now",
+      category: ticket.issueCategory || "General Support",
+      subject: ticket.subject || "Support request",
+      description: ticket.description || ticket.subject || "No description provided.",
+      phone: ticket.phone || "",
+      email: ticket.email || "",
+      attachments: ticket.attachmentName && ticket.attachmentName !== "No attachment" ? 1 : 0,
+      raisedByType: ticket.raisedByType || "customer",
+      solution: ticket.solution || "",
+      supportUpdate: ticket.supportUpdate || "",
+      messages: Array.isArray(ticket.messages) ? ticket.messages : [],
+      supportTicketRef: ticket.id
+    };
+  }
+
+  function syncSupportTicketsIntoSuperuserData() {
+    const supportData = getSupportData();
+    if (!supportData || !Array.isArray(supportData.tickets)) return;
+    const data = getData();
+    if (!data || !Array.isArray(data.tickets)) return;
+    let changed = false;
+
+    supportData.tickets.forEach(function (supportTicket) {
+      if (!supportTicket || !supportTicket.id) return;
+      const normalized = mapSupportTicketToSuperuser(supportTicket);
+      const existing = data.tickets.find(function (ticket) { return ticket.id === normalized.id; });
+      if (existing) {
+        Object.assign(existing, normalized);
+      } else {
+        data.tickets.unshift(normalized);
+      }
+      changed = true;
+    });
+
+    if (changed) setData(data);
+  }
+
+  function hydrateSupportTicketsFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getState !== "function") {
+      if (typeof done === "function") done();
+      return;
+    }
+
+    window.ServeEaseApi.getState("serveEaseSupportModuleData")
+      .then(function (entry) {
+        if (entry && entry.value) {
+          const current = getSupportData();
+          const backend = entry.value;
+          const ticketMap = {};
+          (backend.tickets || []).forEach(function (ticket) { if (ticket && ticket.id) ticketMap[ticket.id] = ticket; });
+          (current.tickets || []).forEach(function (ticket) { if (ticket && ticket.id) ticketMap[ticket.id] = ticket; });
+          backend.tickets = Object.keys(ticketMap).map(function (id) { return ticketMap[id]; });
+          backend.notifications = (current.notifications && current.notifications.length) ? current.notifications : (backend.notifications || []);
+          backend.agent = current.agent || backend.agent || { fullName: "Priya Sharma" };
+          localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(backend));
+        }
+      })
+      .catch(function () { return null; })
+      .finally(function () {
+        syncSupportTicketsIntoSuperuserData();
+        if (typeof done === "function") done();
+      });
+  }
+
+  function updateTicketInUserModules(ticket) {
+    if (!ticket || !ticket.id) return;
+    const keys = ticket.raisedByType === "provider"
+      ? getAllLocalStorageKeys("serveEaseProviderModuleData")
+      : getAllLocalStorageKeys("serveEaseCustomerModuleData");
+
+    keys.forEach(function (key) {
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "null");
+        const tickets = ticket.raisedByType === "provider" ? data && data.supportTickets : data && data.tickets;
+        if (!Array.isArray(tickets)) return;
+        const localTicket = tickets.find(function (item) { return item.id === ticket.id; });
+        if (!localTicket) return;
+        localTicket.status = ticket.status;
+        localTicket.solution = ticket.solution || "";
+        localTicket.supportUpdate = ticket.supportUpdate || ticket.solution || "Admin updated your ticket.";
+        localTicket.messages = Array.isArray(ticket.messages) ? ticket.messages : localTicket.messages;
+        localTicket.updatedAt = ticket.updatedAt || superuserStamp();
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch (error) {
+        /* ignore invalid module data */
+      }
+    });
+  }
+
+  function getAppData() {
+    return JSON.parse(localStorage.getItem("serveEaseData") || "{}");
+  }
+
+  function setAppData(data) {
+    localStorage.setItem("serveEaseData", JSON.stringify(data));
+  }
+
+  function getProviderApprovalRequests(appData) {
+    if (!Array.isArray(appData.providerApprovalRequests)) {
+      appData.providerApprovalRequests = [];
+    }
+    return appData.providerApprovalRequests;
+  }
+
+  function normalizeProviderApproval(request) {
+    return {
+      ...request,
+      id: request.id,
+      fullName: request.fullName,
+      organisationName: request.organisationName || "",
+      email: request.email,
+      phone: request.phone || "",
+      category: request.serviceType || request.category || "Home Service",
+      experience: Number(request.experience) || 0,
+      location: request.cityName || request.location || request.address || "",
+      cityId: request.cityId || "",
+      cityName: request.cityName || request.location || "",
+      address: request.address || "",
+      providerCatalogId: request.providerCatalogId || "",
+      registrationDate: request.registrationDate || "Just now",
+      approvalStatus: request.approvalStatus || "Pending Approval"
+    };
+  }
+
+  function syncPendingProviderApprovals() {
+    const data = getData();
+    const appData = getAppData();
+    if (!data) return;
+
+    if (!Array.isArray(data.pendingProviders)) data.pendingProviders = [];
+    if (!Array.isArray(data.providers)) data.providers = [];
+
+    const activeEmails = new Set(data.providers.map(function (provider) {
+      return String(provider.email || "").toLowerCase();
+    }));
+    const pendingEmails = new Set(data.pendingProviders.map(function (provider) {
+      return String(provider.email || "").toLowerCase();
+    }));
+
+    getProviderApprovalRequests(appData).forEach(function (request) {
+      if (!request || request.approvalStatus !== "Pending Approval") return;
+      const emailKey = String(request.email || "").toLowerCase();
+      if (!emailKey || activeEmails.has(emailKey) || pendingEmails.has(emailKey)) return;
+      data.pendingProviders.unshift(normalizeProviderApproval(request));
+      pendingEmails.add(emailKey);
+    });
+
+    data.pendingProviders = data.pendingProviders.filter(function (provider) {
+      const matchingRequest = getProviderApprovalRequests(appData).find(function (request) {
+        return request.email && provider.email && request.email.toLowerCase() === provider.email.toLowerCase();
+      });
+      return !matchingRequest || matchingRequest.approvalStatus === "Pending Approval";
+    });
+
+    data.stats.pendingApprovals = data.pendingProviders.length;
+    setData(data);
+  }
+
+  function hydrateProviderApprovalsFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getState !== "function") {
+      if (typeof done === "function") done();
+      return;
+    }
+
+    window.ServeEaseApi.getState("serveEaseData")
+      .then(function (entry) {
+        const backendData = entry && entry.value ? entry.value : null;
+        if (!backendData) return;
+
+        const appData = getAppData();
+        const localRequests = getProviderApprovalRequests(appData);
+        const localEmails = new Set(localRequests.map(function (request) {
+          return String(request.email || "").toLowerCase();
+        }));
+
+        (backendData.providerApprovalRequests || []).forEach(function (request) {
+          const emailKey = String(request.email || "").toLowerCase();
+          if (!emailKey || localEmails.has(emailKey)) return;
+          localRequests.push(request);
+          localEmails.add(emailKey);
+        });
+
+        if ((!appData.users || !appData.users.length) && Array.isArray(backendData.users)) {
+          appData.users = backendData.users;
+        }
+
+        setAppData(appData);
+      })
+      .catch(function () {
+        return null;
+      })
+      .finally(function () {
+        if (typeof done === "function") done();
+      });
+  }
+
+  function syncSuperuserBookingsFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getBookings !== "function") {
+      if (typeof done === "function") done();
+      return;
+    }
+
+    window.ServeEaseApi.getBookings()
+      .then(function (bookings) {
+        if (!Array.isArray(bookings) || !bookings.length) return;
+        const data = getData();
+        if (!data || !Array.isArray(data.bookings)) return;
+
+        const existingIds = new Set(data.bookings.map(function (booking) { return booking.id; }));
+        let changed = false;
+
+        bookings.forEach(function (booking) {
+          if (existingIds.has(booking.id)) return;
+          data.bookings.unshift({
+            id: booking.id,
+            status: booking.status === "Pending" ? "Requested" : booking.status,
+            paymentStatus: "Paid",
+            category: booking.category || "Home Service",
+            serviceType: booking.service,
+            provider: booking.provider,
+            customer: booking.customerName || "Customer",
+            serviceDate: booking.date,
+            serviceTime: booking.time,
+            amount: booking.amount,
+            reason: "Awaiting provider approval",
+            email: booking.customerEmail || ""
+          });
+          existingIds.add(booking.id);
+          changed = true;
+        });
+
+        if (changed) setData(data);
+      })
+      .catch(function (error) {
+        console.warn("ServeEase backend superuser booking sync skipped.", error);
+      })
+      .finally(function () {
+        if (typeof done === "function") done();
+      });
+  }
+
   function chipClass(value) {
     const normalized = String(value || "").toLowerCase();
     if (normalized === "in progress") return "in-progress";
@@ -811,10 +1086,12 @@
     if (index === -1) return;
     const provider = data.pendingProviders.splice(index, 1)[0];
     provider.approvalStatus = 'Active';
+    provider.status = 'Active';
     data.providers.unshift(provider);
     data.stats.pendingApprovals = data.pendingProviders.length;
     data.notifications.unshift({ id: 'AN' + Date.now(), text: 'Provider approved - ' + provider.fullName, time: 'Just now', type: 'blue', isNew: true, actionPage: 'superuser-management.html' });
     setData(data);
+    promoteProviderToActiveLogin(provider);
     renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     updateManagementCounts();
@@ -825,15 +1102,78 @@
 
   function rejectProvider(providerId, closeAfter) {
     const data = getData();
+    const rejectedProvider = data.pendingProviders.find(function (item) { return item.id === providerId; });
     data.pendingProviders = data.pendingProviders.filter(function (item) { return item.id !== providerId; });
     data.stats.pendingApprovals = data.pendingProviders.length;
     data.notifications.unshift({ id: 'AN' + Date.now(), text: 'Provider application rejected', time: 'Just now', type: 'red', isNew: true, actionPage: 'superuser-management.html' });
     setData(data);
+    markProviderApprovalRejected(rejectedProvider);
     renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     updateManagementCounts();
     renderDashboard();
     renderNotifications();
     if (closeAfter) closeModal('superuserProviderApprovalModalBackdrop');
+  }
+
+  function promoteProviderToActiveLogin(provider) {
+    const appData = getAppData();
+    if (!Array.isArray(appData.users)) appData.users = [];
+    const requests = getProviderApprovalRequests(appData);
+    const request = requests.find(function (item) {
+      return item.email && provider.email && item.email.toLowerCase() === provider.email.toLowerCase();
+    }) || provider;
+
+    const activeUser = {
+      ...request,
+      id: request.id || provider.id,
+      role: "provider",
+      fullName: request.fullName || provider.fullName,
+      email: request.email || provider.email,
+      phone: request.phone || provider.phone || "",
+      password: request.password || provider.password || "",
+      organisationName: request.organisationName || provider.organisationName || "",
+      serviceType: request.serviceType || provider.category || "",
+      experience: Number(request.experience || provider.experience) || 0,
+      cityId: request.cityId || provider.cityId || "",
+      cityName: request.cityName || provider.cityName || provider.location || "",
+      location: request.location || provider.location || request.cityName || "",
+      address: request.address || provider.address || "",
+      providerCatalogId: request.providerCatalogId || provider.providerCatalogId || "",
+      approvalStatus: "Active"
+    };
+
+    appData.users = appData.users.filter(function (user) {
+      return !(user.email && activeUser.email && user.email.toLowerCase() === activeUser.email.toLowerCase());
+    });
+    appData.users.push(activeUser);
+
+    appData.providerApprovalRequests = requests.filter(function (item) {
+      return !(item.email && activeUser.email && item.email.toLowerCase() === activeUser.email.toLowerCase());
+    });
+
+    setAppData(appData);
+  }
+
+  function markProviderApprovalRejected(provider) {
+    if (!provider) return;
+    const appData = getAppData();
+    const requests = getProviderApprovalRequests(appData);
+    const request = requests.find(function (item) {
+      return item.email && provider.email && item.email.toLowerCase() === provider.email.toLowerCase();
+    });
+
+    if (request) {
+      request.approvalStatus = "Rejected";
+    } else {
+      requests.push({
+        ...provider,
+        role: "provider",
+        serviceType: provider.category,
+        approvalStatus: "Rejected"
+      });
+    }
+
+    setAppData(appData);
   }
 
   function closeCategoryForm() {
@@ -1060,11 +1400,26 @@
     byId('superuserTicketInfoGrid').innerHTML = '<div class="superuser-detail-field"><span>Created:</span><strong>' + ticket.created + '</strong></div><div class="superuser-detail-field"><span>Booking Ref:</span><strong>' + ticket.bookingId + '</strong></div><div class="superuser-detail-field"><span>User Type:</span><strong>' + ticket.userType + '</strong></div></div>';
     byId('superuserTicketContactGrid').innerHTML = '<div class="superuser-detail-field"><span>Name:</span><strong>' + ticket.customer + '</strong></div><div class="superuser-detail-field"><span>Phone:</span><strong>' + ticket.phone + '</strong></div><div class="superuser-detail-field"><span>Email:</span><strong>' + ticket.email + '</strong></div>';
     byId('superuserTicketDescriptionBlock').textContent = ticket.description;
+    const solutionSection = byId('superuserTicketSolutionSection');
+    const solutionInput = byId('superuserTicketSolutionInput');
+    const solutionCounter = byId('superuserTicketSolutionCounter');
+    const solutionError = byId('superuserTicketSolutionError');
+    if (solutionSection && solutionInput && solutionCounter) {
+      solutionSection.classList.toggle('hidden', ticket.status !== 'Escalated' && ticket.status !== 'Resolved');
+      solutionInput.value = ticket.solution || ticket.supportUpdate || '';
+      solutionInput.disabled = ticket.status === 'Resolved';
+      solutionCounter.textContent = solutionInput.value.length + ' / 600';
+      if (solutionError) solutionError.textContent = '';
+      solutionInput.oninput = function () {
+        this.value = this.value.replace(/[<>]/g, '');
+        solutionCounter.textContent = this.value.length + ' / 600';
+        if (solutionError && this.value.trim().length >= 10) solutionError.textContent = '';
+      };
+    }
     const actionRow = byId('superuserTicketActionRow');
     if (ticket.status === 'Escalated') {
-      actionRow.innerHTML = '<button class="btn superuser-success-btn" type="button" id="superuserResolveTicketBtn">✓ Resolve Ticket</button><button class="btn btn-outline" type="button" id="superuserAssignTicketBtn">Assign to Support Team</button>';
-      byId('superuserResolveTicketBtn').onclick = function () { updateTicketStatus(ticket.id, 'Resolved'); };
-      byId('superuserAssignTicketBtn').onclick = function () { updateTicketStatus(ticket.id, 'In Progress'); };
+      actionRow.innerHTML = '<button class="btn superuser-success-btn btn-full" type="button" id="superuserResolveTicketBtn">✓ Resolve Ticket</button>';
+      byId('superuserResolveTicketBtn').onclick = function () { resolveEscalatedTicket(ticket.id); };
     } else if (ticket.status === 'Open') {
       actionRow.innerHTML = '<button class="btn btn-primary" type="button" id="superuserMoveProgressBtn">Start Progress</button><button class="btn btn-outline" type="button" id="superuserEscalateTicketBtn">Escalate Ticket</button>';
       byId('superuserMoveProgressBtn').onclick = function () { updateTicketStatus(ticket.id, 'In Progress'); };
@@ -1084,8 +1439,110 @@
     const ticket = data.tickets.find(function (item) { return item.id === ticketId; });
     if (!ticket) return;
     ticket.status = status;
+    syncSuperuserTicketToSupport(ticket, status === 'Resolved' ? ticket.solution : '');
     data.notifications.unshift({ id: 'AN' + Date.now(), text: ticket.id + ' moved to ' + status, time: 'Just now', type: status === 'Resolved' ? 'blue' : 'red', isNew: true, actionPage: 'superuser-escalated-tickets.html' });
     setData(data);
+    closeModal('superuserTicketModalBackdrop');
+    buildTicketSections(byId('superuserTicketSearch') ? byId('superuserTicketSearch').value.trim().toLowerCase() : '');
+    renderTicketsPage();
+  }
+
+  function syncSuperuserTicketToSupport(ticket, solution) {
+    const supportData = getSupportData();
+    if (!Array.isArray(supportData.tickets)) supportData.tickets = [];
+    if (!Array.isArray(supportData.notifications)) supportData.notifications = [];
+    let supportTicket = supportData.tickets.find(function (item) { return item.id === ticket.id; });
+    if (!supportTicket) {
+      supportTicket = {
+        id: ticket.id,
+        bookingReference: ticket.bookingId || "N/A",
+        raisedByType: ticket.raisedByType || (ticket.userType === "Provider" ? "provider" : "customer"),
+        raisedByLabel: ticket.userType || "Customer",
+        customerName: ticket.customer,
+        providerName: ticket.userType === "Provider" ? ticket.customer : "ServeEase Provider",
+        issueCategory: ticket.category,
+        subject: ticket.subject,
+        description: ticket.description,
+        attachmentName: ticket.attachments ? "Attachment available" : "No attachment",
+        phone: ticket.phone || "",
+        email: ticket.email || "",
+        createdDate: ticket.created || "Just now",
+        assignedTo: "Priya Sharma",
+        messages: Array.isArray(ticket.messages) ? ticket.messages : [],
+        history: []
+      };
+      supportData.tickets.unshift(supportTicket);
+    }
+
+    supportTicket.status = ticket.status;
+    supportTicket.solution = solution || ticket.solution || supportTicket.solution || "";
+    supportTicket.supportUpdate = supportTicket.solution || ticket.supportUpdate || supportTicket.supportUpdate || "Admin updated your ticket.";
+    supportTicket.updatedAt = superuserStamp();
+    if (!Array.isArray(supportTicket.messages)) supportTicket.messages = [];
+    if (!Array.isArray(supportTicket.history)) supportTicket.history = [];
+
+    if (solution) {
+      const adminReplyExists = supportTicket.messages.some(function (message) {
+        return message.senderType === "admin" && message.text === solution;
+      });
+      if (!adminReplyExists) {
+        supportTicket.messages.push({
+          sender: "Superuser",
+          senderType: "admin",
+          text: solution,
+          time: supportTicket.updatedAt
+        });
+      }
+    }
+
+    supportTicket.history.push({
+      label: ticket.status === "Resolved" ? "Superuser resolved ticket" : "Superuser updated ticket status",
+      time: supportTicket.updatedAt,
+      active: true
+    });
+    supportTicket.history.forEach(function (entry, index) {
+      entry.active = index === supportTicket.history.length - 1;
+    });
+    supportData.notifications.unshift({
+      id: "NT" + Date.now(),
+      text: "Superuser moved " + ticket.id + " to " + ticket.status,
+      time: "Just now",
+      isNew: true,
+      ticketId: ticket.id
+    });
+
+    setSupportData(supportData);
+    updateTicketInUserModules(supportTicket);
+  }
+
+  function resolveEscalatedTicket(ticketId) {
+    const solutionInput = byId('superuserTicketSolutionInput');
+    const solutionError = byId('superuserTicketSolutionError');
+    const solution = solutionInput ? solutionInput.value.trim() : '';
+    if (solutionError) solutionError.textContent = '';
+
+    if (solution.length < 10) {
+      if (solutionError) solutionError.textContent = 'Solution must contain at least 10 characters.';
+      if (solutionInput) solutionInput.focus();
+      return;
+    }
+
+    const data = getData();
+    const ticket = data.tickets.find(function (item) { return item.id === ticketId; });
+    if (!ticket) return;
+    ticket.status = 'Resolved';
+    ticket.solution = solution;
+    ticket.supportUpdate = solution;
+    ticket.messages = Array.isArray(ticket.messages) ? ticket.messages : [];
+    ticket.messages.push({
+      sender: 'Superuser',
+      senderType: 'admin',
+      text: solution,
+      time: superuserStamp()
+    });
+    data.notifications.unshift({ id: 'AN' + Date.now(), text: ticket.id + ' resolved by superuser', time: 'Just now', type: 'blue', isNew: true, actionPage: 'superuser-escalated-tickets.html' });
+    setData(data);
+    syncSuperuserTicketToSupport(ticket, solution);
     closeModal('superuserTicketModalBackdrop');
     buildTicketSections(byId('superuserTicketSearch') ? byId('superuserTicketSearch').value.trim().toLowerCase() : '');
     renderTicketsPage();
@@ -1120,7 +1577,9 @@
   }
 
   seedData();
+  syncPendingProviderApprovals();
   migrateProviderOrgNames();
+  syncSupportTicketsIntoSuperuserData();
   requireAccess();
   setupCommonHeader();
   setupNotificationModal();
@@ -1129,6 +1588,23 @@
   renderDashboard();
   renderManagement();
   renderCategoriesPage();
-  renderBookingsPage();
+    renderBookingsPage();
+    syncSuperuserBookingsFromBackend(function () {
+      renderDashboard();
+      renderBookingsPage();
+    });
   renderTicketsPage();
+
+  hydrateSupportTicketsFromBackend(function () {
+    renderTicketsPage();
+    renderDashboard();
+  });
+
+  hydrateProviderApprovalsFromBackend(function () {
+    syncPendingProviderApprovals();
+    renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
+    renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
+    updateManagementCounts();
+    renderDashboard();
+  });
 })();

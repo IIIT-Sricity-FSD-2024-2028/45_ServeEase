@@ -16,7 +16,17 @@
     return;
   }
 
-  const providerDataKey = "serveEaseProviderModuleData";
+  function isDemoProviderAccount() {
+    return session && (session.email === "provider@serveease.com" || session.userId === "PRO001");
+  }
+
+  function getAccountStorageSuffix() {
+    return session && (session.userId || String(session.email || "provider").toLowerCase());
+  }
+
+  const providerDataKey = isDemoProviderAccount()
+    ? "serveEaseProviderModuleData"
+    : "serveEaseProviderModuleData:" + getAccountStorageSuffix();
 
   function getProviderModuleData() {
     return JSON.parse(localStorage.getItem(providerDataKey));
@@ -24,6 +34,537 @@
 
   function setProviderModuleData(data) {
     localStorage.setItem(providerDataKey, JSON.stringify(data));
+  }
+
+  function getSupportData() {
+    return JSON.parse(localStorage.getItem("serveEaseSupportModuleData") || '{"agent":{"fullName":"Priya Sharma"},"tickets":[],"notifications":[]}');
+  }
+
+  function setSupportData(data) {
+    localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(data));
+    if (window.ServeEaseApi && typeof window.ServeEaseApi.saveState === "function") {
+      window.ServeEaseApi.saveState("serveEaseSupportModuleData", data).catch(function () { return null; });
+    }
+  }
+
+  function createProviderTicketId() {
+    return "PT-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(Math.random() * 900 + 100);
+  }
+
+  function providerMessageStamp() {
+    return new Date().toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).replace(",", "");
+  }
+
+  function syncProviderTicketsFromSupport(data) {
+    const supportData = getSupportData();
+    if (!Array.isArray(supportData.tickets) || !Array.isArray(data.supportTickets)) return;
+    let changed = false;
+
+    data.supportTickets.forEach(function (ticket) {
+      const supportTicket = supportData.tickets.find(function (item) { return item.id === ticket.id; });
+      if (!supportTicket) return;
+      ticket.status = supportTicket.status || ticket.status;
+      ticket.solution = supportTicket.solution || ticket.solution || "";
+      ticket.supportUpdate = supportTicket.supportUpdate || ticket.supportUpdate || "";
+      ticket.messages = Array.isArray(supportTicket.messages) ? supportTicket.messages : ticket.messages;
+      changed = true;
+    });
+
+    if (changed) setProviderModuleData(data);
+  }
+
+  function pushProviderTicketToSupport(ticket, data) {
+    const supportData = getSupportData();
+    if (!Array.isArray(supportData.tickets)) supportData.tickets = [];
+    if (!Array.isArray(supportData.notifications)) supportData.notifications = [];
+    while (supportData.tickets.some(function (item) { return item.id === ticket.id; })) {
+      ticket.id = createProviderTicketId();
+    }
+
+    const profile = data.profile || {};
+    const providerName = profile.organisationName || profile.fullName || "Provider";
+    supportData.tickets.unshift({
+      id: ticket.id,
+      bookingReference: ticket.bookingRef || "N/A",
+      raisedByType: "provider",
+      raisedByLabel: "Provider",
+      customerName: providerName,
+      providerName: providerName,
+      issueCategory: ticket.category,
+      subject: ticket.subject,
+      description: ticket.description || ticket.subject,
+      attachmentName: "No attachment",
+      phone: profile.phone || "",
+      email: profile.email || "",
+      status: "Open",
+      supportUpdate: ticket.supportUpdate,
+      solution: ticket.solution || "",
+      createdDate: ticket.created || "Just now",
+      createdAtIso: new Date().toISOString(),
+      assignedTo: supportData.agent && supportData.agent.fullName || "Priya Sharma",
+      messages: [
+        { sender: providerName, senderType: "provider", text: ticket.description || ticket.subject, time: ticket.created || "Just now" }
+      ],
+      history: [
+        { label: "Ticket created by provider", time: ticket.created || "Just now", active: true }
+      ]
+    });
+    supportData.notifications.unshift({ id: "NT" + Date.now(), text: "New provider support ticket created - " + ticket.id, time: "Just now", isNew: true, ticketId: ticket.id });
+    setSupportData(supportData);
+  }
+
+  function addProviderChatMessageToSupport(ticket, data, message) {
+    const supportData = getSupportData();
+    if (!Array.isArray(supportData.tickets)) supportData.tickets = [];
+    if (!Array.isArray(supportData.notifications)) supportData.notifications = [];
+
+    let supportTicket = supportData.tickets.find(function (item) { return item.id === ticket.id; });
+    if (!supportTicket) {
+      pushProviderTicketToSupport(ticket, data);
+      supportTicket = getSupportData().tickets.find(function (item) { return item.id === ticket.id; });
+    }
+    if (!supportTicket) return;
+
+    const profile = data.profile || {};
+    const providerName = profile.organisationName || profile.fullName || "Provider";
+    if (!Array.isArray(supportTicket.messages)) supportTicket.messages = [];
+    if (!Array.isArray(supportTicket.history)) supportTicket.history = [];
+    const solutionText = supportTicket.solution || supportTicket.supportUpdate;
+    const defaultUpdateText = "Your ticket has been received and is currently being reviewed by the support team.";
+    if (solutionText && solutionText !== defaultUpdateText && !supportTicket.messages.some(function (item) {
+      return item.senderType === "agent" && item.text === solutionText;
+    })) {
+      supportTicket.messages.push({
+        sender: supportTicket.assignedTo || "Support Agent",
+        senderType: "agent",
+        text: solutionText,
+        time: supportTicket.updatedAt || "Just now"
+      });
+    }
+    supportTicket.messages.push({
+      sender: providerName,
+      senderType: "provider",
+      text: message,
+      time: providerMessageStamp()
+    });
+    supportTicket.history.push({
+      label: "Provider replied in support chat",
+      time: providerMessageStamp(),
+      active: true
+    });
+    supportTicket.history.forEach(function (entry, index) {
+      entry.active = index === supportTicket.history.length - 1;
+    });
+    supportData.notifications.unshift({
+      id: "NT" + Date.now(),
+      text: "Provider replied to ticket " + supportTicket.id,
+      time: "Just now",
+      isNew: true,
+      ticketId: supportTicket.id
+    });
+    setSupportData(supportData);
+  }
+
+  function hydrateSupportDataFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getState !== "function") {
+      if (typeof done === "function") done();
+      return;
+    }
+
+    window.ServeEaseApi.getState("serveEaseSupportModuleData")
+      .then(function (response) {
+        if (response && response.value) {
+          localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(response.value));
+        }
+      })
+      .catch(function () { return null; })
+      .finally(function () {
+        if (typeof done === "function") done();
+      });
+  }
+
+  function normalizeName(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  function slugify(value) {
+    return String(value || "provider")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "provider";
+  }
+
+  function normalizeProviderText(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  function isRemovedProviderRecord(record) {
+    if (!record) return false;
+    return [
+      record.id,
+      record.email,
+      record.name,
+      record.fullName,
+      record.organisationName,
+      record.providerCatalogId
+    ].some(function (value) {
+      return normalizeProviderText(value).indexOf("koushikpestcontrol") !== -1;
+    });
+  }
+
+  function isCleanproProviderRecord(record) {
+    if (!record) return false;
+    return [
+      record.id,
+      record.email,
+      record.name,
+      record.fullName,
+      record.organisationName,
+      record.providerCatalogId,
+      record.ownerProviderEmail
+    ].some(function (value) {
+      return normalizeProviderText(value).indexOf("cleanpro") !== -1;
+    });
+  }
+
+  function getProviderCatalogName(profile) {
+    return isCleanproProviderRecord(profile)
+      ? "Cleanpro Services"
+      : profile.organisationName || profile.fullName;
+  }
+
+  function getCategoryIdFromServiceCategory(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    const map = {
+      "home cleaning": "home-cleaning",
+      "cleaning services": "home-cleaning",
+      "carpentry": "carpentry",
+      "painting": "painting",
+      "salon at home": "salon-at-home",
+      "plumbing": "plumbing",
+      "electrician": "electrician",
+      "appliance repair / installation": "appliance-repair-installation",
+      "appliance repair": "appliance-repair-installation",
+      "pest control": "pest-control"
+    };
+
+    return map[normalized] || slugify(value);
+  }
+
+  function hasDifferentMainCategoryName(subcategory, registeredCategory) {
+    const normalizedSubcategory = String(subcategory || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const currentCategory = getCategoryIdFromServiceCategory(registeredCategory).replace(/[^a-z0-9]/g, "");
+    const categoryIds = [
+      "home-cleaning",
+      "carpentry",
+      "painting",
+      "salon-at-home",
+      "plumbing",
+      "electrician",
+      "appliance-repair-installation",
+      "pest-control"
+    ];
+
+    return categoryIds.some(function (categoryId) {
+      const normalizedCategory = categoryId.replace(/[^a-z0-9]/g, "");
+      return normalizedCategory !== currentCategory && normalizedSubcategory.indexOf(normalizedCategory) !== -1;
+    });
+  }
+
+  function getBaseServeEaseCities() {
+    return [
+      { id: 1, name: "Chennai" },
+      { id: 2, name: "Bangalore" },
+      { id: 3, name: "Hyderabad" },
+      { id: 4, name: "Delhi" },
+      { id: 5, name: "Mumbai" }
+    ];
+  }
+
+  function getCustomServeEaseCities() {
+    try {
+      const customCities = JSON.parse(localStorage.getItem("serveEaseCustomCities"));
+      return Array.isArray(customCities) ? customCities : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function saveCustomServeEaseCities(cities) {
+    localStorage.setItem("serveEaseCustomCities", JSON.stringify(cities));
+  }
+
+  function getAllServeEaseCities() {
+    const seen = {};
+    return getBaseServeEaseCities().concat(getCustomServeEaseCities()).filter(function (city) {
+      const key = String(city.name || "").toLowerCase();
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function getCityById(cityId) {
+    return getAllServeEaseCities().find(function (city) {
+      return Number(city.id) === Number(cityId);
+    }) || getBaseServeEaseCities()[0];
+  }
+
+  function extractCityNameFromLocation(location) {
+    const rawLocation = String(location || "").trim();
+    const loweredLocation = rawLocation.toLowerCase();
+    const knownCity = getBaseServeEaseCities().find(function (city) {
+      return loweredLocation.indexOf(city.name.toLowerCase()) !== -1 ||
+        (city.name === "Bangalore" && loweredLocation.indexOf("bengaluru") !== -1);
+    });
+
+    if (knownCity) return knownCity.name;
+
+    const firstPart = rawLocation.split(",")[0] || rawLocation;
+    return firstPart.replace(/\d+/g, "").trim().replace(/\s+/g, " ") || "Chennai";
+  }
+
+  function getCityIdFromLocation(location) {
+    const value = String(location || "").toLowerCase();
+    if (value.includes("bangalore") || value.includes("bengaluru")) return 2;
+    if (value.includes("hyderabad")) return 3;
+    if (value.includes("delhi")) return 4;
+    if (value.includes("mumbai")) return 5;
+
+    const cityName = extractCityNameFromLocation(location);
+    const allCities = getAllServeEaseCities();
+    const existingCity = allCities.find(function (city) {
+      return city.name.toLowerCase() === cityName.toLowerCase();
+    });
+
+    if (existingCity) return Number(existingCity.id);
+
+    const nextId = allCities.reduce(function (max, city) {
+      return Math.max(max, Number(city.id) || 0);
+    }, 0) + 1;
+    const customCities = getCustomServeEaseCities();
+    customCities.push({ id: nextId, name: cityName });
+    saveCustomServeEaseCities(customCities);
+    return nextId;
+  }
+
+  function getCityNameFromLocation(location) {
+    return getCityById(getCityIdFromLocation(location)).name;
+  }
+
+  function getCategoryImage(categoryId) {
+    const images = {
+      "home-cleaning": "assets/images/home-cleaning/clean1.jpg",
+      "carpentry": "assets/images/carpentry/carpentry1.jpg.jpeg",
+      "painting": "assets/images/painting/painting1.jpg.jpeg",
+      "salon-at-home": "assets/images/salon-at-home/salon1.jpg",
+      "plumbing": "assets/images/plumbing/plumbing1.jpg.jpeg",
+      "electrician": "assets/images/electrician/ele1.jpg.jpeg",
+      "appliance-repair-installation": "assets/images/appliance-repair/ACrepair.jpg.jpeg",
+      "pest-control": "assets/images/pest-control/pest1.jpg.jpeg"
+    };
+
+    return images[categoryId] || images["home-cleaning"];
+  }
+
+  function getSubcategoriesForProviderCategory(categoryName) {
+    const categoryId = getCategoryIdFromServiceCategory(categoryName);
+    const store = JSON.parse(localStorage.getItem("serveEaseData") || "{}");
+    const categories = Array.isArray(store.categories) ? store.categories : [];
+    const category = categories.find(function (item) {
+      return item.id === categoryId || item.name === categoryName;
+    });
+
+    if (category && Array.isArray(category.subServices) && category.subServices.length) {
+      return category.subServices;
+    }
+
+    return [categoryName || "General Service"];
+  }
+
+  function getProviderCatalogIds(data) {
+    const ids = [
+      data && data.profile && data.profile.providerCatalogId,
+      session && session.providerCatalogId
+    ];
+
+    if (data && Array.isArray(data.services)) {
+      data.services.forEach(function (service) {
+        if (service.catalogProviderId) ids.push(service.catalogProviderId);
+      });
+    }
+
+    return ids.filter(Boolean);
+  }
+
+  function syncProviderServicesToCatalog(data) {
+    if (!data || !data.profile || !Array.isArray(data.services)) return;
+    if (isRemovedProviderRecord(data.profile)) {
+      localStorage.removeItem(providerDataKey);
+      return;
+    }
+
+    const store = JSON.parse(localStorage.getItem("serveEaseData") || "{}");
+    if (!Array.isArray(store.providers)) store.providers = [];
+    const baseProviderId = data.profile.providerCatalogId || slugify(data.profile.organisationName || data.profile.fullName);
+
+    store.providers = store.providers.filter(function (provider) {
+      if (!provider || isRemovedProviderRecord(provider)) return false;
+      const providerBaseId = String(provider.id || "").replace(new RegExp("-" + provider.category + "-" + provider.cityId + "$"), "");
+      return provider.ownerProviderId !== data.profile.providerId && provider.id !== baseProviderId && providerBaseId !== baseProviderId;
+    });
+
+    const groupedServices = {};
+
+    data.services.forEach(function (service) {
+      if (service.status !== "Active") return;
+
+      const categoryId = getCategoryIdFromServiceCategory(service.category);
+      const baseId = baseProviderId;
+      const cityId = Number(service.cityId || data.profile.cityId || getCityIdFromLocation(service.location || data.profile.location));
+      const cityName = (service.cityName || data.profile.cityName || getCityById(cityId).name);
+      const groupKey = categoryId + ":" + cityId;
+      const catalogProviderId = baseId + "-" + categoryId + "-" + cityId;
+      const activeSlots = data.availability && Array.isArray(data.availability.slots)
+        ? data.availability.slots
+            .filter(function (slot) { return slot.active; })
+            .map(function (slot) { return slot.from + " - " + slot.to; })
+        : [];
+
+      service.catalogProviderId = catalogProviderId;
+      service.cityId = cityId;
+      service.cityName = cityName;
+      service.location = cityName;
+
+      if (!groupedServices[groupKey]) {
+        groupedServices[groupKey] = {
+          id: catalogProviderId,
+          name: getProviderCatalogName(data.profile),
+          category: categoryId,
+          subServices: [],
+          years: Number(String(data.profile.experience || "").match(/\d+/)?.[0]) || 1,
+          rating: data.profile.rating || 4.5,
+          reviews: 0,
+          distance: "1.0 km",
+          startingPrice: Number(service.price) || 499,
+          location: cityName,
+          jobsDone: 0,
+          availableToday: true,
+          verified: true,
+          cityId: cityId,
+          image: getCategoryImage(categoryId),
+          availabilitySlots: activeSlots,
+          ownerProviderId: data.profile.providerId,
+          ownerProviderEmail: data.profile.email
+        };
+      }
+
+      if (groupedServices[groupKey].subServices.indexOf(service.name) === -1) {
+        groupedServices[groupKey].subServices.push(service.name);
+      }
+      groupedServices[groupKey].startingPrice = Math.min(groupedServices[groupKey].startingPrice, Number(service.price) || 499);
+    });
+
+    Object.keys(groupedServices).forEach(function (key) {
+      store.providers.unshift(groupedServices[key]);
+    });
+
+    localStorage.setItem("serveEaseData", JSON.stringify(store));
+    setProviderModuleData(data);
+
+    if (window.ServeEaseApi && typeof window.ServeEaseApi.syncCatalog === "function") {
+      window.ServeEaseApi.syncCatalog(store).catch(function (error) {
+        console.warn("ServeEase provider catalog sync skipped.", error);
+      });
+    }
+  }
+
+  function syncProviderBookingsFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getBookings !== "function") {
+      if (typeof done === "function") done();
+      return;
+    }
+
+    window.ServeEaseApi.getBookings()
+      .then(function (bookings) {
+        if (!Array.isArray(bookings) || !bookings.length) return;
+
+        const data = getProviderModuleData();
+        if (!data || !Array.isArray(data.bookings)) return;
+
+        const providerNames = [
+          data.profile && data.profile.fullName,
+          data.profile && data.profile.organisationName,
+          session && session.fullName,
+          session && session.organisationName
+        ].map(normalizeName).filter(Boolean);
+
+        const providerIds = [
+          data.profile && data.profile.providerCatalogId,
+          data.profile && data.profile.providerId,
+          session && session.providerCatalogId,
+          session && session.userId
+        ].concat(getProviderCatalogIds(data)).filter(Boolean);
+
+        const existingIds = new Set(data.bookings.map(function (booking) { return booking.id; }));
+        let changed = false;
+
+        bookings.forEach(function (booking) {
+          const providerMatches =
+            providerIds.indexOf(booking.providerId) !== -1 ||
+            providerNames.indexOf(normalizeName(booking.provider)) !== -1;
+          if (!providerMatches) return;
+
+          const existingBooking = data.bookings.find(function (item) {
+            return item.id === booking.id;
+          });
+
+          if (existingBooking) {
+            existingBooking.customer = booking.customerName || existingBooking.customer || "Customer";
+            existingBooking.service = booking.service;
+            existingBooking.providerId = booking.providerId || existingBooking.providerId;
+            existingBooking.date = booking.date;
+            existingBooking.time = booking.time;
+            existingBooking.location = booking.address;
+            existingBooking.amount = booking.amount;
+            existingBooking.status = booking.status || existingBooking.status || "Pending";
+            existingBooking.progress = booking.status === "Completed" ? 100 : booking.status === "Accepted" ? 70 : 35;
+            changed = true;
+            return;
+          }
+
+          if (existingIds.has(booking.id)) return;
+
+          data.bookings.unshift({
+            id: booking.id,
+            customer: booking.customerName || "Customer",
+            service: booking.service,
+            providerId: booking.providerId,
+            date: booking.date,
+            time: booking.time,
+            location: booking.address,
+            amount: booking.amount,
+            status: booking.status || "Pending",
+            progress: booking.status === "Completed" ? 100 : booking.status === "Accepted" ? 70 : 35
+          });
+          existingIds.add(booking.id);
+          changed = true;
+        });
+
+        if (changed) setProviderModuleData(data);
+      })
+      .catch(function (error) {
+        console.warn("ServeEase backend provider booking sync skipped.", error);
+      })
+      .finally(function () {
+        if (typeof done === "function") done();
+      });
   }
 
   function getLoggedInProviderUser() {
@@ -53,22 +594,30 @@
     const digitsOnly = String(rawPhone).replace(/\D/g, "");
     const formattedPhone = String(rawPhone).startsWith("+91") ? String(rawPhone) : `+91 ${digitsOnly || "9876501234"}`;
     const category = (providerUser && providerUser.serviceType) || (session && session.serviceType) || profile.category || "Home Cleaning";
+    const subCategory = (providerUser && providerUser.serviceSubcategory) || (session && session.serviceSubcategory) || profile.subCategory || profile.subcategory || category;
     const experience = (providerUser && providerUser.experience) ? `${providerUser.experience} Years` : profile.experience || "5 Years";
-    const location = (providerUser && providerUser.address) || (session && session.address) || profile.location || "Bangalore";
+    const cityId = Number((providerUser && providerUser.cityId) || (session && session.cityId) || profile.cityId || getCityIdFromLocation(profile.location || "Chennai"));
+    const cityName = (providerUser && providerUser.cityName) || (session && session.cityName) || profile.cityName || getCityById(cityId).name;
+    const location = cityName;
     const providerId = (providerUser && providerUser.id) || (session && session.userId) || profile.providerId || "PRO001";
+    const providerCatalogId = (providerUser && providerUser.providerCatalogId) || (session && session.providerCatalogId) || profile.providerCatalogId || "";
 
     return {
       providerId: providerId,
+      providerCatalogId: providerCatalogId,
       fullName: providerName,
       email: providerEmail,
       phone: formattedPhone,
       organisationName: organisationName,
       category: category,
+      subCategory: subCategory,
       experience: experience,
+      cityId: cityId,
+      cityName: cityName,
       location: location,
       accountStatus: profile.accountStatus || "Active",
-      totalServices: profile.totalServices || 5,
-      totalBookings: profile.totalBookings || 120,
+      totalServices: isDemoProviderAccount() ? (profile.totalServices || 5) : (profile.totalServices || 1),
+      totalBookings: isDemoProviderAccount() ? (profile.totalBookings || 120) : (profile.totalBookings || 0),
       rating: profile.rating || 4.8,
       accountCreated: profile.accountCreated || "12 Jan 2025",
       bankName: profile.bankName || "HDFC Bank",
@@ -84,8 +633,28 @@
       ...session,
       fullName: profile.fullName,
       email: profile.email,
-      phone: profile.phone
+      phone: profile.phone,
+      serviceSubcategory: profile.subCategory || session.serviceSubcategory || "",
+      cityId: profile.cityId || session.cityId || "",
+      cityName: profile.cityName || session.cityName || "",
+      location: profile.location || session.location || "",
+      providerCatalogId: profile.providerCatalogId || session.providerCatalogId || ""
     }));
+  }
+
+  function buildInitialServiceFromProfile(profile) {
+    return {
+      id: "SVC001",
+      name: profile.subCategory || profile.category || "General Service",
+      category: profile.category || "General Service",
+      description: (profile.subCategory || profile.category || "Service") + " offered by " + (profile.organisationName || profile.fullName),
+      price: 499,
+      duration: "2 hours",
+      cityId: profile.cityId || getCityIdFromLocation(profile.location || "Chennai"),
+      cityName: profile.cityName || getCityNameFromLocation(profile.location || "Chennai"),
+      location: profile.cityName || profile.location || "Chennai",
+      status: "Active"
+    };
   }
 
   function seedProviderData() {
@@ -93,45 +662,86 @@
     if (existing) {
       // Force an update of the profile to ensure the name/org overrides apply immediately
       const data = JSON.parse(existing);
-      data.profile = buildProviderProfile(data.profile);
-      setProviderModuleData(data);
-      return;
+      const nextProfile = buildProviderProfile(data.profile);
+      if (data.ownerProviderId && data.ownerProviderId !== nextProfile.providerId) {
+        localStorage.removeItem(providerDataKey);
+      } else {
+        data.ownerProviderId = nextProfile.providerId;
+        data.profile = nextProfile;
+        if (isDemoProviderAccount()) {
+          const demoServiceNames = [
+            { name: "Kitchen Cleaning", price: 799, duration: "2 hours", description: "Professional kitchen deep cleaning service" },
+            { name: "Bathroom Cleaning", price: 599, duration: "1.5 hours", description: "Complete bathroom cleaning and sanitization" },
+            { name: "Floor Cleaning Service", price: 699, duration: "2 hours", description: "Home floor and tile deep cleaning" }
+          ];
+          if (!Array.isArray(data.services)) data.services = [];
+          demoServiceNames.forEach(function (demoService, index) {
+            let service = data.services.find(function (item) { return item.name === demoService.name; });
+            if (!service) {
+              service = { id: "SVC" + String(index + 1).padStart(3, "0"), category: "Cleaning Services" };
+              data.services.push(service);
+            }
+            service.name = demoService.name;
+            service.category = "Cleaning Services";
+            service.description = demoService.description;
+            service.price = demoService.price;
+            service.duration = demoService.duration;
+            service.cityId = nextProfile.cityId;
+            service.cityName = nextProfile.cityName;
+            service.location = nextProfile.cityName;
+            service.status = "Active";
+          });
+        }
+        setProviderModuleData(data);
+        syncProviderServicesToCatalog(data);
+        return;
+      }
     }
 
+    const profile = buildProviderProfile();
+    const demoServices = [
+      {
+        id: "SVC001",
+        name: "Kitchen Cleaning",
+        category: "Cleaning Services",
+        description: "Professional kitchen deep cleaning service",
+        price: 799,
+        duration: "2 hours",
+        cityId: profile.cityId,
+        cityName: profile.cityName,
+        location: profile.cityName,
+        status: "Active"
+      },
+      {
+        id: "SVC002",
+        name: "Bathroom Cleaning",
+        category: "Cleaning Services",
+        description: "Complete bathroom cleaning and sanitization",
+        price: 599,
+        duration: "1.5 hours",
+        cityId: profile.cityId,
+        cityName: profile.cityName,
+        location: profile.cityName,
+        status: "Active"
+      },
+      {
+        id: "SVC003",
+        name: "Floor Cleaning Service",
+        category: "Cleaning Services",
+        description: "Home floor and tile deep cleaning",
+        price: 699,
+        duration: "2 hours",
+        cityId: profile.cityId,
+        cityName: profile.cityName,
+        location: profile.cityName,
+        status: "Active"
+      }
+    ];
+
     const data = {
-      profile: buildProviderProfile(),
-      services: [
-        {
-          id: "SVC001",
-          name: "Kitchen Cleaning",
-          category: "Cleaning Services",
-          description: "Professional kitchen deep cleaning service",
-          price: 799,
-          duration: "2 hours",
-          location: "Bangalore",
-          status: "Inactive"
-        },
-        {
-          id: "SVC002",
-          name: "Bathroom Cleaning",
-          category: "Cleaning Services",
-          description: "Complete bathroom cleaning and sanitization",
-          price: 599,
-          duration: "1.5 hours",
-          location: "Bangalore",
-          status: "Active"
-        },
-        {
-          id: "SVC003",
-          name: "Floor Cleaning Service",
-          category: "Cleaning Services",
-          description: "Home floor and tile deep cleaning",
-          price: 699,
-          duration: "2 hours",
-          location: "Bangalore",
-          status: "Active"
-        }
-      ],
+      ownerProviderId: profile.providerId,
+      profile: profile,
+      services: isDemoProviderAccount() ? demoServices : [buildInitialServiceFromProfile(profile)],
       availability: {
         days: [
           { label: "Monday", active: true },
@@ -149,7 +759,7 @@
           { id: "SLOT004", day: "Friday", from: "2:00 PM", to: "6:00 PM", active: true }
         ]
       },
-      bookings: [
+      bookings: isDemoProviderAccount() ? [
         {
           id: "BOOK-2026-1101",
           customer: "Raghava Kumar",
@@ -194,8 +804,8 @@
           status: "Rejected",
           progress: 10
         }
-      ],
-      transactions: [
+      ] : [],
+      transactions: isDemoProviderAccount() ? [
         {
           id: "TX-2026-7854",
           bookingRef: "BOOK-2026-1120",
@@ -229,8 +839,8 @@
           paymentDate: "14 Mar 2026",
           status: "Pending"
         }
-      ],
-      supportTickets: [
+      ] : [],
+      supportTickets: isDemoProviderAccount() ? [
         {
           id: "PT-1001",
           subject: "Payment not received",
@@ -241,10 +851,11 @@
           bookingRef: "BOOK-2026-1045",
           supportUpdate: "Your payout request has been received and is currently being reviewed by the support team."
         }
-      ]
+      ] : []
     };
 
     localStorage.setItem(providerDataKey, JSON.stringify(data));
+    syncProviderServicesToCatalog(data);
   }
 
   function statusClass(status) {
@@ -271,6 +882,7 @@
 
   function ensureProviderProfileMatchesSession() {
     const data = getProviderModuleData();
+    syncProviderTicketsFromSupport(data);
     if (!data) return;
 
     data.profile = buildProviderProfile(data.profile);
@@ -359,25 +971,41 @@
 
     if (!backdrop) return;
 
+    const providerProfile = getProviderModuleData().profile || {};
+    const subcategoryOptions = getSubcategoriesForProviderCategory(providerProfile.category);
+    const currentName = service && service.name ? service.name : "";
+    const options = currentName && subcategoryOptions.indexOf(currentName) === -1
+      ? subcategoryOptions.concat([currentName])
+      : subcategoryOptions;
+    name.innerHTML = '<option value="">Select service sub category</option>' + options.map(function (subcategory) {
+      return '<option value="' + subcategory + '">' + subcategory + '</option>';
+    }).join("");
+
+    if (location && location.tagName === "SELECT") {
+      location.innerHTML = '<option value="">Select service city</option>' + getAllServeEaseCities().map(function (city) {
+        return '<option value="' + city.name + '">' + city.name + '</option>';
+      }).join("");
+    }
+
     error.textContent = "";
     title.textContent = mode === "edit" ? "Edit Service" : "Add New Service";
 
     if (service) {
       editId.value = service.id;
       name.value = service.name;
-      category.value = service.category;
+      category.value = (getProviderModuleData().profile || {}).category || service.category;
       description.value = service.description;
       price.value = service.price;
       duration.value = service.duration;
-      location.value = service.location;
+      location.value = service.cityName || getCityNameFromLocation(service.location || providerProfile.location);
     } else {
       editId.value = "";
       name.value = "";
-      category.value = "";
+      category.value = (getProviderModuleData().profile || {}).category || "";
       description.value = "";
       price.value = "";
       duration.value = "";
-      location.value = "";
+      location.value = providerProfile.cityName || providerProfile.location || "";
     }
 
     backdrop.classList.remove("hidden");
@@ -452,6 +1080,7 @@
           if (!service) return;
           service.status = service.status === "Active" ? "Inactive" : "Active";
           setProviderModuleData(data);
+          syncProviderServicesToCatalog(data);
           renderServices();
         });
       });
@@ -531,42 +1160,38 @@
       if (e.target === backdrop) closeModal();
     });
 
-    if (closeTicketModalBtn && ticketModalBackdrop) {
-      closeTicketModalBtn.addEventListener("click", function () { ticketModalBackdrop.classList.add("hidden"); });
-      ticketModalBackdrop.addEventListener("click", function (e) { if (e.target === ticketModalBackdrop) ticketModalBackdrop.classList.add("hidden"); });
-    }
-
-    if (closeChatModalBtn && chatModalBackdrop) {
-      closeChatModalBtn.addEventListener("click", function () { chatModalBackdrop.classList.add("hidden"); });
-      chatModalBackdrop.addEventListener("click", function (e) { if (e.target === chatModalBackdrop) chatModalBackdrop.classList.add("hidden"); });
-    }
-
-    if (chatForm && chatInput && chatThread) {
-      chatForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-        const message = chatInput.value.trim();
-        if (!message) return;
-        chatThread.insertAdjacentHTML("beforeend", `<div class="provider-chat-bubble user">${message}</div>`);
-        chatThread.insertAdjacentHTML("beforeend", `<div class="provider-chat-bubble support">Thank you. Our provider support team will get back to you shortly.</div>`);
-        chatInput.value = "";
-        chatThread.scrollTop = chatThread.scrollHeight;
-      });
-    }
-
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       error.textContent = "";
 
       const id = document.getElementById("providerServiceEditId").value.trim();
       const name = document.getElementById("providerServiceName").value.trim();
-      const category = document.getElementById("providerServiceCategory").value.trim();
+      const category = data.profile.category;
       const description = document.getElementById("providerServiceDescription").value.trim();
       const price = document.getElementById("providerServicePrice").value.trim();
       const duration = document.getElementById("providerServiceDuration").value.trim();
       const location = document.getElementById("providerServiceLocation").value.trim();
+      const cityId = getCityIdFromLocation(location);
+      const cityName = getCityById(cityId).name;
 
       if (!name || !category || !description || !price || !duration || !location) {
         error.textContent = "Please fill all service fields.";
+        return;
+      }
+
+      if (Number(price) <= 0) {
+        error.textContent = "Price must be greater than zero.";
+        return;
+      }
+
+      const allowedSubcategories = getSubcategoriesForProviderCategory(category);
+      if (allowedSubcategories.indexOf(name) === -1) {
+        error.textContent = "Choose a valid sub category for your registered main category.";
+        return;
+      }
+
+      if (hasDifferentMainCategoryName(name, category)) {
+        error.textContent = "Sub category must belong to your registered main category.";
         return;
       }
 
@@ -580,7 +1205,10 @@
           service.description = description;
           service.price = Number(price);
           service.duration = duration;
-          service.location = location;
+          service.cityId = cityId;
+          service.cityName = cityName;
+          service.location = cityName;
+          service.status = service.status || "Active";
         }
       } else {
         data.services.unshift({
@@ -590,12 +1218,15 @@
           description: description,
           price: Number(price),
           duration: duration,
-          location: location,
-          status: "Inactive"
+          cityId: cityId,
+          cityName: cityName,
+          location: cityName,
+          status: "Active"
         });
       }
 
       setProviderModuleData(data);
+      syncProviderServicesToCatalog(data);
       renderServices();
       closeModal();
     });
@@ -678,6 +1309,11 @@
           if (!booking) return;
           booking.status = "Accepted";
           booking.progress = 70;
+          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+            window.ServeEaseApi.updateBooking(booking.id, { status: "Accepted" }).catch(function (error) {
+              console.warn("ServeEase backend accept booking sync failed.", error);
+            });
+          }
           setProviderModuleData(data);
           renderTabs();
           renderBookings();
@@ -692,6 +1328,11 @@
           if (!booking) return;
           booking.status = "Rejected";
           booking.progress = 10;
+          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+            window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
+              console.warn("ServeEase backend reject booking sync failed.", error);
+            });
+          }
           setProviderModuleData(data);
           renderTabs();
           renderBookings();
@@ -722,6 +1363,11 @@
           if (!booking) return;
           booking.status = "Completed";
           booking.progress = 100;
+          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+            window.ServeEaseApi.updateBooking(booking.id, { status: "Completed" }).catch(function (error) {
+              console.warn("ServeEase backend complete booking sync failed.", error);
+            });
+          }
           setProviderModuleData(data);
           renderTabs();
           renderBookings();
@@ -790,6 +1436,7 @@
     const chatThread = document.getElementById("providerChatThread");
     const chatForm = document.getElementById("providerChatForm");
     const chatInput = document.getElementById("providerChatInput");
+    let activeProviderChatTicketId = "";
     const providerFaqs = [
       { q: "How do I update my service pricing?", a: "Open Manage Services, click Edit Service, update the price, and save the changes. The updated amount is shown instantly in your service card." },
       { q: "How do I manage booking requests?", a: "Go to Booking Management to accept, reject, or complete requests. You can also open View Details to see the full booking information." },
@@ -797,6 +1444,36 @@
       { q: "How do I contact customer support?", a: "Create a support ticket from this page or use Chat with Support inside My Support Tickets for quick follow-up." }
     ];
     const getSearchTerm = setupProviderSearch(".dashboard-search input", function () { renderTickets(); renderFaqs(); });
+
+    function renderProviderChatThread(ticket) {
+      if (!chatThread) return;
+      const supportData = getSupportData();
+      const supportTicket = supportData.tickets.find(function (item) { return item.id === ticket.id; });
+      const messages = supportTicket && Array.isArray(supportTicket.messages) && supportTicket.messages.length
+        ? supportTicket.messages
+        : [
+          { senderType: "agent", text: "Hello! Welcome to Provider Support. We can help you with your ticket " + ticket.id + ".", time: "Just now" },
+          { senderType: "agent", text: "Please share any extra details about the issue, and our team will continue the support process.", time: "Just now" }
+        ];
+      const solutionText = supportTicket && (supportTicket.solution || supportTicket.supportUpdate);
+      const defaultUpdateText = "Your ticket has been received and is currently being reviewed by the support team.";
+      if (solutionText && solutionText !== defaultUpdateText && !messages.some(function (message) { return message.senderType === "agent" && message.text === solutionText; })) {
+        messages.push({ senderType: "agent", text: solutionText, time: supportTicket.updatedAt || "Just now" });
+      }
+
+      chatThread.innerHTML = `
+        <div class="provider-chat-ticket-summary">
+          <strong>${ticket.subject}</strong>
+          <span>${ticket.id} • ${ticket.category}</span>
+        </div>
+        ${messages.map(function (message) {
+          const className = message.senderType === "provider" ? "user" : "support";
+          const label = message.senderType === "admin" ? "<strong>Admin reply:</strong> " : "";
+          return `<div class="provider-chat-bubble ${className}">${label}${message.text}</div>`;
+        }).join("")}
+      `;
+      chatThread.scrollTop = chatThread.scrollHeight;
+    }
 
     function renderFaqs() {
       if (!faqContainer) return;
@@ -911,20 +1588,13 @@
           });
           if (!ticket || !chatModalBackdrop || !chatThread) return;
 
-          chatThread.innerHTML = `
-            <div class="provider-chat-ticket-summary">
-              <strong>${ticket.subject}</strong>
-              <span>${ticket.id} • ${ticket.category}</span>
-            </div>
-            <div class="provider-chat-bubble support">Hello! Welcome to Provider Support. We can help you with your ticket <strong>${ticket.id}</strong>.</div>
-            <div class="provider-chat-bubble support">Please share any extra details about the issue, and our team will continue the support process.</div>
-          `;
+          activeProviderChatTicketId = ticket.id;
+          renderProviderChatThread(ticket);
           if (chatInput) {
             chatInput.value = "";
             chatInput.focus();
           }
           chatModalBackdrop.classList.remove("hidden");
-          chatThread.scrollTop = chatThread.scrollHeight;
         });
       });
     }
@@ -942,12 +1612,13 @@
     if (chatForm && chatInput && chatThread) {
       chatForm.addEventListener("submit", function (e) {
         e.preventDefault();
-        const message = chatInput.value.trim();
+        const message = chatInput.value.replace(/[<>]/g, "").trim();
         if (!message) return;
-        chatThread.insertAdjacentHTML("beforeend", `<div class="provider-chat-bubble user">${message}</div>`);
-        chatThread.insertAdjacentHTML("beforeend", `<div class="provider-chat-bubble support">Thank you. Our provider support team will get back to you shortly.</div>`);
+        const ticket = data.supportTickets.find(function (item) { return item.id === activeProviderChatTicketId; });
+        if (!ticket) return;
+        addProviderChatMessageToSupport(ticket, data, message);
         chatInput.value = "";
-        chatThread.scrollTop = chatThread.scrollHeight;
+        renderProviderChatThread(ticket);
       });
     }
 
@@ -966,25 +1637,32 @@
       }
 
       data.supportTickets.unshift({
-        id: `PT-${1000 + data.supportTickets.length + 1}`,
+        id: createProviderTicketId(),
         subject: subject,
         category: category,
+        description: description,
         status: "Open",
         created: "Just now",
-        createdOn: "9 Mar 2026",
+        createdOn: "Just now",
         bookingRef: "BOOK-2026-1045",
+        solution: "",
         supportUpdate: "Your ticket has been received and is currently being reviewed by the support team."
       });
 
+      pushProviderTicketToSupport(data.supportTickets[0], data);
       setProviderModuleData(data);
       success.textContent = "Support ticket submitted successfully.";
       form.reset();
       renderTickets();
-    renderFaqs();
+      renderFaqs();
     });
 
     renderTickets();
     renderFaqs();
+    hydrateSupportDataFromBackend(function () {
+      syncProviderTicketsFromSupport(data);
+      renderTickets();
+    });
   }
 
   function initProviderAccountPage() {
@@ -1061,4 +1739,9 @@
   initProviderEarningsPage();
   initProviderSupportPage();
   initProviderAccountPage();
+
+  syncProviderBookingsFromBackend(function () {
+    initProviderDashboard();
+    initProviderBookingsPage();
+  });
 })();
