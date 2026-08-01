@@ -9,6 +9,20 @@ function getCurrentSession() {
   return JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
 }
 
+function scrollToFooterHashTarget() {
+  const targetId = window.location.hash.slice(1);
+  if (!targetId) return;
+
+  const target = document.getElementById(targetId);
+  if (!target) return;
+
+  // Homepage cards are rendered asynchronously. Scroll after they have been
+  // inserted so links from another page land on the intended information card.
+  requestAnimationFrame(function () {
+    target.scrollIntoView({ block: "start" });
+  });
+}
+
 function setupHomeHeaderSession() {
   const session = getCurrentSession();
   const loginBtn = document.getElementById("homeLoginRegisterBtn");
@@ -150,8 +164,13 @@ if (window.ServeEaseApi && typeof window.ServeEaseApi.hydrateCatalog === "functi
     .finally(function () {
       renderHomeCategories();
       renderPopularServices();
+      scrollToFooterHashTarget();
     });
 } else {
   renderHomeCategories();
   renderPopularServices();
+  scrollToFooterHashTarget();
 }
+
+window.addEventListener("hashchange", scrollToFooterHashTarget);
+window.addEventListener("load", scrollToFooterHashTarget);

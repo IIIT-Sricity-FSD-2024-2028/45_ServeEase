@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | My Tickets</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+</head>
+<body>
+  <header class="dashboard-topbar">
+    <a class="dashboard-brand" href="index.html"><div class="brand-icon">SE</div><span>ServeEase</span></a>
+    <div class="dashboard-search"><input type="text" id="myTicketSearch" placeholder="Search tickets..." /></div>
+    <div class="dashboard-topbar-actions">
+      <a class="btn btn-outline" href="my-bookings.html">My Bookings</a>
+      <a class="btn btn-primary" href="customer-dashboard.html">Dashboard</a>
+    </div>
+  </header>
+
+  <main class="dashboard-page">
+    <div class="container">
+      <div class="breadcrumb-row"><a href="customer-dashboard.html">Customer Dashboard</a> &nbsp;&gt;&nbsp; <strong>My Tickets</strong></div>
+      <section class="page-title-block">
+        <h1>My Tickets</h1>
+        <p>Track ticket status, support investigation remarks, and final admin decisions.</p>
+      </section>
+      <section id="myTicketsList" class="ticket-list"></section>
+      <div class="empty-state-card hidden" id="myTicketsEmptyState">No tickets found.</div>
+    </div>
+  </main>
+
+  <div class="modal-backdrop hidden" id="ticketDetailBackdrop">
+    <div class="modal-card ticket-modal-card">
+      <div class="modal-head">
+        <h2>Ticket Details</h2>
+        <button type="button" class="close-modal-btn" id="closeTicketDetailModal">×</button>
+      </div>
+      <div id="ticketDetailBody"></div>
+    </div>
+  </div>
+
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/tickets.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>
+

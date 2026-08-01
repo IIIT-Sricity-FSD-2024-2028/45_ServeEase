@@ -267,12 +267,24 @@
     return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   }
 
+  function getSuspendedCatalogProviders() {
+    try {
+      const ids = JSON.parse(localStorage.getItem("serveEaseSuspendedCatalogProviders") || "[]");
+      return Array.isArray(ids) ? ids : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
   function isRemovedProvider(value) {
     return normalizeProviderText(value).indexOf("koushikpestcontrol") !== -1;
   }
 
   function isRemovedProviderRecord(record) {
+    const suspendedIds = getSuspendedCatalogProviders();
     return !!record && (
+      suspendedIds.indexOf(record.id) !== -1 ||
+      suspendedIds.indexOf(record.providerCatalogId) !== -1 ||
       isRemovedProvider(record.id) ||
       isRemovedProvider(record.name) ||
       isRemovedProvider(record.fullName) ||
@@ -451,14 +463,29 @@
   const ownedProviderRows = collectOwnedProviderCatalogRows();
   const ownedIds = new Set(ownedProviderRows.map(function (provider) { return provider.id; }));
   const ownedBaseIds = new Set(ownedProviderRows.map(getProviderBaseId));
+  const baseCategoryIds = new Set(updatedCategories.map(function (category) { return category.id; }));
+  const customCategories = Array.isArray(existingData.categories)
+    ? existingData.categories.filter(function (category) {
+        return category && category.id && !baseCategoryIds.has(category.id);
+      })
+    : [];
+  const mergedCategories = updatedCategories.concat(customCategories);
   const mergedProviders = dedupeProviders(ownedProviderRows.concat(updatedProviders.filter(function (provider) {
     return provider && !ownedIds.has(provider.id) && !ownedBaseIds.has(provider.id) && !isRemovedProviderRecord(provider);
   })));
 
+  const normalizedPopularServices = (updatedPopularServices || []).map(function (service) {
+    const numericRating = Number(service && service.rating);
+    return {
+      ...service,
+      rating: Number.isFinite(numericRating) ? numericRating : 4.5
+    };
+  });
+
   const finalData = {
     ...existingData,
-    categories: updatedCategories,
-    popularServices: updatedPopularServices,
+    categories: mergedCategories,
+    popularServices: normalizedPopularServices,
     providers: mergedProviders
   };
 

@@ -1,17 +1,136 @@
 (function () {
   const API_BASE_URL = "http://localhost:3000/api";
+  const MONTHS = {
+    jan: 0,
+    january: 0,
+    feb: 1,
+    february: 1,
+    mar: 2,
+    march: 2,
+    apr: 3,
+    april: 3,
+    may: 4,
+    jun: 5,
+    june: 5,
+    jul: 6,
+    july: 6,
+    aug: 7,
+    august: 7,
+    sep: 8,
+    sept: 8,
+    september: 8,
+    oct: 9,
+    october: 9,
+    nov: 10,
+    november: 10,
+    dec: 11,
+    december: 11
+  };
+
+  function pad(value) {
+    return String(value).padStart(2, "0");
+  }
+
+  function dateParts(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return { day: value.getDate(), month: value.getMonth() + 1, year: value.getFullYear() };
+    }
+
+    const text = String(value || "").trim();
+    if (!text || /^(just now|recently|today|yesterday|\d+\s+(day|days|week|weeks|month|months|year|years)\s+ago)$/i.test(text)) {
+      return null;
+    }
+
+    let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (match) return { day: Number(match[3]), month: Number(match[2]), year: Number(match[1]) };
+
+    match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+    if (match) return { day: Number(match[1]), month: Number(match[2]), year: Number(match[3]) };
+
+    match = text.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+    if (match && MONTHS[match[2].toLowerCase()] !== undefined) {
+      return { day: Number(match[1]), month: MONTHS[match[2].toLowerCase()] + 1, year: Number(match[3]) };
+    }
+
+    const parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) {
+      return { day: parsed.getDate(), month: parsed.getMonth() + 1, year: parsed.getFullYear() };
+    }
+
+    return null;
+  }
+
+  function timePart(value) {
+    const text = String(value || "").trim();
+    const match = text.match(/(\d{1,2}):(\d{2})(?:\s*([AP]M))?/i);
+    if (match) {
+      let hours = Number(match[1]);
+      const minutes = pad(Number(match[2]));
+      const meridiem = (match[3] || "").toUpperCase();
+      let suffix = meridiem || (hours >= 12 ? "PM" : "AM");
+      if (meridiem === "PM" && hours !== 12) hours += 12;
+      if (meridiem === "AM" && hours === 12) hours = 0;
+      if (!meridiem && hours > 12) {
+        hours = hours % 12;
+      }
+      if (hours === 0) hours = 12;
+      return pad(hours) + ":" + minutes + " " + suffix;
+    }
+    const parsed = value instanceof Date ? value : new Date(text);
+    if (!Number.isNaN(parsed.getTime())) {
+      let hours = parsed.getHours();
+      const minutes = pad(parsed.getMinutes());
+      const suffix = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12;
+      if (hours === 0) hours = 12;
+      return pad(hours) + ":" + minutes + " " + suffix;
+    }
+    return "";
+  }
+
+  window.ServeEaseDate = {
+    formatDate: function (value) {
+      const parts = dateParts(value);
+      if (!parts) return value || "";
+      return pad(parts.day) + "-" + pad(parts.month) + "-" + parts.year;
+    },
+    formatDateTime: function (value) {
+      const formattedDate = this.formatDate(value);
+      const formattedTime = timePart(value);
+      return formattedTime ? formattedDate + " " + formattedTime : formattedDate;
+    },
+    nowDate: function () {
+      return this.formatDate(new Date());
+    },
+    nowDateTime: function () {
+      return this.formatDateTime(new Date());
+    },
+    todayISO: function () {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = pad(now.getMonth() + 1);
+      const day = pad(now.getDate());
+      return `${year}-${month}-${day}`;
+    }
+  };
 
   function normalizeRole(role) {
-    return role === "admin" || role === "superuser" ? "admin" : "user";
+    if (role === "admin" || role === "superuser") return "admin";
+    if (role === "support") return "support";
+    if (role === "provider") return "provider";
+    return "user";
+  }
+
+  function getSession() {
+    try {
+      return JSON.parse(sessionStorage.getItem("serveEaseSession") || "null") || {};
+    } catch (error) {
+      return {};
+    }
   }
 
   function getRole() {
-    try {
-      const session = JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
-      return normalizeRole(session && session.role);
-    } catch (error) {
-      return "user";
-    }
+    return normalizeRole(getSession().role);
   }
 
   async function request(path, options) {
@@ -20,6 +139,8 @@
       headers: {
         "Content-Type": "application/json",
         role: getRole(),
+        "user-id": getSession().userId || "",
+        "user-email": getSession().email || "",
         ...(options && options.headers ? options.headers : {})
       }
     });
@@ -86,6 +207,44 @@
     getBookings: function () {
       return request("/bookings", { method: "GET", headers: { role: "user" } });
     },
+    getProviderAvailability: function (providerId) {
+      return request(`/availability/providers/${encodeURIComponent(providerId)}`, {
+        method: "GET",
+        headers: { role: "user" }
+      });
+    },
+    getProviderWeeklySchedule: function (providerId) {
+      return request(`/availability/providers/${encodeURIComponent(providerId)}/weekly-schedule`, {
+        method: "GET",
+        headers: { role: "provider" }
+      });
+    },
+    saveProviderWeeklySchedule: function (providerId, weeklySchedule) {
+      return request(`/availability/providers/${encodeURIComponent(providerId)}/weekly-schedule`, {
+        method: "PUT",
+        headers: { role: "provider" },
+        body: JSON.stringify({ weeklySchedule: weeklySchedule })
+      });
+    },
+    getProviderDateOverrides: function (providerId) {
+      return request(`/availability/providers/${encodeURIComponent(providerId)}/date-overrides`, {
+        method: "GET",
+        headers: { role: "provider" }
+      });
+    },
+    saveProviderDateOverride: function (providerId, date, override) {
+      return request(`/availability/providers/${encodeURIComponent(providerId)}/date-overrides/${encodeURIComponent(date)}`, {
+        method: "PUT",
+        headers: { role: "provider" },
+        body: JSON.stringify(override)
+      });
+    },
+    deleteProviderDateOverride: function (providerId, date) {
+      return request(`/availability/providers/${encodeURIComponent(providerId)}/date-overrides/${encodeURIComponent(date)}`, {
+        method: "DELETE",
+        headers: { role: "provider" }
+      });
+    },
     createBooking: function (booking) {
       return request("/bookings", {
         method: "POST",
@@ -99,6 +258,163 @@
         headers: { role: "admin" },
         body: JSON.stringify(booking)
       });
+    },
+    getProviderVerificationRequests: function () {
+      return request("/admin/providers/verification", { method: "GET", headers: { role: "admin" } });
+    },
+    createProviderVerificationRequest: function (provider) {
+      return request("/admin/providers/verification", {
+        method: "POST",
+        headers: { role: "user" },
+        body: JSON.stringify(provider)
+      });
+    },
+    getProviderVerificationDetails: function (id) {
+      return request(`/admin/providers/${encodeURIComponent(id)}`, { method: "GET", headers: { role: "admin" } });
+    },
+    approveProviderVerification: function (id, payload) {
+      return request(`/admin/providers/${encodeURIComponent(id)}/approve`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify(payload || {})
+      });
+    },
+    rejectProviderVerification: function (id, payload) {
+      return request(`/admin/providers/${encodeURIComponent(id)}/reject`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify(payload || {})
+      });
+    },
+    suspendProviderVerification: function (id, payload) {
+      return request(`/admin/providers/${encodeURIComponent(id)}/suspend`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify(payload || {})
+      });
+    },
+    getProviderVerificationDocuments: function (id) {
+      return request(`/admin/providers/${encodeURIComponent(id)}/documents`, { method: "GET", headers: { role: "admin" } });
+    },
+    approveProviderDocument: function (id, documentId) {
+      return request(`/admin/providers/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}/approve`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify({})
+      });
+    },
+    rejectProviderDocument: function (id, documentId, payload) {
+      return request(`/admin/providers/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}/reject`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify(payload || {})
+      });
+    },
+    createTicket: function (payload) {
+      return request("/tickets/customer", {
+        method: "POST",
+        headers: { role: "user" },
+        body: JSON.stringify({
+          bookingId: payload && (payload.bookingId || payload.relatedBookingId || payload.bookingRef),
+          ticketType: payload && (payload.ticketType || payload.category),
+          subject: payload && (payload.subject || payload.ticketType || payload.category),
+          description: payload && payload.description,
+          attachmentUrl: payload && (payload.attachmentUrl || payload.evidenceUrl),
+          customerId: payload && payload.customerId,
+          customerName: payload && payload.customerName
+        })
+      });
+    },
+    getMyTickets: function () {
+      return request("/tickets/my-tickets", { method: "GET", headers: { role: "user" } });
+    },
+    getTicket: function (id) {
+      return request(`/tickets/${encodeURIComponent(id)}`, { method: "GET", headers: { role: getRole() } });
+    },
+    getSupportTickets: function () {
+      return request("/support/tickets", { method: "GET", headers: { role: "support" } });
+    },
+    getSupportTicket: function (id) {
+      return request(`/support/tickets/${encodeURIComponent(id)}`, { method: "GET", headers: { role: "support" } });
+    },
+    updateTicketStatus: function (id, status) {
+      return request(`/support/tickets/${encodeURIComponent(id)}/status`, {
+        method: "PATCH",
+        headers: { role: "support" },
+        body: JSON.stringify({ status: status })
+      });
+    },
+    updateTicketRemarks: function (id, remarks) {
+      return request(`/support/tickets/${encodeURIComponent(id)}/remarks`, {
+        method: "PATCH",
+        headers: { role: "support" },
+        body: JSON.stringify({ remarks: remarks })
+      });
+    },
+    resolveTicketBySupport: function (id, remarks) {
+      return request(`/support/tickets/${encodeURIComponent(id)}/resolve`, {
+        method: "PATCH",
+        headers: { role: "support" },
+        body: JSON.stringify({ remarks: remarks })
+      });
+    },
+    escalateTicket: function (id, remarks) {
+      return request(`/support/tickets/${encodeURIComponent(id)}/escalate`, {
+        method: "PATCH",
+        headers: { role: "support" },
+        body: JSON.stringify({ remarks: remarks })
+      });
+    },
+    updateTicketPriority: function (id, priority) {
+      return request(`/support/tickets/${encodeURIComponent(id)}/priority`, {
+        method: "PATCH",
+        headers: { role: "support" },
+        body: JSON.stringify({ priority: priority })
+      });
+    },
+    getEscalatedTickets: function () {
+      return request("/admin/escalated-tickets", { method: "GET", headers: { role: "admin" } });
+    },
+    getAdminTicket: function (id) {
+      return request(`/admin/tickets/${encodeURIComponent(id)}`, { method: "GET", headers: { role: "admin" } });
+    },
+    updateAdminTicketRemarks: function (id, remarks) {
+      return request(`/admin/tickets/${encodeURIComponent(id)}/admin-remarks`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify({ remarks: remarks })
+      });
+    },
+    decideTicket: function (id, payload) {
+      return request(`/admin/tickets/${encodeURIComponent(id)}/final-decision`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify(payload || {})
+      });
+    },
+    resolveAdminTicket: function (id, payload) {
+      return request(`/admin/tickets/${encodeURIComponent(id)}/resolve`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify(payload || {})
+      });
+    },
+    rejectAdminTicket: function (id, payload) {
+      return request(`/admin/tickets/${encodeURIComponent(id)}/reject`, {
+        method: "PATCH",
+        headers: { role: "admin" },
+        body: JSON.stringify(payload || {})
+      });
+    },
+    createProviderTicket: function (payload) {
+      return request("/tickets/provider", {
+        method: "POST",
+        headers: { role: "provider" },
+        body: JSON.stringify(payload || {})
+      });
+    },
+    getMyProviderTickets: function () {
+      return request("/tickets/my-provider-tickets", { method: "GET", headers: { role: "provider" } });
     },
     logActivity: function (activity) {
       return request("/activities", {

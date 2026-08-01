@@ -16,6 +16,14 @@ export class BookingsRepository {
     return this.bookings.find((booking) => booking.id === id);
   }
 
+  findByProvider(providerId: string): Booking[] {
+    return this.bookings.filter((booking) => booking.providerId === providerId);
+  }
+
+  findByProviderAndDate(providerId: string, date: string): Booking[] {
+    return this.bookings.filter((booking) => booking.providerId === providerId && booking.date === date);
+  }
+
   create(data: CreateBookingDto): Booking {
     const status = data.status ?? 'Pending';
     const booking = {
@@ -23,6 +31,9 @@ export class BookingsRepository {
       id: randomUUID(),
       status,
       category: status,
+      paymentStatus: this.paymentStatusFor(status),
+      paymentDate: data.paymentDate ?? this.paymentDateFor(data.date),
+      receivedDate: status === 'Completed' ? (data.receivedDate ?? this.receivedDateFor(data.date)) : undefined,
     };
     this.bookings.unshift(booking);
     return booking;
@@ -34,8 +45,38 @@ export class BookingsRepository {
     Object.assign(booking, data);
     if (data.status) {
       booking.category = data.status;
+      booking.paymentStatus = this.paymentStatusFor(data.status);
+      if (!booking.paymentDate) booking.paymentDate = this.paymentDateFor(booking.date);
+      booking.receivedDate = data.status === 'Completed'
+        ? (data.receivedDate ?? booking.receivedDate ?? this.receivedDateFor(booking.date))
+        : undefined;
     }
     return booking;
+  }
+
+  private paymentStatusFor(status: string): string {
+    if (status === 'Completed') return 'Successful';
+    if (status === 'Cancelled') return 'Refunded';
+    return 'Pending';
+  }
+
+  private paymentDateFor(serviceDate: string): string {
+    const now = new Date();
+    const service = new Date(serviceDate);
+    if (!Number.isNaN(service.getTime()) && now.getTime() > service.getTime()) {
+      service.setDate(service.getDate() - 1);
+      return service.toISOString().slice(0, 10);
+    }
+    return now.toISOString().slice(0, 10);
+  }
+
+  private receivedDateFor(serviceDate: string): string {
+    const now = new Date();
+    const service = new Date(serviceDate);
+    if (!Number.isNaN(service.getTime()) && now.getTime() < service.getTime()) {
+      return service.toISOString().slice(0, 10);
+    }
+    return now.toISOString().slice(0, 10);
   }
 
   delete(id: string): Booking | undefined {

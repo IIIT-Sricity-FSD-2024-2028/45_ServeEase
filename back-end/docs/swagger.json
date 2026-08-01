@@ -595,6 +595,329 @@
         ]
       }
     },
+    "/api/availability/providers/{providerId}/weekly-schedule": {
+      "get": {
+        "operationId": "AvailabilityController_getWeeklySchedule",
+        "summary": "Get a provider weekly schedule",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use provider or admin to manage schedules; user to view availability.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WeeklySchedule"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "availability"
+        ]
+      },
+      "put": {
+        "operationId": "AvailabilityController_saveWeeklySchedule",
+        "summary": "Replace a provider recurring weekly schedule",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use provider or admin to manage schedules; user to view availability.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertWeeklyScheduleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WeeklySchedule"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "availability"
+        ]
+      }
+    },
+    "/api/availability/providers/{providerId}/date-overrides": {
+      "get": {
+        "operationId": "AvailabilityController_getDateOverrides",
+        "summary": "List a provider date overrides",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use provider or admin to manage schedules; user to view availability.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DateOverride"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "availability"
+        ]
+      }
+    },
+    "/api/availability/providers/{providerId}/date-overrides/{date}": {
+      "put": {
+        "operationId": "AvailabilityController_saveDateOverride",
+        "summary": "Create or replace a date override",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use provider or admin to manage schedules; user to view availability.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertDateOverrideDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/DateOverride"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "availability"
+        ]
+      },
+      "delete": {
+        "operationId": "AvailabilityController_deleteDateOverride",
+        "summary": "Remove a date override",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use provider or admin to manage schedules; user to view availability.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/DateOverride"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "availability"
+        ]
+      }
+    },
+    "/api/availability/providers/{providerId}": {
+      "get": {
+        "operationId": "AvailabilityController_getAvailability",
+        "summary": "Generate customer-bookable availability for the configured booking window",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use provider or admin to manage schedules; user to view availability.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProviderAvailability"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "availability"
+        ]
+      }
+    },
     "/api/catalog": {
       "get": {
         "operationId": "CatalogController_findAll",
@@ -1372,6 +1695,1162 @@
           "state"
         ]
       }
+    },
+    "/api/admin/providers/verification": {
+      "get": {
+        "operationId": "ProviderVerificationController_findAll",
+        "summary": "Get provider verification requests",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider verification requests returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProviderVerification"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      },
+      "post": {
+        "operationId": "ProviderVerificationController_create",
+        "summary": "Create provider verification request from provider registration",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderVerificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider verification request created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProviderVerification"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
+    "/api/admin/providers/{id}": {
+      "get": {
+        "operationId": "ProviderVerificationController_findById",
+        "summary": "Get provider verification details",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProviderVerification"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
+    "/api/admin/providers/{id}/documents": {
+      "get": {
+        "operationId": "ProviderVerificationController_getDocuments",
+        "summary": "Get provider verification documents",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider documents returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VerificationDocument"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
+    "/api/admin/providers/{id}/approve": {
+      "patch": {
+        "operationId": "ProviderVerificationController_approveProvider",
+        "summary": "Approve provider after required documents are approved",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider approved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProviderVerification"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
+    "/api/admin/providers/{id}/reject": {
+      "patch": {
+        "operationId": "ProviderVerificationController_rejectProvider",
+        "summary": "Reject provider verification request",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectProviderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider rejected successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProviderVerification"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
+    "/api/admin/providers/{id}/suspend": {
+      "patch": {
+        "operationId": "ProviderVerificationController_suspendProvider",
+        "summary": "Suspend verified or active provider",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider suspended successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProviderVerification"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
+    "/api/admin/providers/{id}/documents/{documentId}/approve": {
+      "patch": {
+        "operationId": "ProviderVerificationController_approveDocument",
+        "summary": "Approve one provider document",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document approved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/VerificationDocument"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
+    "/api/admin/providers/{id}/documents/{documentId}/reject": {
+      "patch": {
+        "operationId": "ProviderVerificationController_rejectDocument",
+        "summary": "Reject one provider document",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document rejected successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/VerificationDocument"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
+    "/api/tickets/customer": {
+      "post": {
+        "operationId": "TicketsController_createCustomerTicket",
+        "summary": "Create a customer ticket linked to a booking",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer ticket created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SupportTicket"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/tickets/provider": {
+      "post": {
+        "operationId": "TicketsController_createProviderTicket",
+        "summary": "Create a provider support ticket",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider ticket created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SupportTicket"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/tickets/my-tickets": {
+      "get": {
+        "operationId": "TicketsController_myTickets",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/tickets/my-provider-tickets": {
+      "get": {
+        "operationId": "TicketsController_myProviderTickets",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/tickets/{id}": {
+      "get": {
+        "operationId": "TicketsController_getTicket",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets": {
+      "get": {
+        "operationId": "TicketsController_supportTickets",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets/{id}": {
+      "get": {
+        "operationId": "TicketsController_supportTicket",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets/{id}/status": {
+      "patch": {
+        "operationId": "TicketsController_supportStatus",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets/{id}/remarks": {
+      "patch": {
+        "operationId": "TicketsController_supportRemarks",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketRemarksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets/{id}/resolve": {
+      "patch": {
+        "operationId": "TicketsController_supportResolve",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketRemarksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets/{id}/escalate": {
+      "patch": {
+        "operationId": "TicketsController_supportEscalate",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketRemarksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets/{id}/priority": {
+      "patch": {
+        "operationId": "TicketsController_supportPriority",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketPriorityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/admin/escalated-tickets": {
+      "get": {
+        "operationId": "TicketsController_adminEscalatedTickets",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/admin/tickets/{id}": {
+      "get": {
+        "operationId": "TicketsController_adminTicket",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/admin/tickets/{id}/admin-remarks": {
+      "patch": {
+        "operationId": "TicketsController_adminRemarks",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketRemarksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/admin/tickets/{id}/final-decision": {
+      "patch": {
+        "operationId": "TicketsController_finalDecision",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketFinalDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/admin/tickets/{id}/resolve": {
+      "patch": {
+        "operationId": "TicketsController_resolve",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketFinalDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/admin/tickets/{id}/reject": {
+      "patch": {
+        "operationId": "TicketsController_reject",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketFinalDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
     }
   },
   "info": {
@@ -1388,7 +2867,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "role",
-        "description": "Role-based access header. Use admin for full access or user for read-only GET access."
+        "description": "Role-based access header. Use \"admin\" for full access or \"user\" for read-only GET access."
       }
     },
     "schemas": {
@@ -1507,6 +2986,22 @@
             "type": "string",
             "example": "Pending"
           },
+          "paymentStatus": {
+            "type": "string",
+            "example": "Pending"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "example": "UPI - Google Pay"
+          },
+          "paymentDate": {
+            "type": "string",
+            "example": "2026-05-11"
+          },
+          "receivedDate": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
           "amount": {
             "type": "number",
             "example": 889
@@ -1528,11 +3023,13 @@
           "id",
           "service",
           "provider",
+          "providerId",
           "date",
           "time",
           "address",
           "status",
           "category",
+          "paymentStatus",
           "amount",
           "customerName",
           "customerPhone",
@@ -1580,6 +3077,18 @@
               "Cancelled"
             ]
           },
+          "paymentMethod": {
+            "type": "string",
+            "example": "UPI - Google Pay"
+          },
+          "paymentDate": {
+            "type": "string",
+            "example": "2026-05-11"
+          },
+          "receivedDate": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
           "customerName": {
             "type": "string",
             "example": "Raghava Kumar"
@@ -1596,6 +3105,7 @@
         "required": [
           "service",
           "provider",
+          "providerId",
           "date",
           "time",
           "address",
@@ -1646,6 +3156,18 @@
               "Cancelled"
             ]
           },
+          "paymentMethod": {
+            "type": "string",
+            "example": "UPI - Google Pay"
+          },
+          "paymentDate": {
+            "type": "string",
+            "example": "2026-05-11"
+          },
+          "receivedDate": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
           "customerName": {
             "type": "string",
             "example": "Raghava Kumar"
@@ -1659,6 +3181,248 @@
             "example": "customer@example.com"
           }
         }
+      },
+      "WeeklySchedule": {
+        "type": "object",
+        "properties": {
+          "providerId": {
+            "type": "string",
+            "example": "cleanpro-service"
+          },
+          "weeklySchedule": {
+            "type": "object",
+            "example": {
+              "monday": [
+                "09:00-12:00",
+                "13:00-17:00"
+              ],
+              "tuesday": [
+                "09:00-12:00"
+              ],
+              "wednesday": [],
+              "thursday": [],
+              "friday": [],
+              "saturday": [],
+              "sunday": []
+            }
+          }
+        },
+        "required": [
+          "providerId",
+          "weeklySchedule"
+        ]
+      },
+      "DateOverride": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-08-04"
+          },
+          "fullDayOff": {
+            "type": "boolean",
+            "example": false
+          },
+          "disabledSlots": {
+            "example": [
+              "09:00-12:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabledSlots": {
+            "example": [
+              "13:00-17:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "fullDayOff",
+          "disabledSlots",
+          "enabledSlots"
+        ]
+      },
+      "AvailableDate": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-08-04"
+          },
+          "dayOfWeek": {
+            "type": "string",
+            "example": "Monday"
+          },
+          "slots": {
+            "example": [
+              "13:00-17:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "dayOfWeek",
+          "slots"
+        ]
+      },
+      "ProviderAvailability": {
+        "type": "object",
+        "properties": {
+          "providerId": {
+            "type": "string",
+            "example": "cleanpro-service"
+          },
+          "bookingWindowDays": {
+            "type": "number",
+            "example": 7
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailableDate"
+            }
+          }
+        },
+        "required": [
+          "providerId",
+          "bookingWindowDays",
+          "dates"
+        ]
+      },
+      "WeeklyScheduleSlotsDto": {
+        "type": "object",
+        "properties": {
+          "monday": {
+            "example": [
+              "09:00-12:00",
+              "13:00-17:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tuesday": {
+            "example": [
+              "09:00-12:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "wednesday": {
+            "example": [
+              "09:00-12:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "thursday": {
+            "example": [
+              "09:00-12:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "friday": {
+            "example": [
+              "09:00-12:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "saturday": {
+            "example": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sunday": {
+            "example": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpsertWeeklyScheduleDto": {
+        "type": "object",
+        "properties": {
+          "weeklySchedule": {
+            "example": {
+              "monday": [
+                "09:00-12:00",
+                "13:00-17:00"
+              ],
+              "tuesday": [
+                "09:00-12:00"
+              ],
+              "wednesday": [],
+              "thursday": [],
+              "friday": [],
+              "saturday": [],
+              "sunday": []
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WeeklyScheduleSlotsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "weeklySchedule"
+        ]
+      },
+      "UpsertDateOverrideDto": {
+        "type": "object",
+        "properties": {
+          "fullDayOff": {
+            "type": "boolean",
+            "example": false
+          },
+          "disabledSlots": {
+            "example": [
+              "09:00-12:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabledSlots": {
+            "example": [
+              "13:00-17:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "fullDayOff"
+        ]
       },
       "ApiSuccessResponse": {
         "type": "object",
@@ -2299,6 +4063,707 @@
             }
           }
         }
+      },
+      "VerificationDocument": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "example": "DOC-PRO001-ID"
+          },
+          "documentType": {
+            "type": "string",
+            "example": "ID Proof"
+          },
+          "documentName": {
+            "type": "string",
+            "example": "Aadhaar Card"
+          },
+          "documentUrl": {
+            "type": "string",
+            "example": "/documents/providers/PRO001/aadhaar.pdf"
+          },
+          "documentStatus": {
+            "type": "string",
+            "example": "Approved",
+            "enum": [
+              "Pending",
+              "Approved",
+              "Rejected"
+            ]
+          },
+          "required": {
+            "type": "boolean",
+            "example": true
+          },
+          "uploadedAt": {
+            "type": "string",
+            "example": "2026-03-08T10:30:00.000Z"
+          },
+          "rejectionReason": {
+            "type": "string",
+            "example": "Document is blurred."
+          }
+        },
+        "required": [
+          "documentId",
+          "documentType",
+          "documentName",
+          "documentUrl",
+          "documentStatus",
+          "required",
+          "uploadedAt"
+        ]
+      },
+      "ProviderStatusHistoryItem": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "Pending"
+          },
+          "note": {
+            "type": "string",
+            "example": "Provider submitted verification request."
+          },
+          "updatedBy": {
+            "type": "string",
+            "example": "System"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-03-08T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "status",
+          "note",
+          "updatedBy",
+          "updatedAt"
+        ]
+      },
+      "ProviderVerification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "PRO013"
+          },
+          "name": {
+            "type": "string",
+            "example": "Anita Verma"
+          },
+          "email": {
+            "type": "string",
+            "example": "anita.verma@email.com"
+          },
+          "organisationName": {
+            "type": "string",
+            "example": "Anita Beauty Studio"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+91 9876543230"
+          },
+          "category": {
+            "type": "string",
+            "example": "Salon Services"
+          },
+          "experience": {
+            "type": "number",
+            "example": 5
+          },
+          "location": {
+            "type": "string",
+            "example": "Mumbai"
+          },
+          "address": {
+            "type": "string",
+            "example": "Andheri West, Mumbai"
+          },
+          "skills": {
+            "example": [
+              "Hair styling",
+              "Facial care"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "certifications": {
+            "example": [
+              "Beauty academy certificate"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "completedJobs": {
+            "type": "number",
+            "example": 128
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.7
+          },
+          "submittedDate": {
+            "type": "string",
+            "example": "2026-03-08T10:30:00.000Z"
+          },
+          "joinedDate": {
+            "type": "string",
+            "example": "2026-03-08T10:30:00.000Z"
+          },
+          "status": {
+            "type": "string",
+            "example": "Pending",
+            "enum": [
+              "Pending",
+              "Verified",
+              "Rejected",
+              "Suspended"
+            ]
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationDocument"
+            }
+          },
+          "statusHistory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderStatusHistoryItem"
+            }
+          },
+          "rejectionReason": {
+            "type": "string",
+            "example": "Needs one clearer document."
+          },
+          "adminRemarks": {
+            "type": "string",
+            "example": "Called provider and verified service area."
+          },
+          "verifiedAt": {
+            "type": "string",
+            "example": "2026-03-10T10:30:00.000Z"
+          },
+          "suspendedAt": {
+            "type": "string",
+            "example": "2026-03-11T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "category",
+          "experience",
+          "location",
+          "address",
+          "skills",
+          "certifications",
+          "completedJobs",
+          "rating",
+          "submittedDate",
+          "joinedDate",
+          "status",
+          "documents",
+          "statusHistory"
+        ]
+      },
+      "CreateProviderDocumentDto": {
+        "type": "object",
+        "properties": {
+          "documentType": {
+            "type": "string",
+            "example": "ID Proof"
+          },
+          "documentName": {
+            "type": "string",
+            "example": "aadhaar.pdf"
+          },
+          "documentUrl": {
+            "type": "string",
+            "example": "/documents/providers/PRO018/aadhaar.pdf"
+          },
+          "required": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "documentType",
+          "documentName",
+          "documentUrl",
+          "required"
+        ]
+      },
+      "CreateProviderVerificationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "PRO018"
+          },
+          "name": {
+            "type": "string",
+            "example": "Fresh Clean Services"
+          },
+          "email": {
+            "type": "string",
+            "example": "fresh@example.com"
+          },
+          "organisationName": {
+            "type": "string",
+            "example": "Fresh Clean Services"
+          },
+          "phone": {
+            "type": "string",
+            "example": "9876501234"
+          },
+          "category": {
+            "type": "string",
+            "example": "Home cleaning"
+          },
+          "experience": {
+            "type": "number",
+            "example": 4
+          },
+          "location": {
+            "type": "string",
+            "example": "Chennai"
+          },
+          "address": {
+            "type": "string",
+            "example": "Anna Nagar, Chennai"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateProviderDocumentDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "category",
+          "experience",
+          "location",
+          "address",
+          "documents"
+        ]
+      },
+      "ProviderActionDto": {
+        "type": "object",
+        "properties": {
+          "adminRemarks": {
+            "type": "string",
+            "example": "Documents reviewed and phone verified."
+          }
+        }
+      },
+      "RejectProviderDto": {
+        "type": "object",
+        "properties": {
+          "adminRemarks": {
+            "type": "string",
+            "example": "Documents reviewed and phone verified."
+          },
+          "rejectionReason": {
+            "type": "string",
+            "example": "Required documents are incomplete."
+          }
+        },
+        "required": [
+          "rejectionReason"
+        ]
+      },
+      "RejectDocumentDto": {
+        "type": "object",
+        "properties": {
+          "rejectionReason": {
+            "type": "string",
+            "example": "Uploaded file is unreadable."
+          }
+        },
+        "required": [
+          "rejectionReason"
+        ]
+      },
+      "TicketStatusHistory": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "Pending"
+          },
+          "note": {
+            "type": "string",
+            "example": "Ticket created."
+          },
+          "updatedBy": {
+            "type": "string",
+            "example": "Customer"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-05-20T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "status",
+          "note",
+          "updatedBy",
+          "updatedAt"
+        ]
+      },
+      "SupportTicket": {
+        "type": "object",
+        "properties": {
+          "ticketId": {
+            "type": "string",
+            "example": "TKT-20260520-1001"
+          },
+          "raisedByType": {
+            "type": "string",
+            "example": "customer",
+            "enum": [
+              "customer",
+              "provider"
+            ]
+          },
+          "raisedById": {
+            "type": "string",
+            "example": "CUS001"
+          },
+          "raisedByName": {
+            "type": "string",
+            "example": "Raghava Kumar"
+          },
+          "raisedByEmail": {
+            "type": "string",
+            "example": "user@serveease.com"
+          },
+          "raisedByPhone": {
+            "type": "string",
+            "example": "9876543210"
+          },
+          "relatedBookingId": {
+            "type": "string",
+            "example": "BOOK-2026-1045"
+          },
+          "relatedPaymentId": {
+            "type": "string",
+            "example": "TXN-2026-4582"
+          },
+          "providerId": {
+            "type": "string",
+            "example": "cleanpro-services"
+          },
+          "providerName": {
+            "type": "string",
+            "example": "CleanPro Services"
+          },
+          "customerId": {
+            "type": "string",
+            "example": "CUS001"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Raghava Kumar"
+          },
+          "ticketType": {
+            "type": "string",
+            "example": "Late Arrival"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Provider arrived late"
+          },
+          "description": {
+            "type": "string",
+            "example": "Provider arrived 90 minutes late and service was rushed."
+          },
+          "attachmentUrl": {
+            "type": "string",
+            "example": "late-proof.jpg"
+          },
+          "priority": {
+            "type": "string",
+            "example": "High"
+          },
+          "status": {
+            "type": "string",
+            "example": "Pending"
+          },
+          "supportRemarks": {
+            "type": "string",
+            "example": "Verified booking details."
+          },
+          "adminRemarks": {
+            "type": "string",
+            "example": "Refund approved."
+          },
+          "escalationReason": {
+            "type": "string",
+            "example": "Refund approval required."
+          },
+          "finalDecision": {
+            "type": "string",
+            "example": "Refund Approved"
+          },
+          "assignedSupportId": {
+            "type": "string",
+            "example": "SUP001"
+          },
+          "assignedSupportName": {
+            "type": "string",
+            "example": "Priya Sharma"
+          },
+          "resolvedBy": {
+            "type": "string",
+            "example": "Support"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-05-20T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-05-20T10:30:00.000Z"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "example": "2026-05-20T11:30:00.000Z"
+          },
+          "escalatedAt": {
+            "type": "string",
+            "example": "2026-05-20T11:00:00.000Z"
+          },
+          "statusHistory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TicketStatusHistory"
+            }
+          }
+        },
+        "required": [
+          "ticketId",
+          "raisedByType",
+          "raisedById",
+          "raisedByName",
+          "raisedByEmail",
+          "raisedByPhone",
+          "ticketType",
+          "subject",
+          "description",
+          "priority",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "statusHistory"
+        ]
+      },
+      "CreateCustomerTicketDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "example": "BOOK-2026-1045"
+          },
+          "ticketType": {
+            "type": "string",
+            "example": "Late Arrival",
+            "enum": [
+              "Poor Service Quality",
+              "Provider Not Arrived",
+              "Late Arrival",
+              "Overcharging",
+              "Misbehavior",
+              "Payment Issue",
+              "Service Not Completed",
+              "Refund Request",
+              "Fraud",
+              "Safety Concern",
+              "Other"
+            ]
+          },
+          "subject": {
+            "type": "string",
+            "example": "Provider arrived late"
+          },
+          "description": {
+            "type": "string",
+            "example": "Provider arrived very late and did not complete the promised service."
+          },
+          "attachmentUrl": {
+            "type": "string",
+            "example": "delay-proof.jpg"
+          },
+          "customerId": {
+            "type": "string",
+            "example": "CUS001"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Raghava Kumar"
+          }
+        },
+        "required": [
+          "bookingId",
+          "ticketType",
+          "description"
+        ]
+      },
+      "CreateProviderTicketDto": {
+        "type": "object",
+        "properties": {
+          "ticketType": {
+            "type": "string",
+            "example": "Payment Not Received",
+            "enum": [
+              "Payment Not Received",
+              "Verification Issue",
+              "Booking Assignment Issue",
+              "Technical Problem",
+              "Customer Misbehavior",
+              "Profile Update Request",
+              "Availability Issue",
+              "Account Suspension Appeal",
+              "Service Category Change",
+              "Other"
+            ]
+          },
+          "subject": {
+            "type": "string",
+            "example": "Payment not received for completed booking"
+          },
+          "description": {
+            "type": "string",
+            "example": "Payout for BOOK-2026-1101 is still pending."
+          },
+          "relatedBookingId": {
+            "type": "string",
+            "example": "BOOK-2026-1101"
+          },
+          "relatedPaymentId": {
+            "type": "string",
+            "example": "TX-2026-7854"
+          },
+          "priority": {
+            "type": "string",
+            "example": "Medium",
+            "enum": [
+              "Low",
+              "Medium",
+              "High",
+              "Critical"
+            ]
+          },
+          "attachmentUrl": {
+            "type": "string",
+            "example": "payment-proof.jpg"
+          },
+          "providerId": {
+            "type": "string",
+            "example": "PRO001"
+          },
+          "providerName": {
+            "type": "string",
+            "example": "CleanPro Services"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Raghava Kumar"
+          },
+          "service": {
+            "type": "string",
+            "example": "Kitchen Cleaning"
+          }
+        },
+        "required": [
+          "ticketType",
+          "subject",
+          "description"
+        ]
+      },
+      "TicketStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "In Progress",
+            "enum": [
+              "In Progress"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "TicketRemarksDto": {
+        "type": "object",
+        "properties": {
+          "remarks": {
+            "type": "string",
+            "example": "Checked booking and contacted both parties."
+          }
+        },
+        "required": [
+          "remarks"
+        ]
+      },
+      "TicketPriorityDto": {
+        "type": "object",
+        "properties": {
+          "priority": {
+            "type": "string",
+            "example": "High",
+            "enum": [
+              "Low",
+              "Medium",
+              "High",
+              "Critical"
+            ]
+          }
+        },
+        "required": [
+          "priority"
+        ]
+      },
+      "TicketFinalDecisionDto": {
+        "type": "object",
+        "properties": {
+          "finalDecision": {
+            "type": "string",
+            "example": "Refund Approved",
+            "enum": [
+              "Refund Approved",
+              "Refund Rejected",
+              "Rework Scheduled",
+              "Provider Warning Issued",
+              "Provider Suspended",
+              "Ticket Rejected",
+              "No Action Required"
+            ]
+          },
+          "adminRemarks": {
+            "type": "string",
+            "example": "Refund approved after support verified the service failure."
+          }
+        },
+        "required": [
+          "finalDecision",
+          "adminRemarks"
+        ]
       }
     }
   }

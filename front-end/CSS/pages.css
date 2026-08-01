@@ -190,6 +190,17 @@
   margin-bottom: 14px;
 }
 
+.new-provider-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef8f1;
+  color: #16803f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .provider-bottom {
   border-top: 1px solid #e8edf5;
   padding-top: 12px;
@@ -356,29 +367,31 @@
 }
 
 .booking-card {
-  padding: 18px;
+  padding: 26px;
   position: sticky;
   top: 94px;
 }
 
 .booking-card h2 {
-  font-size: 22px;
+  font-size: 24px;
   color: #12284a;
-  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+  margin-bottom: 22px;
 }
 
 .booking-card label {
   display: block;
   font-weight: 700;
   color: #22395d;
-  margin-bottom: 8px;
-  margin-top: 12px;
+  font-size: 14px;
+  margin-bottom: 9px;
+  margin-top: 0;
 }
 
 .booking-card select,
 .booking-card input[type="date"] {
   width: 100%;
-  height: 42px;
+  height: 46px;
   border: 1px solid #e0e6ef;
   border-radius: 10px;
   padding: 0 12px;
@@ -387,7 +400,245 @@
 
 .booking-card .btn {
   width: 100%;
+  margin-top: 30px;
+  min-height: 48px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.booking-card .btn:not(:disabled):hover {
+  box-shadow: 0 10px 20px rgba(72, 99, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.booking-card .btn:disabled {
+  background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.availability-section {
+  margin-top: 28px;
+}
+
+.availability-section h3 {
+  color: #22395d;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.availability-date-list,
+.availability-time-list {
+  display: grid;
+  gap: 12px;
+}
+
+.availability-date-list {
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+}
+
+.availability-date-card,
+.time-slot-card {
+  border: 1px solid #dce5f0;
+  border-radius: 14px;
+  background: #fff;
+  color: #22395d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.availability-date-card {
+  min-width: 0;
+  min-height: 70px;
+  padding: 11px 8px;
+  display: grid;
+  gap: 3px;
+  text-align: center;
+}
+
+.availability-date-card span {
+  color: #697b94;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.availability-date-card strong {
+  font-size: 13px;
+}
+
+.time-slot-card {
+  min-height: 48px;
+  padding: 10px 12px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.availability-time-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.availability-date-card:hover:not(:disabled),
+.time-slot-card:hover {
+  border-color: #4863ff;
+  transform: translateY(-1px);
+}
+
+.availability-date-card.is-selected,
+.time-slot-card.is-selected {
+  border-color: #4863ff;
+  background: #4863ff;
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(72, 99, 255, 0.22);
+}
+
+.availability-date-card.is-selected span {
+  color: #e7ebff;
+}
+
+.availability-empty-slots,
+.availability-state {
+  color: #697b94;
+  font-size: 14px;
+  margin: 0;
+}
+
+.availability-state {
+  border: 1px solid #e0e6ef;
+  border-radius: 16px;
+  background: #f8faff;
+  padding: 25px 20px;
+  text-align: center;
+}
+
+.availability-state p {
+  line-height: 1.5;
+  margin: 6px 0 0;
+}
+
+.availability-state h3 {
+  color: #22395d;
+  font-size: 16px;
+  margin: 12px 0 0;
+}
+
+.availability-state-icon {
+  align-items: center;
+  background: #e9edff;
+  border-radius: 50%;
+  display: inline-flex;
+  font-size: 22px;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.availability-error {
+  border-color: #f2d8bb;
+  background: #fffaf4;
+  color: #8a4b08;
+}
+
+.availability-error .availability-state-icon {
+  background: #fff0d9;
+}
+
+.availability-error .secondary-btn {
   margin-top: 18px;
+  width: auto;
+  padding: 0 20px;
+}
+
+.availability-loading {
+  color: #627690;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.availability-skeleton-group {
+  display: grid;
+  gap: 12px;
+}
+
+.availability-skeleton-label {
+  width: 112px;
+  height: 14px;
+  border-radius: 99px;
+  background: #eef2f7;
+}
+
+.availability-skeleton-row {
+  display: grid;
+  gap: 12px;
+}
+
+.availability-date-skeletons {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.availability-slot-skeletons {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.availability-date-skeletons span,
+.availability-slot-skeletons span,
+.availability-skeleton-label {
+  border-radius: 12px;
+  background: linear-gradient(90deg, #eef2f7 25%, #f8faff 50%, #eef2f7 75%);
+  background-size: 200% 100%;
+  animation: availability-shimmer 1.25s ease-in-out infinite;
+}
+
+.availability-date-skeletons span {
+  min-height: 70px;
+}
+
+.availability-slot-skeletons span {
+  min-height: 48px;
+}
+
+.availability-date-card:focus-visible,
+.time-slot-card:focus-visible,
+.booking-card .btn:focus-visible,
+.availability-error .secondary-btn:focus-visible {
+  outline: 3px solid rgba(72, 99, 255, 0.35);
+  outline-offset: 3px;
+}
+
+@keyframes availability-shimmer {
+  to { background-position: -200% 0; }
+}
+
+@media (max-width: 640px) {
+  .booking-card {
+    padding: 22px 18px;
+  }
+
+  .booking-card h2 {
+    font-size: 22px;
+  }
+
+  .availability-date-list {
+    gap: 9px;
+    grid-template-columns: repeat(auto-fit, minmax(66px, 1fr));
+  }
+
+  .availability-time-list {
+    gap: 10px;
+  }
+
+  .availability-date-card {
+    min-height: 66px;
+    padding: 9px 5px;
+  }
+
+  .availability-state {
+    padding: 22px 16px;
+  }
 }
 
 .benefits-grid {
@@ -636,7 +887,9 @@
 
 .checkout-card input,
 .checkout-card textarea,
+.checkout-card select,
 .payment-form-box input,
+.payment-form-box select,
 .promo-row input {
   width: 100%;
   border: 1px solid #dfe6ef;
@@ -645,6 +898,23 @@
   padding: 12px 14px;
   font-size: 14px;
   outline: none;
+}
+
+.checkout-card select,
+.payment-form-box select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 42px;
+  background-image: linear-gradient(45deg, transparent 50%, #526b8d 50%), linear-gradient(135deg, #526b8d 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.checkout-card select:focus,
+.payment-form-box select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .checkout-card textarea {
@@ -844,12 +1114,3 @@
   cursor: pointer;
 }
 
-.payment-option select {
-  width: 100%;
-  border: 1px solid #dfe6ef;
-  border-radius: 10px;
-  background: #f8faff;
-  padding: 12px 14px;
-  font-size: 14px;
-  outline: none;
-}

@@ -67,13 +67,7 @@ function saveCustomServeEaseCities(cities) {
 }
 
 function getAllServeEaseCities() {
-  const seen = {};
-  return getBaseServeEaseCities().concat(getCustomServeEaseCities()).filter(function (city) {
-    const key = String(city.name || "").toLowerCase();
-    if (!key || seen[key]) return false;
-    seen[key] = true;
-    return true;
-  });
+  return getBaseServeEaseCities();
 }
 
 function getCityById(cityId) {
@@ -128,6 +122,85 @@ function slugifyProviderName(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "provider";
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise(function (resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function () { resolve(reader.result); };
+    reader.onerror = function () { reject(reader.error); };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function buildProviderDocumentPayload(providerId) {
+  const idProofType = document.getElementById("idProofType")?.value || "ID Proof";
+  const documentFields = [
+    { inputId: "idProofFile", type: "ID Proof - " + idProofType, required: true },
+    { inputId: "addressProofFile", type: "Address Proof", required: true },
+    { inputId: "skillCertificateFile", type: "Skill Certificate", required: true },
+    { inputId: "experienceProofFile", type: "Experience Proof", required: true },
+    { inputId: "profilePhotoFile", type: "Profile Photo", required: true },
+    { inputId: "policeVerificationFile", type: "Police Verification Certificate", required: false }
+  ];
+
+  const documents = [];
+  const previewStore = {};
+
+  for (const field of documentFields) {
+    const file = document.getElementById(field.inputId)?.files?.[0];
+    if (!file && !field.required) continue;
+    const documentId = "DOC-" + providerId + "-" + String(documents.length + 1);
+    if (file) {
+      try {
+        previewStore[documentId] = {
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          dataUrl: await readFileAsDataUrl(file)
+        };
+      } catch (error) {
+        previewStore[documentId] = {
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          dataUrl: "",
+          previewError: "Preview unavailable"
+        };
+      }
+    }
+    documents.push({
+      documentId: documentId,
+      documentType: field.type,
+      documentName: file ? file.name : "",
+      documentUrl: "local-document://" + providerId + "/" + documentId,
+      required: field.required
+    });
+  }
+
+  try {
+    localStorage.setItem("serveEaseProviderDocuments:" + providerId, JSON.stringify(previewStore));
+  } catch (error) {
+    localStorage.setItem("serveEaseProviderDocuments:" + providerId, JSON.stringify({}));
+  }
+  return documents;
+}
+
+function syncProviderVerificationRequest(provider) {
+  if (!window.ServeEaseApi || typeof window.ServeEaseApi.createProviderVerificationRequest !== "function") return;
+
+  window.ServeEaseApi.createProviderVerificationRequest({
+    id: provider.id,
+    name: provider.fullName,
+    email: provider.email,
+    organisationName: provider.organisationName || provider.fullName,
+    phone: provider.phone,
+    category: provider.serviceType,
+    experience: provider.experience,
+    location: provider.location || provider.cityName,
+    address: provider.address,
+    documents: provider.documents || []
+  }).catch(function (error) {
+    console.warn("Provider verification request sync skipped.", error);
+  });
 }
 
 function normalizeProviderText(value) {
@@ -185,7 +258,8 @@ function seedDefaultUsers() {
       cityName: "Chennai",
       location: "Chennai",
       address: "No. 22, Anna Nagar, Chennai",
-      providerCatalogId: "cleanpro-service"
+      providerCatalogId: "cleanpro-service",
+      registrationDate: "12 Jan 2025"
     },
     {
       id: "SUP001",
@@ -256,7 +330,8 @@ function seedDefaultUsers() {
         cityName: getCityById(provider.cityId || inferCityIdFromAddress(provider.location)).name,
         location: getCityById(provider.cityId || inferCityIdFromAddress(provider.location)).name,
         address: provider.location,
-        providerCatalogId: provider.id
+        providerCatalogId: provider.id,
+        registrationDate: provider.registrationDate || provider.submittedDate || "Not available"
       };
 
       const existingIndex = mergedUsers.findIndex(function (user) {
@@ -427,7 +502,7 @@ function setupLoginForm() {
   const form = document.getElementById("loginForm");
   if (!form) return;
 
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async function (e) {
     e.preventDefault();
 
     clearText("loginEmailError");
@@ -605,7 +680,7 @@ function setupSignupForm() {
   const form = document.getElementById("signupForm");
   if (!form) return;
 
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async function (e) {
     e.preventDefault();
 
     [
@@ -617,6 +692,12 @@ function setupSignupForm() {
       "experienceError",
       "providerCityError",
       "addressError",
+      "idProofTypeError",
+      "idProofFileError",
+      "addressProofFileError",
+      "skillCertificateFileError",
+      "experienceProofFileError",
+      "profilePhotoFileError",
       "passwordError",
       "confirmPasswordError",
       "signupFormError",
@@ -631,6 +712,7 @@ function setupSignupForm() {
     const experienceInput = document.getElementById("experience");
     const providerCityInput = document.getElementById("providerCity");
     const addressInput = document.getElementById("address");
+    const idProofTypeInput = document.getElementById("idProofType");
     const passwordInput = document.getElementById("password");
     const confirmPasswordInput = document.getElementById("confirmPassword");
 
@@ -643,6 +725,7 @@ function setupSignupForm() {
       experienceInput,
       providerCityInput,
       addressInput,
+      idProofTypeInput,
       passwordInput,
       confirmPasswordInput
     ].forEach(clearInputState);
@@ -731,6 +814,31 @@ function setupSignupForm() {
       } else {
         setSuccessState(addressInput);
       }
+
+      if (!idProofTypeInput.value) {
+        showText("idProofTypeError", "Select the ID proof type.");
+        setErrorState(idProofTypeInput);
+        valid = false;
+      } else {
+        setSuccessState(idProofTypeInput);
+      }
+
+      [
+        ["idProofFile", "idProofFileError", "Upload ID proof."],
+        ["addressProofFile", "addressProofFileError", "Upload address proof."],
+        ["skillCertificateFile", "skillCertificateFileError", "Upload skill certificate."],
+        ["experienceProofFile", "experienceProofFileError", "Upload experience proof."],
+        ["profilePhotoFile", "profilePhotoFileError", "Upload profile photo."]
+      ].forEach(function (item) {
+        const input = document.getElementById(item[0]);
+        if (!input || !input.files || !input.files.length) {
+          showText(item[1], item[2]);
+          setErrorState(input);
+          valid = false;
+        } else {
+          setSuccessState(input);
+        }
+      });
     }
 
     if (!password || !isStrongPassword(password)) {
@@ -795,15 +903,18 @@ function setupSignupForm() {
       newUser.address = address;
       newUser.providerCatalogId = slugifyProviderName(organisationName || fullName);
       newUser.approvalStatus = "Pending Approval";
-      newUser.registrationDate = new Date().toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-      });
+      try {
+        newUser.documents = await buildProviderDocumentPayload(newUser.id);
+      } catch (error) {
+        showText("signupFormError", "Unable to read uploaded documents. Please try again.");
+        return;
+      }
+      newUser.registrationDate = window.ServeEaseDate ? window.ServeEaseDate.nowDate() : new Date().toLocaleDateString("en-GB");
     }
 
     if (role === "provider") {
       approvalRequests.push(newUser);
+      syncProviderVerificationRequest(newUser);
     } else {
       data.users.push(newUser);
     }

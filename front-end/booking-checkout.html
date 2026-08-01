@@ -21,9 +21,9 @@
     </div>
 
     <div class="dashboard-topbar-actions">
-      <button class="icon-btn" type="button" id="checkoutNotificationBtn">🔔</button>
+      <button class="icon-btn" type="button" id="checkoutNotificationBtn" aria-label="Open notifications" aria-expanded="false">🔔</button>
       <div class="profile-menu-wrap" id="sharedProfileMenuWrap">
-        <button class="profile-btn" type="button" id="sharedProfileBtn">👤</button>
+        <button class="profile-btn" type="button" id="sharedProfileBtn" aria-label="Open account menu" aria-expanded="false">👤</button>
         <div class="profile-dropdown hidden" id="sharedProfileDropdown">
           <a href="customer-profile.html">My Profile</a>
           <a href="customer-dashboard.html">Go to Dashboard</a>
@@ -32,6 +32,22 @@
       </div>
     </div>
   </header>
+
+  <div class="notification-panel hidden" id="checkoutNotificationPanel">
+    <div class="notification-head">
+      <h3>Notifications</h3>
+      <span class="notification-badge">Booking updates</span>
+    </div>
+    <a class="notification-item" href="my-bookings.html">
+      <p>Track your booking status and provider updates.</p>
+      <span>View My Bookings</span>
+    </a>
+    <a class="notification-item" href="payment-history.html">
+      <p>Review your completed and pending payments.</p>
+      <span>View Payment History</span>
+    </a>
+    <a class="view-notifications-btn" href="my-tickets.html">View Support Tickets</a>
+  </div>
 
   <main class="checkout-page">
     <div class="container">
@@ -43,11 +59,6 @@
           <div class="checkout-card" id="bookingSummaryCard"></div>
           <div class="checkout-card" id="customerDetailsCard"></div>
           <div class="checkout-card" id="paymentMethodCard"></div>
-          <div class="checkout-note-card">
-            <h3>Booking Reference Number</h3>
-            <p>Booking Reference Number will be generated after payment confirmation.</p>
-            <small>Example format: BOOK-2026-1054</small>
-          </div>
         </div>
 
         <aside class="checkout-sidebar">

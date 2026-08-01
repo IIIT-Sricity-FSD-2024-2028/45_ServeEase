@@ -12,6 +12,119 @@
     return session.userId || String(session.email || "customer").toLowerCase();
   }
 
+  function getCustomerNotificationReadKey() {
+    return "serveEaseCustomerNotificationReads:" + getAccountStorageSuffix();
+  }
+
+  function getReadNotificationIds() {
+    try {
+      const value = JSON.parse(localStorage.getItem(getCustomerNotificationReadKey()) || "[]");
+      return Array.isArray(value) ? value : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function setReadNotificationIds(ids) {
+    localStorage.setItem(getCustomerNotificationReadKey(), JSON.stringify(ids));
+  }
+
+  function markNotificationIdsAsRead(ids) {
+    const readIds = new Set(getReadNotificationIds());
+    (Array.isArray(ids) ? ids : []).forEach(function (id) {
+      if (id) readIds.add(id);
+    });
+    setReadNotificationIds(Array.from(readIds));
+  }
+
+  function markNotificationsAsRead(notifications) {
+    const ids = (Array.isArray(notifications) ? notifications : [])
+      .map(function (item) {
+        return item && item.id;
+      })
+      .filter(Boolean);
+    markNotificationIdsAsRead(ids);
+  }
+
+  function parseNotificationTimestamp(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getTime();
+    const text = String(value || "").trim();
+    if (!text || text === "Just now") return Date.now();
+    if (text === "Recently") return Date.now() - 60000;
+
+    const iso = new Date(text);
+    if (!Number.isNaN(iso.getTime())) return iso.getTime();
+
+    let match = text.match(/^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{2})(?:\s*([AP]M))?)?$/i);
+    if (match) {
+      let hours = Number(match[4] || 0);
+      const minutes = Number(match[5] || 0);
+      const meridiem = (match[6] || "").toUpperCase();
+      if (meridiem === "PM" && hours !== 12) hours += 12;
+      if (meridiem === "AM" && hours === 12) hours = 0;
+      return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]), hours, minutes).getTime();
+    }
+
+    match = text.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})(?:\s+(\d{1,2}):(\d{2})(?:\s*([AP]M))?)?$/i);
+    if (match) {
+      const monthMap = {
+        jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3,
+        may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8,
+        september: 8, oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11
+      };
+      const monthIndex = monthMap[match[2].toLowerCase()];
+      if (monthIndex !== undefined) {
+        let hours = Number(match[4] || 0);
+        const minutes = Number(match[5] || 0);
+        const meridiem = (match[6] || "").toUpperCase();
+        if (meridiem === "PM" && hours !== 12) hours += 12;
+        if (meridiem === "AM" && hours === 12) hours = 0;
+        return new Date(Number(match[3]), monthIndex, Number(match[1]), hours, minutes).getTime();
+      }
+    }
+
+    match = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::\d{2})?(?:\.\d{3})?(Z)?)?$/);
+    if (match) {
+      return new Date(
+        Number(match[1]),
+        Number(match[2]) - 1,
+        Number(match[3]),
+        Number(match[4] || 0),
+        Number(match[5] || 0)
+      ).getTime();
+    }
+
+    return 0;
+  }
+
+  function normalizeNotificationIso(value) {
+    const timestamp = parseNotificationTimestamp(value);
+    return timestamp ? new Date(timestamp).toISOString() : "";
+  }
+
+  function formatNotificationTime(value) {
+    const text = String(value || "").trim();
+    const timestamp = parseNotificationTimestamp(value);
+    if (text && !/^(just now|recently)$/i.test(text)) {
+      return formatDisplayDateTime(value) || formatDisplayDate(value) || text;
+    }
+    if (timestamp) {
+      return formatDisplayDateTime(new Date(timestamp));
+    }
+    return text || "Recently";
+  }
+
+  function openCustomerNotificationsView() {
+    const latestNotifications = getCustomerNotifications();
+    markNotificationsAsRead(latestNotifications);
+    openCustomerNotificationsModal(latestNotifications);
+    return false;
+  }
+
+  window.ServeEaseCustomerNotifications = {
+    openAll: openCustomerNotificationsView
+  };
+
   const seedKey = isDemoCustomerAccount()
     ? "serveEaseCustomerModuleData"
     : "serveEaseCustomerModuleData:" + getAccountStorageSuffix();
@@ -155,6 +268,7 @@
 
   function setCustomerData(data) {
     localStorage.setItem(seedKey, JSON.stringify(data));
+    renderCustomerNotifications();
   }
 
   function getSupportData() {
@@ -169,17 +283,74 @@
   }
 
   function createCustomerTicketId() {
-    return "TICKET-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(Math.random() * 900 + 100);
+    const supportData = getSupportData();
+    const ownData = getCustomerData();
+    const existingIds = new Set([].concat(supportData.tickets || [], ownData.tickets || []).map(function (ticket) {
+      return ticket.id;
+    }));
+    let suffix = Date.now().toString().slice(-6);
+    let ticketId = "TICKET-" + new Date().getFullYear() + "-" + suffix;
+    while (existingIds.has(ticketId)) {
+      suffix = String(Number(suffix) + 1).padStart(6, "0").slice(-6);
+      ticketId = "TICKET-" + new Date().getFullYear() + "-" + suffix;
+    }
+    return ticketId;
+  }
+
+  function normalizeBookingRef(value) {
+    return String(value || "").trim();
+  }
+
+  function getBookingReference(booking) {
+    if (!booking) return "";
+    return booking.bookingRef || booking.id || "";
+  }
+
+  function createSupportTicketDraft(booking) {
+    if (!booking) return;
+
+    const bookingRef = normalizeBookingRef(getBookingReference(booking));
+    const data = getCustomerData();
+    const existingTicket = (data.tickets || []).find(function (ticket) {
+      const sameBooking = normalizeBookingRef(ticket.bookingRef).toLowerCase() === bookingRef.toLowerCase();
+      const stillOpen = !["Resolved", "Closed"].includes(ticket.status);
+      return sameBooking && stillOpen;
+    });
+
+    if (existingTicket) {
+      sessionStorage.setItem("serveEaseSupportTicketFocus", existingTicket.id);
+      window.location.href = "customer-support-center.html?bookingRef=" + encodeURIComponent(bookingRef);
+      return;
+    }
+
+    const draft = {
+      bookingRef: bookingRef,
+      category: "",
+      subject: "",
+      description: "",
+      provider: booking.provider || "ServeEase Provider",
+      providerId: booking.providerId || "",
+      service: booking.service || "",
+      bookingContext: booking
+    };
+
+    sessionStorage.setItem("serveEaseSupportTicketDraft", JSON.stringify(draft));
+    window.location.href = "customer-support-center.html?bookingRef=" + encodeURIComponent(getBookingReference(booking));
   }
 
   function customerMessageStamp() {
-    return new Date().toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }).replace(",", "");
+    return window.ServeEaseDate ? window.ServeEaseDate.nowDateTime() : (function () {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = now.getFullYear();
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const suffix = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12;
+      if (hours === 0) hours = 12;
+      return `${day}-${month}-${year} ${String(hours).padStart(2, "0")}:${minutes} ${suffix}`;
+    })();
   }
 
   function syncCustomerTicketsFromSupport(data) {
@@ -196,6 +367,37 @@
       ticket.solution = supportTicket.solution || ticket.solution || "";
       ticket.supportUpdate = supportTicket.supportUpdate || ticket.supportUpdate || "";
       ticket.messages = Array.isArray(supportTicket.messages) ? supportTicket.messages : ticket.messages;
+      ticket.createdAtIso = ticket.createdAtIso || normalizeNotificationIso(supportTicket.createdAtIso || supportTicket.createdDate || supportTicket.date || supportTicket.created || ticket.date);
+      if (!ticket.date || ticket.date === "Just now" || ticket.date === "Recently") {
+        ticket.date = formatNotificationTime(ticket.createdAtIso || supportTicket.createdDate || supportTicket.date || supportTicket.created);
+      }
+      changed = true;
+    });
+
+    supportData.tickets.forEach(function (supportTicket) {
+      if (!supportTicket || supportTicket.raisedByType !== "customer") return;
+      const alreadyExists = data.tickets.some(function (ticket) { return ticket.id === supportTicket.id; });
+      const sameCustomer = Boolean(supportTicket.email && session.email) &&
+        String(supportTicket.email).toLowerCase() === String(session.email).toLowerCase();
+      if (alreadyExists || !sameCustomer) return;
+      data.tickets.unshift({
+        id: supportTicket.id,
+        subject: supportTicket.subject || "Support request",
+        bookingRef: supportTicket.bookingReference || "N/A",
+        category: supportTicket.issueCategory || "Booking Issue",
+        description: supportTicket.description || "",
+        provider: supportTicket.providerName || "ServeEase Provider",
+        providerId: supportTicket.providerId || "",
+        service: supportTicket.service || "",
+        customerName: supportTicket.customerName || session.fullName || "Customer",
+        customerEmail: supportTicket.email || session.email || "",
+        customerPhone: supportTicket.phone || session.phone || "",
+        date: formatNotificationTime(supportTicket.createdAtIso || supportTicket.createdDate || supportTicket.date || supportTicket.created || "Recently"),
+        createdAtIso: supportTicket.createdAtIso || normalizeNotificationIso(supportTicket.createdDate || supportTicket.date || supportTicket.created),
+        status: supportTicket.status || "Open",
+        solution: supportTicket.solution || "",
+        supportUpdate: supportTicket.supportUpdate || ""
+      });
       changed = true;
     });
 
@@ -215,28 +417,39 @@
       bookingReference: ticket.bookingRef || "N/A",
       raisedByType: "customer",
       raisedByLabel: "Customer",
-      customerName: session.fullName || "Customer",
+      raisedById: session.userId || session.email || "",
+      raisedByName: ticket.customerName || session.fullName || "Customer",
+      customerId: ticket.customerId || session.userId || session.email || "",
+      customerName: ticket.customerName || session.fullName || "Customer",
       providerName: ticket.provider || "ServeEase Provider",
       issueCategory: ticket.category,
       subject: ticket.subject,
       description: ticket.description,
       attachmentName: "No attachment",
-      phone: session.phone || "",
-      email: session.email || "",
+      phone: ticket.customerPhone || session.phone || "",
+      email: ticket.customerEmail || session.email || "",
       status: "Open",
       supportUpdate: ticket.supportUpdate,
       solution: ticket.solution || "",
       createdDate: ticket.date,
-      createdAtIso: new Date().toISOString(),
+      createdAtIso: ticket.createdAtIso || new Date().toISOString(),
+      providerId: ticket.providerId || "",
+      service: ticket.service || "",
       assignedTo: supportData.agent && supportData.agent.fullName || "Priya Sharma",
       messages: [
-        { sender: session.fullName || "Customer", senderType: "customer", text: ticket.description, time: ticket.date }
+        { sender: ticket.customerName || session.fullName || "Customer", senderType: "customer", text: ticket.description, time: ticket.date }
       ],
       history: [
         { label: "Ticket created by customer", time: ticket.date, active: true }
       ]
     });
-    supportData.notifications.unshift({ id: "NT" + Date.now(), text: "New support ticket created - " + ticket.id, time: "Just now", isNew: true, ticketId: ticket.id });
+    supportData.notifications.unshift({
+      id: "NT" + Date.now(),
+      text: "New support ticket created - " + ticket.id,
+      time: formatDisplayDateTime(new Date().toISOString()),
+      isNew: true,
+      ticketId: ticket.id
+    });
     setSupportData(supportData);
   }
 
@@ -283,7 +496,7 @@
     supportData.notifications.unshift({
       id: "NT" + Date.now(),
       text: "Customer replied to ticket " + supportTicket.id,
-      time: "Just now",
+      time: formatDisplayDateTime(new Date().toISOString()),
       isNew: true,
       ticketId: supportTicket.id
     });
@@ -323,14 +536,297 @@
     return `₹${amount}`;
   }
 
+  function formatDisplayDate(value) {
+    return window.ServeEaseDate ? window.ServeEaseDate.formatDate(value) : (value || "");
+  }
+
+  function formatDisplayDateTime(value) {
+    return window.ServeEaseDate ? window.ServeEaseDate.formatDateTime(value) : (value || "");
+  }
+
+  function normalizeBookingCategory(status) {
+    const value = String(status || "Pending");
+    if (value.toLowerCase() === "rejected") return "Cancelled";
+    return value;
+  }
+
+  function customerMatchesBooking(booking) {
+    if (!booking) return false;
+    if (!booking.customerEmail || !session.email) return false;
+    return String(booking.customerEmail).toLowerCase() === String(session.email).toLowerCase();
+  }
+
+  function ensurePaymentForBooking(data, booking) {
+    if (!booking || !booking.id) return;
+    if (!Array.isArray(data.payments)) data.payments = [];
+    const paymentStatus = ["cancelled", "rejected"].includes(String(booking.status || booking.category || "").toLowerCase())
+      ? "Refunded"
+      : "Successful";
+    const hasPayment = data.payments.some(function (payment) {
+      return String(payment.bookingRef || "").toLowerCase() === String(booking.id).toLowerCase();
+    });
+    if (hasPayment) {
+      data.payments.forEach(function (payment) {
+        if (String(payment.bookingRef || "").toLowerCase() === String(booking.id).toLowerCase()) {
+          payment.status = paymentStatus;
+        }
+      });
+      return;
+    }
+
+    data.payments.unshift({
+      id: "TXN-" + String(booking.id).replace(/[^a-z0-9]/gi, "").slice(-10).toUpperCase(),
+      bookingRef: booking.id,
+      service: booking.service || "Service booking",
+      provider: booking.provider || "ServeEase Provider",
+      method: booking.paymentMethod || "Payment method not recorded",
+      amount: Number(booking.amount) || 0,
+      date: formatDisplayDate(new Date()),
+      status: paymentStatus
+    });
+  }
+
+  function mergeBackendBooking(data, booking) {
+    if (!customerMatchesBooking(booking)) return false;
+    if (!Array.isArray(data.bookings)) data.bookings = [];
+
+    const category = normalizeBookingCategory(booking.category || booking.status);
+    const existingBooking = data.bookings.find(function (item) {
+      return String(item.id || "").toLowerCase() === String(booking.id || "").toLowerCase();
+    });
+
+    if (existingBooking) {
+      existingBooking.service = booking.service || existingBooking.service;
+      existingBooking.provider = booking.provider || existingBooking.provider;
+      existingBooking.providerId = booking.providerId || existingBooking.providerId;
+      existingBooking.date = booking.date || existingBooking.date;
+      existingBooking.time = booking.time || existingBooking.time;
+      existingBooking.address = booking.address || existingBooking.address;
+      existingBooking.status = booking.status || existingBooking.status;
+      existingBooking.amount = Number(booking.amount) || existingBooking.amount;
+      existingBooking.customerName = booking.customerName || existingBooking.customerName;
+      existingBooking.customerPhone = booking.customerPhone || existingBooking.customerPhone;
+      existingBooking.customerEmail = booking.customerEmail || existingBooking.customerEmail;
+      existingBooking.category = category || existingBooking.category;
+      ensurePaymentForBooking(data, existingBooking);
+      return true;
+    }
+
+    data.bookings.unshift({
+      id: booking.id,
+      service: booking.service || "Service booking",
+      provider: booking.provider || "ServeEase Provider",
+      providerId: booking.providerId || "",
+      date: booking.date || "",
+      time: booking.time || "",
+      address: booking.address || "",
+      status: booking.status || "Pending",
+      amount: Number(booking.amount) || 0,
+      customerName: booking.customerName || session.fullName || "Customer",
+      customerPhone: booking.customerPhone || session.phone || "",
+      customerEmail: booking.customerEmail || session.email || "",
+      category: category || "Pending"
+    });
+    ensurePaymentForBooking(data, data.bookings[0]);
+    return true;
+  }
+
+  function syncCustomerBookingsFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getBookings !== "function") {
+      if (typeof done === "function") done(getCustomerData());
+      return;
+    }
+
+    window.ServeEaseApi.getBookings()
+      .then(function (apiBookings) {
+        const data = getCustomerData();
+        if (!Array.isArray(apiBookings) || !apiBookings.length) return data;
+
+        let changed = false;
+        apiBookings.forEach(function (booking) {
+          if (mergeBackendBooking(data, booking)) changed = true;
+        });
+
+        if (changed) setCustomerData(data);
+        return data;
+      })
+      .catch(function (error) {
+        console.warn("ServeEase backend customer booking sync skipped.", error);
+        return getCustomerData();
+      })
+      .then(function (data) {
+        if (typeof done === "function") done(data);
+      });
+  }
+
   function logoutCustomer() {
     sessionStorage.removeItem("serveEaseSession");
     window.location.href = "index.html";
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function getCustomerNotifications(data) {
+    const source = data || getCustomerData() || {};
+    const readIds = new Set(getReadNotificationIds());
+    const notifications = [];
+
+    (source.tickets || []).forEach(function (ticket) {
+      const ticketStatus = String(ticket.status || "Open");
+      const createdLabel = formatNotificationTime(ticket.createdAtIso || ticket.date || ticket.createdDate || ticket.created);
+      const notificationId = "ticket:" + String(ticket.id || "").toLowerCase() + ":" + ticketStatus.toLowerCase();
+      notifications.push({
+        id: notificationId,
+        text: ticketStatus.toLowerCase() === "resolved"
+          ? "Support ticket " + ticket.id + " has been resolved."
+          : "Support ticket " + ticket.id + " is " + ticketStatus.toLowerCase() + ".",
+        time: createdLabel,
+        sortAt: parseNotificationTimestamp(ticket.createdAtIso || ticket.date),
+        isNew: ticketStatus.toLowerCase() === "open" && !readIds.has(notificationId),
+        actionPage: "customer-support-center.html"
+      });
+    });
+
+    (source.bookings || []).forEach(function (booking) {
+      const status = String(booking.status || booking.category || "updated");
+      const statusKey = status.toLowerCase();
+      const createdLabel = formatNotificationTime(booking.createdAtIso || booking.date);
+      const notificationId = "booking:" + String(booking.id || "").toLowerCase() + ":" + statusKey;
+      notifications.push({
+        id: notificationId,
+        text: (booking.service || "Your booking") + " is " + statusKey + ".",
+        time: createdLabel,
+        sortAt: parseNotificationTimestamp(booking.createdAtIso || booking.date),
+        isNew: (statusKey === "pending" || statusKey === "accepted") && !readIds.has(notificationId),
+        actionPage: "my-bookings.html"
+      });
+    });
+
+    (source.payments || []).forEach(function (payment) {
+      const paymentStatus = String(payment.status || "updated");
+      const paymentLabel = formatNotificationTime(payment.createdAtIso || payment.date);
+      const notificationId = "payment:" + String(payment.id || "").toLowerCase() + ":" + paymentStatus.toLowerCase();
+      notifications.push({
+        id: notificationId,
+        text: "Payment " + (payment.id || "") + " for " + (payment.service || "your service") + " is " + paymentStatus.toLowerCase() + ".",
+        time: paymentLabel,
+        sortAt: parseNotificationTimestamp(payment.createdAtIso || payment.date),
+        isNew: (paymentStatus.toLowerCase() === "pending" || paymentStatus.toLowerCase() === "failed") && !readIds.has(notificationId),
+        actionPage: "payment-history.html"
+      });
+    });
+
+    return notifications
+      .sort(function (a, b) {
+        return (b.sortAt || 0) - (a.sortAt || 0);
+      })
+      .slice(0, 30);
+  }
+
+  function renderNotificationItems(notifications, limit) {
+    const visibleNotifications = typeof limit === "number" ? notifications.slice(0, limit) : notifications;
+    if (!visibleNotifications.length) {
+      return '<div class="notification-empty"><strong>No notifications yet</strong><span>New booking, payment, and support updates will appear here.</span></div>';
+    }
+
+    return visibleNotifications.map(function (item) {
+      return '<button class="notification-item ' + (item.isNew ? 'unread' : '') + '" type="button" data-notification-page="' + item.actionPage + '" data-notification-id="' + item.id + '">' +
+        '<p>' + escapeHtml(item.text) + '</p>' +
+        '<span>' + escapeHtml(item.time) + '</span>' +
+      '</button>';
+    }).join("");
+  }
+
+  function openCustomerNotificationsModal(notifications) {
+    let backdrop = document.getElementById("customerNotificationsModalBackdrop");
+    if (!backdrop) {
+      backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop hidden";
+      backdrop.id = "customerNotificationsModalBackdrop";
+      backdrop.innerHTML = [
+        '<div class="modal-card customer-notifications-modal">',
+        '  <div class="modal-head">',
+        '    <h2>All Notifications</h2>',
+        '    <button class="close-modal-btn" type="button" id="closeCustomerNotificationsModal">&times;</button>',
+        '  </div>',
+        '  <div id="customerNotificationsModalList"></div>',
+        '</div>'
+      ].join("");
+      document.body.appendChild(backdrop);
+
+      backdrop.addEventListener("click", function (event) {
+        if (event.target === backdrop) backdrop.classList.add("hidden");
+      });
+
+      const closeBtn = document.getElementById("closeCustomerNotificationsModal");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+          backdrop.classList.add("hidden");
+        });
+      }
+    }
+
+    const list = document.getElementById("customerNotificationsModalList");
+    if (list) {
+      list.innerHTML = renderNotificationItems(notifications);
+      list.querySelectorAll("[data-notification-page]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          markNotificationIdsAsRead([button.dataset.notificationId]);
+          renderCustomerNotifications();
+          window.location.href = button.dataset.notificationPage;
+        });
+      });
+    }
+
+    backdrop.classList.remove("hidden");
+  }
+
+  function renderCustomerNotifications() {
+    const notificationPanel = document.getElementById("customerNotificationPanel");
+    if (!notificationPanel) return;
+
+    const notifications = getCustomerNotifications();
+    const newCount = notifications.filter(function (item) { return item.isNew; }).length;
+    notificationPanel.innerHTML = [
+      '<div class="notification-head">',
+      '  <h3>Notifications</h3>',
+      '  <span class="notification-badge">' + newCount + ' New</span>',
+      '</div>',
+      renderNotificationItems(notifications, 4),
+      '<button class="view-notifications-btn" type="button" id="viewCustomerNotificationsBtn" data-view-all-notifications="true">View All Notifications</button>'
+    ].join("");
+
+    const viewAllBtn = notificationPanel.querySelector("#viewCustomerNotificationsBtn");
+    if (viewAllBtn) {
+      viewAllBtn.onclick = function (event) {
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        openCustomerNotificationsView();
+      };
+    }
+
+    notificationPanel.querySelectorAll("[data-notification-page]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        markNotificationIdsAsRead([button.dataset.notificationId]);
+        renderCustomerNotifications();
+        window.location.href = button.dataset.notificationPage;
+      });
+    });
+  }
+
   function setupCustomerHeaderMenus() {
     const notificationBtn = document.getElementById("customerNotificationBtn");
     const notificationPanel = document.getElementById("customerNotificationPanel");
+    renderCustomerNotifications();
     trapNotificationScroll(notificationPanel);
     const profileBtn = document.getElementById("customerProfileBtn");
     const profileDropdown = document.getElementById("customerProfileDropdown");
@@ -340,7 +836,15 @@
       notificationBtn.addEventListener("click", function (e) {
         e.stopPropagation();
         notificationPanel.classList.toggle("hidden");
+        if (!notificationPanel.classList.contains("hidden")) {
+          markNotificationsAsRead(getCustomerNotifications());
+          renderCustomerNotifications();
+        }
         if (profileDropdown) profileDropdown.classList.add("hidden");
+      });
+
+      notificationPanel.addEventListener("click", function (e) {
+        e.stopPropagation();
       });
     }
 
@@ -511,47 +1015,52 @@
     const welcome = document.getElementById("customerWelcome");
     if (!welcome) return;
 
-    const data = getCustomerData();
-    syncCustomerTicketsFromSupport(data);
     welcome.textContent = `Welcome back, ${session.fullName}!`;
 
-    const statsContainer = document.getElementById("customerStats");
-    const totalBookings = data.bookings.length;
-    const upcomingBookings = data.bookings.filter(item => item.category === "Accepted" || item.category === "Pending").length;
-    const successfulPayments = data.payments.filter(item => item.status === "Successful").length;
-    const openTickets = data.tickets.filter(item => item.status === "Open").length;
+    function renderDashboard(data) {
+      syncCustomerTicketsFromSupport(data);
 
-    statsContainer.innerHTML = `
-      <div class="stat-card-dashboard"><div class="feature-icon blue">📘</div><h3>${totalBookings}</h3><p>Total Bookings</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon green">📅</div><h3>${upcomingBookings}</h3><p>Upcoming Bookings</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon orange">💳</div><h3>${successfulPayments}</h3><p>Successful Payments</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon purple">🎫</div><h3>${openTickets}</h3><p>Open Tickets</p></div>
-    `;
+      const statsContainer = document.getElementById("customerStats");
+      const totalBookings = data.bookings.length;
+      const upcomingBookings = data.bookings.filter(item => item.category === "Accepted" || item.category === "Pending").length;
+      const successfulPayments = data.payments.filter(item => item.status === "Successful").length;
+      const openTickets = data.tickets.filter(item => item.status === "Open").length;
 
-    const upcomingBox = document.getElementById("dashboardUpcomingBookings");
-    const upcomingItems = data.bookings.filter(item => item.category === "Accepted" || item.category === "Pending").slice(0, 3);
-    upcomingBox.innerHTML = upcomingItems.map(item => `
-      <div class="preview-item">
-        <div class="preview-title">${item.service}</div>
-        <div class="preview-meta">${item.provider} • ${item.date} • ${item.time}</div>
-      </div>
-    `).join("");
+      statsContainer.innerHTML = `
+        <div class="stat-card-dashboard"><div class="feature-icon blue">📘</div><h3>${totalBookings}</h3><p>Total Bookings</p></div>
+        <div class="stat-card-dashboard"><div class="feature-icon green">📅</div><h3>${upcomingBookings}</h3><p>Upcoming Bookings</p></div>
+        <div class="stat-card-dashboard"><div class="feature-icon orange">💳</div><h3>${successfulPayments}</h3><p>Successful Payments</p></div>
+        <div class="stat-card-dashboard"><div class="feature-icon purple">🎫</div><h3>${openTickets}</h3><p>Open Tickets</p></div>
+      `;
 
-    const paymentsBox = document.getElementById("dashboardRecentPayments");
-    paymentsBox.innerHTML = data.payments.slice(0, 4).map(item => `
-      <div class="preview-item">
-        <div class="preview-title">${item.service}</div>
-        <div class="preview-meta">${item.id} • ${formatPrice(item.amount)} • ${item.status}</div>
-      </div>
-    `).join("");
+      const upcomingBox = document.getElementById("dashboardUpcomingBookings");
+      const upcomingItems = data.bookings.filter(item => item.category === "Accepted" || item.category === "Pending").slice(0, 3);
+      upcomingBox.innerHTML = upcomingItems.length ? upcomingItems.map(item => `
+        <div class="preview-item">
+          <div class="preview-title">${item.service}</div>
+          <div class="preview-meta">${item.provider} • ${formatDisplayDate(item.date)} • ${item.time}</div>
+        </div>
+      `).join("") : '<div class="empty-state-card">No upcoming bookings yet.</div>';
 
-    const supportBox = document.getElementById("dashboardSupportPreview");
-    supportBox.innerHTML = data.tickets.map(item => `
-      <div class="preview-item">
-        <div class="preview-title">${item.subject}</div>
-        <div class="preview-meta">${item.id} • ${item.bookingRef} • ${item.status}</div>
-      </div>
-    `).join("");
+      const paymentsBox = document.getElementById("dashboardRecentPayments");
+      paymentsBox.innerHTML = data.payments.length ? data.payments.slice(0, 4).map(item => `
+        <div class="preview-item">
+          <div class="preview-title">${item.service}</div>
+          <div class="preview-meta">${item.id} • ${formatPrice(item.amount)} • ${item.status}</div>
+        </div>
+      `).join("") : '<div class="empty-state-card">No payments yet.</div>';
+
+      const supportBox = document.getElementById("dashboardSupportPreview");
+      supportBox.innerHTML = data.tickets.length ? data.tickets.map(item => `
+        <div class="preview-item">
+          <div class="preview-title">${item.subject}</div>
+          <div class="preview-meta">${item.id} • ${item.bookingRef} • ${item.status}</div>
+        </div>
+      `).join("") : '<div class="empty-state-card">No support tickets yet.</div>';
+    }
+
+    renderDashboard(getCustomerData());
+    syncCustomerBookingsFromBackend(renderDashboard);
   }
 
   function initMyBookings() {
@@ -630,17 +1139,18 @@
             <span class="status-pill ${statusClass(item.status)}">${item.status}</span>
           </div>
 
-          <div class="booking-info-line">📅 ${item.date}</div>
+          <div class="booking-info-line">📅 ${formatDisplayDate(item.date)}</div>
           <div class="booking-info-line">🕒 ${item.time}</div>
           <div class="booking-info-line">📍 ${item.address}</div>
 
           <div class="booking-bottom-row">
-            <div class="booking-ref">${item.id}</div>
+            <div class="booking-ref">${getBookingReference(item)}</div>
             <div class="booking-price">${formatPrice(item.amount)}</div>
           </div>
 
           <div class="booking-actions">
             <button class="secondary-action" data-view-booking="${item.id}">View Details</button>
+            <button class="secondary-action" data-raise-ticket="${item.id}">Raise Ticket</button>
             <button class="danger-action" data-cancel-booking="${item.id}">Cancel</button>
           </div>
         </div>
@@ -650,13 +1160,14 @@
         <tr>
           <td>${item.service}</td>
           <td>${item.provider}</td>
-          <td>${item.date}</td>
+          <td>${formatDisplayDate(item.date)}</td>
           <td>${formatPrice(item.amount)}</td>
-          <td>${item.id}</td>
+          <td>${getBookingReference(item)}</td>
           <td><span class="status-pill ${statusClass(item.status)}">${item.status}</span></td>
           <td><span class="status-pill ${statusClass(item.feedback || item.status)}">${item.feedback || item.status}</span></td>
           <td>
             <button class="table-link-btn" data-view-booking="${item.id}">View</button>
+            <button class="table-link-btn" data-raise-ticket="${item.id}">Raise Ticket</button>
           </td>
         </tr>
       `).join("") : `<tr><td colspan="8">No ${activeTab.toLowerCase()} bookings found.</td></tr>`;
@@ -669,6 +1180,13 @@
         button.addEventListener("click", function () {
           const booking = data.bookings.find(item => item.id === this.dataset.viewBooking);
           openBookingModal(booking);
+        });
+      });
+
+      document.querySelectorAll("[data-raise-ticket]").forEach(button => {
+        button.addEventListener("click", function () {
+          const booking = data.bookings.find(item => item.id === this.dataset.raiseTicket);
+          createSupportTicketDraft(booking);
         });
       });
 
@@ -735,64 +1253,13 @@
     renderBookings();
     setupBookingModal();
 
-    if (window.ServeEaseApi && typeof window.ServeEaseApi.getBookings === "function") {
-      window.ServeEaseApi.getBookings()
-        .then(function (apiBookings) {
-          if (!Array.isArray(apiBookings) || !apiBookings.length) return;
-
-          apiBookings.forEach(function (booking) {
-            if (
-              booking.customerEmail &&
-              session.email &&
-              booking.customerEmail.toLowerCase() !== session.email.toLowerCase()
-            ) {
-              return;
-            }
-
-            const existingBooking = data.bookings.find(function (item) {
-              return item.id === booking.id;
-            });
-
-            if (existingBooking) {
-              existingBooking.service = booking.service;
-              existingBooking.provider = booking.provider;
-              existingBooking.providerId = booking.providerId || existingBooking.providerId;
-              existingBooking.date = booking.date;
-              existingBooking.time = booking.time;
-              existingBooking.address = booking.address;
-              existingBooking.status = booking.status;
-              existingBooking.amount = booking.amount;
-              existingBooking.customerName = booking.customerName || existingBooking.customerName;
-              existingBooking.customerPhone = booking.customerPhone || existingBooking.customerPhone;
-              existingBooking.customerEmail = booking.customerEmail || existingBooking.customerEmail;
-              existingBooking.category = booking.category || booking.status;
-            } else {
-              data.bookings.unshift({
-                id: booking.id,
-                service: booking.service,
-                provider: booking.provider,
-                providerId: booking.providerId,
-                date: booking.date,
-                time: booking.time,
-                address: booking.address,
-                status: booking.status,
-                amount: booking.amount,
-                customerName: booking.customerName,
-                customerPhone: booking.customerPhone,
-                customerEmail: booking.customerEmail,
-                category: booking.category || booking.status
-              });
-            }
-          });
-
-          setCustomerData(data);
-          renderTabs();
-          renderBookings();
-        })
-        .catch(function (error) {
-          console.warn("ServeEase backend unavailable, showing local bookings.", error);
-        });
-    }
+    syncCustomerBookingsFromBackend(function (latestData) {
+      data.bookings = latestData.bookings || [];
+      data.payments = latestData.payments || [];
+      data.tickets = latestData.tickets || [];
+      renderTabs();
+      renderBookings();
+    });
   }
 
   function setupBookingModal() {
@@ -824,13 +1291,13 @@
           <strong>Service Information</strong>
           <div class="info-row"><span>Service Name:</span><span>${booking.service}</span></div>
           <div class="info-row"><span>Provider Name:</span><span>${booking.provider}</span></div>
-          <div class="info-row"><span>Booking Reference:</span><span>${booking.id}</span></div>
+          <div class="info-row"><span>Booking Reference:</span><span>${getBookingReference(booking)}</span></div>
           <div class="info-row"><span>Status:</span><span class="status-pill ${statusClass(booking.status)}">${booking.status}</span></div>
         </div>
 
         <div class="info-box">
           <strong>Date & Time</strong>
-          <div class="info-row"><span>Date:</span><span>${booking.date}</span></div>
+          <div class="info-row"><span>Date:</span><span>${formatDisplayDate(booking.date)}</span></div>
           <div class="info-row"><span>Time:</span><span>${booking.time}</span></div>
         </div>
 
@@ -853,34 +1320,44 @@
     if (!summary) return;
 
     const data = getCustomerData();
-    const totalPaid = data.payments.filter(item => item.status === "Successful").reduce((sum, item) => sum + item.amount, 0);
-    const pending = data.payments.filter(item => item.status === "Pending").reduce((sum, item) => sum + item.amount, 0);
-    const refunded = data.payments.filter(item => item.status === "Refunded").reduce((sum, item) => sum + item.amount, 0);
-
-    summary.innerHTML = `
-      <div class="stat-card-dashboard"><div class="feature-icon green">✅</div><h3>${formatPrice(totalPaid)}</h3><p>Total Payments Made</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon orange">🕒</div><h3>${formatPrice(pending)}</h3><p>Pending Payments</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon blue">🔄</div><h3>${formatPrice(refunded)}</h3><p>Refunded Amount</p></div>
-    `;
-
     const tbody = document.getElementById("paymentHistoryTableBody");
     if (!tbody) return;
 
-    tbody.innerHTML = data.payments.map(item => `
-      <tr>
-        <td>${item.id}</td>
-        <td>${item.bookingRef}</td>
-        <td>${item.service}</td>
-        <td>${item.provider}</td>
-        <td>${item.method}</td>
-        <td>${formatPrice(item.amount)}</td>
-        <td>${item.date}</td>
-        <td><span class="status-pill ${statusClass(item.status)}">${item.status}</span></td>
-        <td><button class="table-link-btn" data-view-payment="${item.id}">View Details</button></td>
-      </tr>
-    `).join("");
+    function renderPaymentHistory() {
+      const totalPaid = data.payments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const successfulCount = data.payments.filter(item => item.status === "Successful").length;
+      const refunded = data.payments.filter(item => item.status === "Refunded").reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
+      summary.innerHTML = `
+        <div class="stat-card-dashboard"><div class="feature-icon green">✅</div><h3>${formatPrice(totalPaid)}</h3><p>Total Payments Made</p></div>
+        <div class="stat-card-dashboard"><div class="feature-icon orange">📄</div><h3>${successfulCount}</h3><p>Successful Transactions</p></div>
+        <div class="stat-card-dashboard"><div class="feature-icon blue">🔄</div><h3>${formatPrice(refunded)}</h3><p>Refunded Amount</p></div>
+      `;
+
+      tbody.innerHTML = data.payments.length ? data.payments.map(item => `
+        <tr>
+          <td>${item.id}</td>
+          <td>${item.bookingRef}</td>
+          <td>${item.service}</td>
+          <td>${item.provider}</td>
+          <td>${item.method}</td>
+          <td>${formatPrice(item.amount)}</td>
+          <td>${formatDisplayDate(item.date)}</td>
+          <td><span class="status-pill ${statusClass(item.status)}">${item.status}</span></td>
+          <td><button class="table-link-btn" data-view-payment="${item.id}">View Details</button></td>
+        </tr>
+      `).join("") : '<tr><td colspan="9">No payments found.</td></tr>';
+    }
+
+    renderPaymentHistory();
     setupPaymentModal(data);
+    syncCustomerBookingsFromBackend(function (latestData) {
+      data.bookings = latestData.bookings || [];
+      data.payments = latestData.payments || [];
+      data.tickets = latestData.tickets || [];
+      renderPaymentHistory();
+      setupPaymentModal(data);
+    });
   }
 
   function setupPaymentModal(data) {
@@ -921,7 +1398,7 @@
               <strong>Payment Information</strong>
               <div class="info-row"><span>Payment Method:</span><span>${payment.method}</span></div>
               <div class="info-row"><span>Amount Paid:</span><span>${formatPrice(payment.amount)}</span></div>
-              <div class="info-row"><span>Payment Date:</span><span>${payment.date}</span></div>
+              <div class="info-row"><span>Payment Date:</span><span>${formatDisplayDate(payment.date)}</span></div>
             </div>
           </div>
         `;
@@ -938,6 +1415,41 @@
     const list = document.getElementById("supportTicketsList");
     const error = document.getElementById("supportFormError");
     const success = document.getElementById("supportFormSuccess");
+    const draft = JSON.parse(sessionStorage.getItem("serveEaseSupportTicketDraft") || "null");
+    const focusedTicketId = sessionStorage.getItem("serveEaseSupportTicketFocus");
+
+    const bookingInput = document.getElementById("ticketBookingRef");
+    const categoryInput = document.getElementById("ticketCategory");
+    const subjectInput = document.getElementById("ticketSubject");
+    const descriptionInput = document.getElementById("ticketDescription");
+
+    if (draft) {
+      const bookingRefValue = normalizeBookingRef(draft.bookingRef);
+      if (bookingInput) {
+        bookingInput.value = bookingRefValue;
+        bookingInput.readOnly = Boolean(bookingRefValue);
+      }
+      if (categoryInput) categoryInput.value = draft.category || "";
+      if (subjectInput) subjectInput.value = draft.subject || "";
+      if (descriptionInput) descriptionInput.value = draft.description || "";
+      if (draft.bookingContext && draft.bookingContext.service) {
+        const hint = document.getElementById("supportFormHint");
+        if (hint) {
+          hint.textContent = `Booking context loaded for ${draft.bookingContext.service}. Please describe the issue in your own words.`;
+        }
+      }
+      sessionStorage.removeItem("serveEaseSupportTicketDraft");
+    } else {
+      const queryBookingRef = normalizeBookingRef(new URLSearchParams(window.location.search).get("bookingRef") || "");
+      if (queryBookingRef && bookingInput) {
+        bookingInput.value = queryBookingRef;
+        bookingInput.readOnly = true;
+        const hint = document.getElementById("supportFormHint");
+        if (hint) {
+          hint.textContent = "Booking reference loaded. Please select the issue category and describe the problem.";
+        }
+      }
+    }
 
     function renderTickets() {
       list.innerHTML = data.tickets.map(ticket => `
@@ -948,7 +1460,7 @@
           </div>
           <div class="ticket-meta">Ticket ID: <strong>${ticket.id}</strong></div>
           <div class="ticket-meta">Booking Ref: ${ticket.bookingRef}</div>
-          <div class="ticket-meta">${ticket.category} • ${ticket.date}</div>
+          <div class="ticket-meta">${ticket.category} • ${formatDisplayDate(ticket.date)}</div>
           <div class="ticket-actions">
             <button class="secondary-action" type="button" data-view-ticket="${ticket.id}">View Ticket</button>
             <button class="btn btn-primary" type="button" data-chat-ticket="${ticket.id}">Chat with Support</button>
@@ -1045,7 +1557,7 @@
                 <strong>Ticket Information</strong>
                 <div class="info-row"><span>Ticket ID:</span><span>${ticket.id}</span></div>
                 <div class="info-row"><span>Status:</span><span class="status-pill ${statusClass(ticket.status)}">${ticket.status}</span></div>
-                <div class="info-row"><span>Created On:</span><span>${ticket.date}</span></div>
+                <div class="info-row"><span>Created On:</span><span>${formatDisplayDate(ticket.date)}</span></div>
               </div>
               <div class="info-box">
                 <strong>Issue Summary</strong>
@@ -1071,12 +1583,21 @@
       });
     }
 
+    function deriveTicketPriority(category) {
+      const normalized = String(category || "").trim().toLowerCase();
+      if (normalized === "payment issue") return "Critical";
+      if (normalized === "booking issue") return "Medium";
+      if (normalized === "technical issue") return "High";
+      if (normalized === "service ticket") return "High";
+      return "Medium";
+    }
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       error.textContent = "";
       success.textContent = "";
 
-      const bookingRef = document.getElementById("ticketBookingRef").value.trim();
+      const bookingRef = normalizeBookingRef(document.getElementById("ticketBookingRef").value);
       const category = document.getElementById("ticketCategory").value.trim();
       const subject = document.getElementById("ticketSubject").value.trim();
       const description = document.getElementById("ticketDescription").value.trim();
@@ -1086,13 +1607,29 @@
         return;
       }
 
+      const linkedBooking = (data.bookings || []).find(function (booking) {
+        return normalizeBookingRef(getBookingReference(booking)).toLowerCase() === bookingRef.toLowerCase();
+      }) || draft || {};
+
+      const finalBookingRef = linkedBooking && getBookingReference(linkedBooking)
+        ? getBookingReference(linkedBooking)
+        : bookingRef;
+
       const newTicket = {
         id: createCustomerTicketId(),
         subject: subject,
-        bookingRef: bookingRef,
+        bookingRef: finalBookingRef,
         category: category,
+        priority: deriveTicketPriority(category),
         description: description,
+        provider: linkedBooking.provider || "ServeEase Provider",
+        providerId: linkedBooking.providerId || "",
+        service: linkedBooking.service || "",
+        customerName: session.fullName || "Customer",
+        customerEmail: session.email || "",
+        customerPhone: session.phone || "",
         date: "Just now",
+        createdAtIso: new Date().toISOString(),
         status: "Open",
         solution: "",
         supportUpdate: "Your ticket has been received and is currently being reviewed by the support team."
@@ -1101,12 +1638,16 @@
       data.tickets.unshift(newTicket);
       setCustomerData(data);
       pushCustomerTicketToSupport(newTicket);
-      success.textContent = "Support ticket submitted successfully.";
+      success.textContent = "Support ticket submitted successfully and sent to the Support Dashboard.";
       form.reset();
       renderTickets();
     });
 
     renderTickets();
+    if (focusedTicketId) {
+      if (success) success.textContent = "Ticket " + focusedTicketId + " is saved and visible in Support.";
+      sessionStorage.removeItem("serveEaseSupportTicketFocus");
+    }
     setupFaqAccordion();
     setupTicketInteractions();
     hydrateSupportDataFromBackend(function () {

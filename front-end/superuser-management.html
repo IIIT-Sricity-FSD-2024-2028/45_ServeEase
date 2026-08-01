@@ -12,14 +12,15 @@
 <body>
   <header class="dashboard-topbar superuser-topbar">
     <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
-    <div class="dashboard-search"><input type="text" id="superuserManagementSearch" placeholder="Search users, providers, or services..." /></div>
+    <div class="dashboard-search"><input type="text" id="superuserManagementSearch" placeholder="Search customers..." /></div>
     <div class="dashboard-topbar-actions">
-      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn">🔔<span class="superuser-dot"></span></button>
+      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
       <div class="profile-menu-wrap">
         <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>
         <div class="profile-dropdown hidden" id="superuserProfileDropdown">
           <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>
-          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
+          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
+          <a href="superuser-provider-verification.html">Provider Verification</a>
           <button type="button" id="superuserLogoutBtn">Logout</button>
         </div>
       </div>
@@ -35,7 +36,7 @@
 
       <section class="panel-card superuser-title-card left-accent-blue">
         <h1>Platform Management</h1>
-        <p>Manage customers and service providers across the platform.</p>
+        <p>Manage customers across the platform.</p>
       </section>
 
       <section class="superuser-two-column-layout">
@@ -60,12 +61,12 @@
             <div class="superuser-card-actions-row"><button class="btn btn-outline" type="button" id="superuserShowMoreCustomersBtn">Show More</button></div>
           </section>
 
-          <section class="panel-card superuser-provider-approval-panel left-accent-orange">
+          <section class="panel-card superuser-provider-approval-panel left-accent-orange hidden">
             <div class="panel-head"><h2>Pending Service Provider Approvals (<span id="superuserPendingProviderCount">0</span>)</h2></div>
             <div id="superuserPendingProviderList" class="superuser-provider-approval-list"></div>
           </section>
 
-          <section class="panel-card superuser-table-panel">
+          <section class="panel-card superuser-table-panel hidden">
             <div class="panel-head"><h2>Service Provider Management (<span id="superuserProviderCount">0</span>)</h2><select class="superuser-status-filter" id="superuserProviderStatusFilter"><option value="all">All Status</option><option value="Active">Active</option><option value="Blocked">Blocked</option></select></div>
             <div class="superuser-table-wrap">
               <table class="superuser-table compact-table">
@@ -87,7 +88,7 @@
             </div>
           </section>
 
-          <div class="superuser-return-row" style="gap:12px;"><a class="btn btn-primary" href="superuser-service-categories.html">Open Service Categories</a><a class="btn btn-outline" href="superuser-dashboard.html">‹ Return to Dashboard</a></div>
+          <div class="superuser-return-row" style="gap:12px;"><a class="btn btn-outline" href="superuser-dashboard.html">‹ Return to Dashboard</a></div>
         </div>
 
         <aside class="superuser-sidebar-stack">
@@ -99,7 +100,6 @@
           <section class="panel-card superuser-system-stat-card quick-stats-card">
             <h2>Quick Stats</h2>
             <div class="superuser-system-stat-row"><span>Total Customers</span><strong id="superuserQuickCustomerCount">0</strong></div>
-            <div class="superuser-system-stat-row"><span>Total Providers</span><strong id="superuserQuickProviderCount">0</strong></div>
             <div class="superuser-system-stat-row"><span>Pending Approvals</span><strong id="superuserQuickPendingCount">0</strong></div>
             <div class="superuser-system-stat-row"><span>Categories</span><strong id="superuserQuickCategoryCount">0</strong></div>
           </section>
@@ -191,7 +191,11 @@
     </div>
   </div>
   <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/mockdata.js"></script>
   <script src="JavaScript/superuser.js"></script>
 <script src="JavaScript/search.js"></script>
 </body>
 </html>
+
+
+

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Provider Verification</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/superuser.css" />
+</head>
+<body>
+  <header class="dashboard-topbar superuser-topbar">
+    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
+    <div class="dashboard-search"><input type="text" id="providerVerificationSearch" placeholder="Search provider name, email, or phone..." /></div>
+    <div class="dashboard-topbar-actions">
+      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="superuserProfileBtn" aria-label="Profile">&#128100;</button>
+        <div class="profile-dropdown hidden" id="superuserProfileDropdown">
+          <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>
+          <a href="superuser-dashboard.html">Superuser Dashboard</a>
+          <a href="superuser-provider-verification.html">Provider Verification</a>
+          <button type="button" id="superuserLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page superuser-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;&gt;&nbsp;
+        <strong>Provider Verification</strong>
+      </div>
+
+      <section class="panel-card superuser-title-card left-accent-blue">
+        <h1>Provider Verification</h1>
+        <p>Review provider profiles, validate documents, and control onboarding status.</p>
+      </section>
+
+      <section class="dashboard-stats-grid superuser-stats-grid provider-verification-stats" id="providerVerificationStats"></section>
+
+      <section class="panel-card provider-verification-toolbar">
+        <div class="provider-verification-filter-grid">
+          <label>
+            Status
+            <select class="superuser-status-filter" id="providerStatusFilter">
+              <option value="all">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Verified">Verified</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Suspended">Suspended</option>
+            </select>
+          </label>
+          <label>
+            Category
+            <select class="superuser-status-filter" id="providerCategoryFilter">
+              <option value="all">All Categories</option>
+            </select>
+          </label>
+          <label>
+            Sort
+            <select class="superuser-status-filter" id="providerSortFilter">
+              <option value="latest">Latest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </label>
+        </div>
+        <div class="provider-verification-message" id="providerVerificationMessage"></div>
+      </section>
+
+      <section class="panel-card superuser-table-panel provider-verification-panel">
+        <div class="panel-head">
+          <h2>Verification Requests (<span id="providerVerificationCount">0</span>)</h2>
+          <button class="btn btn-outline" type="button" id="providerVerificationRefreshBtn">Refresh</button>
+        </div>
+        <div class="superuser-table-wrap">
+          <table class="superuser-table compact-table provider-verification-table">
+            <thead>
+              <tr>
+                <th>Provider ID</th>
+                <th>Name</th>
+                <th>Organisation</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Service Category</th>
+                <th>Experience</th>
+                <th>Location</th>
+                <th>Submitted Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="providerVerificationTableBody">
+              <tr><td colspan="11">Loading provider verification requests...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="superuser-modal-backdrop hidden" id="providerDetailsModalBackdrop">
+    <div class="superuser-modal provider-details-modal">
+      <div class="superuser-modal-header gradient-header">
+        <div>
+          <h3 id="providerDetailsTitle">Provider Details</h3>
+          <p id="providerDetailsSubtitle">Verification profile</p>
+        </div>
+        <button class="superuser-modal-close" type="button" data-close-modal="providerDetailsModalBackdrop">x</button>
+      </div>
+      <div class="superuser-modal-body provider-details-body" id="providerDetailsBody"></div>
+      <div class="superuser-modal-actions split-actions" id="providerDetailsActions"></div>
+      <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="providerDetailsModalBackdrop">Close</button></div>
+    </div>
+  </div>
+
+  <div class="superuser-modal-backdrop hidden" id="providerDocumentModalBackdrop">
+    <div class="superuser-modal provider-document-modal">
+      <div class="superuser-modal-header gradient-header">
+        <div>
+          <h3 id="providerDocumentTitle">Document Preview</h3>
+          <p id="providerDocumentSubtitle">Uploaded verification document</p>
+        </div>
+        <button class="superuser-modal-close" type="button" data-close-modal="providerDocumentModalBackdrop">x</button>
+      </div>
+      <div class="superuser-modal-body" id="providerDocumentBody"></div>
+      <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="providerDocumentModalBackdrop">Close</button></div>
+    </div>
+  </div>
+
+  <div class="superuser-modal-backdrop hidden" id="providerConfirmModalBackdrop">
+    <div class="superuser-modal provider-confirm-modal">
+      <div class="superuser-simple-modal-header">
+        <h3 id="providerConfirmTitle">Confirm Action</h3>
+      </div>
+      <div class="superuser-modal-body provider-confirm-body">
+        <p id="providerConfirmMessage"></p>
+        <label class="provider-remarks-label hidden" id="providerReasonWrap">
+          Reason
+          <textarea id="providerActionReason" maxlength="300" placeholder="Enter reason..."></textarea>
+          <small class="error" id="providerActionReasonError"></small>
+        </label>
+        <label class="provider-remarks-label" id="providerRemarksWrap">
+          Admin Remarks
+          <textarea id="providerActionRemarks" maxlength="500" placeholder="Optional admin remarks..."></textarea>
+        </label>
+      </div>
+      <div class="superuser-modal-actions split-actions">
+        <button class="btn btn-outline" type="button" data-close-modal="providerConfirmModalBackdrop">Cancel</button>
+        <button class="btn btn-primary" type="button" id="providerConfirmSubmitBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="superuser-modal-backdrop hidden" id="superuserNotificationModalBackdrop">
+    <div class="superuser-modal superuser-notification-modal">
+      <div class="superuser-modal-header gradient-header">
+        <div><h3>Notifications</h3><p>Latest platform updates</p></div>
+        <button class="superuser-modal-close" type="button" id="superuserCloseNotificationModalBtn">x</button>
+      </div>
+      <div class="superuser-modal-body">
+        <div class="panel-head superuser-modal-panel-head">
+          <h4>Recent Notifications</h4>
+          <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
+        </div>
+        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/mockdata.js"></script>
+  <script src="JavaScript/superuser.js"></script>
+  <script src="JavaScript/provider-verification.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>

@@ -16,11 +16,11 @@ export class CreateBookingDto {
   @MaxLength(120)
   provider: string;
 
-  @ApiProperty({ example: 'cleanpro-services', required: false })
-  @IsOptional()
+  @ApiProperty({ example: 'cleanpro-services' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
-  providerId?: string;
+  providerId: string;
 
   @ApiProperty({ example: '2026-05-12' })
   @IsString()
@@ -51,6 +51,24 @@ export class CreateBookingDto {
   @IsString()
   @IsIn(['Pending', 'Accepted', 'Completed', 'Cancelled'])
   status?: string;
+
+  @ApiProperty({ example: 'UPI - Google Pay', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  paymentMethod?: string;
+
+  @ApiProperty({ example: '2026-05-11', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  paymentDate?: string;
+
+  @ApiProperty({ example: '2026-05-12', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  receivedDate?: string;
 
   @ApiProperty({ example: 'Raghava Kumar' })
   @IsString()

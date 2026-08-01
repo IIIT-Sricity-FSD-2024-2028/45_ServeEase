@@ -10,8 +10,8 @@ export class Booking {
   @ApiProperty({ example: 'CleanPro Services' })
   provider: string;
 
-  @ApiProperty({ example: 'cleanpro-services', required: false })
-  providerId?: string;
+  @ApiProperty({ example: 'cleanpro-services' })
+  providerId: string;
 
   @ApiProperty({ example: '2026-05-12' })
   date: string;
@@ -27,6 +27,18 @@ export class Booking {
 
   @ApiProperty({ example: 'Pending' })
   category: string;
+
+  @ApiProperty({ example: 'Pending' })
+  paymentStatus: string;
+
+  @ApiProperty({ example: 'UPI - Google Pay', required: false })
+  paymentMethod?: string;
+
+  @ApiProperty({ example: '2026-05-11', required: false })
+  paymentDate?: string;
+
+  @ApiProperty({ example: '2026-05-12', required: false })
+  receivedDate?: string;
 
   @ApiProperty({ example: 889 })
   amount: number;

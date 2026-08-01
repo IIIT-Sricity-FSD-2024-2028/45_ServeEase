@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Escalated Tickets</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/superuser.css" />
+</head>
+<body>
+  <header class="dashboard-topbar superuser-topbar">
+    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
+    <div class="dashboard-search"><input type="text" id="adminTicketSearch" placeholder="Search ticket, booking, customer, provider..." /></div>
+    <div class="dashboard-topbar-actions">
+      <a class="btn btn-outline" href="superuser-dashboard.html">Dashboard</a>
+    </div>
+  </header>
+
+  <main class="dashboard-page superuser-page">
+    <div class="container">
+      <div class="breadcrumb-row"><a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;&gt;&nbsp; <strong>Escalated Tickets</strong></div>
+      <section class="dashboard-hero superuser-ticket-hero danger-hero">
+        <h1>Escalated Tickets</h1>
+        <p>Review high-risk ticket cases and submit final admin decisions.</p>
+      </section>
+      <section class="superuser-booking-stat-grid" id="adminTicketStats"></section>
+      <section class="panel-card ticket-admin-filters">
+        <select id="adminTicketStatusFilter">
+          <option value="All">All statuses</option>
+          <option>Escalated</option>
+          <option>Under Review</option>
+          <option>Resolved</option>
+          <option>Rejected</option>
+        </select>
+        <select id="adminTicketTypeFilter"></select>
+        <select id="adminTicketPriorityFilter"></select>
+      </section>
+      <section id="adminTicketsList" class="superuser-ticket-card-list"></section>
+    </div>
+  </main>
+
+  <div class="superuser-modal-backdrop hidden" id="adminTicketModalBackdrop">
+    <div class="superuser-modal superuser-ticket-modal admin-ticket-modal">
+      <div class="superuser-ticket-modal-top">
+        <h3>Ticket Final Decision</h3>
+        <button class="superuser-modal-close dark-close" type="button" id="closeAdminTicketModal">×</button>
+      </div>
+      <div class="superuser-modal-body" id="adminTicketModalBody"></div>
+    </div>
+  </div>
+
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/tickets.js"></script>
+  <script src="JavaScript/search.js"></script>
+</body>
+</html>
+

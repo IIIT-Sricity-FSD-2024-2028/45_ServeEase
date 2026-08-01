@@ -20,6 +20,17 @@ function getCurrentSession() {
   return JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
 }
 
+function getStoredCustomerProfile(session) {
+  const users = getAppData().users;
+  if (!session || !Array.isArray(users)) return null;
+
+  return users.find(function (user) {
+    if (!user) return false;
+    if (session.userId && user.id === session.userId) return true;
+    return user.email && session.email && user.email.toLowerCase() === session.email.toLowerCase();
+  }) || null;
+}
+
 function isDemoCustomerSession(session) {
   return session && (session.email === "user@serveease.com" || session.userId === "CUS001");
 }
@@ -37,13 +48,17 @@ function setupSharedHeaderSession() {
   const profileBtn = document.getElementById("sharedProfileBtn");
   const profileDropdown = document.getElementById("sharedProfileDropdown");
   const logoutBtn = document.getElementById("sharedLogoutBtn");
+  const notificationBtn = document.getElementById("checkoutNotificationBtn");
+  const notificationPanel = document.getElementById("checkoutNotificationPanel");
 
-  if (!loginBtn || !profileWrap || !profileDropdown) return;
+  // Checkout has no login button, so it must not prevent the remaining
+  // header controls from being initialized.
+  if (!profileWrap || !profileDropdown) return;
 
   const profileLinks = profileDropdown.querySelectorAll("a");
 
   if (session && (session.role === "customer" || session.role === "provider")) {
-    loginBtn.classList.add("hidden");
+    if (loginBtn) loginBtn.classList.add("hidden");
     profileWrap.classList.remove("hidden");
 
     if (session.role === "customer") {
@@ -68,18 +83,38 @@ function setupSharedHeaderSession() {
       }
     }
   } else {
-    loginBtn.classList.remove("hidden");
+    if (loginBtn) loginBtn.classList.remove("hidden");
     profileWrap.classList.add("hidden");
+  }
+
+  if (notificationBtn && notificationPanel) {
+    notificationBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      notificationPanel.classList.toggle("hidden");
+      notificationBtn.setAttribute("aria-expanded", String(!notificationPanel.classList.contains("hidden")));
+      profileDropdown.classList.add("hidden");
+      if (profileBtn) profileBtn.setAttribute("aria-expanded", "false");
+    });
+
+    notificationPanel.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
   }
 
   if (profileBtn && profileDropdown) {
     profileBtn.addEventListener("click", function (e) {
       e.stopPropagation();
       profileDropdown.classList.toggle("hidden");
+      profileBtn.setAttribute("aria-expanded", String(!profileDropdown.classList.contains("hidden")));
+      if (notificationPanel) notificationPanel.classList.add("hidden");
+      if (notificationBtn) notificationBtn.setAttribute("aria-expanded", "false");
     });
 
     document.addEventListener("click", function () {
       profileDropdown.classList.add("hidden");
+      if (profileBtn) profileBtn.setAttribute("aria-expanded", "false");
+      if (notificationPanel) notificationPanel.classList.add("hidden");
+      if (notificationBtn) notificationBtn.setAttribute("aria-expanded", "false");
     });
   }
 
@@ -100,33 +135,81 @@ function formatCurrency(value) {
   return `₹${value}`;
 }
 
+  function formatDisplayDate(value) {
+    return window.ServeEaseDate ? window.ServeEaseDate.formatDate(value) : (value || "");
+  }
+
+  function todayISO() {
+    return window.ServeEaseDate && typeof window.ServeEaseDate.todayISO === "function"
+      ? window.ServeEaseDate.todayISO()
+      : new Date().toISOString().slice(0, 10);
+  }
+
 function findCategoryById(categoryId) {
   return getAppData().categories.find(function (category) {
     return category.id === categoryId;
   });
 }
 
+function providerRatingMarkup(provider) {
+  const reviews = Number(provider && provider.reviews) || 0;
+  const rating = Number(provider && provider.rating) || 0;
+  if (!reviews || !rating) return '<span class="new-provider-label">New Provider</span>';
+  return 'Star ' + rating + ' (' + reviews + ' reviews)';
+}
+
+function providerMetricRating(provider) {
+  const reviews = Number(provider && provider.reviews) || 0;
+  const rating = Number(provider && provider.rating) || 0;
+  return reviews && rating
+    ? { value: 'Star ' + rating, label: reviews + ' Reviews' }
+    : { value: 'New', label: 'No reviews yet' };
+}
+
+function getProviderReviewItems(provider) {
+  const reviews = Number(provider && provider.reviews) || 0;
+  if (!reviews) return [];
+
+  const reviewPool = [
+    { stars: 5, text: "Polite, punctual, and the service quality was excellent.", name: "Rahul Sharma", when: "2 days ago" },
+    { stars: 4, text: "Good work and clear communication throughout the visit.", name: "Priya Patel", when: "5 days ago" },
+    { stars: 5, text: "Professional service. The final result matched what was promised.", name: "Amit Kumar", when: "1 week ago" },
+    { stars: 5, text: "Quick response and neat finishing. I would book again.", name: "Sneha Kapoor", when: "3 days ago" },
+    { stars: 4, text: "Arrived on time and handled the job carefully.", name: "Vikram Singh", when: "6 days ago" },
+    { stars: 5, text: "Very reliable provider and easy booking experience.", name: "Meera Iyer", when: "2 weeks ago" }
+  ];
+  const seed = String(provider.id || provider.name || "").split("").reduce(function (sum, char) {
+    return sum + char.charCodeAt(0);
+  }, 0);
+
+  return [0, 1, 2].map(function (offset) {
+    return reviewPool[(seed + offset) % reviewPool.length];
+  });
+}
+
+function providerDisplayImage(provider) {
+  if (!provider) return "";
+  if (provider.profilePhoto) return provider.profilePhoto;
+  const providerId = provider.ownerProviderId || provider.providerId;
+  if (providerId) {
+    try {
+      const previews = JSON.parse(localStorage.getItem("serveEaseProviderDocuments:" + providerId) || "{}");
+      const photoKey = Object.keys(previews).find(function (key) {
+        const item = previews[key];
+        return item && item.dataUrl && String(item.type || "").indexOf("image/") === 0;
+      });
+      if (photoKey) return previews[photoKey].dataUrl;
+    } catch (error) {
+      /* keep existing image fallback */
+    }
+  }
+  return provider.image || "assets/images/home-cleaning/clean1.jpg";
+}
+
 function findProviderById(providerId) {
   return getAppData().providers.find(function (provider) {
     return provider.id === providerId;
   });
-}
-
-function getProviderTimeSlots(provider) {
-  if (provider && Array.isArray(provider.availabilitySlots) && provider.availabilitySlots.length) {
-    return provider.availabilitySlots;
-  }
-
-  const slotMap = {
-    "cleanpro-service": ["09:00 AM - 11:00 AM", "11:30 AM - 01:30 PM", "03:00 PM - 05:00 PM"],
-    "fresh-space-cleaning": ["08:30 AM - 10:30 AM", "01:00 PM - 03:00 PM", "05:30 PM - 07:00 PM"],
-    "urban-shine-cleaner": ["10:00 AM - 12:00 PM", "12:30 PM - 02:30 PM"],
-    "sparkle-home-care": ["09:30 AM - 11:30 AM", "02:00 PM - 04:00 PM", "06:00 PM - 08:00 PM"],
-    "beauty-express": ["10:00 AM - 11:00 AM", "12:00 PM - 01:00 PM", "04:00 PM - 05:00 PM"],
-    "stylehub-home-salon": ["09:00 AM - 10:30 AM", "01:30 PM - 03:00 PM", "05:00 PM - 06:30 PM"]
-  };
-
-  return slotMap[provider && provider.id] || ["10:00 AM - 12:00 PM", "02:00 PM - 04:00 PM", "05:00 PM - 07:00 PM"];
 }
 
 function isValidLuhn(cardNumber) {
@@ -236,7 +319,7 @@ function setupFooterLinks() {
       return `
         <div class="provider-card">
           <div class="provider-image-wrap">
-            <img src="${provider.image}" alt="${provider.name}">
+            <img src="${providerDisplayImage(provider)}" alt="${provider.name}">
             ${provider.availableToday ? `<span class="provider-status">Available Today</span>` : ""}
           </div>
           <div class="provider-card-body">
@@ -248,7 +331,7 @@ function setupFooterLinks() {
               ${chips}
             </div>
 
-            <div class="rating-row">⭐ ${provider.rating} &nbsp; (${provider.reviews} reviews)</div>
+            <div class="rating-row">${providerRatingMarkup(provider)}</div>
 
             <div class="provider-bottom">
               <div>${provider.distance} away</div>
@@ -290,6 +373,170 @@ function setupFooterLinks() {
   renderProviders();
 }
 
+function formatAvailabilitySlot(slot) {
+  return String(slot || "").replace(/\b(\d{1,2}):(\d{2})\b/g, function (match, hour, minute) {
+    const value = Number(hour);
+    const suffix = value >= 12 ? "PM" : "AM";
+    const displayHour = value % 12 || 12;
+    return String(displayHour).padStart(2, "0") + ":" + minute + " " + suffix;
+  }).replace(/-/g, " – ");
+}
+
+function availabilityDateParts(item) {
+  const match = String(item.date || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return { weekday: item.dayOfWeek || "Date", date: item.date || "" };
+
+  const localDate = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return {
+    weekday: item.dayOfWeek || localDate.toLocaleDateString(undefined, { weekday: "long" }),
+    date: localDate.toLocaleDateString(undefined, { day: "2-digit", month: "short" })
+  };
+}
+
+async function initAvailabilityBookingFlow(bookingCard, provider, session) {
+  let selectedDate = "";
+  let selectedSlot = "";
+  let availabilityDates = [];
+
+  function renderLoading() {
+    bookingCard.innerHTML = `
+      <h2>Book Appointment</h2>
+      <div class="availability-loading" role="status" aria-live="polite" aria-label="Loading available appointments">
+        <span>Finding available appointments...</span>
+      </div>
+      <div class="availability-skeleton-group" aria-hidden="true">
+        <span class="availability-skeleton-label"></span>
+        <div class="availability-skeleton-row availability-date-skeletons"><span></span><span></span><span></span><span></span></div>
+        <span class="availability-skeleton-label"></span>
+        <div class="availability-skeleton-row availability-slot-skeletons"><span></span><span></span></div>
+      </div>
+    `;
+  }
+
+  function renderError() {
+    bookingCard.innerHTML = `
+      <h2>Book Appointment</h2>
+      <div class="availability-state availability-error" role="alert">
+        <span class="availability-state-icon" aria-hidden="true">⚠</span>
+        <h3>We couldn't load availability</h3>
+        <p>Unable to load provider availability. Please try again.</p>
+        <button class="secondary-btn" type="button" id="retryAvailabilityBtn" aria-label="Retry loading provider availability">Retry</button>
+      </div>
+    `;
+    document.getElementById("retryAvailabilityBtn").addEventListener("click", loadAvailability);
+  }
+
+  function renderEmpty() {
+    bookingCard.innerHTML = `
+      <h2>Book Appointment</h2>
+      <div class="availability-state availability-empty-state">
+        <span class="availability-state-icon" aria-hidden="true">🗓</span>
+        <h3>No appointments available for the next 7 days.</h3>
+        <p>Please check back soon or choose another provider.</p>
+      </div>
+      <button class="btn btn-primary" type="button" disabled>Proceed to Booking</button>
+    `;
+  }
+
+  function renderTimes() {
+    const slotContainer = document.getElementById("availabilityTimeSlots");
+    const selected = availabilityDates.find(function (item) { return item.date === selectedDate; });
+    const slots = selected && Array.isArray(selected.slots) ? selected.slots : [];
+
+    if (!selectedDate || !slots.length) {
+      slotContainer.innerHTML = '<p class="availability-empty-slots">Select a date to view available time slots.</p>';
+      return;
+    }
+
+    slotContainer.innerHTML = slots.map(function (slot) {
+      const isSelected = slot === selectedSlot;
+      return `<button class="time-slot-card${isSelected ? " is-selected" : ""}" type="button" data-slot="${encodeURIComponent(slot)}" aria-pressed="${isSelected}" aria-label="Select time slot ${formatAvailabilitySlot(slot)}">${formatAvailabilitySlot(slot)}</button>`;
+    }).join("");
+
+    slotContainer.querySelectorAll("[data-slot]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        selectedSlot = decodeURIComponent(button.dataset.slot);
+        renderBookingForm();
+      });
+    });
+  }
+
+  function renderBookingForm() {
+    bookingCard.innerHTML = `
+      <h2>Book Appointment</h2>
+      <label for="bookingService">Select Service</label>
+      <select id="bookingService">
+        ${provider.subServices.map(function (service) {
+          return `<option value="${service}">${service}</option>`;
+        }).join("")}
+      </select>
+      <section class="availability-section" aria-labelledby="availableDatesHeading">
+        <h3 id="availableDatesHeading">Available Dates</h3>
+        <div class="availability-date-list" role="listbox" aria-label="Available booking dates">
+          ${availabilityDates.filter(function (item) {
+            return Array.isArray(item.slots) && item.slots.length > 0;
+          }).map(function (item) {
+            const parts = availabilityDateParts(item);
+            const isSelected = item.date === selectedDate;
+            return `<button class="availability-date-card${isSelected ? " is-selected" : ""}" type="button" data-date="${item.date}" role="option" aria-selected="${isSelected}" aria-label="Select ${parts.weekday}, ${parts.date}"><span>${parts.weekday.slice(0, 3)}</span><strong>${parts.date}</strong></button>`;
+          }).join("")}
+        </div>
+      </section>
+      <section class="availability-section" aria-labelledby="availableSlotsHeading">
+        <h3 id="availableSlotsHeading">Available Time Slots</h3>
+        <div class="availability-time-list" id="availabilityTimeSlots"></div>
+      </section>
+      <button class="btn btn-primary" type="button" id="proceedToBookingBtn" ${selectedDate && selectedSlot ? "" : "disabled"}>Proceed to Booking</button>
+    `;
+
+    renderTimes();
+
+    bookingCard.querySelectorAll("[data-date]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        selectedDate = button.dataset.date;
+        selectedSlot = "";
+        renderBookingForm();
+      });
+    });
+
+    document.getElementById("proceedToBookingBtn").addEventListener("click", function () {
+      if (!(session && session.role === "customer")) {
+        window.location.href = "login.html";
+        return;
+      }
+      if (!selectedDate || !selectedSlot) return;
+
+      const selectedService = document.getElementById("bookingService").value;
+      window.location.href =
+        `booking-checkout.html?provider=${encodeURIComponent(provider.id)}` +
+        `&service=${encodeURIComponent(selectedService)}` +
+        `&date=${encodeURIComponent(selectedDate)}` +
+        `&time=${encodeURIComponent(selectedSlot)}`;
+    });
+  }
+
+  async function loadAvailability() {
+    renderLoading();
+    try {
+      if (!window.ServeEaseApi || typeof window.ServeEaseApi.getProviderAvailability !== "function") {
+        throw new Error("Availability API is unavailable.");
+      }
+      const response = await window.ServeEaseApi.getProviderAvailability(provider.id);
+      availabilityDates = response && Array.isArray(response.dates) ? response.dates : [];
+      if (!availabilityDates.some(function (item) { return Array.isArray(item.slots) && item.slots.length; })) {
+        renderEmpty();
+        return;
+      }
+      renderBookingForm();
+    } catch (error) {
+      console.warn("Unable to load provider availability.", error);
+      renderError();
+    }
+  }
+
+  loadAvailability();
+}
+
 function initProviderProfilePage() {
   const summaryCard = document.getElementById("providerSummaryCard");
   if (!summaryCard) return;
@@ -322,9 +569,11 @@ function initProviderProfilePage() {
     breadcrumbs.innerHTML = `<a href="index.html">Home</a> &nbsp; › &nbsp; Services &nbsp; › &nbsp; ${category ? category.name : ""} &nbsp; › &nbsp; ${provider.name}`;
   }
 
+  const ratingMetric = providerMetricRating(provider);
+
   summaryCard.innerHTML = `
     <div class="summary-top">
-      <img src="${provider.image}" alt="${provider.name}">
+      <img src="${providerDisplayImage(provider)}" alt="${provider.name}">
       <div>
         <h1>${provider.name} <span class="verified-badge">Verified Professional</span></h1>
         <div class="summary-services">
@@ -337,7 +586,7 @@ function initProviderProfilePage() {
         </div>
 
         <div class="metrics-row">
-          <div class="metric-item"><strong>⭐ ${provider.rating}</strong><span>${provider.reviews} Reviews</span></div>
+          <div class="metric-item"><strong>${ratingMetric.value}</strong><span>${ratingMetric.label}</span></div>
           <div class="metric-item"><strong>👜 ${provider.years}+ Years</strong><span>Experience</span></div>
           <div class="metric-item"><strong>📍 ${provider.distance}</strong><span>Away</span></div>
           <div class="metric-item"><strong>✅ ${provider.jobsDone}+</strong><span>Jobs Done</span></div>
@@ -368,83 +617,23 @@ function initProviderProfilePage() {
   }
 
   if (reviewsCard) {
-    const demoReviews = [
-      { stars: 5, text: "Excellent service! Very professional and thorough. Highly recommended.", name: "Rahul Sharma", when: "2 days ago" },
-      { stars: 4, text: "Amazing work! Arrived on time and completed the job efficiently.", name: "Priya Patel", when: "5 days ago" },
-      { stars: 5, text: "Very satisfied with the service quality. Will definitely book again.", name: "Amit Kumar", when: "1 week ago" }
-    ];
+    const providerReviews = getProviderReviewItems(provider);
 
     reviewsCard.innerHTML = `
       <h2>Customer Reviews</h2>
-      ${demoReviews.map(function (review) {
+      ${providerReviews.length ? providerReviews.map(function (review) {
         return `
           <div class="review-item">
-            <div class="review-stars">${"★".repeat(review.stars)}${"☆".repeat(5 - review.stars)}</div>
+            <div class="review-stars">${"*".repeat(review.stars)}${"-".repeat(5 - review.stars)}</div>
             <p>"${review.text}"</p>
-            <div class="review-meta"><strong>${review.name}</strong> • ${provider.subServices[0]} • ${review.when}</div>
+            <div class="review-meta"><strong>${review.name}</strong> - ${provider.subServices[0]} - ${review.when}</div>
           </div>
         `;
-      }).join("")}
+      }).join("") : '<div class="empty-state-card">No customer reviews yet. This provider is newly verified.</div>'}
     `;
   }
-
   if (bookingCard) {
-    const providerSlots = getProviderTimeSlots(provider);
-
-    bookingCard.innerHTML = `
-      <h2>Book Appointment</h2>
-      <label for="bookingService">Select Service</label>
-      <select id="bookingService">
-        ${provider.subServices.map(function (service) {
-          return `<option value="${service}">${service}</option>`;
-        }).join("")}
-      </select>
-
-      <label for="bookingDate">Select Date</label>
-      <input type="date" id="bookingDate" required>
-      <small class="error" id="bookingDateError"></small>
-
-      <label for="bookingTimeSlot">Available Time Slot</label>
-      <select id="bookingTimeSlot">
-        ${providerSlots.map(function (slot) {
-          return `<option value="${slot}">${slot}</option>`;
-        }).join("")}
-      </select>
-      <small class="input-help-text">Choose a slot provided by ${provider.name}.</small>
-
-      <button class="btn btn-primary" type="button" id="proceedToBookingBtn">Proceed to Booking</button>
-    `;
-
-    const proceedBtn = document.getElementById("proceedToBookingBtn");
-    const serviceSelect = document.getElementById("bookingService");
-    const dateInput = document.getElementById("bookingDate");
-    const slotSelect = document.getElementById("bookingTimeSlot");
-
-    if (proceedBtn) {
-      proceedBtn.addEventListener("click", function () {
-        if (!(session && session.role === "customer")) {
-          window.location.href = "login.html";
-          return;
-        }
-
-        const selectedService = serviceSelect.value;
-        const bookingDateError = document.getElementById("bookingDateError");
-        if (bookingDateError) bookingDateError.textContent = "";
-        const selectedDate = dateInput.value.trim();
-        if (!selectedDate) {
-          if (bookingDateError) bookingDateError.textContent = "Please select a booking date before proceeding.";
-          dateInput.focus();
-          return;
-        }
-        const timeSlot = slotSelect && slotSelect.value ? slotSelect.value : providerSlots[0] || "10:00 AM - 12:00 PM";
-
-        window.location.href =
-          `booking-checkout.html?provider=${encodeURIComponent(provider.id)}` +
-          `&service=${encodeURIComponent(selectedService)}` +
-          `&date=${encodeURIComponent(selectedDate)}` +
-          `&time=${encodeURIComponent(timeSlot)}`;
-      });
-    }
+    initAvailabilityBookingFlow(bookingCard, provider, session);
   }
 
   if (similarProviders) {
@@ -455,10 +644,10 @@ function initProviderProfilePage() {
     similarProviders.innerHTML = similar.map(function (item) {
       return `
         <div class="similar-card">
-          <img src="${item.image}" alt="${item.name}">
+          <img src="${providerDisplayImage(item)}" alt="${item.name}">
           <div class="similar-card-body">
             <h3>${item.name}</h3>
-            <div class="rating-row">⭐ ${item.rating} (${item.reviews})</div>
+            <div class="rating-row">${providerRatingMarkup(item)}</div>
             <div class="provider-price">
               <span>Starting at</span>
               <strong>${formatCurrency(item.startingPrice)}</strong>
@@ -468,6 +657,16 @@ function initProviderProfilePage() {
         </div>
       `;
     }).join("");
+  }
+}
+
+function showCheckoutValidationError(message, errorBox, field) {
+  if (errorBox) errorBox.textContent = message;
+
+  if (field) {
+    const fieldTop = window.scrollY + field.getBoundingClientRect().top;
+    window.scrollTo(0, Math.max(0, fieldTop - (window.innerHeight / 2) + (field.offsetHeight / 2)));
+    field.focus({ preventScroll: true });
   }
 }
 
@@ -490,27 +689,44 @@ async function submitBookingCheckout() {
   const phone = document.getElementById("checkoutCustomerPhone")?.value.trim() || "";
   const email = document.getElementById("checkoutCustomerEmail")?.value.trim() || "";
   const address = document.getElementById("checkoutCustomerAddress")?.value.trim() || "";
+  const customerErrorBox = document.getElementById("checkoutCustomerError");
   const errorBox = document.getElementById("checkoutError");
 
+  if (customerErrorBox) customerErrorBox.textContent = "";
   if (errorBox) errorBox.textContent = "";
 
-  if (!name || !phone || !email || !address) {
-    if (errorBox) errorBox.textContent = "Please fill all customer details.";
+  if (!name) {
+    showCheckoutValidationError("Enter your name.", customerErrorBox, document.getElementById("checkoutCustomerName"));
     return;
   }
 
   if (!/^[A-Za-z ]{3,60}$/.test(name)) {
-    if (errorBox) errorBox.textContent = "Enter a valid customer name.";
+    showCheckoutValidationError("Enter a valid customer name.", customerErrorBox, document.getElementById("checkoutCustomerName"));
+    return;
+  }
+
+  if (!phone) {
+    showCheckoutValidationError("Enter your phone number.", customerErrorBox, document.getElementById("checkoutCustomerPhone"));
     return;
   }
 
   if (!/^\+?\d[\d ]{9,14}$/.test(phone)) {
-    if (errorBox) errorBox.textContent = "Enter a valid phone number.";
+    showCheckoutValidationError("Enter a valid phone number.", customerErrorBox, document.getElementById("checkoutCustomerPhone"));
+    return;
+  }
+
+  if (!email) {
+    showCheckoutValidationError("Enter your email address.", customerErrorBox, document.getElementById("checkoutCustomerEmail"));
     return;
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    if (errorBox) errorBox.textContent = "Enter a valid email address.";
+    showCheckoutValidationError("Enter a valid email address.", customerErrorBox, document.getElementById("checkoutCustomerEmail"));
+    return;
+  }
+
+  if (!address) {
+    showCheckoutValidationError("Enter the service address.", customerErrorBox, document.getElementById("checkoutCustomerAddress"));
     return;
   }
 
@@ -532,51 +748,50 @@ async function submitBookingCheckout() {
     const cvv = document.getElementById("paymentCvv")?.value.trim() || "";
 
     if (!cardHolder || !card || !expiry || !cvv) {
-      if (errorBox) errorBox.textContent = "Please fill all card details.";
+      showCheckoutValidationError("Please fill all card details.", errorBox, document.getElementById("paymentCardHolder"));
       return;
     }
 
     if (!/^[A-Za-z ]{3,60}$/.test(cardHolder)) {
-      if (errorBox) errorBox.textContent = "Enter a valid cardholder name.";
+      showCheckoutValidationError("Enter a valid cardholder name.", errorBox, document.getElementById("paymentCardHolder"));
       return;
     }
 
     if (!isValidLuhn(card)) {
-      if (errorBox) errorBox.textContent = "Enter a valid 16-digit card number.";
+      showCheckoutValidationError("Enter a valid 16-digit card number.", errorBox, document.getElementById("paymentCardNumber"));
       return;
     }
 
     if (!isValidExpiryMMYY(expiry)) {
-      if (errorBox) errorBox.textContent = "Expiry date must be in MM-YY format and should not be expired.";
+      showCheckoutValidationError("Expiry date must be in MM-YY format and should not be expired.", errorBox, document.getElementById("paymentExpiryDate"));
       return;
     }
 
-    if (!/^\d{3,4}$/.test(cvv)) {
-      if (errorBox) errorBox.textContent = "CVV must be 3 or 4 digits only.";
+    if (!/^\d{3}$/.test(cvv)) {
+      showCheckoutValidationError("CVV must be exactly 3 digits.", errorBox, document.getElementById("paymentCvv"));
       return;
     }
   }
 
   if (paymentType === "upi") {
-    paymentMethod = "UPI";
     const upiId = document.getElementById("paymentUpiId")?.value.trim() || "";
     const upiApp = document.getElementById("paymentUpiApp")?.value.trim() || "";
 
     if (!upiId || !upiApp) {
-      if (errorBox) errorBox.textContent = "Please enter valid UPI details.";
+      showCheckoutValidationError("Please enter valid UPI details.", errorBox, document.getElementById(upiId ? "paymentUpiApp" : "paymentUpiId"));
       return;
     }
+    paymentMethod = "UPI - " + upiApp;
   }
 
   if (paymentType === "netbanking") {
-    paymentMethod = "Net Banking";
     const bankName = document.getElementById("paymentBankName")?.value.trim() || "";
-    const holder = document.getElementById("paymentAccountHolder")?.value.trim() || "";
 
-    if (!bankName || !holder) {
-      if (errorBox) errorBox.textContent = "Please enter valid net banking details.";
+    if (!bankName) {
+      showCheckoutValidationError("Please select your bank.", errorBox, document.getElementById("paymentBankName"));
       return;
     }
+    paymentMethod = "Net Banking - " + bankName;
   }
 
   const checkoutSession = getCurrentSession();
@@ -600,6 +815,7 @@ async function submitBookingCheckout() {
     status: "Pending",
     amount: total,
     category: "Pending",
+    paymentMethod: paymentMethod,
     customerName: name,
     customerPhone: phone,
     customerEmail: email
@@ -616,6 +832,7 @@ async function submitBookingCheckout() {
         address: address,
         amount: total,
         status: "Pending",
+        paymentMethod: paymentMethod,
         customerName: name,
         customerPhone: phone,
         customerEmail: email
@@ -632,6 +849,7 @@ async function submitBookingCheckout() {
           address: apiBooking.address,
           status: apiBooking.status,
           amount: apiBooking.amount,
+          paymentMethod: apiBooking.paymentMethod || paymentMethod,
           customerName: apiBooking.customerName || name,
           customerPhone: apiBooking.customerPhone || phone,
           customerEmail: apiBooking.customerEmail || email,
@@ -650,8 +868,8 @@ async function submitBookingCheckout() {
     provider: provider.name,
     method: paymentMethod,
     amount: total,
-    date: new Date().toLocaleDateString("en-GB"),
-    status: "Successful"
+    date: formatDisplayDate(new Date()),
+    status: "Pending"
   };
 
   customerModuleData.bookings.unshift(bookingEntry);
@@ -712,23 +930,36 @@ function initBookingCheckoutPage() {
     <div class="checkout-info-row"><span>Service Provider</span><strong>${provider.name}</strong></div>
     <div class="checkout-info-row"><span>Service Category</span><strong>${category ? category.name : "-"}</strong></div>
     <div class="checkout-info-row"><span>Service Location</span><strong>${provider.location}</strong></div>
-    <div class="checkout-info-row"><span>Booking Date</span><strong>${date}</strong></div>
+    <div class="checkout-info-row"><span>Booking Date</span><strong>${formatDisplayDate(date)}</strong></div>
     <div class="checkout-info-row"><span>Time Slot</span><strong>${time}</strong></div>
   `;
 
   const customerDetailsCard = document.getElementById("customerDetailsCard");
   if (customerDetailsCard) {
+    const customerProfile = getStoredCustomerProfile(session);
+    const customerName = (customerProfile && customerProfile.fullName) || session.fullName || "";
+    const customerPhone = (customerProfile && customerProfile.phone) || session.phone || "";
+    const customerEmail = (customerProfile && customerProfile.email) || session.email || "";
+
     customerDetailsCard.innerHTML = `
       <h2>Customer Details</h2>
       <label>Customer Name</label>
-      <input type="text" id="checkoutCustomerName" value="${session.fullName}" />
+      <input type="text" id="checkoutCustomerName" value="${customerName}" required maxlength="60" autocomplete="name" />
       <label>Phone Number</label>
-      <input type="text" id="checkoutCustomerPhone" value="+91 98765 43210" />
+      <input type="tel" id="checkoutCustomerPhone" value="${customerPhone}" required inputmode="tel" maxlength="15" autocomplete="tel" />
       <label>Email Address</label>
-      <input type="text" id="checkoutCustomerEmail" value="${session.email}" />
+      <input type="email" id="checkoutCustomerEmail" value="${customerEmail}" required maxlength="120" autocomplete="email" />
       <label>Service Address</label>
-      <textarea id="checkoutCustomerAddress">123 MG Road, Chennai, Tamil Nadu</textarea>
+      <textarea id="checkoutCustomerAddress" required maxlength="300" autocomplete="street-address" placeholder="Enter the address where you need the service"></textarea>
+      <small class="error" id="checkoutCustomerError" aria-live="polite"></small>
     `;
+
+    customerDetailsCard.querySelectorAll("input, textarea").forEach(function (field) {
+      field.addEventListener("input", function () {
+        const customerError = document.getElementById("checkoutCustomerError");
+        if (customerError) customerError.textContent = "";
+      });
+    });
   }
 
   const paymentMethodCard = document.getElementById("paymentMethodCard");
@@ -762,10 +993,9 @@ function initBookingCheckoutPage() {
           </div>
           <div>
             <label>CVV</label>
-            <input type="password" id="paymentCvv" placeholder="123" inputmode="numeric" maxlength="4" />
+            <input type="password" id="paymentCvv" placeholder="123" inputmode="numeric" maxlength="3" />
           </div>
         </div>
-        <small class="input-help-text">Use a valid 16-digit card, expiry in MM-YY format, and a 3 or 4 digit CVV.</small>
       `;
 
       const cardInput = document.getElementById("paymentCardNumber");
@@ -795,7 +1025,7 @@ function initBookingCheckoutPage() {
 
       if (cvvInput) {
         cvvInput.addEventListener("input", function () {
-          this.value = this.value.replace(/\D/g, "").slice(0, 4);
+          this.value = this.value.replace(/\D/g, "").slice(0, 3);
         });
       }
     }
@@ -811,6 +1041,14 @@ function initBookingCheckoutPage() {
           <option value="PhonePe">PhonePe</option>
           <option value="Paytm">Paytm</option>
           <option value="BHIM">BHIM</option>
+          <option value="Amazon Pay">Amazon Pay</option>
+          <option value="Navi">Navi</option>
+          <option value="MobiKwik">MobiKwik</option>
+          <option value="CRED">CRED</option>
+          <option value="WhatsApp Pay">WhatsApp Pay</option>
+          <option value="Airtel Payments Bank">Airtel Payments Bank</option>
+          <option value="Freecharge">Freecharge</option>
+          <option value="super.money">super.money</option>
         </select>
       `;
     }
@@ -824,9 +1062,18 @@ function initBookingCheckoutPage() {
           <option value="HDFC Bank">HDFC Bank</option>
           <option value="ICICI Bank">ICICI Bank</option>
           <option value="Axis Bank">Axis Bank</option>
+          <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+          <option value="Bank of Baroda">Bank of Baroda</option>
+          <option value="Punjab National Bank">Punjab National Bank</option>
+          <option value="Canara Bank">Canara Bank</option>
+          <option value="Union Bank of India">Union Bank of India</option>
+          <option value="IndusInd Bank">IndusInd Bank</option>
+          <option value="IDFC FIRST Bank">IDFC FIRST Bank</option>
+          <option value="Yes Bank">Yes Bank</option>
+          <option value="Federal Bank">Federal Bank</option>
+          <option value="AU Small Finance Bank">AU Small Finance Bank</option>
+          <option value="RBL Bank">RBL Bank</option>
         </select>
-        <label>Account Holder Name</label>
-        <input type="text" id="paymentAccountHolder" placeholder="Enter account holder name" />
       `;
     }
 
@@ -866,7 +1113,7 @@ function initBookingCheckoutPage() {
       <h2>Confirm Your Booking</h2>
       <div class="checkout-info-row"><span>Service:</span><strong>${serviceName}</strong></div>
       <div class="checkout-info-row"><span>Provider:</span><strong>${provider.name}</strong></div>
-      <div class="checkout-info-row"><span>Date:</span><strong>${date}</strong></div>
+      <div class="checkout-info-row"><span>Date:</span><strong>${formatDisplayDate(date)}</strong></div>
       <div class="checkout-info-row"><span>Time:</span><strong>${time}</strong></div>
       <div class="checkout-total-row compact"><span>Total:</span><strong>${formatCurrency(total)}</strong></div>
       <button class="btn btn-primary btn-full" type="button" onclick="submitBookingCheckout()">Confirm & Pay</button>
@@ -911,7 +1158,7 @@ function initBookingSubmittedPage() {
       <div class="checkout-info-row"><span>Status</span><strong class="pending-pill">⌛ Pending</strong></div>
       <div class="checkout-info-row"><span>Service</span><strong>${service}</strong></div>
       <div class="checkout-info-row"><span>Provider</span><strong>${provider}</strong></div>
-      <div class="checkout-info-row"><span>Date</span><strong>${date}</strong></div>
+      <div class="checkout-info-row"><span>Date</span><strong>${formatDisplayDate(date)}</strong></div>
       <div class="checkout-info-row"><span>Time</span><strong>${time}</strong></div>
       <div class="checkout-total-row compact"><span>Total Amount</span><strong>${formatCurrency(amount)}</strong></div>
     </div>
@@ -951,3 +1198,6 @@ if (window.ServeEaseApi && typeof window.ServeEaseApi.hydrateCatalog === "functi
 } else {
   startServeEasePages();
 }
+
+
+

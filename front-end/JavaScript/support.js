@@ -20,7 +20,37 @@
   }
 
   function getSupportData() {
-    return JSON.parse(localStorage.getItem(supportStorageKey) || "null");
+    const data = JSON.parse(localStorage.getItem(supportStorageKey) || "null");
+    if (!data || !Array.isArray(data.tickets)) return data;
+
+    let changed = false;
+    data.tickets.forEach(function (ticket) {
+      if (!ticket) return;
+      const sourceValue = ticket.createdAtIso || ticket.createdDate || ticket.date || ticket.createdOn || ticket.created || "";
+      if (!ticket.createdAtIso && sourceValue) {
+        const parsed = new Date(sourceValue);
+        if (!Number.isNaN(parsed.getTime())) {
+          ticket.createdAtIso = parsed.toISOString();
+          changed = true;
+        }
+      }
+      if (!ticket.createdDate || String(ticket.createdDate).trim().toLowerCase() === "just now") {
+        const displaySource = ticket.createdAtIso || sourceValue;
+        if (displaySource) {
+          const parsedDisplay = new Date(displaySource);
+          if (!Number.isNaN(parsedDisplay.getTime())) {
+            const nextCreatedDate = formatDisplayDate(parsedDisplay);
+            if (nextCreatedDate && nextCreatedDate !== ticket.createdDate) {
+              ticket.createdDate = nextCreatedDate;
+              changed = true;
+            }
+          }
+        }
+      }
+    });
+
+    if (changed) localStorage.setItem(supportStorageKey, JSON.stringify(data));
+    return data;
   }
 
   function setSupportData(data) {
@@ -78,16 +108,24 @@
     const raisedByType = ticket.raisedByType || sourceType;
     const isProvider = raisedByType === "provider";
     const ownerName = isProvider
-      ? (ownerData && ownerData.profile && (ownerData.profile.organisationName || ownerData.profile.fullName)) || ticket.customerName || ticket.providerName || "Provider"
+      ? (ownerData && ownerData.profile && (ownerData.profile.organisationName || ownerData.profile.fullName)) || ticket.providerName || ticket.customerName || "Provider"
       : ticket.customerName || (ownerData && ownerData.ownerName) || "Customer";
+    const createdSource = ticket.createdAtIso || ticket.createdDate || ticket.date || ticket.createdOn || ticket.created || "";
+    const createdAtDate = createdSource ? new Date(createdSource) : null;
+    const createdAtIso = createdAtDate && !Number.isNaN(createdAtDate.getTime()) ? createdAtDate.toISOString() : "";
+    const createdDate = createdAtIso ? formatDisplayDate(createdAtIso) : (ticket.createdDate || ticket.date || ticket.createdOn || ticket.created || "Just now");
 
     return {
       id: ticket.id,
       bookingReference: ticket.bookingReference || ticket.bookingRef || "N/A",
       raisedByType: raisedByType,
       raisedByLabel: isProvider ? "Provider" : "Customer",
-      customerName: ownerName,
+      customerName: isProvider ? (ticket.relatedCustomer || ticket.customer || "") : ownerName,
       providerName: ticket.providerName || (isProvider ? ownerName : ticket.provider || "ServeEase Provider"),
+      providerId: ticket.providerId || "",
+      relatedCustomer: ticket.relatedCustomer || ticket.customer || "",
+      service: ticket.service || ticket.serviceType || "",
+      priority: ticket.priority || "Medium",
       issueCategory: ticket.issueCategory || ticket.category || "General Support",
       subject: ticket.subject || "Support request",
       description: ticket.description || ticket.subject || "No description provided.",
@@ -97,8 +135,8 @@
       status: ticket.status || "Open",
       solution: ticket.solution || "",
       supportUpdate: ticket.supportUpdate || "Your ticket has been received and is currently being reviewed by the support team.",
-      createdDate: ticket.createdDate || ticket.date || ticket.createdOn || ticket.created || "Just now",
-      createdAtIso: ticket.createdAtIso || new Date().toISOString(),
+      createdDate: createdDate,
+      createdAtIso: createdAtIso,
       assignedTo: ticket.assignedTo || "Priya Sharma",
       messages: Array.isArray(ticket.messages) ? ticket.messages : [
         { sender: ownerName, senderType: raisedByType, text: ticket.description || ticket.subject || "Support request created.", time: ticket.createdDate || ticket.date || ticket.created || "Just now" }
@@ -136,7 +174,7 @@
             moduleChanged = true;
           }
           data.tickets.unshift(normalized);
-          data.notifications.unshift({ id: "NT" + Date.now() + ticket.id, text: "New support ticket created - " + ticket.id, time: "Just now", isNew: true, ticketId: ticket.id });
+          data.notifications.unshift({ id: "NT" + Date.now() + ticket.id, text: "New support ticket created - " + ticket.id, time: todayStamp(), isNew: true, ticketId: ticket.id });
           existingIds.add(ticket.id);
           changed = true;
         });
@@ -167,7 +205,7 @@
             moduleChanged = true;
           }
           data.tickets.unshift(normalized);
-          data.notifications.unshift({ id: "NT" + Date.now() + ticket.id, text: "New provider support ticket created - " + ticket.id, time: "Just now", isNew: true, ticketId: ticket.id });
+          data.notifications.unshift({ id: "NT" + Date.now() + ticket.id, text: "New provider support ticket created - " + ticket.id, time: todayStamp(), isNew: true, ticketId: ticket.id });
           existingIds.add(ticket.id);
           changed = true;
         });
@@ -249,8 +287,66 @@
   function persistTicketUpdate(data, ticket) {
     setSupportData(data);
     updateTicketInUserModules(ticket);
+    syncTicketToSuperuserModule(ticket);
     if (window.ServeEaseApi && typeof window.ServeEaseApi.saveState === "function") {
       window.ServeEaseApi.saveState(supportStorageKey, data).catch(function () { return null; });
+    }
+  }
+
+  function syncTicketToSuperuserModule(ticket) {
+    if (!ticket || !ticket.id) return;
+    try {
+      const superuserData = JSON.parse(localStorage.getItem("serveEaseSuperuserModuleData") || "null") || {};
+      if (!Array.isArray(superuserData.tickets)) superuserData.tickets = [];
+      if (!Array.isArray(superuserData.notifications)) superuserData.notifications = [];
+      const normalized = {
+        id: ticket.id,
+        status: ticket.status || "Open",
+        userType: ticket.raisedByType === "provider" ? "Provider" : "Customer",
+        customer: ticket.customerName || ticket.providerName || "User",
+        provider: ticket.providerName || "ServeEase Provider",
+        providerId: ticket.providerId || "",
+        relatedCustomer: ticket.relatedCustomer || "",
+        bookingId: ticket.bookingReference || "N/A",
+        created: ticket.createdDate || "Just now",
+        category: ticket.issueCategory || "General Support",
+        service: ticket.service || "",
+        priority: ticket.priority || "Medium",
+        internalRemarks: ticket.internalRemarks || "",
+        subject: ticket.subject || "Support request",
+        description: ticket.description || ticket.subject || "No description provided.",
+        phone: ticket.phone || "",
+        email: ticket.email || "",
+        attachments: ticket.attachmentName && ticket.attachmentName !== "No attachment" ? 1 : 0,
+        raisedByType: ticket.raisedByType || "customer",
+        solution: ticket.solution || "",
+        supportUpdate: ticket.supportUpdate || "",
+        messages: Array.isArray(ticket.messages) ? ticket.messages : [],
+        history: Array.isArray(ticket.history) ? ticket.history : [],
+        supportTicketRef: ticket.id
+      };
+      const existing = superuserData.tickets.find(function (item) { return item.id === normalized.id; });
+      if (existing) Object.assign(existing, normalized);
+      else superuserData.tickets.unshift(normalized);
+      if (normalized.status === "Escalated") {
+        const hasNotification = superuserData.notifications.some(function (item) {
+          return item.ticketId === normalized.id || String(item.text || "").indexOf(normalized.id) !== -1;
+        });
+        if (!hasNotification) {
+          superuserData.notifications.unshift({
+            id: "AN" + Date.now(),
+            text: "Support escalated ticket - " + normalized.id,
+            time: "Just now",
+            type: "red",
+            isNew: true,
+            ticketId: normalized.id,
+            actionPage: "superuser-escalated-tickets.html"
+          });
+        }
+      }
+      localStorage.setItem("serveEaseSuperuserModuleData", JSON.stringify(superuserData));
+    } catch (error) {
+      /* superuser data may not be initialized yet */
     }
   }
 
@@ -258,14 +354,27 @@
     return String(status).toLowerCase().replace(/\s+/g, "-");
   }
 
+  function formatDisplayDate(value) {
+    return window.ServeEaseDate ? window.ServeEaseDate.formatDate(value) : (value || "");
+  }
+
+  function formatDisplayDateTime(value) {
+    return window.ServeEaseDate ? window.ServeEaseDate.formatDateTime(value) : (value || "");
+  }
+
   function todayStamp() {
-    return new Date().toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }).replace(",", "");
+    return window.ServeEaseDate ? window.ServeEaseDate.nowDateTime() : (function () {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = now.getFullYear();
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const suffix = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12;
+      if (hours === 0) hours = 12;
+      return `${day}-${month}-${year} ${String(hours).padStart(2, "0")}:${minutes} ${suffix}`;
+    })();
   }
 
   function seedSupportData() {
@@ -342,7 +451,7 @@
           raisedByLabel: "Customer",
           customerName: "Raghava Kumar",
           providerName: "CarePlus Services",
-          issueCategory: "Service Complaint",
+          issueCategory: "Service Ticket",
           subject: "Service provider arrived late",
           description: "Service provider arrived late",
           attachmentName: "Late arrival proof",
@@ -354,7 +463,7 @@
           assignedTo: "Priya Sharma",
           messages: [
             { sender: "Raghava Kumar", senderType: "customer", text: "The provider arrived almost one hour late and did not inform me.", time: "2026-03-07 08:10 AM" },
-            { sender: "Priya Sharma", senderType: "agent", text: "I understand the concern. I am escalating this complaint for superuser review.", time: "2026-03-07 08:25 AM" }
+            { sender: "Priya Sharma", senderType: "agent", text: "I understand the concern. I am escalating this ticket for superuser review.", time: "2026-03-07 08:25 AM" }
           ],
           history: [
             { label: "Ticket created by customer", time: "2026-03-07 08:10 AM", active: false },
@@ -459,7 +568,7 @@
             { sender: "CleanPro Services", senderType: "customer", text: "The customer canceled just before arrival. Please review compensation eligibility.", time: "2026-03-08 06:45 AM" }
           ],
           history: [
-            { label: "Provider complaint created", time: "2026-03-08 06:45 AM", active: false },
+            { label: "Provider ticket created", time: "2026-03-08 06:45 AM", active: false },
             { label: "Awaiting support review", time: "2026-03-08 06:48 AM", active: true }
           ]
         }
@@ -604,23 +713,28 @@ function setupHeader(agentName) {
   }
 
   function ticketCardMarkup(ticket) {
+    const createdLabel = formatDisplayDate(ticket.createdAtIso || ticket.createdDate || ticket.date || ticket.created || "");
     return `
       <article class="support-ticket-card">
         <div class="support-ticket-top">
           <div>
             <h3 class="support-ticket-title">${ticket.id}</h3>
-            <div class="support-ticket-meta">${ticket.raisedByLabel}: ${ticket.customerName}</div>
+            <div class="support-ticket-meta">Provider: ${ticket.providerName || "ServeEase Provider"}</div>
+            ${ticket.relatedCustomer ? `<div class="support-ticket-meta">Related Customer: ${ticket.relatedCustomer}</div>` : ""}
             <div class="support-ticket-meta">Booking: ${ticket.bookingReference}</div>
           </div>
           <div class="support-ticket-badge-row">
-            ${ticket.raisedByType === "provider" ? `<span class="support-role-badge provider">Provider</span>` : ""}
+            ${ticket.raisedByType === "provider"
+              ? `<span class="support-role-badge provider">Provider</span>`
+              : `<span class="support-role-badge customer">Customer</span>`}
             <span class="support-status-badge ${formatStatusClass(ticket.status)}">${ticket.status}</span>
+            <span class="support-status-badge ${formatStatusClass(ticket.priority || "Medium")}">${ticket.priority || "Medium"}</span>
           </div>
         </div>
         <div class="support-ticket-body">
           <strong>${ticket.issueCategory}</strong>
           <p class="support-ticket-desc">${ticket.subject}</p>
-          <div class="support-ticket-created">Created: ${ticket.createdDate}</div>
+          <div class="support-ticket-created">Created: ${createdLabel}</div>
         </div>
         <button class="support-ticket-action" type="button" data-ticket-id="${ticket.id}">◉ View Ticket Details</button>
       </article>
@@ -738,9 +852,12 @@ function setupHeader(agentName) {
     detailGrid.innerHTML = `
       <div class="support-detail-box"><span>Ticket ID</span><strong>${ticket.id}</strong></div>
       <div class="support-detail-box"><span>Booking Reference</span><strong>${ticket.bookingReference}</strong></div>
-      <div class="support-detail-box"><span>${ticket.raisedByType === "provider" ? "Provider Name" : "Customer Name"}</span><strong>${ticket.customerName}</strong></div>
+      <div class="support-detail-box"><span>Provider Name</span><strong>${ticket.providerName || "ServeEase Provider"}</strong></div>
+      <div class="support-detail-box"><span>Related Customer</span><strong>${ticket.relatedCustomer || "N/A"}</strong></div>
+      <div class="support-detail-box"><span>Service</span><strong>${ticket.service || "N/A"}</strong></div>
+      <div class="support-detail-box"><span>Priority</span><strong>${ticket.priority || "Medium"}</strong></div>
       <div class="support-detail-box"><span>Issue Category</span><strong>${ticket.issueCategory}</strong></div>
-      <div class="support-detail-box"><span>Date Created</span><strong>🗓 ${ticket.createdDate}</strong></div>
+      <div class="support-detail-box"><span>Date Created</span><strong>🗓 ${formatDisplayDate(ticket.createdAtIso || ticket.createdDate || ticket.date || ticket.created || "")}</strong></div>
       <div class="support-detail-box"><span>Current Status</span><strong><span class="support-status-badge ${formatStatusClass(ticket.status)}">${ticket.status}</span></strong></div>
     `;
 
@@ -750,13 +867,13 @@ function setupHeader(agentName) {
       <p><strong>Email:</strong> <a href="mailto:${ticket.email}">${ticket.email}</a></p>
     `;
 
-    document.getElementById("supportComplaintBlock").innerHTML = `
-      <div class="support-complaint-box subject-box">
-        <div class="support-complaint-label">Subject</div>
+    document.getElementById("supportTicketBlock").innerHTML = `
+      <div class="support-ticket-box subject-box">
+        <div class="support-ticket-label">Subject</div>
         <strong>${ticket.subject}</strong>
       </div>
-      <div class="support-complaint-box">
-        <div class="support-complaint-label">Description</div>
+      <div class="support-ticket-box">
+        <div class="support-ticket-label">Description</div>
         <p>${ticket.description}</p>
       </div>
       <div class="support-attachment-box">
@@ -765,6 +882,7 @@ function setupHeader(agentName) {
     `;
 
     renderSolutionBlock(ticket);
+    renderInternalRemarksBlock(ticket);
 
     renderMessages(ticket);
     renderStatusOptions(ticket);
@@ -773,12 +891,12 @@ function setupHeader(agentName) {
   }
 
   function renderSolutionBlock(ticket) {
-    const complaintBlock = document.getElementById("supportComplaintBlock");
-    if (!complaintBlock) return;
+    const ticketBlock = document.getElementById("supportTicketBlock");
+    if (!ticketBlock) return;
 
-    complaintBlock.insertAdjacentHTML("beforeend", `
+    ticketBlock.insertAdjacentHTML("beforeend", `
       <div class="support-solution-box">
-        <div class="support-complaint-label">Solution</div>
+        <div class="support-ticket-label">Solution</div>
         <form id="supportSolutionForm" class="support-solution-form">
           <textarea id="supportSolutionInput" maxlength="600" placeholder="Type the resolution customers/providers will see as Support Update...">${ticket.solution || ""}</textarea>
           <div class="support-solution-footer">
@@ -787,6 +905,26 @@ function setupHeader(agentName) {
           </div>
           <small class="error" id="supportSolutionError"></small>
           <small class="success-message" id="supportSolutionSuccess"></small>
+        </form>
+      </div>
+    `);
+  }
+
+  function renderInternalRemarksBlock(ticket) {
+    const ticketBlock = document.getElementById("supportTicketBlock");
+    if (!ticketBlock) return;
+
+    ticketBlock.insertAdjacentHTML("beforeend", `
+      <div class="support-solution-box">
+        <div class="support-ticket-label">Internal Investigation Remarks</div>
+        <form id="supportInternalRemarksForm" class="support-solution-form">
+          <textarea id="supportInternalRemarksInput" maxlength="700" placeholder="Add what Support checked: booking, payment, customer, provider, evidence...">${ticket.internalRemarks || ""}</textarea>
+          <div class="support-solution-footer">
+            <small id="supportInternalRemarksCounter">${String(ticket.internalRemarks || "").length} / 700</small>
+            <button class="btn btn-outline" type="submit">Save Internal Remarks</button>
+          </div>
+          <small class="error" id="supportInternalRemarksError"></small>
+          <small class="success-message" id="supportInternalRemarksSuccess"></small>
         </form>
       </div>
     `);
@@ -825,7 +963,7 @@ function setupHeader(agentName) {
         <div class="${bubbleClass}">
           <div class="support-message-author">${message.sender}</div>
           <div>${message.text}</div>
-          <span class="support-message-time">${message.time}</span>
+          <span class="support-message-time">${formatDisplayDateTime(message.time)}</span>
         </div>
       `;
     }).join("");
@@ -856,7 +994,7 @@ function setupHeader(agentName) {
       return `
         <div class="support-history-item ${item.active ? "active" : ""}">
           <strong>${item.label}</strong>
-          <div class="support-history-time">${item.time}</div>
+          <div class="support-history-time">${formatDisplayDateTime(item.time)}</div>
         </div>
       `;
     }).join("");
@@ -866,8 +1004,8 @@ function setupHeader(agentName) {
     data.notifications.unshift({
       id: `NT${Date.now()}`,
       text: text,
-      time: "Just now",
-      isNew: isNew,
+      time: todayStamp(),
+      isNew: Boolean(isNew),
       ticketId: ticketId
     });
   }
@@ -883,6 +1021,11 @@ function setupHeader(agentName) {
     const solutionError = document.getElementById("supportSolutionError");
     const solutionSuccess = document.getElementById("supportSolutionSuccess");
     const solutionCounter = document.getElementById("supportSolutionCounter");
+    const internalRemarksForm = document.getElementById("supportInternalRemarksForm");
+    const internalRemarksInput = document.getElementById("supportInternalRemarksInput");
+    const internalRemarksCounter = document.getElementById("supportInternalRemarksCounter");
+    const internalRemarksError = document.getElementById("supportInternalRemarksError");
+    const internalRemarksSuccess = document.getElementById("supportInternalRemarksSuccess");
     const escalateBtn = document.getElementById("supportEscalateBtn");
     const modal = document.getElementById("supportEscalationModal");
     const confirmEscalationBtn = document.getElementById("confirmEscalationBtn");
@@ -890,15 +1033,20 @@ function setupHeader(agentName) {
 
     function refreshPage() {
       const ticket = getTicketById(ticketId);
+      const data = getSupportData();
       renderMessages(ticket);
       renderStatusOptions(ticket);
       renderHistory(ticket);
+      renderNotifications(data);
       document.getElementById("supportTicketDetailGrid").innerHTML = `
         <div class="support-detail-box"><span>Ticket ID</span><strong>${ticket.id}</strong></div>
         <div class="support-detail-box"><span>Booking Reference</span><strong>${ticket.bookingReference}</strong></div>
-        <div class="support-detail-box"><span>${ticket.raisedByType === "provider" ? "Provider Name" : "Customer Name"}</span><strong>${ticket.customerName}</strong></div>
+        <div class="support-detail-box"><span>Provider Name</span><strong>${ticket.providerName || "ServeEase Provider"}</strong></div>
+        <div class="support-detail-box"><span>Related Customer</span><strong>${ticket.relatedCustomer || "N/A"}</strong></div>
+        <div class="support-detail-box"><span>Service</span><strong>${ticket.service || "N/A"}</strong></div>
+        <div class="support-detail-box"><span>Priority</span><strong>${ticket.priority || "Medium"}</strong></div>
         <div class="support-detail-box"><span>Issue Category</span><strong>${ticket.issueCategory}</strong></div>
-        <div class="support-detail-box"><span>Date Created</span><strong>🗓 ${ticket.createdDate}</strong></div>
+        <div class="support-detail-box"><span>Date Created</span><strong>🗓 ${formatDisplayDate(ticket.createdAtIso || ticket.createdDate || ticket.date || ticket.created || "")}</strong></div>
         <div class="support-detail-box"><span>Current Status</span><strong><span class="support-status-badge ${formatStatusClass(ticket.status)}">${ticket.status}</span></strong></div>
       `;
       escalateBtn.disabled = ticket.status === "Escalated";
@@ -959,6 +1107,47 @@ function setupHeader(agentName) {
       });
     }
 
+    if (internalRemarksInput && internalRemarksCounter) {
+      internalRemarksInput.addEventListener("input", function () {
+        this.value = this.value.replace(/[<>]/g, "");
+        internalRemarksCounter.textContent = this.value.length + " / 700";
+        if (internalRemarksError && this.value.trim().length >= 10) internalRemarksError.textContent = "";
+      });
+    }
+
+    if (internalRemarksForm && internalRemarksInput) {
+      internalRemarksForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        internalRemarksError.textContent = "";
+        internalRemarksSuccess.textContent = "";
+        const remarks = internalRemarksInput.value.trim();
+
+        if (remarks.length < 10) {
+          internalRemarksError.textContent = "Add at least 10 characters about what was checked.";
+          internalRemarksInput.focus();
+          return;
+        }
+
+        const data = getSupportData();
+        const ticket = data.tickets.find(function (item) { return item.id === ticketId; });
+        if (!ticket) return;
+        ticket.internalRemarks = remarks;
+        ticket.updatedAt = todayStamp();
+        if (!Array.isArray(ticket.history)) ticket.history = [];
+        ticket.history.push({
+          label: "Support investigation remarks added",
+          time: todayStamp(),
+          active: true
+        });
+        ticket.history.forEach(function (entry, index) {
+          entry.active = index === ticket.history.length - 1;
+        });
+        persistTicketUpdate(data, ticket);
+        internalRemarksSuccess.textContent = "Internal remarks saved for support/admin review.";
+        refreshPage();
+      });
+    }
+
     if (replyForm) {
       replyForm.addEventListener("submit", function (event) {
         event.preventDefault();
@@ -1014,9 +1203,15 @@ function setupHeader(agentName) {
           return;
         }
 
+        if (selected.value === "Resolved" && String(ticket.solution || "").trim().length < 10) {
+          replyError.textContent = "Save a support update/solution before resolving the ticket.";
+          if (solutionInput) solutionInput.focus();
+          return;
+        }
+
         ticket.status = selected.value;
         ticket.history.push({
-          label: `Ticket status updated to ${selected.value}`,
+          label: selected.value === "Resolved" ? "Support resolved simple issue" : `Ticket status updated to ${selected.value}`,
           time: todayStamp(),
           active: true
         });
@@ -1057,9 +1252,16 @@ function setupHeader(agentName) {
       confirmEscalationBtn.addEventListener("click", function () {
         const data = getSupportData();
         const ticket = data.tickets.find(function (item) { return item.id === ticketId; });
+        const remarks = String(ticket.internalRemarks || "").trim();
+        if (remarks.length < 10) {
+          replyError.textContent = "Add internal investigation remarks before escalating to Admin.";
+          hideModal();
+          if (internalRemarksInput) internalRemarksInput.focus();
+          return;
+        }
         ticket.status = "Escalated";
         ticket.history.push({
-          label: "Ticket escalated to superuser",
+          label: "Ticket escalated to Admin after support investigation",
           time: todayStamp(),
           active: true
         });
@@ -1068,6 +1270,7 @@ function setupHeader(agentName) {
         });
         addNotification(data, `Ticket escalated to superuser - ${ticket.id}`, ticket.id, true);
         persistTicketUpdate(data, ticket);
+        syncTicketToSuperuserModule(ticket);
         replySuccess.textContent = "Ticket escalated to superuser successfully.";
         replyError.textContent = "";
         hideModal();
@@ -1092,5 +1295,12 @@ function setupHeader(agentName) {
       renderDashboard();
       renderDetailPage();
     });
+
+    window.addEventListener("storage", function (event) {
+      if (event.key !== supportStorageKey && event.key !== "serveEaseSupportModuleData") return;
+      if (document.getElementById("supportWelcomeText")) renderDashboard();
+      if (document.getElementById("supportTicketDetailGrid")) renderDetailPage();
+    });
   }
 })();
+

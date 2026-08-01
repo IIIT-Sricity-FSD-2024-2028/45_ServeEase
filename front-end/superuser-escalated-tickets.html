@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Tickets</title>
+  <title>ServeEase | Ticket Resolution Panel</title>
   <link rel="stylesheet" href="CSS/global.css" />
   <link rel="stylesheet" href="CSS/home.css" />
   <link rel="stylesheet" href="CSS/dashboard.css" />
@@ -14,7 +14,7 @@
     <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
     <div class="dashboard-search"><input type="text" id="superuserTicketSearch" placeholder="Search tickets by ID, customer, or category..." /></div>
     <div class="dashboard-topbar-actions">
-      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn">🔔<span class="superuser-dot"></span></button>
+      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
       <div class="profile-menu-wrap">
         <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>
         <div class="profile-dropdown hidden" id="superuserProfileDropdown">
@@ -28,11 +28,11 @@
 
   <main class="dashboard-page superuser-page">
     <div class="container">
-      <div class="breadcrumb-row"><a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp; <strong>Tickets</strong></div>
+      <div class="breadcrumb-row"><a href="superuser-dashboard.html">Admin Dashboard</a> &nbsp;›&nbsp; <strong>Escalated Tickets</strong></div>
 
       <section class="dashboard-hero superuser-ticket-hero danger-hero">
-        <h1>Tickets</h1>
-        <p>Manage and resolve high-priority support tickets requiring superuser intervention.</p>
+        <h1>Ticket Resolution Panel</h1>
+        <p>Review escalated tickets, provider tickets, refund requests, and critical support cases requiring admin decision.</p>
       </section>
 
       <section class="superuser-booking-stat-grid" id="superuserTicketStatsGrid"></section>
@@ -99,3 +99,5 @@
 <script src="JavaScript/search.js"></script>
 </body>
 </html>
+
+

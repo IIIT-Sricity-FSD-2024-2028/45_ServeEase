@@ -364,3 +364,45 @@
   color: #11284b;
   background: #ffffff;
 }
+
+.provider-document-upload-section {
+  border: 1px solid #dfe7f2;
+  border-radius: 14px;
+  padding: 14px;
+  margin: 6px 0 16px;
+  background: #f8fbff;
+}
+
+.provider-document-upload-section h3 {
+  font-size: 16px;
+  color: #13294b;
+  margin-bottom: 4px;
+}
+
+.provider-document-upload-section p {
+  color: #667892;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.auth-file-label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #22395d;
+}
+
+.auth-file-label span {
+  color: #7a8ba5;
+  font-weight: 600;
+}
+
+.auth-file-label input[type="file"] {
+  width: 100%;
+  border: 1px solid #d8e1ed;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  color: #13294b;
+}

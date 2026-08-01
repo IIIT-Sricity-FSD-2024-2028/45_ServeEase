@@ -14,7 +14,7 @@
     <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
     <div class="dashboard-search"><input type="text" id="superuserCategorySearch" placeholder="Search service categories..." /></div>
     <div class="dashboard-topbar-actions">
-      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn">🔔<span class="superuser-dot"></span></button>
+      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
       <div class="profile-menu-wrap">
         <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>
         <div class="profile-dropdown hidden" id="superuserProfileDropdown">
@@ -57,7 +57,34 @@
               <label>Category Description
                 <textarea id="superuserCategoryDescription" rows="3" placeholder="House Cleaning"></textarea>
               </label>
-              <small class="error" id="superuserCategoryDescriptionError"></small>
+              <small class="error" id="superuserCategoryDescriptionError"></small>
+
+
+
+
+
+              <label>Subcategories <span class="muted-text">Optional</span>
+
+
+
+
+
+
+                <textarea id="superuserCategorySubcategories" rows="3" placeholder="Example: Full Home Cleaning, Kitchen Cleaning"></textarea>
+
+
+
+
+
+
+              </label>
+
+
+
+
+
+
+              <small class="input-help-text">Separate multiple subcategories with commas.</small>
               <small class="success-message" id="superuserCategorySuccess"></small>
               <div class="superuser-modal-actions left-align">
                 <button class="btn btn-primary" type="submit" id="superuserCategorySubmitBtn">Add Category</button>
@@ -68,7 +95,7 @@
           <div id="superuserCategoryGrid" class="superuser-category-grid superuser-category-grid-page"></div>
         </section>
 
-        <div class="superuser-return-row" style="gap:12px;"><a class="btn btn-outline" href="superuser-management.html">‹ Back to Management</a><a class="btn btn-outline" href="superuser-dashboard.html">Back to Dashboard</a></div>
+        <div class="superuser-return-row" style="gap:12px;"><a class="btn btn-outline" href="superuser-dashboard.html">Back to Dashboard</a></div>
       </section>
     </div>
   </main>
@@ -92,7 +119,10 @@
     </div>
   </div>
   <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/mockdata.js"></script>
   <script src="JavaScript/superuser.js"></script>
 <script src="JavaScript/search.js"></script>
 </body>
 </html>
+
+

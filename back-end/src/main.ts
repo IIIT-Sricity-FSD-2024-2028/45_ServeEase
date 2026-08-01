@@ -22,7 +22,7 @@ async function bootstrap() {
   app.enableCors({
     origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'role'],
+    allowedHeaders: ['Content-Type', 'role', 'user-id', 'user-email'],
   });
 
   app.setGlobalPrefix('api');
@@ -34,7 +34,7 @@ async function bootstrap() {
     }),
   );
 
-  app.useStaticAssets(join(process.cwd(), '..', 'front-end', 'front-end'));
+  app.useStaticAssets(join(process.cwd(), '..', 'front-end'));
 
   const config = new DocumentBuilder()
     .setTitle('ServeEase API')

@@ -67,19 +67,71 @@
             <h2 class="panel-title">Create Support Ticket</h2>
             <form id="providerSupportTicketForm" class="support-form">
               <label>Issue Category</label>
-              <select id="providerTicketCategory">
-                <option value="">Select category</option>
-                <option value="Payment Issue">Payment Issue</option>
-                <option value="Booking Issue">Booking Issue</option>
-                <option value="Account Issue">Account Issue</option>
-                <option value="Technical Issue">Technical Issue</option>
+              <select id="providerTicketCategory">                <option value="">Select category</option>
+
+                <option value="Payment Not Received">Payment Not Received</option>
+
+                <option value="Verification Issue">Verification Issue</option>
+
+                <option value="Booking Assignment Issue">Booking Assignment Issue</option>
+
+                <option value="Customer Misbehavior">Customer Misbehavior</option>
+
+                <option value="Technical Problem">Technical Problem</option>
+
+                <option value="Profile Update Request">Profile Update Request</option>
+
+                <option value="Service Category Change">Service Category Change</option>
+
+                <option value="Availability Issue">Availability Issue</option>
+
+                <option value="Account Suspension Appeal">Account Suspension Appeal</option>
+
+                <option value="Other">Other</option>              </select>
+              <label>Related Booking</label>
+
+              <select id="providerTicketBookingRef">
+
+                <option value="">General provider support</option>
+
+              </select>
+
+
+
+              <label>Related Customer</label>
+
+              <input type="text" id="providerTicketCustomer" placeholder="Auto-filled from booking" readonly />
+
+
+
+              <label>Service</label>
+
+              <input type="text" id="providerTicketService" placeholder="Auto-filled from booking or provider category" readonly />
+
+
+
+              <label>Priority</label>
+
+              <select id="providerTicketPriority">
+
+                <option value="Medium">Medium</option>
+
+                <option value="Low">Low</option>
+
+                <option value="High">High</option>
+
+                <option value="Critical">Critical</option>
+
               </select>
 
               <label>Subject</label>
               <input type="text" id="providerTicketSubject" placeholder="Enter ticket subject" />
 
               <label>Description</label>
-              <textarea id="providerTicketDescription" placeholder="Please provide detailed description about your issue."></textarea>
+              <textarea id="providerTicketDescription" placeholder="Please provide detailed description about your issue."></textarea>
+              <label>Optional Attachment</label>
+
+              <input type="file" id="providerTicketAttachment" />
 
               <small class="error" id="providerTicketError"></small>
               <small class="success-message" id="providerTicketSuccess"></small>
@@ -127,3 +179,5 @@
 <script src="JavaScript/search.js"></script>
 </body>
 </html>
+
+

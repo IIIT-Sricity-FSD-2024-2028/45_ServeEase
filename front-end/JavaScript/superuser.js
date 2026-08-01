@@ -1,6 +1,6 @@
 (function () {
   const storageKey = "serveEaseSuperuserModuleData";
-  const allowedRoles = ["superuser"];
+  const allowedRoles = ["superuser", "admin"];
   let selectedUserId = "";
   let selectedProviderId = "";
   let editingCategoryId = "";
@@ -41,13 +41,26 @@
   }
 
   function superuserStamp() {
-    return new Date().toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }).replace(",", "");
+    return window.ServeEaseDate ? window.ServeEaseDate.nowDateTime() : (function () {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = now.getFullYear();
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const suffix = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12;
+      if (hours === 0) hours = 12;
+      return `${day}-${month}-${year} ${String(hours).padStart(2, "0")}:${minutes} ${suffix}`;
+    })();
+  }
+
+  function formatDisplayDate(value) {
+    return window.ServeEaseDate ? window.ServeEaseDate.formatDate(value) : (value || "");
+  }
+
+  function formatDisplayDateTime(value) {
+    return window.ServeEaseDate ? window.ServeEaseDate.formatDateTime(value) : (value || "");
   }
 
   function getAllLocalStorageKeys(prefix) {
@@ -56,43 +69,201 @@
     });
   }
 
+  function readStoredObject(key) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "null");
+    } catch (error) {
+      return null;
+    }
+  }
+
   function mapSupportTicketToSuperuser(ticket) {
     return {
       id: ticket.id,
       status: ticket.status || "Open",
       userType: ticket.raisedByType === "provider" ? "Provider" : "Customer",
       customer: ticket.customerName || ticket.providerName || "User",
+      provider: ticket.providerName || "ServeEase Provider",
+      providerId: ticket.providerId || "",
+      relatedCustomer: ticket.relatedCustomer || "",
       bookingId: ticket.bookingReference || "N/A",
       created: ticket.createdDate || "Just now",
       category: ticket.issueCategory || "General Support",
+      service: ticket.service || "",
+      priority: ticket.priority || "Medium",
+      internalRemarks: ticket.internalRemarks || "",
       subject: ticket.subject || "Support request",
       description: ticket.description || ticket.subject || "No description provided.",
       phone: ticket.phone || "",
       email: ticket.email || "",
       attachments: ticket.attachmentName && ticket.attachmentName !== "No attachment" ? 1 : 0,
+      attachmentName: ticket.attachmentName || ticket.attachmentUrl || "No attachment",
+      attachmentUrl: ticket.attachmentUrl || "",
       raisedByType: ticket.raisedByType || "customer",
       solution: ticket.solution || "",
       supportUpdate: ticket.supportUpdate || "",
       messages: Array.isArray(ticket.messages) ? ticket.messages : [],
+      history: Array.isArray(ticket.history) ? ticket.history : [],
       supportTicketRef: ticket.id
     };
   }
 
-  function syncSupportTicketsIntoSuperuserData() {
+  function collectTicketsFromAllModules() {
+    const collected = [];
     const supportData = getSupportData();
-    if (!supportData || !Array.isArray(supportData.tickets)) return;
-    const data = getData();
-    if (!data || !Array.isArray(data.tickets)) return;
-    let changed = false;
+    if (supportData && Array.isArray(supportData.tickets)) {
+      supportData.tickets.forEach(function (ticket) {
+        collected.push(ticket);
+      });
+    }
 
-    supportData.tickets.forEach(function (supportTicket) {
+    getAllLocalStorageKeys("serveEaseCustomerModuleData").forEach(function (key) {
+      const customerData = readStoredObject(key);
+      if (!customerData || !Array.isArray(customerData.tickets)) return;
+      customerData.tickets.forEach(function (ticket) {
+        collected.push({
+          id: ticket.id,
+          bookingReference: ticket.bookingRef || ticket.bookingReference || "N/A",
+          raisedByType: "customer",
+          raisedByLabel: "Customer",
+          customerName: ticket.customerName || customerData.ownerName || "Customer",
+          providerName: ticket.provider || "ServeEase Provider",
+          providerId: ticket.providerId || "",
+          issueCategory: ticket.category || "Booking Issue",
+          subject: ticket.subject || "Customer support request",
+          description: ticket.description || ticket.subject || "No description provided.",
+          attachmentName: ticket.attachmentName || "No attachment",
+          phone: ticket.customerPhone || "",
+          email: ticket.customerEmail || customerData.ownerEmail || "",
+          status: ticket.status || "Open",
+          supportUpdate: ticket.supportUpdate || "",
+          solution: ticket.solution || "",
+          createdDate: ticket.date || ticket.createdDate || "Just now",
+          createdAtIso: ticket.createdAtIso || "",
+          service: ticket.service || "",
+          priority: ticket.priority || "Medium",
+          internalRemarks: ticket.internalRemarks || "",
+          messages: Array.isArray(ticket.messages) ? ticket.messages : [],
+          history: Array.isArray(ticket.history) ? ticket.history : []
+        });
+      });
+    });
+
+    getAllLocalStorageKeys("serveEaseProviderModuleData").forEach(function (key) {
+      const providerData = readStoredObject(key);
+      if (!providerData || !Array.isArray(providerData.supportTickets)) return;
+      const profile = providerData.profile || {};
+      const providerName = profile.organisationName || profile.fullName || "Provider";
+      providerData.supportTickets.forEach(function (ticket) {
+        collected.push({
+          id: ticket.id,
+          bookingReference: ticket.bookingRef || ticket.bookingReference || "N/A",
+          raisedByType: "provider",
+          raisedByLabel: "Provider",
+          customerName: providerName,
+          providerName: providerName,
+          providerId: ticket.providerId || profile.providerId || profile.id || "",
+          relatedCustomer: ticket.relatedCustomer || "",
+          issueCategory: ticket.category || "Provider Support",
+          subject: ticket.subject || "Provider support request",
+          description: ticket.description || ticket.subject || "No description provided.",
+          attachmentName: ticket.attachmentName || "No attachment",
+          phone: ticket.phone || profile.phone || "",
+          email: ticket.email || profile.email || "",
+          status: ticket.status || "Open",
+          supportUpdate: ticket.supportUpdate || "",
+          solution: ticket.solution || "",
+          createdDate: ticket.date || ticket.createdDate || "Just now",
+          createdAtIso: ticket.createdAtIso || "",
+          service: ticket.service || profile.serviceType || "",
+          priority: ticket.priority || "Medium",
+          internalRemarks: ticket.internalRemarks || "",
+          messages: Array.isArray(ticket.messages) ? ticket.messages : [],
+          history: Array.isArray(ticket.history) ? ticket.history : []
+        });
+      });
+    });
+
+    return collected;
+  }
+
+  function ticketStatusRank(status) {
+    const ranks = { "Open": 1, "In Progress": 2, "Escalated": 3, "Resolved": 4 };
+    return ranks[status] || 0;
+  }
+
+  function backendTicketToSupportShape(ticket) {
+    ticket = ticket || {};
+    return {
+      id: ticket.ticketId || ticket.id,
+      bookingReference: ticket.relatedBookingId || ticket.bookingReference || "N/A",
+      raisedByType: ticket.raisedByType || "customer",
+      raisedByLabel: ticket.raisedByType === "provider" ? "Provider" : "Customer",
+      customerName: ticket.raisedByName || ticket.customerName || "User",
+      providerName: ticket.providerName || (ticket.raisedByType === "provider" ? ticket.raisedByName : "ServeEase Provider"),
+      providerId: ticket.providerId || "",
+      relatedCustomer: ticket.customerName || "",
+      issueCategory: ticket.ticketType || ticket.issueCategory || "General Support",
+      subject: ticket.subject || ticket.ticketType || "Support request",
+      description: ticket.description || "",
+      attachmentName: ticket.attachmentUrl || "No attachment",
+      phone: ticket.raisedByPhone || "",
+      email: ticket.raisedByEmail || "",
+      status: ticket.status || "Pending",
+      supportUpdate: ticket.supportRemarks || ticket.adminRemarks || "",
+      solution: ticket.finalDecision || "",
+      internalRemarks: ticket.supportRemarks || "",
+      priority: ticket.priority || "Medium",
+      createdDate: ticket.createdAt ? formatDisplayDate(ticket.createdAt) : "Just now",
+      createdAtIso: ticket.createdAt || "",
+      service: ticket.service || "",
+      messages: [],
+      history: (ticket.statusHistory || []).map(function (entry) {
+        return { label: entry.note || entry.status, time: entry.updatedAt || "", active: false };
+      })
+    };
+  }
+
+  function syncSupportTicketsIntoSuperuserData() {
+    const allTickets = collectTicketsFromAllModules();
+    if (!allTickets.length) return;
+    const data = getData() || {};
+    if (!Array.isArray(data.tickets)) data.tickets = [];
+    if (!Array.isArray(data.notifications)) data.notifications = [];
+    let changed = false;
+    const mergedById = {};
+
+    allTickets.forEach(function (supportTicket) {
       if (!supportTicket || !supportTicket.id) return;
       const normalized = mapSupportTicketToSuperuser(supportTicket);
+      const previous = mergedById[normalized.id];
+      if (previous && ticketStatusRank(previous.status) > ticketStatusRank(normalized.status)) return;
+      mergedById[normalized.id] = normalized;
+    });
+
+    Object.keys(mergedById).forEach(function (ticketId) {
+      const normalized = mergedById[ticketId];
       const existing = data.tickets.find(function (ticket) { return ticket.id === normalized.id; });
       if (existing) {
         Object.assign(existing, normalized);
       } else {
         data.tickets.unshift(normalized);
+      }
+      if (normalized.status === "Escalated") {
+        const hasNotification = data.notifications.some(function (item) {
+          return item.ticketId === normalized.id || String(item.text || "").indexOf(normalized.id) !== -1;
+        });
+        if (!hasNotification) {
+          data.notifications.unshift({
+            id: "AN" + Date.now() + normalized.id,
+            text: "Support escalated ticket - " + normalized.id,
+            time: "Just now",
+            type: "red",
+            isNew: true,
+            ticketId: normalized.id,
+            actionPage: "superuser-escalated-tickets.html"
+          });
+        }
       }
       changed = true;
     });
@@ -101,12 +272,13 @@
   }
 
   function hydrateSupportTicketsFromBackend(done) {
-    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getState !== "function") {
+    if (!window.ServeEaseApi) {
       if (typeof done === "function") done();
       return;
     }
 
-    window.ServeEaseApi.getState("serveEaseSupportModuleData")
+    const statePromise = typeof window.ServeEaseApi.getState === "function"
+      ? window.ServeEaseApi.getState("serveEaseSupportModuleData")
       .then(function (entry) {
         if (entry && entry.value) {
           const current = getSupportData();
@@ -120,6 +292,25 @@
           localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(backend));
         }
       })
+      .catch(function () { return null; })
+      : Promise.resolve();
+
+    statePromise.then(function () {
+      if (typeof window.ServeEaseApi.getEscalatedTickets !== "function") return null;
+      return window.ServeEaseApi.getEscalatedTickets().then(function (tickets) {
+        if (!Array.isArray(tickets)) return;
+        const supportData = getSupportData();
+        if (!Array.isArray(supportData.tickets)) supportData.tickets = [];
+        tickets.forEach(function (ticket) {
+          const normalized = backendTicketToSupportShape(ticket);
+          if (!normalized.id) return;
+          const existing = supportData.tickets.find(function (item) { return item.id === normalized.id; });
+          if (existing) Object.assign(existing, normalized);
+          else supportData.tickets.unshift(normalized);
+        });
+        localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(supportData));
+      });
+    })
       .catch(function () { return null; })
       .finally(function () {
         syncSupportTicketsIntoSuperuserData();
@@ -158,6 +349,68 @@
 
   function setAppData(data) {
     localStorage.setItem("serveEaseData", JSON.stringify(data));
+  }
+
+  function slugifyCategory(value) {
+    return String(value || "service")
+      .toLowerCase()
+      .replace(/\s*\/\s*/g, "-")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "service";
+  }
+
+  function categoryIcon(name) {
+    const value = String(name || "").toLowerCase();
+    if (value.indexOf("clean") !== -1) return "🧹";
+    if (value.indexOf("salon") !== -1 || value.indexOf("beauty") !== -1) return "💇";
+    if (value.indexOf("plumb") !== -1) return "🔧";
+    if (value.indexOf("electric") !== -1) return "⚡";
+    if (value.indexOf("appliance") !== -1 || value.indexOf("repair") !== -1) return "🛠";
+    if (value.indexOf("pest") !== -1) return "🐜";
+    if (value.indexOf("paint") !== -1) return "🎨";
+    if (value.indexOf("carpent") !== -1) return "🪚";
+    return "SE";
+  }
+
+  function categoryImage(name) {
+    const value = String(name || "").toLowerCase();
+    if (value.indexOf("salon") !== -1 || value.indexOf("beauty") !== -1) return "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=900&q=80";
+    if (value.indexOf("plumb") !== -1) return "assets/images/plumbing-category-realistic.jpeg";
+    if (value.indexOf("electric") !== -1) return "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=900&q=80";
+    if (value.indexOf("appliance") !== -1 || value.indexOf("repair") !== -1) return "assets/images/appliance-repair-realistic.jpg";
+    if (value.indexOf("pest") !== -1) return "assets/images/pest-control-realistic.jpg";
+    if (value.indexOf("paint") !== -1) return "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=900&q=80";
+    if (value.indexOf("carpent") !== -1) return "https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=900&q=80";
+    return "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=80";
+  }
+
+  function normalizeCategoryRecord(category) {
+    const name = category && category.name ? category.name : "Service Category";
+    return {
+      id: category.id && !String(category.id).startsWith("CAT") ? category.id : slugifyCategory(name),
+      name: name,
+      icon: category.icon || categoryIcon(name),
+      bgImage: category.bgImage || categoryImage(name),
+      description: category.description || (Array.isArray(category.subServices) && category.subServices.length ? category.subServices.join(", ") : "ServeEase service category"),
+      subServices: Array.isArray(category.subServices) ? category.subServices : []
+    };
+  }
+
+  function syncServiceCategoriesFromCatalog() {
+    const appData = getAppData();
+    const data = getData();
+    const source = Array.isArray(appData.categories) && appData.categories.length ? appData.categories : data.categories;
+    const normalized = (source || []).map(normalizeCategoryRecord);
+    data.categories = normalized;
+    appData.categories = normalized;
+    setData(data);
+    setAppData(appData);
+  }
+
+  function syncCatalogToBackend(appData) {
+    if (window.ServeEaseApi && typeof window.ServeEaseApi.syncCatalog === "function") {
+      window.ServeEaseApi.syncCatalog(appData).catch(function () { return null; });
+    }
   }
 
   function getProviderApprovalRequests(appData) {
@@ -259,6 +512,100 @@
       });
   }
 
+  function promoteVerificationProvider(appData, provider) {
+    if (!Array.isArray(appData.providers)) appData.providers = [];
+    if (!Array.isArray(appData.users)) appData.users = [];
+    const providerName = provider.fullName || provider.name || provider.organisationName || "Provider";
+    const providerEmail = provider.email || "";
+    const record = {
+      id: provider.id,
+      fullName: providerName,
+      organisationName: provider.organisationName || providerName,
+      email: providerEmail,
+      phone: provider.phone || "",
+      category: provider.serviceType || provider.category || "Home Service",
+      serviceType: provider.serviceType || provider.category || "Home Service",
+      experience: Number(provider.experience || provider.years) || 0,
+      cityId: provider.cityId || "",
+      cityName: provider.cityName || provider.location || "",
+      location: provider.location || provider.cityName || "",
+      address: provider.address || "",
+      registrationDate: provider.registrationDate || provider.submittedDate || "Just now",
+      approvalStatus: "Active",
+      status: "Active",
+      verificationStatus: "Verified",
+      providerCatalogId: provider.providerCatalogId || provider.id
+    };
+
+    appData.providers = appData.providers.filter(function (item) {
+      return !(item.email && providerEmail && item.email.toLowerCase() === providerEmail.toLowerCase()) && item.id !== provider.id;
+    });
+    appData.providers.unshift(record);
+
+    appData.users = appData.users.filter(function (item) {
+      return !(item.email && providerEmail && item.email.toLowerCase() === providerEmail.toLowerCase()) && item.id !== provider.id;
+    });
+    appData.users.push({ ...record, role: "provider" });
+  }
+
+  function hydrateVerifiedProvidersFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getProviderVerificationRequests !== "function") {
+      if (typeof done === "function") done();
+      return;
+    }
+
+    window.ServeEaseApi.getProviderVerificationRequests()
+      .then(function (items) {
+        if (!Array.isArray(items)) return;
+        const appData = getAppData();
+        const requests = getProviderApprovalRequests(appData);
+
+        items.forEach(function (provider) {
+          if (!provider || !provider.id) return;
+          const emailKey = String(provider.email || "").toLowerCase();
+          let request = requests.find(function (item) {
+            return item.id === provider.id || (emailKey && item.email && item.email.toLowerCase() === emailKey);
+          });
+
+          if (!request && provider.status === "Verified") {
+            request = normalizeProviderApproval({
+              id: provider.id,
+              fullName: provider.name,
+              organisationName: provider.organisationName,
+              email: provider.email,
+              phone: provider.phone,
+              serviceType: provider.category,
+              category: provider.category,
+              experience: provider.experience,
+              location: provider.location,
+              address: provider.address,
+              registrationDate: provider.submittedDate,
+              approvalStatus: "Active"
+            });
+            requests.push(request);
+          }
+
+          if (!request) return;
+          request.documents = Array.isArray(provider.documents) ? provider.documents : request.documents;
+          request.verificationStatus = provider.status || request.verificationStatus;
+          if (provider.status === "Verified") {
+            request.approvalStatus = "Active";
+            promoteVerificationProvider(appData, { ...provider, fullName: request.fullName || provider.name });
+          } else if (provider.status === "Rejected" || provider.status === "Suspended") {
+            request.approvalStatus = provider.status;
+          }
+        });
+
+        setAppData(appData);
+      })
+      .catch(function () {
+        return null;
+      })
+      .finally(function () {
+        if (typeof done === "function") done();
+      });
+  }
+
   function syncSuperuserBookingsFromBackend(done) {
     if (!window.ServeEaseApi || typeof window.ServeEaseApi.getBookings !== "function") {
       if (typeof done === "function") done();
@@ -311,7 +658,15 @@
   }
 
   function seedData() {
-    if (getData()) return;
+    const existingSuperuserData = getData();
+    if (
+      existingSuperuserData &&
+      existingSuperuserData.stats &&
+      Array.isArray(existingSuperuserData.customers) &&
+      Array.isArray(existingSuperuserData.providers) &&
+      Array.isArray(existingSuperuserData.notifications) &&
+      Array.isArray(existingSuperuserData.tickets)
+    ) return;
     const data = {
       stats: {
         registeredCustomers: 1250,
@@ -368,9 +723,9 @@
       recentRegistrations: ["CUS011", "PRO013", "CUS002", "PRO001", "CUS003"],
       pendingProviders: [
         { id: "PRO013", fullName: "Anita Verma", organisationName: "Anita Beauty Studio", email: "anita.verma@email.com", phone: "+91 9876543230", category: "Salon Services", experience: 5, location: "Mumbai", registrationDate: "8 Mar 2026", approvalStatus: "Pending Approval" },
-        { id: "PRO014", fullName: "Deepak Kumar", organisationName: "Deepak Electricals", email: "deepak.kumar@email.com", phone: "+91 9876543233", category: "Electrical", experience: 4, location: "Pune", registrationDate: "7 Mar 2026", approvalStatus: "Pending Approval" },
-        { id: "PRO015", fullName: "Manoj Singh", organisationName: "Singh Appliance Care", email: "manoj.singh@email.com", phone: "+91 9876543237", category: "Appliance Repair", experience: 5, location: "Ahmedabad", registrationDate: "10 Feb 2026", approvalStatus: "Pending Approval" },
-        { id: "PRO016", fullName: "Rekha Joshi", organisationName: "Rekha Salon Services", email: "rekha.joshi@email.com", phone: "+91 9876543240", category: "Salon Services", experience: 3, location: "Jaipur", registrationDate: "25 Feb 2026", approvalStatus: "Pending Approval" }
+        { id: "PRO014", fullName: "Deepak Kumar", organisationName: "Deepak Electricals", email: "deepak.kumar@email.com", phone: "+91 9876543233", category: "Electrical", experience: 4, location: "Bangalore", registrationDate: "7 Mar 2026", approvalStatus: "Pending Approval" },
+        { id: "PRO015", fullName: "Manoj Singh", organisationName: "Singh Appliance Care", email: "manoj.singh@email.com", phone: "+91 9876543237", category: "Appliance Repair", experience: 5, location: "Delhi", registrationDate: "10 Feb 2026", approvalStatus: "Pending Approval" },
+        { id: "PRO016", fullName: "Rekha Joshi", organisationName: "Rekha Salon Services", email: "rekha.joshi@email.com", phone: "+91 9876543240", category: "Salon Services", experience: 3, location: "Mumbai", registrationDate: "25 Feb 2026", approvalStatus: "Pending Approval" }
       ],
       providers: [
         { id: "PRO001", fullName: "Priya Sharma", organisationName: "Priya Clean Solutions", email: "priya.sharma@email.com", category: "Cleaning Services", experience: 3, location: "Delhi", registrationDate: "15 Feb 2026", approvalStatus: "Active" },
@@ -407,9 +762,9 @@
         { id: "BOOK-2026-1058", status: "Cancelled", paymentStatus: "Refunded", category: "Electrical", serviceType: "Fan Installation", provider: "Deepak Kumar", customer: "Vikram Singh", serviceDate: "3/3/2026", serviceTime: "2:30 PM", amount: 299, reason: "Service not required", email: "vikram.singh@email.com" }
       ],
       tickets: [
-        { id: "TICKET-2026-2103", status: "Escalated", userType: "Customer", customer: "Raghava Kumar", bookingId: "BOOK-2026-1040", created: "2026-03-07", category: "Service Complaint", subject: "Service provider arrived late without prior notice", description: "Service provider arrived late", phone: "+91 98765 43210", email: "raghava.kumar@email.com", attachments: 0 },
-        { id: "TICKET-2026-2107", status: "Escalated", userType: "Customer", customer: "Amit Sharma", bookingId: "BOOK-2026-1050", created: "2026-03-09", category: "Service Complaint", subject: "Poor quality of salon service provided", description: "Poor quality of salon service provided", phone: "+91 98765 43211", email: "amit.sharma@email.com", attachments: 1 },
-        { id: "TICKET-2026-2108", status: "Escalated", userType: "Customer", customer: "Priya Patel", bookingId: "BOOK-2026-1052", created: "2026-03-09", category: "Service Complaint", subject: "Service provider damaged property during repair work", description: "Service provider damaged property during repair work", phone: "+91 98765 43212", email: "priya.patel@email.com", attachments: 2 },
+        { id: "TICKET-2026-2103", status: "Escalated", userType: "Customer", customer: "Raghava Kumar", bookingId: "BOOK-2026-1040", created: "2026-03-07", category: "Service Ticket", subject: "Service provider arrived late without prior notice", description: "Service provider arrived late", phone: "+91 98765 43210", email: "raghava.kumar@email.com", attachments: 0 },
+        { id: "TICKET-2026-2107", status: "Escalated", userType: "Customer", customer: "Amit Sharma", bookingId: "BOOK-2026-1050", created: "2026-03-09", category: "Service Ticket", subject: "Poor quality of salon service provided", description: "Poor quality of salon service provided", phone: "+91 98765 43211", email: "amit.sharma@email.com", attachments: 1 },
+        { id: "TICKET-2026-2108", status: "Escalated", userType: "Customer", customer: "Priya Patel", bookingId: "BOOK-2026-1052", created: "2026-03-09", category: "Service Ticket", subject: "Service provider damaged property during repair work", description: "Service provider damaged property during repair work", phone: "+91 98765 43212", email: "priya.patel@email.com", attachments: 2 },
         { id: "TICKET-2026-2105", status: "Open", userType: "Customer", customer: "Raghava Kumar", bookingId: "BOOK-2026-1045", created: "2026-03-08", category: "Booking Issue", subject: "Unable to reschedule my kitchen cleaning service booking", description: "Unable to reschedule my kitchen cleaning service booking", phone: "+91 98765 43210", email: "raghava.kumar@email.com", attachments: 1 },
         { id: "TICKET-2026-2106", status: "Open", userType: "Provider", customer: "CleanPro Services", bookingId: "BOOK-2026-1045", created: "2026-03-08", category: "Booking Issue", subject: "Customer canceled booking at last minute without valid reason", description: "Customer canceled booking at last minute without valid reason", phone: "+91 91234 56789", email: "cleanpro@serveease.com", attachments: 1 },
         { id: "TICKET-2026-2104", status: "In Progress", userType: "Customer", customer: "Raghava Kumar", bookingId: "BOOK-2026-1042", created: "2026-03-07", category: "Payment Issue", subject: "Payment deducted but booking not confirmed", description: "Payment deducted but booking not confirmed", phone: "+91 98765 43210", email: "raghava.kumar@email.com", attachments: 1 },
@@ -418,6 +773,15 @@
         { id: "TICKET-2026-2100", status: "Resolved", userType: "Customer", customer: "Raghava Kumar", bookingId: "BOOK-2026-1036", created: "2026-03-05", category: "Payment Issue", subject: "Refund not received after cancellation", description: "Refund not received after cancellation", phone: "+91 98765 43210", email: "raghava.kumar@email.com", attachments: 0 }
       ]
     };
+    if (existingSuperuserData && Array.isArray(existingSuperuserData.notifications) && existingSuperuserData.notifications.length) {
+      const seen = {};
+      data.notifications = existingSuperuserData.notifications.concat(data.notifications).filter(function (item) {
+        const key = item.id || item.text;
+        if (!key || seen[key]) return false;
+        seen[key] = true;
+        return true;
+      });
+    }
     setData(data);
   }
 
@@ -502,9 +866,10 @@
     const badge = byId("superuserNewBadge");
     if (!list || !badge) return;
     const data = getData();
-    const newCount = data.notifications.filter(function (item) { return item.isNew; }).length;
+    const notifications = getVisibleNotifications(data);
+    const newCount = notifications.filter(function (item) { return item.isNew; }).length;
     badge.textContent = newCount + " New";
-    list.innerHTML = data.notifications.slice(0, 4).map(function (item) {
+    list.innerHTML = notifications.slice(0, 4).map(function (item) {
       return '<button class="superuser-notification-item ' + (item.type || '') + '" data-page="' + item.actionPage + '"><div><strong>' + item.text + '</strong><span>' + item.time + '</span></div></button>';
     }).join("");
     list.querySelectorAll("button[data-page]").forEach(function (button) {
@@ -514,10 +879,47 @@
     });
     const viewAll = byId("superuserViewAllNotificationsBtn");
     if (viewAll) {
-      viewAll.addEventListener("click", function () {
-        alert(data.notifications.map(function (item) { return item.text + ' - ' + item.time; }).join('\n'));
-      });
+      viewAll.onclick = function () {
+        const panel = document.querySelector(".superuser-notification-card");
+        if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (window.location.hash !== "#notifications") {
+          history.replaceState(null, "", "#notifications");
+        }
+        openNotificationModal();
+      };
     }
+  }
+
+  function isManagementPage() {
+    return window.location.pathname.indexOf('superuser-management.html') !== -1;
+  }
+
+  function customerManagementNotifications(data) {
+    const customerRows = (data.customers || []).slice(0, 4);
+    const customerNotifications = customerRows.map(function (customer, index) {
+      return {
+        id: 'CMN' + customer.id,
+        text: (customer.status === 'Blocked' ? 'Customer account blocked - ' : 'Customer account active - ') + customer.fullName,
+        time: formatDisplayDate(customer.registrationDate) || 'Recently',
+        type: customer.status === 'Blocked' ? 'red' : 'blue',
+        isNew: index < 2,
+        actionPage: 'superuser-management.html'
+      };
+    });
+
+    return customerNotifications.length ? customerNotifications : [{
+      id: 'CMN000',
+      text: 'No customer account notifications yet',
+      time: 'Now',
+      type: 'default',
+      isNew: false,
+      actionPage: 'superuser-management.html'
+    }];
+  }
+
+  function getVisibleNotifications(data) {
+    if (isManagementPage()) return customerManagementNotifications(data);
+    return data.notifications || [];
   }
 
   function renderNotificationModal() {
@@ -589,12 +991,14 @@
     const statsGrid = byId("superuserStatsGrid");
     if (!statsGrid) return;
     const data = getData();
+    const providerCount = getManagementProviders().length;
+    const pendingVerificationCount = getPendingVerificationCount();
     statsGrid.innerHTML = [
-      buildStatCard("", data.stats.registeredCustomers.toLocaleString(), "Registered Customers", "👥"),
-      buildStatCard("", data.stats.serviceProviders.toLocaleString(), "Service Providers", "🧑‍🔧"),
-      buildStatCard("", data.stats.totalBookings.toLocaleString(), "Total Bookings", "🗓"),
-      buildStatCard("", '₹' + data.stats.platformRevenue.toLocaleString('en-IN'), "Platform Revenue", "💲"),
-      buildStatCard("", data.stats.pendingApprovals, "Pending Approvals", "🕘", "warning")
+      buildStatCard("", data.customers.length.toLocaleString(), "Registered Customers", "Users"),
+      buildStatCard("", providerCount.toLocaleString(), "Service Providers", "Pros"),
+      buildStatCard("", data.stats.totalBookings.toLocaleString(), "Total Bookings", "Jobs"),
+      buildStatCard("", 'Rs ' + data.stats.platformRevenue.toLocaleString('en-IN'), "Platform Revenue", "INR"),
+      buildStatCard("", pendingVerificationCount, "Pending Verifications", "Docs", "warning")
     ].join("");
 
     byId("superuserActiveSessions").textContent = data.stats.activeSessions;
@@ -742,7 +1146,7 @@
       if (!item) return ''; /* skip if user was deleted (e.g. rejected provider) */
       const role = item.id.startsWith("CUS") ? "Customer" : "Provider";
       const status = item.status || item.approvalStatus || 'Active';
-      return '<tr><td>' + item.fullName + '</td><td><span class="superuser-chip ' + role.toLowerCase() + '">' + role + '</span></td><td>' + item.registrationDate + '</td><td><span class="superuser-chip ' + chipClass(status) + '">' + status + '</span></td><td><button class="superuser-inline-action" type="button" data-user-id="' + item.id + '">◉ View Details</button></td></tr>';
+      return '<tr><td>' + item.fullName + '</td><td><span class="superuser-chip ' + role.toLowerCase() + '">' + role + '</span></td><td>' + formatDisplayDate(item.registrationDate) + '</td><td><span class="superuser-chip ' + chipClass(status) + '">' + status + '</span></td><td><button class="superuser-inline-action" type="button" data-user-id="' + item.id + '">◉ View Details</button></td></tr>';
     }).join("");
     tbody.querySelectorAll("button[data-user-id]").forEach(function (button) {
       button.addEventListener("click", function () {
@@ -787,7 +1191,6 @@
     renderNotifications();
     setupManagementSearch();
     renderCustomers(false);
-    renderPendingProviders();
     renderProviders();
     if (byId('superuserCategoryGrid')) renderCategories();
     updateManagementCounts();
@@ -810,10 +1213,87 @@
     return sel ? sel.value : 'all';
   }
 
+  function getCatalogCategoryName(categoryId) {
+    const appData = getAppData();
+    const category = (appData.categories || []).find(function (item) {
+      return item.id === categoryId;
+    });
+    return category ? category.name : categoryId || 'Home Service';
+  }
+
+  function getCityNameFromProvider(provider) {
+    const cityMap = { 1: 'Chennai', 2: 'Bangalore', 3: 'Hyderabad', 4: 'Delhi', 5: 'Mumbai' };
+    return cityMap[Number(provider.cityId)] || provider.location || 'Chennai';
+  }
+
+  function isVerifiedProviderRequest(request) {
+    return request && (
+      request.approvalStatus === 'Active' ||
+      request.approvalStatus === 'Approved' ||
+      request.verificationStatus === 'Verified'
+    );
+  }
+
+  function normalizeProviderStatus(provider) {
+    if (provider.status) return provider.status;
+    if (provider.verificationStatus === 'Verified' || provider.approvalStatus === 'Approved') return 'Active';
+    if (provider.approvalStatus) return provider.approvalStatus;
+    return provider.verified === false ? 'Pending' : 'Active';
+  }
+
+  function getPendingVerificationCount() {
+    const appData = getAppData();
+    const requests = Array.isArray(appData.providerApprovalRequests) ? appData.providerApprovalRequests : [];
+    if (requests.length) {
+      return requests.filter(function (request) {
+        if (!request || isVerifiedProviderRequest(request)) return false;
+        const status = request.verificationStatus || request.approvalStatus || 'Pending Approval';
+        return status === 'Pending' || status === 'Pending Approval';
+      }).length;
+    }
+    return (getData().pendingProviders || []).length;
+  }
+
+  function getManagementProviders() {
+    const appData = getAppData();
+    const superuserData = getData();
+    const sourceProviders = Array.isArray(appData.providers) && appData.providers.length
+      ? appData.providers
+      : (superuserData.providers || []);
+    const verifiedRequests = (appData.providerApprovalRequests || []).filter(function (request) {
+      return isVerifiedProviderRequest(request);
+    });
+    const mergedByEmail = {};
+
+    sourceProviders.concat(verifiedRequests).forEach(function (provider) {
+      const key = String(provider.email || provider.id || '').toLowerCase();
+      if (key) mergedByEmail[key] = provider;
+    });
+
+    return Object.keys(mergedByEmail).map(function (key) { return mergedByEmail[key]; })
+      .filter(function (provider) {
+        return provider && provider.id && (!provider.cityId || (Number(provider.cityId) >= 1 && Number(provider.cityId) <= 5));
+      })
+      .map(function (provider) {
+        const isCatalogProvider = !!provider.name && !provider.fullName;
+        return {
+          id: provider.id,
+          fullName: provider.fullName || provider.name || 'Provider',
+          organisationName: provider.organisationName || provider.name || provider.fullName || 'Provider',
+          email: provider.email || provider.ownerProviderEmail || (provider.id + '@serveease.com'),
+          category: isCatalogProvider ? getCatalogCategoryName(provider.category) : (provider.serviceType || provider.category || 'Home Service'),
+          experience: Number(provider.experience || provider.years) || 0,
+          location: getCityNameFromProvider(provider),
+          registrationDate: provider.registrationDate || 'Catalog Provider',
+          status: normalizeProviderStatus(provider),
+          source: isCatalogProvider ? 'catalog' : 'management'
+        };
+      });
+  }
+
   function refreshManagementTables() {
     var term = getManagementSearchTerm();
     renderCustomers(false, term);
-    renderPendingProviders(term);
     renderProviders(term);
     if (byId('superuserCategoryGrid')) renderCategories(term);
     updateManagementCounts();
@@ -848,7 +1328,7 @@
     var countEl = byId('superuserCustomerCount');
     if (countEl) countEl.textContent = filtered.length;
     const rows = (showAll ? filtered : filtered.slice(0, 10)).map(function (item) {
-      return '<tr><td>' + item.fullName + '</td><td>' + item.email + '</td><td>' + item.phone + '</td><td>' + item.registrationDate + '</td><td><span class="superuser-chip ' + chipClass(item.status) + '">' + item.status + '</span></td><td><button class="superuser-inline-action" type="button" data-user-id="' + item.id + '">◉</button></td></tr>';
+      return '<tr><td>' + item.fullName + '</td><td>' + item.email + '</td><td>' + item.phone + '</td><td>' + formatDisplayDate(item.registrationDate) + '</td><td><span class="superuser-chip ' + chipClass(item.status) + '">' + item.status + '</span></td><td><button class="superuser-inline-action" type="button" data-user-id="' + item.id + '">◉</button></td></tr>';
     }).join('');
     tbody.innerHTML = rows || '<tr><td colspan="6"><div class="superuser-empty-state">No customers found for the current filter.</div></td></tr>';
     tbody.querySelectorAll('button[data-user-id]').forEach(function (button) {
@@ -872,7 +1352,7 @@
     });
     list.innerHTML = filtered.map(function (item) {
       var orgLine = item.organisationName ? '<p class="superuser-provider-org">🏢 ' + item.organisationName + '</p>' : '';
-      return '<article class="superuser-provider-card"><div class="superuser-provider-main"><h3>' + item.fullName + ' <span class="superuser-chip pending">Pending Approval</span></h3>' + orgLine + '<p>✉ ' + item.email + '</p><p>🏬 ' + item.category + '</p><p>◷ ' + item.experience + ' years Experience</p></div><div class="superuser-provider-meta"><p>☎ ' + item.phone + '</p><p>⌖ ' + item.location + '</p><p>🗓 Registered: ' + item.registrationDate + '</p></div><div class="superuser-provider-actions"><button class="superuser-inline-action" type="button" data-provider-id="' + item.id + '">◉ View Details</button><button class="btn superuser-success-btn" type="button" data-provider-approve="' + item.id + '">✓ Approve</button><button class="btn superuser-danger-outline-btn" type="button" data-provider-reject="' + item.id + '">⊘ Reject</button></div></article>';
+      return '<article class="superuser-provider-card"><div class="superuser-provider-main"><h3>' + item.fullName + ' <span class="superuser-chip pending">Pending Approval</span></h3>' + orgLine + '<p>✉ ' + item.email + '</p><p>🏬 ' + item.category + '</p><p>◷ ' + item.experience + ' years Experience</p></div><div class="superuser-provider-meta"><p>☎ ' + item.phone + '</p><p>⌖ ' + item.location + '</p><p>🗓 Registered: ' + formatDisplayDate(item.registrationDate) + '</p></div><div class="superuser-provider-actions"><button class="superuser-inline-action" type="button" data-provider-id="' + item.id + '">◉ View Details</button><button class="btn superuser-success-btn" type="button" data-provider-approve="' + item.id + '">✓ Approve</button><button class="btn superuser-danger-outline-btn" type="button" data-provider-reject="' + item.id + '">⊘ Reject</button></div></article>';
     }).join('') || '<div class="superuser-empty-state">No pending providers found.</div>';
     list.querySelectorAll('[data-provider-id]').forEach(function (button) {
       button.addEventListener('click', function () { openProviderModal(button.dataset.providerId); });
@@ -888,12 +1368,11 @@
   function renderProviders(term) {
     const tbody = byId("superuserProviderTableBody");
     if (!tbody) return;
-    const data = getData();
     var statusFilter = getProviderStatusFilter();
-    const filtered = data.providers.filter(function (item) {
-      var providerStatus = item.status || item.approvalStatus || 'Active';
+    const filtered = getManagementProviders().filter(function (item) {
+      var providerStatus = item.status || 'Active';
       if (statusFilter !== 'all' && providerStatus !== statusFilter) return false;
-      const hay = [item.fullName, item.email, item.category, item.location].join(' ').toLowerCase();
+      const hay = [item.fullName, item.organisationName, item.email, item.category, item.location].join(' ').toLowerCase();
       return !term || hay.includes(term);
     });
     var countEl = byId('superuserProviderCount');
@@ -901,25 +1380,47 @@
     tbody.innerHTML = filtered.map(function (item) {
       var orgName = item.organisationName || '—';
       var providerStatus = item.status || item.approvalStatus || 'Active';
-      return '<tr><td><div class="superuser-provider-name-block"><span>' + item.fullName + '</span></div></td><td>' + orgName + '</td><td>' + item.email + '</td><td>' + item.category + '</td><td>' + item.experience + ' years</td><td>' + item.location + '</td><td>' + item.registrationDate + '</td><td><span class="superuser-chip ' + chipClass(providerStatus) + '">' + providerStatus + '</span></td><td><button class="superuser-inline-action" type="button" data-provider-action-id="' + item.id + '">◉ View</button></td></tr>';
+      return '<tr><td><div class="superuser-provider-name-block"><span>' + item.fullName + '</span></div></td><td>' + orgName + '</td><td>' + item.email + '</td><td>' + item.category + '</td><td>' + item.experience + ' years</td><td>' + item.location + '</td><td>' + formatDisplayDate(item.registrationDate) + '</td><td><span class="superuser-chip ' + chipClass(providerStatus) + '">' + providerStatus + '</span></td><td><button class="superuser-inline-action" type="button" data-provider-action-id="' + item.id + '">◉ View</button></td></tr>';
     }).join('') || '<tr><td colspan="9"><div class="superuser-empty-state">No providers found for the current filter.</div></td></tr>';
     tbody.querySelectorAll('[data-provider-action-id]').forEach(function (button) {
       button.addEventListener('click', function () {
-        openUserModal(button.dataset.providerActionId);
+        openManagementProviderDetails(button.dataset.providerActionId);
       });
     });
+  }
+
+  function openManagementProviderDetails(providerId) {
+    const provider = getManagementProviders().find(function (item) { return item.id === providerId; });
+    if (!provider) return;
+    byId('superuserUserModalName').textContent = provider.fullName;
+    byId('superuserUserModalRole').textContent = 'Provider Details';
+    byId('superuserUserRegistrationDate').textContent = formatDisplayDate(provider.registrationDate);
+    const badge = byId('superuserUserStatusBadge');
+    badge.className = 'superuser-chip ' + chipClass(provider.status || 'Active');
+    badge.textContent = provider.status || 'Active';
+    const reasonWrap = byId('superuserBlockReasonWrap');
+    if (reasonWrap) reasonWrap.classList.add('hidden');
+    const toggleBtn = byId('superuserUserStatusToggleBtn');
+    if (toggleBtn) toggleBtn.classList.add('hidden');
+    openModal('superuserUserModalBackdrop');
   }
 
   function renderCategories(term) {
     const grid = byId("superuserCategoryGrid");
     if (!grid) return;
+    syncServiceCategoriesFromCatalog();
     const data = getData();
     const filtered = data.categories.filter(function (item) {
-      const hay = [item.name, item.description].join(' ').toLowerCase();
+      const hay = [item.name, item.description, (item.subServices || []).join(' ')].join(' ').toLowerCase();
       return !term || hay.includes(term);
     });
     grid.innerHTML = filtered.map(function (item) {
-      return '<article class="superuser-category-card"><div class="superuser-category-card-top"><div><h3>' + item.name + '</h3><p class="superuser-category-description">' + item.description + '</p></div><div class="superuser-category-actions"><button class="superuser-category-action" type="button" title="Edit" data-category-edit="' + item.id + '">✎</button><button class="superuser-category-action" type="button" title="Delete" data-category-delete="' + item.id + '">🗑</button></div></div></article>';
+      var subServices = Array.isArray(item.subServices) && item.subServices.length
+        ? '<div class="superuser-category-subservices">' + item.subServices.map(function (service) {
+            return '<span>' + service + '</span>';
+          }).join('') + '</div>'
+        : '<div class="superuser-category-subservices empty">No subcategories added</div>';
+      return '<article class="superuser-category-card"><div class="superuser-category-card-top"><div><h3><span class="superuser-category-icon">' + (item.icon || 'SE') + '</span>' + item.name + '</h3><p class="superuser-category-description">' + (item.description || 'No description added.') + '</p>' + subServices + '</div><div class="superuser-category-actions"><button class="superuser-category-action" type="button" title="Edit" data-category-edit="' + item.id + '">✎</button><button class="superuser-category-action" type="button" title="Delete" data-category-delete="' + item.id + '">🗑</button></div></div></article>';
     }).join('') || '<div class="superuser-empty-state">No categories found.</div>';
     grid.querySelectorAll('[data-category-edit]').forEach(function (button) {
       button.addEventListener('click', function () { openCategoryModal(button.dataset.categoryEdit); });
@@ -931,12 +1432,14 @@
 
   function updateManagementCounts() {
     const data = getData();
+    const providerCount = getManagementProviders().length;
+    const pendingVerificationCount = getPendingVerificationCount();
     if (byId('superuserCustomerCount')) byId('superuserCustomerCount').textContent = data.customers.length;
-    if (byId('superuserPendingProviderCount')) byId('superuserPendingProviderCount').textContent = data.pendingProviders.length;
-    if (byId('superuserProviderCount')) byId('superuserProviderCount').textContent = data.providers.length;
+    if (byId('superuserPendingProviderCount')) byId('superuserPendingProviderCount').textContent = pendingVerificationCount;
+    if (byId('superuserProviderCount')) byId('superuserProviderCount').textContent = providerCount;
     if (byId('superuserQuickCustomerCount')) byId('superuserQuickCustomerCount').textContent = data.customers.length;
-    if (byId('superuserQuickProviderCount')) byId('superuserQuickProviderCount').textContent = data.providers.length + data.pendingProviders.length;
-    if (byId('superuserQuickPendingCount')) byId('superuserQuickPendingCount').textContent = data.pendingProviders.length;
+    if (byId('superuserQuickProviderCount')) byId('superuserQuickProviderCount').textContent = providerCount;
+    if (byId('superuserQuickPendingCount')) byId('superuserQuickPendingCount').textContent = pendingVerificationCount;
     if (byId('superuserQuickCategoryCount')) byId('superuserQuickCategoryCount').textContent = data.categories.length;
   }
 
@@ -972,7 +1475,7 @@
     const isProvider = user.id.startsWith('PRO');
     byId('superuserUserModalName').textContent = user.fullName;
     byId('superuserUserModalRole').textContent = (isProvider ? 'Provider Details' : 'Customer Details');
-    byId('superuserUserRegistrationDate').textContent = user.registrationDate;
+    byId('superuserUserRegistrationDate').textContent = formatDisplayDate(user.registrationDate);
     const badge = byId('superuserUserStatusBadge');
     badge.className = 'superuser-chip ' + chipClass(user.status || user.approvalStatus || 'Active');
     badge.textContent = user.status || user.approvalStatus || 'Active';
@@ -1020,6 +1523,7 @@
     }
 
     const toggleBtn = byId('superuserUserStatusToggleBtn');
+    toggleBtn.classList.remove('hidden');
     toggleBtn.className = 'btn btn-full ' + (isBlocked ? 'superuser-success-btn' : 'superuser-danger-btn');
     toggleBtn.textContent = isBlocked ? ('◎ Activate ' + entityLabel) : ('⊘ Block ' + entityLabel);
     toggleBtn.onclick = toggleUserStatus;
@@ -1074,7 +1578,7 @@
     selectedProviderId = provider.id;
     byId('superuserProviderModalName').textContent = provider.fullName;
     var orgInfo = provider.organisationName ? '<div class="superuser-detail-field"><span>Organisation:</span><strong>' + provider.organisationName + '</strong></div>' : '';
-    byId('superuserProviderModalBody').innerHTML = '<section><h4>Provider Information</h4><div class="superuser-detail-grid">' + orgInfo + '<div class="superuser-detail-field"><span>Email:</span><strong>' + provider.email + '</strong></div><div class="superuser-detail-field"><span>Phone:</span><strong>' + provider.phone + '</strong></div><div class="superuser-detail-field"><span>Category:</span><strong>' + provider.category + '</strong></div><div class="superuser-detail-field"><span>Location:</span><strong>' + provider.location + '</strong></div><div class="superuser-detail-field"><span>Experience:</span><strong>' + provider.experience + ' years</strong></div><div class="superuser-detail-field"><span>Registered:</span><strong>' + provider.registrationDate + '</strong></div></div></section>';
+    byId('superuserProviderModalBody').innerHTML = '<section><h4>Provider Information</h4><div class="superuser-detail-grid">' + orgInfo + '<div class="superuser-detail-field"><span>Email:</span><strong>' + provider.email + '</strong></div><div class="superuser-detail-field"><span>Phone:</span><strong>' + provider.phone + '</strong></div><div class="superuser-detail-field"><span>Category:</span><strong>' + provider.category + '</strong></div><div class="superuser-detail-field"><span>Location:</span><strong>' + provider.location + '</strong></div><div class="superuser-detail-field"><span>Experience:</span><strong>' + provider.experience + ' years</strong></div><div class="superuser-detail-field"><span>Registered:</span><strong>' + formatDisplayDate(provider.registrationDate) + '</strong></div></div></section>';
     byId('superuserApproveProviderFromModalBtn').onclick = function () { approveProvider(provider.id, true); };
     byId('superuserRejectProviderFromModalBtn').onclick = function () { rejectProvider(provider.id, true); };
     openModal('superuserProviderApprovalModalBackdrop');
@@ -1188,6 +1692,7 @@
     const submit = byId('superuserCategorySubmitBtn');
     const name = byId('superuserCategoryName');
     const description = byId('superuserCategoryDescription');
+    const subcategories = byId('superuserCategorySubcategories');
     const success = byId('superuserCategorySuccess');
     const inlinePanel = byId('superuserCategoryInlinePanel');
     clearText('superuserCategoryNameError');
@@ -1200,12 +1705,14 @@
         submit.textContent = 'Update Category';
         name.value = item.name;
         description.value = item.description;
+        if (subcategories) subcategories.value = (item.subServices || []).join(', ');
       }
     } else {
       title.textContent = 'Add New Category';
       submit.textContent = 'Add Category';
       name.value = '';
       description.value = '';
+      if (subcategories) subcategories.value = '';
     }
     if (inlinePanel) {
       inlinePanel.classList.remove('hidden');
@@ -1225,6 +1732,10 @@
       clearText('superuserCategorySuccess');
       const name = byId('superuserCategoryName').value.trim();
       const description = byId('superuserCategoryDescription').value.trim();
+      const subcategoryInput = byId('superuserCategorySubcategories');
+      const subServices = subcategoryInput ? subcategoryInput.value.split(',').map(function (item) {
+        return item.trim();
+      }).filter(Boolean) : [];
       let valid = true;
       if (!name) {
         byId('superuserCategoryNameError').textContent = 'Category name is required.';
@@ -1247,12 +1758,19 @@
         const item = data.categories.find(function (category) { return category.id === editingCategoryId; });
         item.name = name;
         item.description = description;
+        item.subServices = subServices;
+        item.icon = item.icon || categoryIcon(name);
+        item.bgImage = item.bgImage || categoryImage(name);
         byId('superuserCategorySuccess').textContent = 'Category updated successfully.';
       } else {
-        data.categories.push({ id: 'CAT' + String(Date.now()).slice(-6), name: name, description: description });
+        data.categories.push(normalizeCategoryRecord({ id: slugifyCategory(name), name: name, description: description, subServices: subServices }));
         byId('superuserCategorySuccess').textContent = 'Category added successfully.';
       }
       setData(data);
+      const appData = getAppData();
+      appData.categories = data.categories.map(normalizeCategoryRecord);
+      setAppData(appData);
+      syncCatalogToBackend(appData);
       const categorySearch = byId('superuserCategorySearch');
       const managementSearch = byId('superuserManagementSearch');
       const term = categorySearch ? categorySearch.value.trim().toLowerCase() : (managementSearch ? managementSearch.value.trim().toLowerCase() : '');
@@ -1266,6 +1784,10 @@
     const data = getData();
     data.categories = data.categories.filter(function (item) { return item.id !== categoryId; });
     setData(data);
+    const appData = getAppData();
+    appData.categories = (appData.categories || []).filter(function (item) { return item.id !== categoryId; });
+    setAppData(appData);
+    syncCatalogToBackend(appData);
     const categorySearch = byId('superuserCategorySearch');
     const managementSearch = byId('superuserManagementSearch');
     const term = categorySearch ? categorySearch.value.trim().toLowerCase() : (managementSearch ? managementSearch.value.trim().toLowerCase() : '');
@@ -1332,7 +1854,7 @@
     const reasonLabel = item.status === 'Cancelled' ? 'Reason' : 'Service Time';
     const reasonValue = item.status === 'Cancelled' ? item.reason : item.serviceTime;
     const leftDateLabel = item.status === 'Completed' ? 'Completed' : 'Service Date';
-    return '<article class="superuser-booking-card"><div><h3>' + item.id + ' <span class="superuser-chip ' + chipClass(item.status) + '">' + item.status + '</span> <span class="superuser-chip ' + chipClass(item.paymentStatus) + '">' + item.paymentStatus + '</span></h3><p><strong>' + item.category + '</strong> - ' + item.serviceType + '</p><div class="superuser-booking-meta"><span>Customer: ' + item.customer + '</span><span>Provider: ' + providerDisplay + '</span><span>' + leftDateLabel + ': ' + item.serviceDate + '</span><span>' + reasonLabel + ': ' + reasonValue + '</span><span>Amount: ₹' + item.amount + '</span></div></div><div></div><div class="superuser-booking-action-col"><button class="superuser-inline-action" type="button" data-booking-id="' + item.id + '">◉ View Details</button></div></article>';
+    return '<article class="superuser-booking-card"><div><h3>' + item.id + ' <span class="superuser-chip ' + chipClass(item.status) + '">' + item.status + '</span> <span class="superuser-chip ' + chipClass(item.paymentStatus) + '">' + item.paymentStatus + '</span></h3><p><strong>' + item.category + '</strong> - ' + item.serviceType + '</p><div class="superuser-booking-meta"><span>Customer: ' + item.customer + '</span><span>Provider: ' + providerDisplay + '</span><span>' + leftDateLabel + ': ' + formatDisplayDate(item.serviceDate) + '</span><span>' + reasonLabel + ': ' + reasonValue + '</span><span>Amount: ₹' + item.amount + '</span></div></div><div></div><div class="superuser-booking-action-col"><button class="superuser-inline-action" type="button" data-booking-id="' + item.id + '">◉ View Details</button></div></article>';
   }
 
   function openBookingModal(bookingId) {
@@ -1350,6 +1872,7 @@
   function renderTicketsPage() {
     const statsGrid = byId('superuserTicketStatsGrid');
     if (!statsGrid) return;
+    syncSupportTicketsIntoSuperuserData();
     renderNotifications();
     const data = getData();
     const escalated = data.tickets.filter(function (item) { return item.status === 'Escalated'; }).length;
@@ -1374,7 +1897,7 @@
     ];
     wrapper.innerHTML = groups.map(function (group) {
       const items = data.tickets.filter(function (ticket) {
-        const hay = [ticket.id, ticket.customer, ticket.category, ticket.subject, ticket.userType].join(' ').toLowerCase();
+        const hay = [ticket.id, ticket.customer, ticket.provider, ticket.relatedCustomer, ticket.bookingId, ticket.category, ticket.service, ticket.subject, ticket.userType, ticket.internalRemarks].join(' ').toLowerCase();
         return ticket.status === group.key && (!term || hay.includes(term));
       });
       return '<section class="superuser-booking-section superuser-ticket-section ' + group.className + '"><div class="superuser-section-header"><span>' + group.icon + '</span><div><h2>' + group.title + '</h2><p>' + items.length + ' ' + group.subtitle + '</p></div></div><div class="superuser-ticket-card-list">' + (items.map(ticketCardMarkup).join('') || '<div class="superuser-empty-state">No tickets found in this section.</div>') + '</div></section>';
@@ -1385,7 +1908,10 @@
   }
 
   function ticketCardMarkup(ticket) {
-    return '<article class="superuser-ticket-card"><div><h3>' + ticket.id + ' <span class="superuser-chip ' + chipClass(ticket.status) + '">' + ticket.status + '</span> <span class="superuser-chip ' + chipClass(ticket.userType) + '">' + ticket.userType + '</span></h3><p>' + ticket.subject + '</p><div class="superuser-ticket-mini-meta"><span>Customer: ' + ticket.customer + '</span><span>Booking: ' + ticket.bookingId + '</span><span>Created: ' + ticket.created + '</span></div><div class="superuser-ticket-tags"><span class="superuser-chip warning">' + ticket.category + '</span>' + (ticket.attachments ? '<span class="superuser-chip refunded">📎 ' + ticket.attachments + ' attachment(s)</span>' : '') + '</div></div><div class="superuser-ticket-action-col"><button class="superuser-inline-action" type="button" data-ticket-id="' + ticket.id + '">◉ View Details</button></div></article>';
+    const raisedLabel = ticket.userType === 'Provider' ? 'Provider' : 'Customer';
+    const counterpartyLabel = ticket.userType === 'Provider' ? 'Provider' : 'Provider';
+    const providerName = ticket.provider || ticket.providerName || (ticket.userType === 'Provider' ? ticket.customer : 'ServeEase Provider');
+    return '<article class="superuser-ticket-card"><div><h3>' + ticket.id + ' <span class="superuser-chip ' + chipClass(ticket.status) + '">' + ticket.status + '</span> <span class="superuser-chip ' + chipClass(ticket.userType) + '">' + ticket.userType + '</span></h3><p>' + ticket.subject + '</p><div class="superuser-ticket-mini-meta"><span>' + raisedLabel + ': ' + ticket.customer + '</span><span>' + counterpartyLabel + ': ' + providerName + '</span>' + (ticket.relatedCustomer ? '<span>Related Customer: ' + ticket.relatedCustomer + '</span>' : '') + '<span>Booking: ' + ticket.bookingId + '</span><span>Created: ' + formatDisplayDate(ticket.created) + '</span></div><div class="superuser-ticket-tags"><span class="superuser-chip warning">' + ticket.category + '</span><span class="superuser-chip pending">' + (ticket.priority || 'Medium') + '</span>' + (ticket.service ? '<span class="superuser-chip completed">' + ticket.service + '</span>' : '') + ((ticket.attachments || (ticket.attachmentName && ticket.attachmentName !== 'No attachment')) ? '<span class="superuser-chip refunded">📎 ' + (ticket.attachments || 1) + ' attachment(s)</span>' : '') + '</div></div><div class="superuser-ticket-action-col"><button class="superuser-inline-action" type="button" data-ticket-id="' + ticket.id + '">◉ View Details</button></div></article>';
   }
 
   function openTicketModal(ticketId) {
@@ -1397,9 +1923,32 @@
     const badge = byId('superuserTicketModalStatusBadge');
     badge.className = 'superuser-chip ' + chipClass(ticket.status);
     badge.textContent = ticket.status;
-    byId('superuserTicketInfoGrid').innerHTML = '<div class="superuser-detail-field"><span>Created:</span><strong>' + ticket.created + '</strong></div><div class="superuser-detail-field"><span>Booking Ref:</span><strong>' + ticket.bookingId + '</strong></div><div class="superuser-detail-field"><span>User Type:</span><strong>' + ticket.userType + '</strong></div></div>';
-    byId('superuserTicketContactGrid').innerHTML = '<div class="superuser-detail-field"><span>Name:</span><strong>' + ticket.customer + '</strong></div><div class="superuser-detail-field"><span>Phone:</span><strong>' + ticket.phone + '</strong></div><div class="superuser-detail-field"><span>Email:</span><strong>' + ticket.email + '</strong></div>';
-    byId('superuserTicketDescriptionBlock').textContent = ticket.description;
+    const providerName = ticket.provider || ticket.providerName || (ticket.userType === 'Provider' ? ticket.customer : 'ServeEase Provider');
+    const history = Array.isArray(ticket.history) ? ticket.history : [];
+    const messages = Array.isArray(ticket.messages) ? ticket.messages : [];
+    byId('superuserTicketInfoGrid').innerHTML =
+      '<div class="superuser-detail-field"><span>Ticket ID:</span><strong>' + ticket.id + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Created:</span><strong>' + formatDisplayDate(ticket.created) + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Booking Ref:</span><strong>' + ticket.bookingId + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Raised By:</span><strong>' + ticket.userType + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Issue Category:</span><strong>' + ticket.category + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Service:</span><strong>' + (ticket.service || 'N/A') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Priority:</span><strong>' + (ticket.priority || 'Medium') + '</strong></div>';
+    byId('superuserTicketContactGrid').innerHTML =
+      '<div class="superuser-detail-field"><span>Requester Name:</span><strong>' + ticket.customer + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Provider:</span><strong>' + providerName + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Related Customer:</span><strong>' + (ticket.relatedCustomer || 'N/A') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Phone:</span><strong>' + (ticket.phone || 'N/A') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Email:</span><strong>' + (ticket.email || 'N/A') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Support Update:</span><strong>' + (ticket.supportUpdate || 'Awaiting support update') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Support Investigation:</span><strong>' + (ticket.internalRemarks || 'No internal remarks saved') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Attachment:</span><strong>' + (ticket.attachmentName && ticket.attachmentName !== 'No attachment' ? ticket.attachmentName : (ticket.attachments ? ticket.attachments + ' file(s)' : 'No attachment')) + '</strong></div>';
+    byId('superuserTicketDescriptionBlock').innerHTML =
+      '<p>' + (ticket.description || 'No description provided.') + '</p>' +
+      '<div class="ticket-history">' +
+      (history.length ? history.map(function (entry) { return '<div><strong>' + (entry.label || entry.status || 'Update') + '</strong><span>' + formatDisplayDateTime(entry.time || entry.updatedAt || '') + '</span></div>'; }).join('') : '<div><strong>No history yet</strong><span>Support history will appear after investigation.</span></div>') +
+      '</div>' +
+      (messages.length ? '<div class="ticket-history">' + messages.slice(-3).map(function (message) { return '<div><strong>' + (message.sender || message.senderType || 'Message') + '</strong><span>' + (message.text || '') + '</span></div>'; }).join('') + '</div>' : '');
     const solutionSection = byId('superuserTicketSolutionSection');
     const solutionInput = byId('superuserTicketSolutionInput');
     const solutionCounter = byId('superuserTicketSolutionCounter');
@@ -1463,7 +2012,8 @@
         issueCategory: ticket.category,
         subject: ticket.subject,
         description: ticket.description,
-        attachmentName: ticket.attachments ? "Attachment available" : "No attachment",
+        attachmentName: ticket.attachmentName || ticket.attachmentUrl || (ticket.attachments ? "Attachment available" : "No attachment"),
+        attachmentUrl: ticket.attachmentUrl || "",
         phone: ticket.phone || "",
         email: ticket.email || "",
         createdDate: ticket.created || "Just now",
@@ -1478,6 +2028,8 @@
     supportTicket.solution = solution || ticket.solution || supportTicket.solution || "";
     supportTicket.supportUpdate = supportTicket.solution || ticket.supportUpdate || supportTicket.supportUpdate || "Admin updated your ticket.";
     supportTicket.updatedAt = superuserStamp();
+    supportTicket.attachmentName = ticket.attachmentName || ticket.attachmentUrl || supportTicket.attachmentName || (ticket.attachments ? "Attachment available" : "No attachment");
+    supportTicket.attachmentUrl = ticket.attachmentUrl || supportTicket.attachmentUrl || "";
     if (!Array.isArray(supportTicket.messages)) supportTicket.messages = [];
     if (!Array.isArray(supportTicket.history)) supportTicket.history = [];
 
@@ -1506,7 +2058,7 @@
     supportData.notifications.unshift({
       id: "NT" + Date.now(),
       text: "Superuser moved " + ticket.id + " to " + ticket.status,
-      time: "Just now",
+      time: todayStamp(),
       isNew: true,
       ticketId: ticket.id
     });
@@ -1602,9 +2154,16 @@
 
   hydrateProviderApprovalsFromBackend(function () {
     syncPendingProviderApprovals();
-    renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
+    renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
+    updateManagementCounts();
+    renderDashboard();
+  });
+
+  hydrateVerifiedProvidersFromBackend(function () {
     renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     updateManagementCounts();
     renderDashboard();
   });
 })();
+
+
