@@ -152,6 +152,11 @@ function findCategoryById(categoryId) {
 }
 
 function providerRatingMarkup(provider) {
+  if (window.ServeEaseReviews) {
+    const stats = window.ServeEaseReviews.providerStats([provider && provider.id, provider && provider.providerId, provider && provider.name]);
+    if (!stats.total) return '<span class="new-provider-label">New Provider</span>';
+    return '⭐ ' + stats.average.toFixed(1) + ' (' + stats.total + ' reviews)';
+  }
   const reviews = Number(provider && provider.reviews) || 0;
   const rating = Number(provider && provider.rating) || 0;
   if (!reviews || !rating) return '<span class="new-provider-label">New Provider</span>';
@@ -159,6 +164,10 @@ function providerRatingMarkup(provider) {
 }
 
 function providerMetricRating(provider) {
+  if (window.ServeEaseReviews) {
+    const stats = window.ServeEaseReviews.providerStats([provider && provider.id, provider && provider.providerId, provider && provider.name]);
+    return stats.total ? { value: '⭐ ' + stats.average.toFixed(1), label: stats.total + ' Reviews' } : { value: 'New', label: 'No reviews yet' };
+  }
   const reviews = Number(provider && provider.reviews) || 0;
   const rating = Number(provider && provider.rating) || 0;
   return reviews && rating
@@ -167,6 +176,11 @@ function providerMetricRating(provider) {
 }
 
 function getProviderReviewItems(provider) {
+  if (window.ServeEaseReviews) {
+    return window.ServeEaseReviews.forProvider([provider && provider.id, provider && provider.providerId, provider && provider.name]).slice(-3).reverse().map(function (review) {
+      return { stars: review.rating, text: review.feedback || 'No feedback provided.', name: 'Verified customer', when: 'Recently' };
+    });
+  }
   const reviews = Number(provider && provider.reviews) || 0;
   if (!reviews) return [];
 
@@ -501,12 +515,30 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
 
     document.getElementById("proceedToBookingBtn").addEventListener("click", function () {
       if (!(session && session.role === "customer")) {
+        if (window.ServeEaseBookingDraft) {
+          const selectedService = document.getElementById("bookingService").value;
+          window.ServeEaseBookingDraft.save({
+            providerId: provider.id,
+            providerName: provider.name,
+            providerCategory: provider.category,
+            providerLocation: provider.location,
+            serviceName: selectedService,
+            selectedDate: selectedDate,
+            selectedTimeSlot: selectedSlot,
+            amount: provider.startingPrice,
+            servicePrice: provider.startingPrice,
+            platformFee: 50,
+            tax: 40,
+            totalAmount: provider.startingPrice + 50 + 40
+          });
+        }
         window.location.href = "login.html";
         return;
       }
       if (!selectedDate || !selectedSlot) return;
 
       const selectedService = document.getElementById("bookingService").value;
+      if (window.ServeEaseBookingDraft) window.ServeEaseBookingDraft.clear();
       window.location.href =
         `booking-checkout.html?provider=${encodeURIComponent(provider.id)}` +
         `&service=${encodeURIComponent(selectedService)}` +
@@ -623,9 +655,9 @@ function initProviderProfilePage() {
       <h2>Customer Reviews</h2>
       ${providerReviews.length ? providerReviews.map(function (review) {
         return `
-          <div class="review-item">
-            <div class="review-stars">${"*".repeat(review.stars)}${"-".repeat(5 - review.stars)}</div>
-            <p>"${review.text}"</p>
+          <div class="review-card">
+            <div class="review-stars" aria-label="${review.stars} out of 5 stars">${window.ServeEaseReviews.stars(review.stars)}</div>
+            <p class="review-feedback">"${review.text}"</p>
             <div class="review-meta"><strong>${review.name}</strong> - ${provider.subServices[0]} - ${review.when}</div>
           </div>
         `;
@@ -677,10 +709,11 @@ async function submitBookingCheckout() {
     return;
   }
 
-  const providerId = getQueryParam("provider");
-  const service = getQueryParam("service") || "Kitchen Cleaning";
-  const date = getQueryParam("date") || "2026-03-15";
-  const time = getQueryParam("time") || "10:00 AM - 12:00 PM";
+  const bookingDraft = window.ServeEaseBookingDraft && window.ServeEaseBookingDraft.read();
+  const providerId = (bookingDraft && bookingDraft.providerId) || getQueryParam("provider");
+  const service = (bookingDraft && bookingDraft.serviceName) || getQueryParam("service") || "Kitchen Cleaning";
+  const date = (bookingDraft && bookingDraft.selectedDate) || getQueryParam("date") || "2026-03-15";
+  const time = (bookingDraft && bookingDraft.selectedTimeSlot) || getQueryParam("time") || "10:00 AM - 12:00 PM";
 
   const provider = findProviderById(providerId);
   if (!provider) return;
@@ -730,10 +763,10 @@ async function submitBookingCheckout() {
     return;
   }
 
-  const servicePrice = provider.startingPrice;
-  const platformFee = 50;
-  const tax = 40;
-  const total = servicePrice + platformFee + tax;
+  const servicePrice = Number(bookingDraft && bookingDraft.servicePrice) || provider.startingPrice;
+  const platformFee = Number(bookingDraft && bookingDraft.platformFee) || 50;
+  const tax = Number(bookingDraft && bookingDraft.tax) || 40;
+  const total = Number(bookingDraft && (bookingDraft.totalAmount || bookingDraft.amount)) || servicePrice + platformFee + tax;
 
   const activePayment = document.querySelector(".payment-option.active-option");
   const paymentType = activePayment ? activePayment.dataset.paymentOption : "card";
@@ -876,6 +909,8 @@ async function submitBookingCheckout() {
   customerModuleData.payments.unshift(paymentEntry);
   localStorage.setItem(customerModuleKey, JSON.stringify(customerModuleData));
 
+  if (window.ServeEaseBookingDraft) window.ServeEaseBookingDraft.clear();
+
   window.location.href =
     "booking-request-submitted.html" +
     `?bookingRef=${encodeURIComponent(bookingEntry.id)}` +
@@ -896,10 +931,15 @@ function initBookingCheckoutPage() {
     return;
   }
 
-  const providerId = getQueryParam("provider");
-  const service = getQueryParam("service") || "Kitchen Cleaning";
-  const date = getQueryParam("date") || "2026-03-15";
-  const time = getQueryParam("time") || "10:00 AM - 12:00 PM";
+  const bookingDraft = window.ServeEaseBookingDraft && window.ServeEaseBookingDraft.read();
+  if (bookingDraft && window.ServeEaseBookingDraft.hasCheckoutRedirect()) {
+    window.ServeEaseBookingDraft.clearRedirect();
+  }
+
+  const providerId = (bookingDraft && bookingDraft.providerId) || getQueryParam("provider");
+  const service = (bookingDraft && bookingDraft.serviceName) || getQueryParam("service") || "Kitchen Cleaning";
+  const date = (bookingDraft && bookingDraft.selectedDate) || getQueryParam("date") || "2026-03-15";
+  const time = (bookingDraft && bookingDraft.selectedTimeSlot) || getQueryParam("time") || "10:00 AM - 12:00 PM";
 
   const provider = findProviderById(providerId);
   if (!provider) {
@@ -909,10 +949,10 @@ function initBookingCheckoutPage() {
 
   const category = findCategoryById(provider.category);
   const serviceName = service;
-  const servicePrice = provider.startingPrice;
-  const platformFee = 50;
-  const tax = 40;
-  const total = servicePrice + platformFee + tax;
+  const servicePrice = Number(bookingDraft && bookingDraft.servicePrice) || provider.startingPrice;
+  const platformFee = Number(bookingDraft && bookingDraft.platformFee) || 50;
+  const tax = Number(bookingDraft && bookingDraft.tax) || 40;
+  const total = Number(bookingDraft && (bookingDraft.totalAmount || bookingDraft.amount)) || servicePrice + platformFee + tax;
 
   const breadcrumbs = document.getElementById("checkoutBreadcrumbs");
   if (breadcrumbs) {
@@ -1124,6 +1164,7 @@ function initBookingCheckoutPage() {
   const cancelBtn = document.getElementById("cancelCheckoutBtn");
   if (cancelBtn) {
     cancelBtn.addEventListener("click", function () {
+      if (window.ServeEaseBookingDraft) window.ServeEaseBookingDraft.clear();
       window.location.href = `provider-profile.html?provider=${encodeURIComponent(provider.id)}`;
     });
   }

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Booking } from '../bookings/booking.entity';
 import { BookingsRepository } from '../bookings/bookings.repository';
-import { BOOKING_WINDOW_DAYS, WEEKDAYS, Weekday } from './availability.constants';
+import { BOOKING_WINDOW_DAYS, MIN_BOOKING_NOTICE_HOURS, WEEKDAYS, Weekday } from './availability.constants';
 import { AvailableDate, DateOverride, ProviderAvailability, StoredWeeklySchedule, WeeklySchedule } from './availability.entity';
 import { AvailabilityRepository } from './availability.repository';
 import { UpsertDateOverrideDto } from './dto/upsert-date-override.dto';
@@ -68,13 +68,15 @@ export class AvailabilityService {
     if (!providerId?.trim()) throw new BadRequestException('providerId is required to create or reschedule a booking.');
     this.validateDate(date);
     if (!this.windowDates(this.today()).includes(date)) throw new BadRequestException(`Bookings are limited to the next ${BOOKING_WINDOW_DAYS} days.`);
-    if (!this.availableSlotsForDate(providerId, date, excludeBookingId).includes(this.normalizeSlot(time))) throw new BadRequestException('The selected slot is unavailable.');
+    const normalizedSlot = this.normalizeSlot(time);
+    if (!this.meetsMinimumBookingNotice(date, normalizedSlot)) throw new BadRequestException(`Bookings require at least ${MIN_BOOKING_NOTICE_HOURS} hours notice.`);
+    if (!this.availableSlotsForDate(providerId, date, excludeBookingId).includes(normalizedSlot)) throw new BadRequestException('The selected slot is unavailable.');
   }
 
   private availableSlotsForDate(providerId: string, date: string, excludeBookingId?: string): string[] {
     const slots = this.applyOverride(this.slotsForDate(providerId, date), this.repository.findOverride(providerId, date));
     const booked = new Set(this.bookings.findByProviderAndDate(providerId, date).filter((booking) => booking.id !== excludeBookingId).map((booking) => this.normalizeSlot(booking.time)));
-    return slots.filter((slot) => !booked.has(slot));
+    return slots.filter((slot) => !booked.has(slot) && this.meetsMinimumBookingNotice(date, slot));
   }
 
   private applyOverride(slots: string[], override?: DateOverride): string[] {
@@ -95,6 +97,16 @@ export class AvailabilityService {
         slots: dayOfWeek === 'Saturday' || dayOfWeek === 'Sunday' ? [] : ['09:00-12:00', '13:00-17:00'],
       })),
     });
+  }
+  private meetsMinimumBookingNotice(date: string, slot: string): boolean {
+    if (date !== this.today()) return true;
+    const start = this.normalizeSlot(slot).split('-')[0];
+    const [hour, minute] = start.split(':').map(Number);
+    const slotStart = this.parseDate(date);
+    slotStart.setHours(hour, minute, 0, 0);
+    const minimumStart = new Date();
+    minimumStart.setHours(minimumStart.getHours() + MIN_BOOKING_NOTICE_HOURS);
+    return slotStart.getTime() >= minimumStart.getTime();
   }
   private slotsForDate(providerId: string, date: string): string[] { return this.scheduleOrThrow(providerId).days.find((day) => day.dayOfWeek === this.weekdayForDate(date))?.slots ?? []; }
   private scheduleOrThrow(providerId: string): StoredWeeklySchedule { this.validateProviderId(providerId); const schedule = this.repository.findSchedule(providerId); if (!schedule) throw new NotFoundException(`Weekly schedule for provider "${providerId}" was not found.`); return schedule; }

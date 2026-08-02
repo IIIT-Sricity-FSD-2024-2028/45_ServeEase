@@ -417,6 +417,33 @@
     const empty = byId("myTicketsEmptyState");
     const modal = byId("ticketDetailBackdrop");
     const modalBody = byId("ticketDetailBody");
+    const closeButton = byId("closeTicketDetailModal");
+    let ticketDetailTrigger = null;
+
+    function handleTicketDetailEscape(event) {
+      if (event.key === "Escape" && modal && !modal.classList.contains("hidden")) closeTicketDetailModal();
+    }
+
+    function openTicketDetailModal(ticket, trigger) {
+      if (!modal || !modalBody) return;
+      ticketDetailTrigger = trigger || document.activeElement;
+      modalBody.innerHTML = ticketDetailsMarkup(ticket, false);
+      modal.classList.remove("hidden");
+      document.body.classList.add("modal-open");
+      document.removeEventListener("keydown", handleTicketDetailEscape);
+      document.addEventListener("keydown", handleTicketDetailEscape);
+      if (closeButton) closeButton.focus();
+    }
+
+    function closeTicketDetailModal() {
+      if (!modal) return;
+      const trigger = ticketDetailTrigger;
+      modal.classList.add("hidden");
+      document.body.classList.remove("modal-open");
+      document.removeEventListener("keydown", handleTicketDetailEscape);
+      ticketDetailTrigger = null;
+      if (trigger && document.contains(trigger)) trigger.focus();
+    }
 
     function draw() {
       const term = (search ? search.value : "").trim().toLowerCase();
@@ -438,15 +465,26 @@
       if (empty) empty.classList.toggle("hidden", tickets.length !== 0);
     }
 
-    list.addEventListener("click", function (event) {
-      const button = event.target.closest("[data-ticket-detail]");
-      if (!button || !modal || !modalBody) return;
-      const ticket = getStore().tickets.find(function (item) { return item.ticketId === button.dataset.ticketDetail; });
-      if (!ticket) return;
-      modalBody.innerHTML = ticketDetailsMarkup(ticket, false);
-      modal.classList.remove("hidden");
-    });
-    if (byId("closeTicketDetailModal")) byId("closeTicketDetailModal").onclick = function () { modal.classList.add("hidden"); };
+    if (!list.dataset.ticketDetailsBound) {
+      list.addEventListener("click", function (event) {
+        const button = event.target.closest("[data-ticket-detail]");
+        if (!button) return;
+        const ticket = getStore().tickets.find(function (item) { return item.ticketId === button.dataset.ticketDetail; });
+        if (!ticket) return;
+        openTicketDetailModal(ticket, button);
+      });
+      list.dataset.ticketDetailsBound = "true";
+    }
+    if (closeButton && !closeButton.dataset.ticketDetailsBound) {
+      closeButton.addEventListener("click", closeTicketDetailModal);
+      closeButton.dataset.ticketDetailsBound = "true";
+    }
+    if (modal && !modal.dataset.ticketDetailsBound) {
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) closeTicketDetailModal();
+      });
+      modal.dataset.ticketDetailsBound = "true";
+    }
     if (search) search.addEventListener("input", draw);
     syncFromApi("customer", draw);
     draw();
@@ -591,4 +629,3 @@
     renderAdminTicketsPage();
   });
 })();
-

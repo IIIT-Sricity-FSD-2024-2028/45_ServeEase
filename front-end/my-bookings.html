@@ -74,15 +74,30 @@
     </div>
   </main>
 
-  <div class="modal-backdrop hidden" id="bookingModalBackdrop">
-    <div class="modal-card">
+  <div class="modal-backdrop hidden" id="bookingModalBackdrop">
+    <div class="modal-card booking-details-modal">
       <div class="modal-head">
         <h2 id="bookingModalTitle">Booking Details</h2>
         <button type="button" class="close-modal-btn" id="closeBookingModal">×</button>
       </div>
       <div id="bookingModalContent"></div>
     </div>
-  </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="reviewModalBackdrop">
+    <div class="modal-card review-modal-card" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+      <div class="modal-head"><h2 id="reviewModalTitle">Rate Your Experience</h2><button type="button" class="close-modal-btn" id="closeReviewModal" aria-label="Close review form">&times;</button></div>
+      <form id="reviewForm">
+        <div class="review-star-picker" role="radiogroup" aria-label="Rating">
+          <button type="button" data-review-star="1" aria-label="1 star">☆</button><button type="button" data-review-star="2" aria-label="2 stars">☆</button><button type="button" data-review-star="3" aria-label="3 stars">☆</button><button type="button" data-review-star="4" aria-label="4 stars">☆</button><button type="button" data-review-star="5" aria-label="5 stars">☆</button>
+        </div>
+        <p class="review-validation hidden" id="reviewValidation">Please select a rating.</p>
+        <label class="review-feedback-label" for="reviewFeedback">Feedback <span>(optional)</span></label>
+        <textarea id="reviewFeedback" rows="4" placeholder="Share your experience"></textarea>
+        <div class="review-modal-actions"><button type="button" class="btn btn-outline" id="cancelReviewBtn">Cancel</button><button type="submit" class="btn btn-primary">Submit Review</button></div>
+      </form>
+    </div>
+  </div>
 
   <div class="modal-backdrop hidden" id="cancelConfirmModalBackdrop">
     <div class="modal-card" style="max-width: 400px; text-align: center; padding: 32px 24px;">
@@ -139,6 +154,7 @@
     </div>
   </footer>
   <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/reviews.js"></script>
   <script src="JavaScript/customer.js"></script>
   <script src="JavaScript/tickets.js"></script>
 <script src="JavaScript/search.js"></script>

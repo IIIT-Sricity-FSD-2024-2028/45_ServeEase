@@ -83,6 +83,10 @@
   margin-bottom: 24px;
 }
 
+.provider-services-layout {
+  align-items: start;
+}
+
 .provider-service-grid {
   display: grid;
   gap: 16px;
@@ -365,7 +369,7 @@
 
 .provider-availability-manager {
   display: grid;
-  gap: 28px;
+  gap: 24px;
 }
 
 .provider-availability-section-head {
@@ -404,8 +408,8 @@
 
 .provider-weekday-grid {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .provider-weekday-card {
@@ -413,7 +417,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(24, 45, 81, 0.04);
-  padding: 16px;
+  min-width: 0;
+  padding: 17px;
 }
 
 .provider-weekday-head,
@@ -452,8 +457,8 @@
 
 .provider-weekly-slots {
   display: grid;
-  gap: 8px;
-  margin: 15px 0 12px;
+  gap: 9px;
+  margin: 14px 0 8px;
   min-height: 26px;
 }
 
@@ -463,9 +468,11 @@
   border: 1px solid #e5ebf3;
   border-radius: 10px;
   display: grid;
-  gap: 6px;
-  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
-  padding: 7px;
+  column-gap: 7px;
+  grid-template-columns: 16px minmax(96px, 1fr) 10px minmax(96px, 1fr) 28px;
+  min-height: 50px;
+  min-width: 0;
+  padding: 8px 9px;
 }
 
 .provider-weekly-slot.is-disabled {
@@ -473,12 +480,33 @@
 }
 
 .provider-weekly-slot input[type="time"] {
-  background: transparent;
-  border: 0;
+  background: #fff;
+  border: 1px solid #dce5f0;
+  box-sizing: border-box;
+  border-radius: 7px;
   color: #22395d;
+  flex: 0 0 auto;
   font: inherit;
-  min-width: 0;
-  padding: 2px;
+  height: 32px;
+  min-width: 96px;
+  padding: 2px 6px;
+  width: 100%;
+}
+
+.provider-weekly-slot input[type="time"]::-webkit-datetime-edit {
+  min-width: 4.8em;
+  padding: 0;
+}
+
+.provider-weekly-slot input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  margin-left: 4px;
+  opacity: 0.78;
+}
+
+.provider-weekly-slot input[type="time"]:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
 }
 
 .provider-weekly-slot input[type="time"]:focus-visible,
@@ -500,7 +528,12 @@
   cursor: pointer;
   font-size: 19px;
   line-height: 1;
+  align-items: center;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
   padding: 2px;
+  width: 28px;
 }
 
 .provider-weekly-slot button:hover,
@@ -515,7 +548,8 @@
   cursor: pointer;
   font-size: 13px;
   font-weight: 800;
-  padding: 3px 0;
+  min-height: 34px;
+  padding: 5px 0 2px;
   text-align: left;
 }
 
@@ -526,19 +560,27 @@
 
 .provider-override-section {
   border-top: 1px solid #e6ebf2;
-  padding-top: 27px;
+  padding-top: 24px;
 }
 
 .availability-calendar-toolbar {
   align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  margin-bottom: 12px;
+  max-width: 390px;
+  width: 100%;
 }
 
 .availability-calendar-toolbar strong {
   color: #22395d;
   font-size: 15px;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .calendar-nav-btn {
@@ -555,8 +597,10 @@
 .availability-calendar-weekdays,
 .availability-calendar-grid {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  max-width: 390px;
+  width: 100%;
 }
 
 .availability-calendar-weekdays {
@@ -564,7 +608,7 @@
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   text-align: center;
   text-transform: uppercase;
 }
@@ -572,7 +616,7 @@
 .availability-calendar-day,
 .availability-calendar-blank {
   aspect-ratio: 1;
-  min-height: 34px;
+  min-height: 30px;
 }
 
 .availability-calendar-day {
@@ -620,9 +664,9 @@
   border: 1px solid #dfe6ef;
   border-radius: 16px;
   display: grid;
-  gap: 16px;
-  margin-top: 20px;
-  padding: 20px;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 18px;
 }
 
 .availability-drawer-head span {
@@ -643,12 +687,13 @@
   border-radius: 10px;
   color: #22395d;
   font-size: 14px;
-  padding: 11px 12px;
+  min-height: 42px;
+  padding: 10px 12px;
 }
 
 .availability-override-slots {
   display: grid;
-  gap: 9px;
+  gap: 8px;
 }
 
 .availability-override-slot {
@@ -662,7 +707,8 @@
   font-weight: 700;
   gap: 10px;
   justify-content: space-between;
-  padding: 11px 12px;
+  min-height: 42px;
+  padding: 10px 12px;
 }
 
 .availability-override-slot span {
@@ -686,8 +732,16 @@
   justify-content: flex-end;
 }
 
+.availability-drawer-actions .btn,
 .availability-drawer-actions .secondary-btn {
+  align-items: center;
+  border-radius: 10px;
+  display: inline-flex;
+  font-size: 14px;
+  justify-content: center;
+  min-height: 42px;
   margin-top: 0;
+  padding: 0 18px;
   width: auto;
 }
 
@@ -755,7 +809,7 @@
   }
 
   .provider-weekly-slot {
-    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
+    grid-template-columns: 16px minmax(108px, 1fr) 10px minmax(108px, 1fr) 28px;
   }
 
   .availability-calendar-weekdays {
@@ -766,8 +820,31 @@
     flex-direction: column;
   }
 
+  .availability-drawer-actions .btn,
   .availability-drawer-actions .secondary-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .provider-weekday-card {
+    padding: 15px;
+  }
+
+  .provider-weekly-slot {
+    column-gap: 4px;
+    grid-template-columns: 16px minmax(90px, 1fr) 8px minmax(90px, 1fr) 24px;
+    padding: 7px;
+  }
+
+  .provider-weekly-slot input[type="time"] {
+    min-width: 90px;
+    padding-inline: 4px;
+  }
+
+  .provider-weekly-slot button {
+    height: 24px;
+    width: 24px;
   }
 }
 

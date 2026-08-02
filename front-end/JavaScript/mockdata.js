@@ -417,7 +417,7 @@
           const normalizedCategoryId = categoryId === "cleaning-services" || categoryId === "home-cleaning" ? "home-cleaning" : categoryId;
           const cityId = Number(service.cityId || data.profile.cityId || 1);
           const cityName = service.cityName || data.profile.cityName || service.location || data.profile.location || "Chennai";
-          const baseId = data.profile.providerCatalogId || String(data.profile.organisationName || data.profile.fullName || "provider")
+          const baseId = data.profile.providerBaseId || data.profile.providerCatalogId || String(data.profile.organisationName || data.profile.fullName || "provider")
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-+|-+$/g, "");

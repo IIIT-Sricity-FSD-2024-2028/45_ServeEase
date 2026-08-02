@@ -141,3 +141,43 @@ img {
   width: 42px;
   height: 42px;
 }
+
+/* Shared review presentation */
+.review-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #e3a008;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.review-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #12284a;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.review-rating .review-stars {
+  font-size: 19px;
+}
+
+.review-feedback {
+  color: #304867;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.review-meta {
+  margin-top: 10px;
+  color: #667a97;
+  font-size: 13px;
+  line-height: 1.4;
+}

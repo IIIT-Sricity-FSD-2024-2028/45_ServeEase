@@ -335,20 +335,9 @@
   font-size: 14px;
 }
 
-.review-item {
-  padding: 14px 0;
+.review-card {
+  padding: 18px 0;
   border-top: 1px solid #e8edf5;
-}
-
-.review-stars {
-  color: #f5b400;
-  margin-bottom: 8px;
-}
-
-.review-meta {
-  margin-top: 10px;
-  color: #627690;
-  font-size: 14px;
 }
 
 .view-all-btn,

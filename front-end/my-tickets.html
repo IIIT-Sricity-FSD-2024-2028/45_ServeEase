@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="CSS/dashboard.css" />
 </head>
 <body>
-  <header class="dashboard-topbar">
+  <header class="dashboard-topbar my-tickets-topbar">
     <a class="dashboard-brand" href="index.html"><div class="brand-icon">SE</div><span>ServeEase</span></a>
     <div class="dashboard-search"><input type="text" id="myTicketSearch" placeholder="Search tickets..." /></div>
     <div class="dashboard-topbar-actions">
@@ -31,10 +31,10 @@
   </main>
 
   <div class="modal-backdrop hidden" id="ticketDetailBackdrop">
-    <div class="modal-card ticket-modal-card">
+    <div class="modal-card ticket-modal-card" role="dialog" aria-modal="true" aria-labelledby="ticketDetailTitle">
       <div class="modal-head">
-        <h2>Ticket Details</h2>
-        <button type="button" class="close-modal-btn" id="closeTicketDetailModal">×</button>
+        <h2 id="ticketDetailTitle">Ticket Details</h2>
+        <button type="button" class="close-modal-btn" id="closeTicketDetailModal" aria-label="Close ticket details">&times;</button>
       </div>
       <div id="ticketDetailBody"></div>
     </div>

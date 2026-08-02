@@ -301,7 +301,9 @@ function seedDefaultUsers() {
     if (existingIndex !== -1) {
       mergedUsers[existingIndex] = {
         ...mergedUsers[existingIndex],
-        ...defaultUser
+        ...defaultUser,
+        providerBaseId: mergedUsers[existingIndex].providerBaseId || defaultUser.providerCatalogId,
+        providerCatalogId: mergedUsers[existingIndex].providerCatalogId || defaultUser.providerCatalogId
       };
     } else {
       mergedUsers.push(defaultUser);
@@ -579,10 +581,10 @@ function setupLoginForm() {
       });
 
       if (roleMismatchUser) {
-        showText("loginFormError", "Credentials are correct, but the selected role is different. Please choose the " + roleMismatchUser.role + " tab.");
+        showText("loginFormError", "Invalid email or password.");
         logServeEaseActivity("login_role_mismatch", activeRole + " " + email);
       } else {
-        showText("loginFormError", "Invalid credentials for selected role.");
+        showText("loginFormError", "Invalid email or password.");
         logServeEaseActivity("login_failed", activeRole + " " + email);
       }
       return;
@@ -600,7 +602,11 @@ function setupLoginForm() {
 
     setTimeout(function () {
       if (matchedUser.role === "customer") {
-        window.location.href = "customer-dashboard.html";
+        if (window.ServeEaseBookingDraft && window.ServeEaseBookingDraft.hasPendingBooking()) {
+          window.location.href = "booking-checkout.html";
+        } else {
+          window.location.href = "customer-dashboard.html";
+        }
       } else if (matchedUser.role === "provider") {
         window.location.href = "provider-dashboard.html";
       } else if (matchedUser.role === "support") {
@@ -925,11 +931,23 @@ function setupSignupForm() {
       "signupSuccess",
       role === "provider"
         ? "Registration submitted for superuser approval. You can login after approval."
-        : "Registration successful. Redirecting to login..."
+        : "Registration successful. Signing you in..."
     );
 
     setTimeout(function () {
-      window.location.href = "login.html";
+      if (role === "customer") {
+        // Reuse the same session creation path used by normal login.
+        setSession(newUser);
+        const hasPendingBooking = window.ServeEaseBookingDraft &&
+          window.ServeEaseBookingDraft.hasPendingBooking() &&
+          window.ServeEaseBookingDraft.hasCheckoutRedirect();
+        window.location.href = hasPendingBooking
+          ? "booking-checkout.html"
+          : "customer-dashboard.html";
+      } else {
+        // Provider accounts still require approval before login.
+        window.location.href = "login.html";
+      }
     }, 1000);
   });
 }
@@ -965,16 +983,6 @@ function setupForgotPasswordForm() {
 
     if (!valid) return;
 
-    const data = getData();
-    const userExists = data.users.some(function (user) {
-      return user.email.toLowerCase() === email.toLowerCase();
-    });
-
-    if (!userExists) {
-      showText("forgotFormError", "No account found with this email.");
-      return;
-    }
-
     const resetCard = document.getElementById("forgotResetCard");
     const successCard = document.getElementById("forgotSuccessCard");
 
@@ -992,3 +1000,43 @@ setupLoginForm();
 setupSignupTabs();
 setupSignupForm();
 setupForgotPasswordForm();
+
+function setupPasswordVisibility() {
+  const passwordInputs = document.querySelectorAll("#loginPassword, #password, #confirmPassword");
+  const eyeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>';
+  const eyeSlashIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 3 18 18"></path><path d="M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17.5 17.5 0 0 1-3.1 3.8M6.1 6.7C3.8 8.2 2.5 12 2.5 12s3.5 6 9.5 6c1.2 0 2.3-.2 3.3-.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg>';
+
+  passwordInputs.forEach(function (input) {
+    if (!input || input.dataset.passwordToggleReady) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "password-input-wrap";
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "password-toggle";
+    toggle.setAttribute("aria-label", "Show password");
+    toggle.setAttribute("aria-pressed", "false");
+
+    function updateToggle() {
+      const isVisible = input.type === "text";
+      toggle.innerHTML = isVisible ? eyeSlashIcon : eyeIcon;
+      toggle.setAttribute("aria-label", isVisible ? "Hide password" : "Show password");
+      toggle.setAttribute("aria-pressed", String(isVisible));
+    }
+
+    toggle.addEventListener("click", function () {
+      input.type = input.type === "password" ? "text" : "password";
+      updateToggle();
+      input.focus({ preventScroll: true });
+    });
+
+    wrapper.appendChild(toggle);
+    input.dataset.passwordToggleReady = "true";
+    updateToggle();
+  });
+}
+
+setupPasswordVisibility();

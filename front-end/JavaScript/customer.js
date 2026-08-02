@@ -1075,6 +1075,75 @@
     const upcomingHeading = document.getElementById("upcomingBookingsHeading");
     const historySection = document.getElementById("bookingHistorySection");
     const historyHeading = document.getElementById("bookingHistoryHeading");
+    const reviewApi = window.ServeEaseReviews;
+    let reviewBooking = null;
+    let selectedRating = 0;
+
+    if (reviewApi) reviewApi.seedCompletedBookings(data.bookings, (session && session.userId) || "CUS001");
+
+    function reviewFor(booking) {
+      return reviewApi ? reviewApi.find(booking.id) : null;
+    }
+
+    function reviewCell(booking) {
+      const review = reviewFor(booking);
+      return review
+        ? `<div class="booking-review-cell"><span class="review-rating" aria-label="${review.rating} out of 5 stars"><span class="review-stars">${reviewApi.stars(review.rating)}</span><span class="booking-rating-value">${Number(review.rating).toFixed(1)}</span></span><button class="table-link-btn edit-review-btn" type="button" data-edit-review="${booking.id}">Edit Review</button></div>`
+        : `<button class="table-link-btn" type="button" data-rate-booking="${booking.id}">⭐ Rate Service</button>`;
+    }
+
+    function closeReviewModal() {
+      const backdrop = document.getElementById("reviewModalBackdrop");
+      if (backdrop) backdrop.classList.add("hidden");
+      reviewBooking = null;
+    }
+
+    function updateStarPicker() {
+      document.querySelectorAll("[data-review-star]").forEach(function (star) {
+        const active = Number(star.dataset.reviewStar) <= selectedRating;
+        star.textContent = active ? "★" : "☆";
+        star.setAttribute("aria-checked", String(Number(star.dataset.reviewStar) === selectedRating));
+      });
+    }
+
+    function openReviewModal(booking) {
+      const backdrop = document.getElementById("reviewModalBackdrop");
+      if (!backdrop || !booking) return;
+      const existing = reviewFor(booking);
+      reviewBooking = booking;
+      selectedRating = existing ? Number(existing.rating) : 0;
+      document.getElementById("reviewFeedback").value = existing ? existing.feedback || "" : "";
+      document.getElementById("reviewModalTitle").textContent = existing ? "Edit Your Review" : "Rate Your Experience";
+      document.querySelector("#reviewForm button[type=submit]").textContent = existing ? "Save Changes" : "Submit Review";
+      document.getElementById("reviewValidation").classList.add("hidden");
+      updateStarPicker();
+      backdrop.classList.remove("hidden");
+      document.querySelector("[data-review-star]").focus();
+    }
+
+    function setupReviewModal() {
+      const backdrop = document.getElementById("reviewModalBackdrop");
+      const form = document.getElementById("reviewForm");
+      if (!backdrop || !form || backdrop.dataset.reviewBound) return;
+      document.getElementById("closeReviewModal").addEventListener("click", closeReviewModal);
+      document.getElementById("cancelReviewBtn").addEventListener("click", closeReviewModal);
+      backdrop.addEventListener("click", function (event) { if (event.target === backdrop) closeReviewModal(); });
+      document.addEventListener("keydown", function (event) { if (event.key === "Escape" && !backdrop.classList.contains("hidden")) closeReviewModal(); });
+      document.querySelectorAll("[data-review-star]").forEach(function (star) {
+        star.addEventListener("click", function () { selectedRating = Number(star.dataset.reviewStar); updateStarPicker(); });
+      });
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const validation = document.getElementById("reviewValidation");
+        if (!selectedRating || !reviewBooking || !reviewApi) { validation.classList.remove("hidden"); return; }
+        const reviewPayload = { bookingId: reviewBooking.id, providerId: reviewBooking.providerId || reviewApi.providerKey(reviewBooking.provider), customerId: reviewBooking.customerId || (session && session.userId) || "CUS001", rating: selectedRating, feedback: document.getElementById("reviewFeedback").value };
+        const saved = reviewFor(reviewBooking) ? reviewApi.update(reviewPayload) : reviewApi.submit(reviewPayload);
+        if (!saved) { validation.textContent = "Unable to save this review. Please try again."; validation.classList.remove("hidden"); return; }
+        closeReviewModal();
+        renderBookings();
+      });
+      backdrop.dataset.reviewBound = "true";
+    }
 
     function renderTabs() {
       tabs.innerHTML = categories.map(category => {
@@ -1164,7 +1233,7 @@
           <td>${formatPrice(item.amount)}</td>
           <td>${getBookingReference(item)}</td>
           <td><span class="status-pill ${statusClass(item.status)}">${item.status}</span></td>
-          <td><span class="status-pill ${statusClass(item.feedback || item.status)}">${item.feedback || item.status}</span></td>
+          <td>${item.category === "Completed" ? reviewCell(item) : "—"}</td>
           <td>
             <button class="table-link-btn" data-view-booking="${item.id}">View</button>
             <button class="table-link-btn" data-raise-ticket="${item.id}">Raise Ticket</button>
@@ -1180,6 +1249,18 @@
         button.addEventListener("click", function () {
           const booking = data.bookings.find(item => item.id === this.dataset.viewBooking);
           openBookingModal(booking);
+        });
+      });
+
+      document.querySelectorAll("[data-rate-booking]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          openReviewModal(data.bookings.find(function (item) { return item.id === button.dataset.rateBooking; }));
+        });
+      });
+
+      document.querySelectorAll("[data-edit-review]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          openReviewModal(data.bookings.find(function (item) { return item.id === button.dataset.editReview; }));
         });
       });
 
@@ -1252,6 +1333,7 @@
     renderTabs();
     renderBookings();
     setupBookingModal();
+    setupReviewModal();
 
     syncCustomerBookingsFromBackend(function (latestData) {
       data.bookings = latestData.bookings || [];
@@ -1285,6 +1367,10 @@
     if (!backdrop || !title || !content || !booking) return;
 
     title.textContent = "Booking Details";
+    const review = window.ServeEaseReviews && window.ServeEaseReviews.find(booking.id);
+    const customerReview = String(booking.category || booking.status).toLowerCase() === "completed"
+      ? `<div class="info-box booking-review-section"><strong>Customer Review</strong>${review ? `<div class="review-rating"><span class="review-stars">${window.ServeEaseReviews.stars(review.rating)}</span><span class="booking-rating-value">${Number(review.rating).toFixed(1)}</span></div><div class="review-feedback"><strong>Feedback:</strong><div>${review.feedback || "No review provided."}</div></div>` : "<div>No review submitted.</div>"}</div>`
+      : "";
     content.innerHTML = `
       <div class="info-grid">
         <div class="info-box">
@@ -1310,6 +1396,7 @@
           <strong>Provider Contact</strong>
           <div>+91 98765 43210</div>
         </div>
+        ${customerReview}
       </div>
     `;
     backdrop.classList.remove("hidden");

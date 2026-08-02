@@ -43,6 +43,15 @@
     localStorage.setItem(providerDataKey, JSON.stringify(data));
   }
 
+  function customerReviewForBooking(booking) {
+    return window.ServeEaseReviews ? window.ServeEaseReviews.find(booking && booking.id) : null;
+  }
+
+  function providerReviewStats(profile) {
+    if (!window.ServeEaseReviews) return { total: 0, average: 0 };
+    return window.ServeEaseReviews.providerStats([profile.providerId, profile.providerCatalogId, profile.providerBaseId, profile.organisationName]);
+  }
+
   function getCustomerModuleKeyForBooking(booking) {
     const email = String(booking && (booking.customerEmail || booking.email) || "").toLowerCase();
     if (!email) return "";
@@ -740,7 +749,7 @@
 
     const store = JSON.parse(localStorage.getItem("serveEaseData") || "{}");
     if (!Array.isArray(store.providers)) store.providers = [];
-    const baseProviderId = data.profile.providerCatalogId || slugify(data.profile.organisationName || data.profile.fullName);
+    const baseProviderId = data.profile.providerBaseId || data.profile.providerCatalogId || slugify(data.profile.organisationName || data.profile.fullName);
 
     store.providers = store.providers.filter(function (provider) {
       if (!provider || isRemovedProviderRecord(provider)) return false;
@@ -944,13 +953,15 @@
     const cityName = (providerUser && providerUser.cityName) || (session && session.cityName) || profile.cityName || getCityById(cityId).name;
     const location = cityName;
     const providerId = (providerUser && providerUser.id) || (session && session.userId) || profile.providerId || "PRO001";
-    const providerCatalogId = (providerUser && providerUser.providerCatalogId) || (session && session.providerCatalogId) || profile.providerCatalogId || "";
+    const providerCatalogId = profile.providerCatalogId || (providerUser && providerUser.providerCatalogId) || (session && session.providerCatalogId) || "";
+    const providerBaseId = profile.providerBaseId || (providerUser && providerUser.providerCatalogId) || (session && session.providerCatalogId) || providerCatalogId;
     const profilePhoto = profile.profilePhoto || getProviderProfilePhoto({ providerId: providerId });
     const accountCreated = (providerUser && (providerUser.registrationDate || providerUser.createdAt || providerUser.submittedDate)) || profile.accountCreated || "Not available";
 
     return {
       providerId: providerId,
       providerCatalogId: providerCatalogId,
+      providerBaseId: providerBaseId,
       profilePhoto: profilePhoto,
       fullName: providerName,
       email: providerEmail,
@@ -1409,7 +1420,7 @@
   function initProviderAvailabilityManagement(panel, data) {
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const profile = data.profile || {};
-    const providerId = profile.providerCatalogId || profile.providerId || (session && session.providerCatalogId) || (session && session.userId);
+    const providerId = resolveCanonicalProviderId(data);
     let weekly = {};
     let overrides = [];
     let availability = { dates: [] };
@@ -1418,6 +1429,74 @@
     let overrideDraft = null;
     let scheduleMessage = '';
     let scheduleError = '';
+    let weeklyDirty = false;
+    let overrideDirty = false;
+    let weeklySaving = false;
+    let overrideSaving = false;
+    let overrideError = '';
+
+    window.addEventListener('beforeunload', function (event) {
+      if (!weeklyDirty && !overrideDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
+
+    function resolveCanonicalProviderId(providerData) {
+      const currentProfile = providerData.profile || {};
+      const baseId = currentProfile.providerBaseId || currentProfile.providerCatalogId || '';
+      const targetCategory = getCategoryIdFromServiceCategory(currentProfile.category || '');
+      const targetCityId = Number(currentProfile.cityId || 0);
+      const publishedServiceIds = (providerData.services || []).filter(function (service) {
+        return service && service.catalogProviderId &&
+          getCategoryIdFromServiceCategory(service.category || currentProfile.category || '') === targetCategory &&
+          Number(service.cityId || targetCityId) === targetCityId;
+      }).map(function (service) { return service.catalogProviderId; });
+      let catalogProviders = [];
+      try {
+        const catalog = JSON.parse(localStorage.getItem('serveEaseData') || '{}');
+        catalogProviders = Array.isArray(catalog.providers) ? catalog.providers : [];
+      } catch (error) {
+        catalogProviders = [];
+      }
+      const candidates = catalogProviders.filter(function (candidate) {
+        return candidate && candidate.id && (
+          candidate.ownerProviderId === currentProfile.providerId ||
+          candidate.id === currentProfile.providerCatalogId ||
+          (baseId && candidate.id.indexOf(`${baseId}-`) === 0)
+        );
+      });
+      candidates.sort(function (left, right) {
+        function score(candidate) {
+          return (publishedServiceIds.indexOf(candidate.id) !== -1 ? 1000 : 0) +
+            (candidate.ownerProviderId === currentProfile.providerId ? 100 : 0) +
+            (candidate.category === targetCategory ? 10 : 0) +
+            (Number(candidate.cityId) === targetCityId ? 5 : 0) +
+            (candidate.id === currentProfile.providerCatalogId ? 1 : 0);
+        }
+        return score(right) - score(left) || String(left.id).localeCompare(String(right.id));
+      });
+      const canonicalId = candidates.length ? candidates[0].id : publishedServiceIds[0] || currentProfile.providerCatalogId || baseId;
+      if (canonicalId && canonicalId !== currentProfile.providerCatalogId) {
+        currentProfile.providerBaseId = currentProfile.providerBaseId || currentProfile.providerCatalogId;
+        currentProfile.providerCatalogId = canonicalId;
+        try {
+          const catalog = JSON.parse(localStorage.getItem('serveEaseData') || '{}');
+          const user = (catalog.users || []).find(function (candidate) {
+            return candidate && candidate.role === 'provider' && candidate.id === currentProfile.providerId;
+          });
+          if (user) {
+            user.providerBaseId = user.providerBaseId || user.providerCatalogId;
+            user.providerCatalogId = canonicalId;
+            localStorage.setItem('serveEaseData', JSON.stringify(catalog));
+          }
+        } catch (error) {
+          /* The provider profile remains the source of truth if local catalog storage is unavailable. */
+        }
+        setProviderModuleData(providerData);
+        syncProviderSession(currentProfile);
+      }
+      return canonicalId;
+    }
 
     function isoDate(value) {
       return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
@@ -1435,10 +1514,6 @@
       }).replace('-', ' – ');
     }
 
-    function toSlot(start, end) {
-      return start && end ? `${start}-${end}` : '';
-    }
-
     function slotParts(slot) {
       const parts = String(slot || '').split('-');
       return { start: parts[0] || '', end: parts[1] || '' };
@@ -1446,24 +1521,68 @@
 
     function weekKey(day) { return day.toLowerCase(); }
 
-    function activeSlots(day) {
-      return (weekly[weekKey(day)] || []).filter(function (slot) { return slot.active; }).map(function (slot) { return slot.value; });
+    function slotState(slot) {
+      const parts = slotParts(slot.value);
+      return { start: slot.start !== undefined ? slot.start : parts.start, end: slot.end !== undefined ? slot.end : parts.end };
     }
 
-    function validateDay(day) {
-      const slots = activeSlots(day).slice().sort();
+    function slotValue(slot) {
+      const parts = slotState(slot);
+      return parts.start && parts.end ? `${parts.start}-${parts.end}` : '';
+    }
+
+    function activeSlotEntries(day) {
+      return (weekly[weekKey(day)] || []).filter(function (slot) { return slot.active; });
+    }
+
+    function activeSlots(day) {
+      return activeSlotEntries(day).map(slotValue);
+    }
+
+    function validateDay(day, forceIncomplete) {
+      const entries = activeSlotEntries(day);
+      const slots = [];
+      for (let index = 0; index < entries.length; index += 1) {
+        const parts = slotState(entries[index]);
+        if (!/^\d{2}:\d{2}$/.test(parts.start) || !/^\d{2}:\d{2}$/.test(parts.end) || parts.start >= parts.end) {
+          if (forceIncomplete || entries[index].touched) return 'Enter a valid start and end time.';
+          continue;
+        }
+        slots.push(`${parts.start}-${parts.end}`);
+      }
+      slots.sort();
       for (let index = 0; index < slots.length; index += 1) {
         const parts = slotParts(slots[index]);
-        if (!/^\d{2}:\d{2}$/.test(parts.start) || !/^\d{2}:\d{2}$/.test(parts.end) || parts.start >= parts.end) {
-          return 'Enter a valid start and end time.';
-        }
+        if (index && slots[index - 1] === slots[index]) return 'Duplicate time slots are not allowed.';
         if (index && slotParts(slots[index - 1]).end > parts.start) return 'Slots on the same day cannot overlap.';
       }
       return '';
     }
 
-    function validateSchedule() {
-      return weekdays.map(validateDay).find(Boolean) || '';
+    function validateSchedule(forceIncomplete) {
+      return weekdays.map(function (day) { return validateDay(day, forceIncomplete); }).find(Boolean) || '';
+    }
+
+    function minutesForTime(value) {
+      const parts = String(value || '').split(':').map(Number);
+      return /^\d{2}:\d{2}$/.test(value) ? (parts[0] * 60) + parts[1] : null;
+    }
+
+    function timeForMinutes(value) {
+      return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+    }
+
+    function newSlotForDay(day) {
+      const ranges = activeSlots(day).map(function (slot) {
+        const parts = slotParts(slot);
+        return { start: minutesForTime(parts.start), end: minutesForTime(parts.end) };
+      }).filter(function (slot) { return slot.start !== null && slot.end !== null; }).sort(function (a, b) { return a.start - b.start; });
+      let cursor = 9 * 60;
+      for (let index = 0; index < ranges.length; index += 1) {
+        if (cursor + 60 <= ranges[index].start) return { start: timeForMinutes(cursor), end: timeForMinutes(cursor + 60), active: true, touched: false };
+        cursor = Math.max(cursor, ranges[index].end);
+      }
+      return cursor + 60 <= (23 * 60) + 59 ? { start: timeForMinutes(cursor), end: timeForMinutes(cursor + 60), active: true, touched: false } : null;
     }
 
     function buildWeeklyPayload() {
@@ -1544,13 +1663,13 @@
                 return `<label class="availability-override-slot${locked ? ' is-locked' : ''}" title="${locked ? 'This slot already has a booking.' : ''}"><input type="checkbox" data-override-slot="${slot}" ${disabled ? '' : 'checked'} ${locked || isPast ? 'disabled' : ''}><span>${formatSlot(slot)}</span>${locked ? '<em>🔒 Booked</em>' : ''}</label>`;
               }).join('') : '<p class="availability-drawer-note">This weekday has no active recurring slots.</p>'}
             </div>`}
-          <small class="error availability-override-error" aria-live="polite"></small>
-          <div class="availability-drawer-actions"><button class="btn btn-primary" type="button" id="saveDateOverrideBtn" ${isPast ? 'disabled' : ''}>Save</button><button class="secondary-btn" type="button" data-close-override>Cancel</button></div>
+          <small class="error availability-override-error" aria-live="polite">${overrideError}</small>
+          <div class="availability-drawer-actions"><button class="btn btn-primary" type="button" id="saveDateOverrideBtn" ${isPast || overrideSaving ? 'disabled' : ''}>${overrideSaving ? 'Saving...' : 'Save'}</button><button class="secondary-btn" type="button" data-close-override>Cancel</button></div>
         </aside>`;
     }
 
     function render() {
-      const validation = validateSchedule();
+      const validation = validateSchedule(true);
       const weeklyCards = weekdays.map(function (day) {
         const key = weekKey(day);
         const slots = weekly[key] || [];
@@ -1559,18 +1678,18 @@
           <article class="provider-weekday-card">
             <div class="provider-weekday-head"><h4>${day}</h4><label class="availability-day-toggle"><input type="checkbox" data-day-enabled="${day}" ${dayOff ? '' : 'checked'}><span>${dayOff ? 'Unavailable' : 'Available'}</span></label></div>
             <div class="provider-weekly-slots">${dayOff ? '<p>Unavailable</p>' : slots.map(function (slot, index) {
-              const parts = slotParts(slot.value);
-              return `<div class="provider-weekly-slot${slot.active ? '' : ' is-disabled'}"><input type="checkbox" data-weekly-active="${day}|${index}" ${slot.active ? 'checked' : ''} aria-label="Enable ${formatSlot(slot.value)} on ${day}"><input type="time" value="${parts.start}" data-weekly-start="${day}|${index}" aria-label="Start time"><span>–</span><input type="time" value="${parts.end}" data-weekly-end="${day}|${index}" aria-label="End time"><button type="button" data-remove-weekly-slot="${day}|${index}" aria-label="Delete time slot">×</button></div>`;
+              const parts = slotState(slot);
+              return `<div class="provider-weekly-slot${slot.active ? '' : ' is-disabled'}"><input type="checkbox" data-weekly-active="${day}|${index}" ${slot.active ? 'checked' : ''} aria-label="Enable ${formatSlot(slotValue(slot)) || 'time slot'} on ${day}"><input type="time" value="${parts.start}" data-weekly-start="${day}|${index}" aria-label="Start time" ${slot.active ? '' : 'disabled'}><span>–</span><input type="time" value="${parts.end}" data-weekly-end="${day}|${index}" aria-label="End time" ${slot.active ? '' : 'disabled'}><button type="button" data-remove-weekly-slot="${day}|${index}" aria-label="Delete time slot">×</button></div>`;
             }).join('')}</div>
             <button class="availability-add-slot" type="button" data-add-weekly-slot="${day}" ${dayOff ? 'disabled' : ''}>+ Add slot</button>
-            <small class="error" data-day-error="${day}">${validateDay(day)}</small>
+            <small class="error" data-day-error="${day}">${validateDay(day, false)}</small>
           </article>`;
       }).join('');
 
       panel.innerHTML = `
         <div class="provider-availability-manager">
           <section class="provider-weekly-section" aria-labelledby="weeklyScheduleHeading">
-            <div class="provider-availability-section-head"><div><h3 id="weeklyScheduleHeading">Weekly schedule</h3><p>Set the recurring hours customers can book.</p></div><button class="btn btn-primary availability-save-weekly" type="button" id="saveWeeklyScheduleBtn" ${validation ? 'disabled' : ''}>Save Changes</button></div>
+            <div class="provider-availability-section-head"><div><h3 id="weeklyScheduleHeading">Weekly schedule</h3><p>Set the recurring hours customers can book.</p></div><button class="btn btn-primary availability-save-weekly" type="button" id="saveWeeklyScheduleBtn" ${validation || weeklySaving ? 'disabled' : ''}>${weeklySaving ? 'Saving...' : 'Save Changes'}</button></div>
             <small class="availability-save-message ${scheduleError ? 'error' : ''}" aria-live="polite">${scheduleError || scheduleMessage}</small>
             <div class="provider-weekday-grid">${weeklyCards}</div>
           </section>
@@ -1585,9 +1704,12 @@
         input.addEventListener('change', function () {
           const day = input.dataset.dayEnabled;
           const slots = weekly[weekKey(day)] || [];
-          if (input.checked && !slots.length) weekly[weekKey(day)] = [{ value: '', active: true }];
-          slots.forEach(function (slot) { slot.active = input.checked; });
-          scheduleError = ''; render();
+          if (input.checked && !slots.length) weekly[weekKey(day)] = [{ start: '09:00', end: '10:00', active: true, touched: false }];
+          slots.forEach(function (slot) {
+            if (!input.checked) { slot.dayEnabledBefore = slot.active; slot.active = false; }
+            else { slot.active = slot.dayEnabledBefore !== undefined ? slot.dayEnabledBefore : true; delete slot.dayEnabledBefore; }
+          });
+          weeklyDirty = true; scheduleError = ''; render();
         });
       });
       panel.querySelectorAll('[data-weekly-active], [data-weekly-start], [data-weekly-end]').forEach(function (input) {
@@ -1595,21 +1717,30 @@
           const [day, index] = (input.dataset.weeklyActive || input.dataset.weeklyStart || input.dataset.weeklyEnd).split('|');
           const slot = weekly[weekKey(day)][Number(index)];
           if (input.dataset.weeklyActive !== undefined) slot.active = input.checked;
-          else { const parts = slotParts(slot.value); slot.value = toSlot(input.dataset.weeklyStart !== undefined ? input.value : parts.start, input.dataset.weeklyEnd !== undefined ? input.value : parts.end); }
-          scheduleError = ''; render();
+          else {
+            if (input.dataset.weeklyStart !== undefined) slot.start = input.value;
+            if (input.dataset.weeklyEnd !== undefined) slot.end = input.value;
+            slot.touched = true;
+          }
+          weeklyDirty = true; scheduleError = ''; render();
         });
       });
       panel.querySelectorAll('[data-add-weekly-slot], [data-remove-weekly-slot]').forEach(function (button) {
         button.addEventListener('click', function () {
-          if (button.dataset.addWeeklySlot) weekly[weekKey(button.dataset.addWeeklySlot)].push({ value: '', active: true });
+          if (button.dataset.addWeeklySlot) {
+            const day = button.dataset.addWeeklySlot;
+            const newSlot = newSlotForDay(day);
+            if (!newSlot) { scheduleError = 'No one-hour opening remains for this day.'; render(); return; }
+            weekly[weekKey(day)].push(newSlot);
+          }
           else { const [day, index] = button.dataset.removeWeeklySlot.split('|'); weekly[weekKey(day)].splice(Number(index), 1); }
-          scheduleError = ''; render();
+          weeklyDirty = true; scheduleError = ''; render();
         });
       });
       panel.querySelector('#saveWeeklyScheduleBtn').addEventListener('click', saveWeekly);
       panel.querySelectorAll('[data-calendar-nav]').forEach(function (button) { button.addEventListener('click', function () { visibleMonth.setMonth(visibleMonth.getMonth() + (button.dataset.calendarNav === 'next' ? 1 : -1)); render(); }); });
-      panel.querySelectorAll('[data-override-date]').forEach(function (button) { button.addEventListener('click', function () { const existing = overrideFor(button.dataset.overrideDate); selectedDate = button.dataset.overrideDate; overrideDraft = existing ? { fullDayOff: existing.fullDayOff, disabledSlots: (existing.disabledSlots || []).slice(), enabledSlots: (existing.enabledSlots || []).slice() } : { fullDayOff: false, disabledSlots: [], enabledSlots: [] }; render(); }); });
-      panel.querySelectorAll('[data-close-override]').forEach(function (button) { button.addEventListener('click', function () { selectedDate = ''; overrideDraft = null; render(); }); });
+      panel.querySelectorAll('[data-override-date]').forEach(function (button) { button.addEventListener('click', function () { const existing = overrideFor(button.dataset.overrideDate); selectedDate = button.dataset.overrideDate; overrideDirty = false; overrideError = ''; overrideDraft = existing ? { fullDayOff: existing.fullDayOff, disabledSlots: (existing.disabledSlots || []).slice(), enabledSlots: (existing.enabledSlots || []).slice() } : { fullDayOff: false, disabledSlots: [], enabledSlots: [] }; render(); }); });
+      panel.querySelectorAll('[data-close-override]').forEach(function (button) { button.addEventListener('click', function () { selectedDate = ''; overrideDraft = null; overrideDirty = false; render(); }); });
       const fullDay = panel.querySelector('#overrideFullDayOff');
       if (fullDay) fullDay.addEventListener('change', saveOverrideDraft);
       panel.querySelectorAll('[data-override-slot]').forEach(function (input) { input.addEventListener('change', saveOverrideDraft); });
@@ -1623,35 +1754,47 @@
       overrideDraft.disabledSlots = Array.from(panel.querySelectorAll('[data-override-slot]')).filter(function (input) {
         return !input.checked && !input.disabled;
       }).map(function (input) { return input.dataset.overrideSlot; });
+      overrideDirty = true;
       render();
     }
 
     async function saveWeekly() {
-      scheduleMessage = 'Saving...'; scheduleError = ''; render();
+      if (weeklySaving || validateSchedule(true)) return;
+      weeklySaving = true; scheduleMessage = 'Saving...'; scheduleError = ''; render();
       try {
         const saved = await window.ServeEaseApi.saveProviderWeeklySchedule(providerId, buildWeeklyPayload());
-        weekly = normaliseWeekly(saved.weeklySchedule); scheduleMessage = 'Availability updated successfully.'; await refreshAvailability(); render();
+        weekly = normaliseWeekly(saved.weeklySchedule); weeklyDirty = false; scheduleMessage = 'Availability updated successfully.'; await refreshAvailability(); render();
       } catch (error) { scheduleError = error.message || 'Unable to save weekly schedule.'; render(); }
+      finally { weeklySaving = false; render(); }
     }
 
     async function saveOverride() {
-      const errorBox = panel.querySelector('.availability-override-error');
+      if (overrideSaving) return;
       const saveButton = panel.querySelector('#saveDateOverrideBtn');
       const fullDayOff = overrideDraft && overrideDraft.fullDayOff;
       const disabledSlots = overrideDraft ? overrideDraft.disabledSlots : [];
+      overrideSaving = true; overrideError = '';
       if (saveButton) { saveButton.disabled = true; saveButton.textContent = 'Saving...'; }
       try {
         if (!fullDayOff && !disabledSlots.length) { if (overrideFor(selectedDate)) await window.ServeEaseApi.deleteProviderDateOverride(providerId, selectedDate); }
         else await window.ServeEaseApi.saveProviderDateOverride(providerId, selectedDate, { fullDayOff: fullDayOff, disabledSlots: disabledSlots, enabledSlots: [] });
-        overrides = await window.ServeEaseApi.getProviderDateOverrides(providerId); await refreshAvailability(); selectedDate = ''; overrideDraft = null; scheduleMessage = 'Availability updated successfully.'; render();
+        overrides = await window.ServeEaseApi.getProviderDateOverrides(providerId); await refreshAvailability(); selectedDate = ''; overrideDraft = null; overrideDirty = false; scheduleMessage = 'Availability updated successfully.'; render();
       } catch (error) {
-        if (saveButton) { saveButton.disabled = false; saveButton.textContent = 'Save'; }
-        if (errorBox) errorBox.textContent = error.message || 'Unable to save this date override.';
+        overrideError = error.message || 'Unable to save this date override.';
+      } finally {
+        overrideSaving = false;
+        render();
       }
     }
 
     function normaliseWeekly(source) {
-      return weekdays.reduce(function (result, day) { result[weekKey(day)] = (source[weekKey(day)] || []).map(function (value) { return { value: value, active: true }; }); return result; }, {});
+      return weekdays.reduce(function (result, day) {
+        result[weekKey(day)] = (source[weekKey(day)] || []).map(function (value) {
+          const parts = slotParts(value);
+          return { value: value, start: parts.start, end: parts.end, active: true, touched: false };
+        });
+        return result;
+      }, {});
     }
 
     async function refreshAvailability() { availability = await window.ServeEaseApi.getProviderAvailability(providerId); }
@@ -1677,7 +1820,6 @@
 
     const getSearchTerm = setupProviderSearch(".dashboard-search input", function () {
       renderServices();
-      renderAvailability();
     });
 
     function renderServices() {
@@ -1861,6 +2003,8 @@
     const labels = ["All", "Pending", "Accepted", "Completed", "Rejected", "Cancelled"];
     let active = "All";
 
+    if (window.ServeEaseReviews) window.ServeEaseReviews.seedCompletedBookings(bookings, "CUS001");
+
     function renderTabs() {
       tabs.innerHTML = labels.map(function (label) {
         const count = label === "All"
@@ -1971,11 +2115,14 @@
             return item.id === button.dataset.viewBooking;
           });
           if (!booking || !bookingModalBackdrop || !bookingModalContent) return;
+          const review = customerReviewForBooking(booking);
+          const reviewSection = `<div class="info-box booking-review-section"><strong>Customer Review</strong>${review ? `<div class="review-rating"><span class="review-stars">${window.ServeEaseReviews.stars(review.rating)}</span><span class="booking-rating-value">${Number(review.rating).toFixed(1)}</span></div><div class="review-feedback"><strong>Feedback</strong><div>${review.feedback || "No feedback provided."}</div></div>` : "<div>No customer review yet.</div>"}</div>`;
           bookingModalContent.innerHTML = `
             <div class="info-grid">
               <div class="info-box"><strong>Booking Information</strong><div class="info-row"><span>Booking ID:</span><span>${booking.id}</span></div><div class="info-row"><span>Status:</span><span class="status-pill ${statusClass(booking.status)}">${booking.status}</span></div><div class="info-row"><span>Progress:</span><span>${booking.progress}%</span></div></div>
               <div class="info-box"><strong>Customer Information</strong><div class="info-row"><span>Name:</span><span>${booking.customer}</span></div><div class="info-row"><span>Location:</span><span>${booking.location}</span></div></div>
               <div class="info-box"><strong>Service Information</strong><div class="info-row"><span>Service:</span><span>${booking.service}</span></div><div class="info-row"><span>Date:</span><span>${formatDisplayDate(booking.date)}</span></div><div class="info-row"><span>Time:</span><span>${booking.time}</span></div><div class="info-row"><span>Amount:</span><span>${formatCurrency(booking.amount)}</span></div></div>
+              ${reviewSection}
             </div>`;
           bookingModalBackdrop.classList.remove("hidden");
         });
@@ -2398,6 +2545,8 @@
     const data = getProviderModuleData();
     const totalServices = Array.isArray(data.services) ? data.services.length : 0;
     const totalBookings = getActualProviderBookings(data).length;
+    if (window.ServeEaseReviews) window.ServeEaseReviews.seedCompletedBookings(getActualProviderBookings(data), "CUS001");
+    const reviewStats = providerReviewStats(data.profile);
     if (data.profile.totalServices !== totalServices || data.profile.totalBookings !== totalBookings) {
       data.profile.totalServices = totalServices;
       data.profile.totalBookings = totalBookings;
@@ -2430,7 +2579,8 @@
       <div class="info-box"><strong>Account Status</strong><div>${data.profile.accountStatus}</div></div>
       <div class="info-box"><strong>Total Services</strong><div>${totalServices}</div></div>
       <div class="info-box"><strong>Total Bookings</strong><div>${totalBookings}</div></div>
-      <div class="info-box"><strong>Rating</strong><div>${data.profile.rating}</div></div>
+      <div class="info-box"><strong>Average Rating</strong><div>⭐ ${reviewStats.average.toFixed(1)}</div></div>
+      <div class="info-box"><strong>Total Reviews</strong><div>${reviewStats.total}</div></div>
     `;
 
     document.getElementById("providerProfessionalInfo").innerHTML = `

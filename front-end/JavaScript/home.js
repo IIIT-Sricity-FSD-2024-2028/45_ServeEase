@@ -30,7 +30,7 @@ function setupHomeHeaderSession() {
   const profileBtn = document.getElementById("homeProfileBtn");
   const profileDropdown = document.getElementById("homeProfileDropdown");
   const logoutBtn = document.getElementById("homeLogoutBtn");
-  const heroBookBtn = document.getElementById("heroBookServiceBtn");
+  const heroGetStartedBtn = document.getElementById("heroGetStartedBtn");
 
   if (!loginBtn || !profileWrap || !profileDropdown) return;
 
@@ -49,8 +49,8 @@ function setupHomeHeaderSession() {
         profileLinks[1].href = "customer-dashboard.html";
         profileLinks[1].textContent = "Go to Dashboard";
       }
-      if (heroBookBtn) {
-        heroBookBtn.href = "customer-dashboard.html";
+      if (heroGetStartedBtn) {
+        heroGetStartedBtn.href = "customer-dashboard.html";
       }
     }
 
@@ -63,15 +63,15 @@ function setupHomeHeaderSession() {
         profileLinks[1].href = "provider-dashboard.html";
         profileLinks[1].textContent = "Go to Dashboard";
       }
-      if (heroBookBtn) {
-        heroBookBtn.href = "provider-dashboard.html";
+      if (heroGetStartedBtn) {
+        heroGetStartedBtn.href = "customer-dashboard.html";
       }
     }
   } else {
     loginBtn.classList.remove("hidden");
     profileWrap.classList.add("hidden");
-    if (heroBookBtn) {
-      heroBookBtn.href = "login.html";
+    if (heroGetStartedBtn) {
+      heroGetStartedBtn.href = "signup.html";
     }
   }
 
