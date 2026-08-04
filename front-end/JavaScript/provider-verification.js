@@ -177,6 +177,7 @@
   }
 
   function getStoredDocumentPreview(providerId, documentId) {
+    if (window.ServeEaseAttachments) return window.ServeEaseAttachments.getProviderPreview(providerId, documentId);
     try {
       const previews = JSON.parse(localStorage.getItem("serveEaseProviderDocuments:" + providerId) || "{}");
       return previews[documentId] || null;

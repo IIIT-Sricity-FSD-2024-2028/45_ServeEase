@@ -156,7 +156,7 @@ async function buildProviderDocumentPayload(providerId) {
         previewStore[documentId] = {
           name: file.name,
           type: file.type || "application/octet-stream",
-          dataUrl: await readFileAsDataUrl(file)
+          dataUrl: await (window.ServeEaseAttachments ? window.ServeEaseAttachments.readFileAsDataUrl(file) : readFileAsDataUrl(file))
         };
       } catch (error) {
         previewStore[documentId] = {

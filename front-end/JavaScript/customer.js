@@ -408,8 +408,12 @@
     const supportData = getSupportData();
     if (!Array.isArray(supportData.tickets)) supportData.tickets = [];
     if (!Array.isArray(supportData.notifications)) supportData.notifications = [];
+    const originalTicketId = ticket.id;
     while (supportData.tickets.some(function (item) { return item.id === ticket.id; })) {
       ticket.id = createCustomerTicketId();
+    }
+    if (originalTicketId !== ticket.id && ticket.attachmentId && window.ServeEaseAttachments) {
+      window.ServeEaseAttachments.linkTicketAttachment(originalTicketId, ticket.id);
     }
 
     supportData.tickets.unshift({
@@ -425,7 +429,10 @@
       issueCategory: ticket.category,
       subject: ticket.subject,
       description: ticket.description,
-      attachmentName: "No attachment",
+      attachmentId: ticket.attachmentId || "",
+      attachmentName: ticket.attachmentName || "No attachment",
+      attachmentType: ticket.attachmentType || "",
+      attachmentSize: ticket.attachmentSize || 0,
       phone: ticket.customerPhone || session.phone || "",
       email: ticket.customerEmail || session.email || "",
       status: "Open",
@@ -1679,7 +1686,7 @@
       return "Medium";
     }
 
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
       e.preventDefault();
       error.textContent = "";
       success.textContent = "";
@@ -1688,9 +1695,16 @@
       const category = document.getElementById("ticketCategory").value.trim();
       const subject = document.getElementById("ticketSubject").value.trim();
       const description = document.getElementById("ticketDescription").value.trim();
+      const attachmentInput = document.getElementById("ticketAttachment");
+      const attachmentFile = attachmentInput && attachmentInput.files ? attachmentInput.files[0] : null;
+      const maxAttachmentSize = 5000 * 1024;
 
       if (!bookingRef || !category || !subject || !description) {
         error.textContent = "Please fill all required fields.";
+        return;
+      }
+      if (attachmentFile && attachmentFile.size > maxAttachmentSize) {
+        error.textContent = "Attachment must be 5000 KB or smaller.";
         return;
       }
 
@@ -1721,6 +1735,23 @@
         solution: "",
         supportUpdate: "Your ticket has been received and is currently being reviewed by the support team."
       };
+
+      if (attachmentFile && window.ServeEaseAttachments && typeof window.ServeEaseAttachments.saveTicketAttachment === "function") {
+        let attachment;
+        try {
+          attachment = await window.ServeEaseAttachments.saveTicketAttachment(newTicket.id, attachmentFile);
+        } catch (attachmentError) {
+          console.error("Unable to save ticket attachment", attachmentError);
+          error.textContent = "Attachment could not be saved. Please choose a smaller file and try again.";
+          return;
+        }
+        if (attachment) {
+          newTicket.attachmentId = attachment.attachmentId;
+          newTicket.attachmentName = attachment.filename;
+          newTicket.attachmentType = attachment.mimeType;
+          newTicket.attachmentSize = attachment.fileSize;
+        }
+      }
 
       data.tickets.unshift(newTicket);
       setCustomerData(data);

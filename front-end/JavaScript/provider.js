@@ -422,8 +422,12 @@
     const supportData = getSupportData();
     if (!Array.isArray(supportData.tickets)) supportData.tickets = [];
     if (!Array.isArray(supportData.notifications)) supportData.notifications = [];
+    const originalTicketId = ticket.id;
     while (supportData.tickets.some(function (item) { return item.id === ticket.id; })) {
       ticket.id = createProviderTicketId();
+    }
+    if (originalTicketId !== ticket.id && ticket.attachmentId && window.ServeEaseAttachments) {
+      window.ServeEaseAttachments.linkTicketAttachment(originalTicketId, ticket.id);
     }
 
     const profile = data.profile || {};
@@ -440,6 +444,9 @@
       subject: ticket.subject,
       description: ticket.description || ticket.subject,
       attachmentName: ticket.attachmentName || "No attachment",
+      attachmentId: ticket.attachmentId || "",
+      attachmentType: ticket.attachmentType || "",
+      attachmentSize: ticket.attachmentSize || 0,
       phone: profile.phone || "",
       email: profile.email || "",
       status: "Open",
@@ -458,7 +465,7 @@
         { label: "Ticket created by provider", time: ticket.created || "Just now", active: true }
       ]
     });
-    supportData.notifications.unshift({ id: "NT" + Date.now(), text: "New provider support ticket created - " + ticket.id, time: todayStamp(), isNew: true, ticketId: ticket.id });
+    supportData.notifications.unshift({ id: "NT" + Date.now(), text: "New provider support ticket created - " + ticket.id, time: window.ServeEaseDate ? window.ServeEaseDate.nowDateTime() : new Date().toISOString(), isNew: true, ticketId: ticket.id });
     setSupportData(supportData);
   }
 
@@ -1197,6 +1204,9 @@
       createdOn: ticket.createdAt ? formatDisplayDate(ticket.createdAt) : (ticket.createdOn || "Just now"),
       bookingRef: ticket.relatedBookingId || ticket.bookingRef || "",
       attachmentName: ticket.attachmentUrl || ticket.attachmentName || "No attachment",
+      attachmentId: ticket.attachmentId || "",
+      attachmentType: ticket.attachmentType || "",
+      attachmentSize: ticket.attachmentSize || 0,
       solution: ticket.finalDecision || ticket.solution || "",
       supportUpdate: ticket.supportRemarks || ticket.adminRemarks || ticket.supportUpdate || "Your ticket has been received and is currently being reviewed by the support team.",
       adminRemarks: ticket.adminRemarks || "",
@@ -2394,9 +2404,12 @@
                 <strong>Support Update</strong>
                 <p>${ticket.supportUpdate || "Your ticket has been received and is currently being reviewed by the support team."}</p>
               </div>
+              ${window.ServeEaseAttachments ? window.ServeEaseAttachments.actionMarkup(ticket, "Preview attachment") : ""}
             </div>
           `;
 
+          const attachmentButton = ticketModalContent.querySelector(".serveease-attachment-preview-btn");
+          if (attachmentButton && window.ServeEaseAttachments) attachmentButton.addEventListener("click", function () { window.ServeEaseAttachments.previewTicketAttachment(ticket); });
           ticketModalBackdrop.classList.remove("hidden");
         });
       });
@@ -2456,9 +2469,14 @@
       const attachment = document.getElementById("providerTicketAttachment") && document.getElementById("providerTicketAttachment").files[0];
       const subject = document.getElementById("providerTicketSubject").value.trim();
       const description = document.getElementById("providerTicketDescription").value.trim();
+      const maxAttachmentSize = 5000 * 1024;
 
       if (!category || !subject || !description) {
         error.textContent = "Please fill all support ticket fields.";
+        return;
+      }
+      if (attachment && attachment.size > maxAttachmentSize) {
+        error.textContent = "Attachment must be 5000 KB or smaller.";
         return;
       }
 
@@ -2477,13 +2495,26 @@
         createdAtIso: new Date().toISOString(),
         createdOn: "Just now",
         bookingRef: bookingRef,
-        attachmentName: attachment ? attachment.name : "No attachment",
+      attachmentName: attachment ? attachment.name : "No attachment",
+        attachmentId: "",
+        attachmentType: attachment ? (attachment.type || "application/octet-stream") : "",
+        attachmentSize: attachment ? (attachment.size || 0) : 0,
         solution: "",
         supportUpdate: "Your ticket has been received and is currently being reviewed by the support team."
       };
 
-      function finish(savedTicket) {
+      async function finish(savedTicket) {
         const ticket = savedTicket ? normalizeBackendProviderTicket(savedTicket) : localTicket;
+        if (attachment && window.ServeEaseAttachments) {
+          const stored = await window.ServeEaseAttachments.saveTicketAttachment(localTicket.id, attachment);
+          if (stored) {
+            if (savedTicket) window.ServeEaseAttachments.linkTicketAttachment(localTicket.id, ticket.id);
+            ticket.attachmentId = stored.attachmentId;
+            ticket.attachmentName = stored.filename;
+            ticket.attachmentType = stored.mimeType;
+            ticket.attachmentSize = stored.fileSize;
+          }
+        }
         data.supportTickets.unshift(ticket);
         pushProviderTicketToSupport(ticket, data);
         setProviderModuleData(data);

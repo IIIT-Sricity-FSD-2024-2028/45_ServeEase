@@ -92,6 +92,10 @@
       service: ticket.service || "",
       priority: ticket.priority || "Medium",
       internalRemarks: ticket.internalRemarks || "",
+      escalationReason: ticket.escalationReason || "",
+      escalatedAt: ticket.escalatedAt || "",
+      assignedSupportId: ticket.assignedSupportId || "",
+      assignedSupportName: ticket.assignedSupportName || ticket.assignedTo || "",
       subject: ticket.subject || "Support request",
       description: ticket.description || ticket.subject || "No description provided.",
       phone: ticket.phone || "",
@@ -99,6 +103,9 @@
       attachments: ticket.attachmentName && ticket.attachmentName !== "No attachment" ? 1 : 0,
       attachmentName: ticket.attachmentName || ticket.attachmentUrl || "No attachment",
       attachmentUrl: ticket.attachmentUrl || "",
+      attachmentId: ticket.attachmentId || "",
+      attachmentType: ticket.attachmentType || "",
+      attachmentSize: ticket.attachmentSize || 0,
       raisedByType: ticket.raisedByType || "customer",
       solution: ticket.solution || "",
       supportUpdate: ticket.supportUpdate || "",
@@ -213,6 +220,10 @@
       supportUpdate: ticket.supportRemarks || ticket.adminRemarks || "",
       solution: ticket.finalDecision || "",
       internalRemarks: ticket.supportRemarks || "",
+      escalationReason: ticket.escalationReason || "",
+      escalatedAt: ticket.escalatedAt || "",
+      assignedSupportId: ticket.assignedSupportId || "",
+      assignedSupportName: ticket.assignedSupportName || "",
       priority: ticket.priority || "Medium",
       createdDate: ticket.createdAt ? formatDisplayDate(ticket.createdAt) : "Just now",
       createdAtIso: ticket.createdAt || "",
@@ -1942,7 +1953,12 @@
       '<div class="superuser-detail-field"><span>Email:</span><strong>' + (ticket.email || 'N/A') + '</strong></div>' +
       '<div class="superuser-detail-field"><span>Support Update:</span><strong>' + (ticket.supportUpdate || 'Awaiting support update') + '</strong></div>' +
       '<div class="superuser-detail-field"><span>Support Investigation:</span><strong>' + (ticket.internalRemarks || 'No internal remarks saved') + '</strong></div>' +
-      '<div class="superuser-detail-field"><span>Attachment:</span><strong>' + (ticket.attachmentName && ticket.attachmentName !== 'No attachment' ? ticket.attachmentName : (ticket.attachments ? ticket.attachments + ' file(s)' : 'No attachment')) + '</strong></div>';
+      '<div class="superuser-detail-field"><span>Escalation Reason:</span><strong>' + (ticket.escalationReason || 'No escalation reason saved') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Assigned Support:</span><strong>' + (ticket.assignedSupportName || 'N/A') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Escalated At:</span><strong>' + (ticket.escalatedAt ? formatDisplayDateTime(ticket.escalatedAt) : 'N/A') + '</strong></div>' +
+      '<div class="superuser-detail-field"><span>Attachment:</span><strong>' + (ticket.attachmentName && ticket.attachmentName !== 'No attachment' ? ticket.attachmentName : (ticket.attachments ? ticket.attachments + ' file(s)' : 'No attachment')) + '</strong>' + (window.ServeEaseAttachments ? window.ServeEaseAttachments.actionMarkup(ticket, 'Preview attachment') : '') + '</div>';
+    const attachmentButton = byId('superuserTicketContactGrid').querySelector('.serveease-attachment-preview-btn');
+    if (attachmentButton && window.ServeEaseAttachments) attachmentButton.addEventListener('click', function () { window.ServeEaseAttachments.previewTicketAttachment(ticket); });
     byId('superuserTicketDescriptionBlock').innerHTML =
       '<p>' + (ticket.description || 'No description provided.') + '</p>' +
       '<div class="ticket-history">' +
@@ -2058,7 +2074,7 @@
     supportData.notifications.unshift({
       id: "NT" + Date.now(),
       text: "Superuser moved " + ticket.id + " to " + ticket.status,
-      time: todayStamp(),
+      time: superuserStamp(),
       isNew: true,
       ticketId: ticket.id
     });
@@ -2165,5 +2181,3 @@
     renderDashboard();
   });
 })();
-
-

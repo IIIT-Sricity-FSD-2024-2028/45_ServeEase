@@ -129,7 +129,11 @@
       issueCategory: ticket.issueCategory || ticket.category || "General Support",
       subject: ticket.subject || "Support request",
       description: ticket.description || ticket.subject || "No description provided.",
+      attachmentId: ticket.attachmentId || "",
       attachmentName: ticket.attachmentName || "No attachment",
+      attachmentUrl: ticket.attachmentUrl || ticket.evidenceUrl || "",
+      attachmentType: ticket.attachmentType || ticket.fileType || "",
+      attachmentSize: ticket.attachmentSize || ticket.fileSize || 0,
       phone: ticket.phone || (ownerData && ownerData.profile && ownerData.profile.phone) || "",
       email: ticket.email || (ownerData && ownerData.profile && ownerData.profile.email) || (ownerData && ownerData.ownerEmail) || "",
       status: ticket.status || "Open",
@@ -138,6 +142,11 @@
       createdDate: createdDate,
       createdAtIso: createdAtIso,
       assignedTo: ticket.assignedTo || "Priya Sharma",
+      internalRemarks: ticket.internalRemarks || "",
+      escalationReason: ticket.escalationReason || "",
+      escalatedAt: ticket.escalatedAt || "",
+      assignedSupportId: ticket.assignedSupportId || "",
+      assignedSupportName: ticket.assignedSupportName || ticket.assignedTo || "",
       messages: Array.isArray(ticket.messages) ? ticket.messages : [
         { sender: ownerName, senderType: raisedByType, text: ticket.description || ticket.subject || "Support request created.", time: ticket.createdDate || ticket.date || ticket.created || "Just now" }
       ],
@@ -313,11 +322,20 @@
         service: ticket.service || "",
         priority: ticket.priority || "Medium",
         internalRemarks: ticket.internalRemarks || "",
+        escalationReason: ticket.escalationReason || "",
+        escalatedAt: ticket.escalatedAt || "",
+        assignedSupportId: ticket.assignedSupportId || "",
+        assignedSupportName: ticket.assignedSupportName || ticket.assignedTo || "",
         subject: ticket.subject || "Support request",
         description: ticket.description || ticket.subject || "No description provided.",
         phone: ticket.phone || "",
         email: ticket.email || "",
         attachments: ticket.attachmentName && ticket.attachmentName !== "No attachment" ? 1 : 0,
+        attachmentName: ticket.attachmentName || "No attachment",
+        attachmentUrl: ticket.attachmentUrl || "",
+        attachmentId: ticket.attachmentId || "",
+        attachmentType: ticket.attachmentType || "",
+        attachmentSize: ticket.attachmentSize || 0,
         raisedByType: ticket.raisedByType || "customer",
         solution: ticket.solution || "",
         supportUpdate: ticket.supportUpdate || "",
@@ -700,15 +718,16 @@ function setupHeader(agentName) {
   }
 
   function buildStatsMarkup(tickets) {
-    const openCount = tickets.filter(function (ticket) { return ticket.status === "Open"; }).length;
-    const progressCount = tickets.filter(function (ticket) { return ticket.status === "In Progress"; }).length;
-    const resolvedCount = tickets.filter(function (ticket) { return ticket.status === "Resolved"; }).length;
+    const openCount = tickets.filter(function (ticket) { return ["Open", "Pending"].includes(ticket.status); }).length;
+    const assignedCount = tickets.filter(function (ticket) { return Boolean(ticket.assignedTo || ticket.assignedSupportName) && !["Resolved", "Rejected"].includes(ticket.status); }).length;
+    const pendingCount = tickets.filter(function (ticket) { return ["Open", "Pending"].includes(ticket.status); }).length;
+    const resolvedCount = tickets.filter(function (ticket) { return ["Resolved", "Resolved by Support", "Rejected"].includes(ticket.status); }).length;
 
     return `
-      <div class="stat-card-dashboard"><div class="feature-icon purple">⚠</div><h3>${tickets.length}</h3><p>Total Tickets</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon orange">◔</div><h3>${openCount}</h3><p>Open Issues</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon blue">↗</div><h3>${progressCount}</h3><p>Tickets Being Handled</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon green">✓</div><h3>${resolvedCount}</h3><p>Issues Resolved</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon orange">◔</div><h3>${openCount}</h3><p>Open Tickets</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon blue">↗</div><h3>${assignedCount}</h3><p>Assigned Tickets</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon green">✓</div><h3>${pendingCount}</h3><p>Pending Tickets</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon green">✓</div><h3>${resolvedCount}</h3><p>Resolved Tickets</p></div>
     `;
   }
 
@@ -877,11 +896,13 @@ function setupHeader(agentName) {
         <p>${ticket.description}</p>
       </div>
       <div class="support-attachment-box">
-        <div class="support-attachment-row">📎 ${ticket.attachmentName}</div>
+        ${attachmentMarkup(ticket) || '<div class="support-attachment-row">No attachment</div>'}
       </div>
     `;
 
     renderSolutionBlock(ticket);
+    const attachmentButton = document.querySelector(".support-attachment-open");
+    if (attachmentButton) attachmentButton.addEventListener("click", function () { openAttachment(ticket); });
     renderInternalRemarksBlock(ticket);
 
     renderMessages(ticket);
@@ -998,6 +1019,83 @@ function setupHeader(agentName) {
         </div>
       `;
     }).join("");
+  }
+
+  function formatAttachmentSize(value) {
+    const size = Number(value);
+    if (!Number.isFinite(size) || size <= 0) return "Unknown size";
+    if (size < 1024) return size + " B";
+    if (size < 1024 * 1024) return (size / 1024).toFixed(1) + " KB";
+    return (size / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function attachmentType(ticket) {
+    const name = String(ticket.attachmentName || ticket.attachmentUrl || "");
+    return String(ticket.attachmentType || (name.split(".").pop() || "file")).toLowerCase();
+  }
+
+  function openAttachment(ticket) {
+    if (window.ServeEaseAttachments) return window.ServeEaseAttachments.previewTicketAttachment(ticket);
+    const url = String(ticket.attachmentUrl || "").trim();
+    if (!url) return;
+    const type = attachmentType(ticket);
+    if (type === "pdf" || type === "application/pdf") {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (/^(image\/|jpg$|jpeg$|png$|gif$|webp$|svg$)/i.test(type)) {
+      let modal = document.getElementById("supportAttachmentPreviewModal");
+      if (!modal) {
+        document.body.insertAdjacentHTML("beforeend", '<div class="support-modal-backdrop hidden" id="supportAttachmentPreviewModal"><div class="support-modal-card" style="max-width:min(900px,100%);max-height:90vh;overflow:auto"><div class="support-modal-title-row"><h3 id="supportAttachmentPreviewTitle"></h3><button class="btn btn-outline" type="button" id="supportAttachmentPreviewClose" aria-label="Close">×</button></div><img id="supportAttachmentPreviewImage" alt="Attachment preview" style="display:block;max-width:100%;max-height:70vh;margin:auto;object-fit:contain" /></div></div>');
+        modal = document.getElementById("supportAttachmentPreviewModal");
+        document.getElementById("supportAttachmentPreviewClose").addEventListener("click", function () { modal.classList.add("hidden"); });
+        modal.addEventListener("click", function (event) { if (event.target === modal) modal.classList.add("hidden"); });
+        document.addEventListener("keydown", function (event) { if (event.key === "Escape" && modal) modal.classList.add("hidden"); });
+      }
+      document.getElementById("supportAttachmentPreviewTitle").textContent = ticket.attachmentName || "Image attachment";
+      document.getElementById("supportAttachmentPreviewImage").src = url;
+      modal.classList.remove("hidden");
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = ticket.attachmentName || "attachment";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.click();
+  }
+
+  function attachmentMarkup(ticket) {
+    let attachmentStore = {};
+    try {
+      attachmentStore = JSON.parse(localStorage.getItem("serveEaseTicketAttachments") || "{}") || {};
+    } catch (error) {
+      console.error("[Support attachment trace] Could not parse serveEaseTicketAttachments", error);
+    }
+    console.groupCollapsed("[Support attachment trace] Ticket details attachment");
+    console.log("Complete Support ticket", ticket);
+    console.log("Lookup fields", {
+      id: ticket && ticket.id,
+      ticketId: ticket && ticket.ticketId,
+      attachmentId: ticket && ticket.attachmentId,
+      attachmentName: ticket && ticket.attachmentName,
+      attachmentType: ticket && ticket.attachmentType,
+      attachmentSize: ticket && ticket.attachmentSize
+    });
+    console.log("Stored attachment records", attachmentStore);
+    const stored = window.ServeEaseAttachments && window.ServeEaseAttachments.getTicketAttachment(ticket);
+    console.log("getTicketAttachment result", stored);
+    console.groupEnd();
+    if (!stored && (!ticket.attachmentName || ticket.attachmentName === "No attachment")) return "";
+    const attachment = stored || ticket;
+    const name = attachment.filename || attachment.attachmentName || "Attachment";
+    const type = String(attachment.mimeType || attachment.attachmentType || attachmentType(ticket)).toLowerCase();
+    const label = type.indexOf("/") !== -1 ? type : type.toUpperCase();
+    const actionLabel = /pdf/i.test(type) ? "Open PDF" : /image|jpg|jpeg|png|gif|webp/i.test(type) ? "Preview image" : "Download";
+    const action = stored
+      ? '<button type="button" class="btn btn-outline support-attachment-open">' + actionLabel + '</button>'
+      : '<button type="button" class="btn btn-outline support-attachment-open" disabled aria-disabled="true">' + actionLabel + '</button><small class="muted-text">Preview unavailable. This attachment was created before the attachment preview feature was introduced.</small>';
+    return '<div class="support-attachment-row">📎 <strong>' + name + '</strong> · ' + label + ' · ' + (stored ? window.ServeEaseAttachments.formatFileSize(stored.fileSize) : formatAttachmentSize(ticket.attachmentSize)) + ' ' + action + '</div>';
   }
 
   function addNotification(data, text, ticketId, isNew) {
@@ -1260,6 +1358,10 @@ function setupHeader(agentName) {
           return;
         }
         ticket.status = "Escalated";
+        ticket.escalationReason = remarks;
+        ticket.escalatedAt = new Date().toISOString();
+        ticket.assignedSupportName = ticket.assignedTo || (data.agent && data.agent.fullName) || "Support";
+        ticket.assignedSupportId = ticket.assignedSupportId || "SUP001";
         ticket.history.push({
           label: "Ticket escalated to Admin after support investigation",
           time: todayStamp(),

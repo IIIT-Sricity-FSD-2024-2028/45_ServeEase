@@ -229,6 +229,10 @@
       ticketType: raw.ticketType || raw.ticketType || raw.category || "Other",
       description: raw.description || "",
       evidenceUrl: raw.evidenceUrl || raw.attachmentUrl || raw.evidenceName || "",
+      attachmentId: raw.attachmentId || "",
+      attachmentName: raw.attachmentName || raw.evidenceName || "",
+      attachmentType: raw.attachmentType || raw.fileType || "",
+      attachmentSize: raw.attachmentSize || raw.fileSize || 0,
       status: raw.status || "Pending",
       priority: raw.priority || "Medium",
       supportRemarks: raw.supportRemarks || "",
@@ -358,6 +362,11 @@
         return;
       }
       const file = byId("ticketEvidence").files[0];
+      const maxAttachmentSize = 5000 * 1024;
+      if (file && file.size > maxAttachmentSize) {
+        error.textContent = "Attachment must be 5000 KB or smaller.";
+        return;
+      }
       const payload = {
         bookingId: bookingId,
         ticketType: byId("ticketType").value,
@@ -367,12 +376,21 @@
         customerName: session().fullName || booking.customerName || "Customer"
       };
 
-      function finish(ticket) {
+      async function finish(ticket) {
         ticket = normalizeTicket({
           ...ticket,
           providerName: ticket.providerName || booking.provider,
           providerId: ticket.providerId || booking.providerId
         });
+        if (file && window.ServeEaseAttachments) {
+          const attachment = await window.ServeEaseAttachments.saveTicketAttachment(ticket.ticketId, file);
+          if (attachment) {
+            ticket.attachmentId = attachment.attachmentId;
+            ticket.attachmentName = attachment.filename;
+            ticket.attachmentType = attachment.mimeType;
+            ticket.attachmentSize = attachment.fileSize;
+          }
+        }
         upsertTicket(ticket);
         success.textContent = "Ticket submitted successfully.";
         setTimeout(function () {
@@ -429,6 +447,7 @@
       ticketDetailTrigger = trigger || document.activeElement;
       modalBody.innerHTML = ticketDetailsMarkup(ticket, false);
       modal.classList.remove("hidden");
+      bindAttachmentPreviewButtons(modalBody);
       document.body.classList.add("modal-open");
       document.removeEventListener("keydown", handleTicketDetailEscape);
       document.addEventListener("keydown", handleTicketDetailEscape);
@@ -457,7 +476,7 @@
             <div><h3>${ticket.ticketId}</h3><p>${ticket.ticketType} • ${ticket.providerName}</p></div>
             <span class="ticket-status ${statusClass(ticket.status)}">${ticket.status}</span>
             <div class="ticket-meta"><span>Booking: ${ticket.bookingId}</span><span>Raised: ${formatDisplayDate(ticket.createdAt)}</span></div>
-            <div class="ticket-meta"><span>Support: ${ticket.supportRemarks || "Pending review"}</span><span>Decision: ${ticket.finalDecision || "Awaiting decision"}</span></div>
+            <div class="ticket-meta"><span>Support: ${ticket.supportRemarks ? "Update available" : "Pending review"}</span><span>Decision: ${ticket.finalDecision || "Awaiting decision"}</span></div>
             <button class="secondary-action" type="button" data-ticket-detail="${ticket.ticketId}">View Details</button>
           </article>
         `;
@@ -490,15 +509,25 @@
     draw();
   }
 
+  function bindAttachmentPreviewButtons(root) {
+    if (!root || !window.ServeEaseAttachments) return;
+    root.querySelectorAll(".serveease-attachment-preview-btn").forEach(function (button) {
+      button.addEventListener("click", function () {
+        const ticket = getStore().tickets.find(function (item) { return (item.ticketId || item.id) === button.dataset.attachmentTicket; });
+        if (ticket) window.ServeEaseAttachments.previewTicketAttachment(ticket);
+      });
+    });
+  }
+
   function ticketDetailsMarkup(ticket, includeHistory) {
     return `
       <div class="info-grid">
         <div class="info-box"><strong>Ticket Details</strong><div class="info-row"><span>ID:</span><span>${ticket.ticketId}</span></div><div class="info-row"><span>Type:</span><span>${ticket.ticketType}</span></div><div class="info-row"><span>Status:</span><span>${ticket.status}</span></div><div class="info-row"><span>Priority:</span><span>${ticket.priority}</span></div></div>
         <div class="info-box"><strong>Booking Details</strong><div class="info-row"><span>Booking:</span><span>${ticket.bookingId}</span></div><div class="info-row"><span>Provider:</span><span>${ticket.providerName}</span></div><div class="info-row"><span>Customer:</span><span>${ticket.customerName}</span></div></div>
-        <div class="info-box"><strong>Evidence</strong><div>${ticket.evidenceUrl || "No evidence uploaded"}</div></div>
+        <div class="info-box"><strong>Evidence</strong><div>${ticket.attachmentName || ticket.evidenceUrl || "No evidence uploaded"}</div>${window.ServeEaseAttachments ? window.ServeEaseAttachments.actionMarkup(ticket, "Preview attachment") : ""}</div>
         <div class="info-box"><strong>Ticket Description</strong><div>${ticket.description}</div></div>
-        <div class="info-box"><strong>Support Investigation Remarks</strong><div>${ticket.supportRemarks || "No remarks yet."}</div></div>
-        <div class="info-box"><strong>Final Decision</strong><div>${ticket.finalDecision || "Awaiting admin decision."}</div><div>${ticket.adminRemarks || ""}</div></div>
+        ${includeHistory ? `<div class="info-box"><strong>Support Investigation Remarks</strong><div>${ticket.supportRemarks || "No remarks yet."}</div></div>` : ""}
+        <div class="info-box"><strong>Final Decision</strong><div>${ticket.finalDecision || "Awaiting admin decision."}</div>${includeHistory ? `<div>${ticket.adminRemarks || ""}</div>` : ""}</div>
       </div>
       ${includeHistory ? `<div class="ticket-history">${(ticket.statusHistory || []).map(function (entry) { return `<div><strong>${entry.status}</strong><span>${entry.note} • ${entry.updatedBy} • ${formatDisplayDateTime(entry.updatedAt)}</span></div>`; }).join("")}</div>` : ""}
     `;
@@ -555,6 +584,7 @@
       if (!ticket) return;
       body.innerHTML = adminTicketMarkup(ticket);
       modal.classList.remove("hidden");
+      bindAttachmentPreviewButtons(body);
       bindAdminActions(ticket.ticketId, draw);
     });
     [search, status, type, priority].forEach(function (node) { if (node) node.addEventListener("input", draw); if (node) node.addEventListener("change", draw); });

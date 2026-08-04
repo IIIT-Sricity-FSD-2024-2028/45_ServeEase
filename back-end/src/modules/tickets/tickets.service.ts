@@ -110,7 +110,7 @@ export class TicketsService {
       if (ticket.raisedByType !== 'customer') return false;
       if (!email && !userId) return true;
       return ticket.raisedById === userId || ticket.raisedByEmail.toLowerCase() === email.toLowerCase();
-    }));
+    }).map((ticket) => this.publicTicket(ticket)));
   }
 
   findMyProviderTickets(request: Request): SupportTicket[] {
@@ -120,7 +120,7 @@ export class TicketsService {
       if (ticket.raisedByType !== 'provider') return false;
       if (!email && !userId) return true;
       return ticket.raisedById === userId || ticket.raisedByEmail.toLowerCase() === email.toLowerCase();
-    }));
+    }).map((ticket) => this.publicTicket(ticket)));
   }
 
   findVisibleTicket(id: string, request: Request): SupportTicket {
@@ -132,7 +132,7 @@ export class TicketsService {
     if ((email || userId) && ticket.raisedById !== userId && ticket.raisedByEmail.toLowerCase() !== email.toLowerCase()) {
       throw new ForbiddenException('You can view only your own tickets.');
     }
-    return ticket;
+    return this.publicTicket(ticket);
   }
 
   findAllForSupport(): SupportTicket[] {
@@ -273,6 +273,19 @@ export class TicketsService {
 
   private addHistory(ticket: SupportTicket, status: TicketStatus, note: string, updatedBy: string) {
     ticket.statusHistory.unshift({ status, note, updatedBy, updatedAt: new Date().toISOString() });
+  }
+
+  private publicTicket(ticket: SupportTicket): SupportTicket {
+    const { supportRemarks, adminRemarks, escalationReason, assignedSupportId, assignedSupportName, ...visibleTicket } = ticket;
+    return {
+      ...visibleTicket,
+      statusHistory: (ticket.statusHistory || []).map((entry) => ({
+        ...entry,
+        note: ['Support', 'Admin', 'System'].includes(entry.updatedBy)
+          ? `Ticket status updated to ${entry.status}.`
+          : entry.note,
+      })),
+    };
   }
 
   private defaultPriority(type: string): TicketPriority {

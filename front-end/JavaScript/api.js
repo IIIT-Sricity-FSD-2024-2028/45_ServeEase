@@ -560,14 +560,20 @@
 
     function mirror(key, value, action) {
       if (!shouldMirror(key)) return;
-      window.ServeEaseApi.saveState(key, parseValue(value)).catch(function () {
+      try {
+        Promise.resolve(window.ServeEaseApi.saveState(key, parseValue(value))).catch(function () {
+          return null;
+        });
+        Promise.resolve(window.ServeEaseApi.logActivity({
+          action: action || "state_saved",
+          page: window.location.pathname.replace("/", "") || "index.html",
+          details: key
+        })).catch(function () {
+          return null;
+        });
+      } catch (error) {
         return null;
-      });
-      window.ServeEaseApi.logActivity({
-        action: action || "state_saved",
-        page: window.location.pathname.replace("/", "") || "index.html",
-        details: key
-      });
+      }
     }
 
     localStorage.setItem = function (key, value) {
