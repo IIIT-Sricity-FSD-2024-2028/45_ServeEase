@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
 import { Booking } from './booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
@@ -9,26 +8,32 @@ export class BookingsRepository {
   private readonly bookings: Booking[] = [];
 
   findAll(): Booking[] {
+    this.autoCancelExpiredPending();
     return this.bookings;
   }
 
   findById(id: string): Booking | undefined {
+    this.autoCancelExpiredPending();
     return this.bookings.find((booking) => booking.id === id);
   }
 
   findByProvider(providerId: string): Booking[] {
+    this.autoCancelExpiredPending();
     return this.bookings.filter((booking) => booking.providerId === providerId);
   }
 
   findByProviderAndDate(providerId: string, date: string): Booking[] {
+    this.autoCancelExpiredPending();
     return this.bookings.filter((booking) => booking.providerId === providerId && booking.date === date);
   }
 
   create(data: CreateBookingDto): Booking {
     const status = data.status ?? 'Pending';
+    const createdAt = new Date().toISOString();
     const booking = {
       ...data,
-      id: randomUUID(),
+      id: this.nextBookingReference(createdAt),
+      createdAt,
       status,
       category: status,
       paymentStatus: this.paymentStatusFor(status),
@@ -84,5 +89,36 @@ export class BookingsRepository {
     if (index === -1) return undefined;
     const [deletedBooking] = this.bookings.splice(index, 1);
     return deletedBooking;
+  }
+
+  private nextBookingReference(createdAt: string): string {
+    const stamp = new Date(createdAt);
+    const date = stamp.getFullYear() + String(stamp.getMonth() + 1).padStart(2, '0') + String(stamp.getDate()).padStart(2, '0');
+    const time = String(stamp.getHours()).padStart(2, '0') + String(stamp.getMinutes()).padStart(2, '0');
+    const next = this.bookings.reduce((max, booking) => {
+      const match = booking.id.match(/^BOOK-\d{8}-\d{4}-(\d{4})$/);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1;
+    return `BOOK-${date}-${time}-${String(next).padStart(4, '0')}`;
+  }
+
+  private autoCancelExpiredPending(): void {
+    const now = new Date();
+    this.bookings.forEach((booking) => {
+      if (booking.status !== 'Pending') return;
+      const serviceDate = this.parseServiceDate(booking.date);
+      if (!serviceDate || now.getTime() < serviceDate.getTime()) return;
+      booking.status = 'Cancelled';
+      booking.category = 'Cancelled';
+      booking.paymentStatus = 'Refunded';
+      booking.cancellationReason = 'Automatically cancelled because the provider did not confirm the booking before the scheduled service date.';
+    });
+  }
+
+  private parseServiceDate(value: string): Date | undefined {
+    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? undefined : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
   }
 }

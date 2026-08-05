@@ -263,7 +263,10 @@
   }
 
   function getCustomerData() {
-    return JSON.parse(localStorage.getItem(seedKey));
+    const data = JSON.parse(localStorage.getItem(seedKey));
+    const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(data);
+    if (normalized && normalized.changed) localStorage.setItem(seedKey, JSON.stringify(normalized.data));
+    return normalized ? normalized.data : data;
   }
 
   function setCustomerData(data) {
@@ -615,6 +618,8 @@
       existingBooking.customerPhone = booking.customerPhone || existingBooking.customerPhone;
       existingBooking.customerEmail = booking.customerEmail || existingBooking.customerEmail;
       existingBooking.category = category || existingBooking.category;
+      existingBooking.cancellationReason = booking.cancellationReason || existingBooking.cancellationReason;
+      existingBooking.createdAt = booking.createdAt || existingBooking.createdAt || "";
       ensurePaymentForBooking(data, existingBooking);
       return true;
     }
@@ -632,7 +637,9 @@
       customerName: booking.customerName || session.fullName || "Customer",
       customerPhone: booking.customerPhone || session.phone || "",
       customerEmail: booking.customerEmail || session.email || "",
-      category: category || "Pending"
+      category: category || "Pending",
+      createdAt: booking.createdAt || "",
+      cancellationReason: booking.cancellationReason || ""
     });
     ensurePaymentForBooking(data, data.bookings[0]);
     return true;
@@ -1295,7 +1302,7 @@
               booking.status = "Cancelled";
               booking.category = "Cancelled";
               setCustomerData(data);
-              if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+              if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
                 window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
                   console.warn("ServeEase backend cancellation sync failed.", error);
                 });
@@ -1324,7 +1331,7 @@
               booking.status = "Cancelled";
               booking.category = "Cancelled";
               setCustomerData(data);
-              if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+              if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
                 window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
                   console.warn("ServeEase backend cancellation sync failed.", error);
                 });
@@ -1386,6 +1393,7 @@
           <div class="info-row"><span>Provider Name:</span><span>${booking.provider}</span></div>
           <div class="info-row"><span>Booking Reference:</span><span>${getBookingReference(booking)}</span></div>
           <div class="info-row"><span>Status:</span><span class="status-pill ${statusClass(booking.status)}">${booking.status}</span></div>
+          ${booking.cancellationReason ? `<div class="info-row"><span>Cancellation Reason:</span><span>${booking.cancellationReason}</span></div>` : ""}
         </div>
 
         <div class="info-box">

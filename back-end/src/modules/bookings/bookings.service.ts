@@ -55,9 +55,9 @@ export class BookingsService {
   }
 
   private validateId(id: string): void {
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!id || !uuidPattern.test(id)) {
-      throw new BadRequestException('Invalid booking id. Expected a UUID string.');
+    const referencePattern = /^BOOK-\d{8}-\d{4}-\d{4}$/;
+    if (!id || !referencePattern.test(id)) {
+      throw new BadRequestException('Invalid booking id. Expected a booking reference.');
     }
   }
 }

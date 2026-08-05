@@ -38,7 +38,7 @@ export class BookingsController {
 
   @Get(':id')
   @Roles('admin', 'user')
-  @ApiOperation({ summary: 'Get one booking by UUID' })
+  @ApiOperation({ summary: 'Get one booking by booking reference' })
   @ApiOkResponse({
     description: 'Booking returned successfully.',
     schema: {

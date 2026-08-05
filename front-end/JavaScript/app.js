@@ -834,7 +834,11 @@ async function submitBookingCheckout() {
     '{"bookings":[],"payments":[],"tickets":[]}'
   );
 
-  const bookingRef = `BOOK-2026-${8000 + customerModuleData.bookings.length + 1}`;
+  const createdAt = new Date().toISOString();
+  const workflow = window.ServeEaseBookingWorkflow;
+  const bookingRef = workflow
+    ? workflow.generateReference(customerModuleData.bookings, createdAt, time)
+    : `BOOK-${createdAt.slice(0, 10).replace(/-/g, "")}-${createdAt.slice(11, 16).replace(/:/g, "")}-0001`;
   const paymentRef = `TXN-2026-${4500 + customerModuleData.payments.length + 1}`;
 
   let bookingEntry = {
@@ -851,7 +855,8 @@ async function submitBookingCheckout() {
     paymentMethod: paymentMethod,
     customerName: name,
     customerPhone: phone,
-    customerEmail: email
+    customerEmail: email,
+    createdAt: createdAt
   };
 
   if (window.ServeEaseApi && typeof window.ServeEaseApi.createBooking === "function") {
@@ -873,7 +878,7 @@ async function submitBookingCheckout() {
 
       if (apiBooking && apiBooking.id) {
         bookingEntry = {
-          id: apiBooking.id,
+          id: workflow ? workflow.normalizeReference(apiBooking.id) : apiBooking.id,
           service: apiBooking.service,
           provider: apiBooking.provider,
           providerId: apiBooking.providerId || provider.id,
@@ -886,7 +891,8 @@ async function submitBookingCheckout() {
           customerName: apiBooking.customerName || name,
           customerPhone: apiBooking.customerPhone || phone,
           customerEmail: apiBooking.customerEmail || email,
-          category: apiBooking.category || apiBooking.status
+          category: apiBooking.category || apiBooking.status,
+          createdAt: apiBooking.createdAt || createdAt
         };
       }
     } catch (error) {
@@ -905,6 +911,7 @@ async function submitBookingCheckout() {
     status: "Pending"
   };
 
+  if (workflow) workflow.normalizeData(customerModuleData);
   customerModuleData.bookings.unshift(bookingEntry);
   customerModuleData.payments.unshift(paymentEntry);
   localStorage.setItem(customerModuleKey, JSON.stringify(customerModuleData));
@@ -1174,7 +1181,7 @@ function initBookingSubmittedPage() {
   const card = document.getElementById("bookingSubmissionCard");
   if (!card) return;
 
-  const bookingRef = getQueryParam("bookingRef") || "BOOK-2026-8136";
+  const bookingRef = getQueryParam("bookingRef") || "BOOK-20260101-0000-8136";
   const service = getQueryParam("service") || "Kitchen Cleaning";
   const provider = getQueryParam("provider") || "CleanPro Services";
   const date = getQueryParam("date") || "15 March 2026";
@@ -1191,7 +1198,7 @@ function initBookingSubmittedPage() {
 
     <div class="awaiting-box">
       <strong>🕒 Awaiting Provider Confirmation</strong>
-      <span>Typical response time: 15-30 minutes</span>
+      <span>Your booking request has been sent successfully. The provider must confirm it before your scheduled service date. You'll be notified once it is accepted or rejected.</span>
     </div>
 
     <div class="success-info-card">

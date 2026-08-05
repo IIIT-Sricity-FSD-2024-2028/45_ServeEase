@@ -23,7 +23,10 @@
     const data = JSON.parse(localStorage.getItem(supportStorageKey) || "null");
     if (!data || !Array.isArray(data.tickets)) return data;
 
-    let changed = false;
+    const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(data);
+    if (normalized && normalized.changed) localStorage.setItem(supportStorageKey, JSON.stringify(normalized.data));
+
+    let changed = Boolean(normalized && normalized.changed);
     data.tickets.forEach(function (ticket) {
       if (!ticket) return;
       const sourceValue = ticket.createdAtIso || ticket.createdDate || ticket.date || ticket.createdOn || ticket.created || "";

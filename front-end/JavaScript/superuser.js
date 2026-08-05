@@ -22,7 +22,10 @@
   }
 
   function getData() {
-    return JSON.parse(localStorage.getItem(storageKey) || "null");
+    const data = JSON.parse(localStorage.getItem(storageKey) || "null");
+    const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(data);
+    if (normalized && normalized.changed) localStorage.setItem(storageKey, JSON.stringify(normalized.data));
+    return normalized ? normalized.data : data;
   }
 
   function setData(data) {
@@ -713,9 +716,9 @@
       activities: [
         { id: "AA001", icon: "👥", color: "blue", title: "New customer registered - Raghava Kumar", time: "5 minutes ago" },
         { id: "AA002", icon: "🧑‍🔧", color: "purple", title: "New service provider registered - Anita Verma (Salon Services)", time: "15 minutes ago" },
-        { id: "AA003", icon: "🗓", color: "green", title: "New booking created - BOOK-2026-1045", time: "30 minutes ago" },
+        { id: "AA003", icon: "🗓", color: "green", title: "New booking created - BOOK-20260101-0000-1045", time: "30 minutes ago" },
         { id: "AA004", icon: "📈", color: "red", title: "Support ticket escalated - TICKET-2026-2103", time: "1 hour ago" },
-        { id: "AA005", icon: "✓", color: "green", title: "Booking completed - BOOK-2026-1040", time: "2 hours ago" }
+        { id: "AA005", icon: "✓", color: "green", title: "Booking completed - BOOK-20260101-0000-1040", time: "2 hours ago" }
       ],
       customers: [
         { id: "CUS001", fullName: "Raghava Kumar", email: "raghava.kumar@email.com", phone: "+91 9876543210", registrationDate: "15 Jan 2026", status: "Active" },

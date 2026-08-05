@@ -36,7 +36,41 @@
     : "serveEaseProviderModuleData:" + getAccountStorageSuffix();
 
   function getProviderModuleData() {
-    return JSON.parse(localStorage.getItem(providerDataKey));
+    const data = JSON.parse(localStorage.getItem(providerDataKey));
+    const transactionResult = standardizeProviderTransactionIds(data);
+    if (transactionResult.changed) localStorage.setItem(providerDataKey, JSON.stringify(transactionResult.data));
+    const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(transactionResult.data);
+    if (normalized && normalized.changed) localStorage.setItem(providerDataKey, JSON.stringify(normalized.data));
+    return normalized ? normalized.data : data;
+  }
+
+  function standardizeProviderTransactionIds(data) {
+    if (!data || !Array.isArray(data.transactions)) return { data: data, changed: false };
+    let changed = false;
+    let nextNumber = data.transactions.reduce(function (max, transaction) {
+      const match = String(transaction && transaction.id || "").match(/(?:TXN|TX)-\d{4}-(\d{4})$/i);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 4500) + 1;
+    const used = new Set();
+    data.transactions.forEach(function (transaction) {
+      if (!transaction) return;
+      const current = String(transaction.id || "");
+      if (/^TXN-\d{4}-\d{4}$/.test(current)) { used.add(current); return; }
+      let next = "TXN-" + new Date().getFullYear() + "-" + String(nextNumber++).padStart(4, "0");
+      while (used.has(next)) next = "TXN-" + new Date().getFullYear() + "-" + String(nextNumber++).padStart(4, "0");
+      transaction.id = next;
+      used.add(next);
+      changed = true;
+    });
+    return { data: data, changed: changed };
+  }
+
+  function nextProviderTransactionId(transactions) {
+    const nextNumber = (Array.isArray(transactions) ? transactions : []).reduce(function (max, transaction) {
+      const match = String(transaction && transaction.id || '').match(/^TXN-\d{4}-(\d{4})$/);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 4500) + 1;
+    return 'TXN-' + new Date().getFullYear() + '-' + String(nextNumber).padStart(4, '0');
   }
 
   function setProviderModuleData(data) {
@@ -82,7 +116,10 @@
       return key === "serveEaseCustomerModuleData" || key.indexOf("serveEaseCustomerModuleData:") === 0;
     }).forEach(function (key) {
       try {
-        const customerData = JSON.parse(localStorage.getItem(key) || "null");
+      const rawCustomerData = JSON.parse(localStorage.getItem(key) || "null");
+      const normalizedCustomerData = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(rawCustomerData);
+      const customerData = normalizedCustomerData ? normalizedCustomerData.data : rawCustomerData;
+      if (normalizedCustomerData && normalizedCustomerData.changed) localStorage.setItem(key, JSON.stringify(customerData));
         if (!customerData || !Array.isArray(customerData.bookings)) return;
 
         customerData.bookings.forEach(function (booking) {
@@ -291,7 +328,7 @@
 
       if (!transaction) {
         transaction = {
-          id: "PAYOUT-" + bookingId,
+          id: nextProviderTransactionId(data.transactions),
           bookingRef: bookingId,
           service: booking.service || "Service",
           customer: booking.customer || "Customer",
@@ -888,6 +925,7 @@
             existingBooking.status = resolvedStatus;
             existingBooking.paymentDate = booking.paymentDate || booking.paidAt || existingBooking.paymentDate || "";
             existingBooking.receivedDate = booking.receivedDate || booking.completedAt || existingBooking.receivedDate || "";
+            existingBooking.cancellationReason = booking.cancellationReason || existingBooking.cancellationReason || "";
             existingBooking.progress = bookingProgressForStatus(resolvedStatus);
             changed = true;
             return;
@@ -911,6 +949,7 @@
             paymentDate: booking.paymentDate || booking.paidAt || "",
             receivedDate: booking.receivedDate || booking.completedAt || "",
             progress: bookingProgressForStatus(booking.status || "Pending")
+            ,cancellationReason: booking.cancellationReason || ""
           });
           existingIds.add(booking.id);
           changed = true;
@@ -1381,7 +1420,6 @@
     const category = document.getElementById("providerServiceCategory");
     const description = document.getElementById("providerServiceDescription");
     const price = document.getElementById("providerServicePrice");
-    const duration = document.getElementById("providerServiceDuration");
     const location = document.getElementById("providerServiceLocation");
     const error = document.getElementById("providerServiceError");
 
@@ -1412,7 +1450,6 @@
       category.value = (getProviderModuleData().profile || {}).category || service.category;
       description.value = service.description;
       price.value = service.price;
-      duration.value = service.duration;
       location.value = service.cityName || getCityNameFromLocation(service.location || providerProfile.location);
     } else {
       editId.value = "";
@@ -1420,7 +1457,6 @@
       category.value = (getProviderModuleData().profile || {}).category || "";
       description.value = "";
       price.value = "";
-      duration.value = "";
       location.value = providerProfile.cityName || providerProfile.location || "";
     }
 
@@ -1611,6 +1647,13 @@
       return item && Array.isArray(item.slots) ? item.slots : null;
     }
 
+    function lockedSlotsFor(date, slots, disabledSlots) {
+      const available = availableSlotsFor(date);
+      return available === null ? [] : slots.filter(function (slot) {
+        return !available.includes(slot) && !disabledSlots.includes(slot);
+      });
+    }
+
     function renderLoading() {
       panel.innerHTML = `
         <div class="provider-availability-skeleton" role="status" aria-label="Loading availability settings">
@@ -1656,15 +1699,14 @@
       const day = weekdays[(selected.getDay() + 6) % 7];
       const override = overrideDraft || overrideFor(selectedDate) || { fullDayOff: false, disabledSlots: [] };
       const slots = activeSlots(day);
-      const available = availableSlotsFor(selectedDate);
-      const lockedSlots = available === null ? [] : slots.filter(function (slot) {
-        return !available.includes(slot) && !override.disabledSlots.includes(slot) && !override.fullDayOff;
-      });
+      const lockedSlots = lockedSlotsFor(selectedDate, slots, override.disabledSlots);
+      const hasBookedSlots = lockedSlots.length > 0;
       const isPast = selectedDate < isoDate(new Date());
       return `
         <aside class="availability-override-drawer" aria-labelledby="overrideDrawerTitle">
           <div class="availability-drawer-head"><div><span>Selected date</span><h3 id="overrideDrawerTitle">${selected.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</h3></div><button type="button" class="availability-close-btn" data-close-override aria-label="Close date override">×</button></div>
-          <label class="availability-full-day-toggle"><input type="checkbox" id="overrideFullDayOff" ${override.fullDayOff ? 'checked' : ''} ${isPast ? 'disabled' : ''}> <span>Full day off</span></label>
+          <label class="availability-full-day-toggle"><input type="checkbox" id="overrideFullDayOff" ${override.fullDayOff ? 'checked' : ''} ${isPast || hasBookedSlots ? 'disabled' : ''}> <span>Full day off</span></label>
+          ${hasBookedSlots ? '<p class="availability-drawer-note">Full Day Off cannot be selected because bookings already exist on this date.</p>' : ''}
           ${override.fullDayOff ? '<p class="availability-drawer-note">All time slots are unavailable for this date.</p>' : `
             <div class="availability-override-slots">
               ${slots.length ? slots.map(function (slot) {
@@ -1856,7 +1898,7 @@
             </div>
 
             <div class="provider-service-desc">${service.description}</div>
-            <div class="provider-service-meta">${formatCurrency(service.price)} &nbsp; • &nbsp; Duration: ${service.duration}</div>
+            <div class="provider-service-meta">${formatCurrency(service.price)}</div>
             <div class="provider-service-meta">📍 ${service.location}</div>
 
             <div class="provider-service-actions">
@@ -1936,12 +1978,11 @@
       const category = data.profile.category;
       const description = document.getElementById("providerServiceDescription").value.trim();
       const price = document.getElementById("providerServicePrice").value.trim();
-      const duration = document.getElementById("providerServiceDuration").value.trim();
       const location = document.getElementById("providerServiceLocation").value.trim();
       const cityId = getCityIdFromLocation(location);
       const cityName = getCityById(cityId).name;
 
-      if (!name || !category || !description || !price || !duration || !location) {
+      if (!name || !category || !description || !price || !location) {
         error.textContent = "Please fill all service fields.";
         return;
       }
@@ -1971,7 +2012,6 @@
           service.category = category;
           service.description = description;
           service.price = Number(price);
-          service.duration = duration;
           service.cityId = cityId;
           service.cityName = cityName;
           service.location = cityName;
@@ -1984,7 +2024,6 @@
           category: category,
           description: description,
           price: Number(price),
-          duration: duration,
           cityId: cityId,
           cityName: cityName,
           location: cityName,
@@ -2086,7 +2125,7 @@
           booking.statusUpdatedAt = new Date().toISOString();
           syncCustomerBookingStatusFromProvider(booking, "Accepted");
           reconcileProviderPayouts(data);
-          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
             window.ServeEaseApi.updateBooking(booking.id, { status: "Accepted" }).catch(function (error) {
               console.warn("ServeEase backend accept booking sync failed.", error);
             });
@@ -2108,7 +2147,7 @@
           booking.statusUpdatedAt = new Date().toISOString();
           syncCustomerBookingStatusFromProvider(booking, "Cancelled");
           reconcileProviderPayouts(data);
-          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
             window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
               console.warn("ServeEase backend reject booking sync failed.", error);
             });
@@ -2129,7 +2168,7 @@
           const reviewSection = `<div class="info-box booking-review-section"><strong>Customer Review</strong>${review ? `<div class="review-rating"><span class="review-stars">${window.ServeEaseReviews.stars(review.rating)}</span><span class="booking-rating-value">${Number(review.rating).toFixed(1)}</span></div><div class="review-feedback"><strong>Feedback</strong><div>${review.feedback || "No feedback provided."}</div></div>` : "<div>No customer review yet.</div>"}</div>`;
           bookingModalContent.innerHTML = `
             <div class="info-grid">
-              <div class="info-box"><strong>Booking Information</strong><div class="info-row"><span>Booking ID:</span><span>${booking.id}</span></div><div class="info-row"><span>Status:</span><span class="status-pill ${statusClass(booking.status)}">${booking.status}</span></div><div class="info-row"><span>Progress:</span><span>${booking.progress}%</span></div></div>
+              <div class="info-box"><strong>Booking Information</strong><div class="info-row"><span>Booking Reference:</span><span>${booking.id}</span></div><div class="info-row"><span>Status:</span><span class="status-pill ${statusClass(booking.status)}">${booking.status}</span></div>${booking.cancellationReason ? `<div class="info-row"><span>Cancellation Reason:</span><span>${booking.cancellationReason}</span></div>` : ""}<div class="info-row"><span>Progress:</span><span>${booking.progress}%</span></div></div>
               <div class="info-box"><strong>Customer Information</strong><div class="info-row"><span>Name:</span><span>${booking.customer}</span></div><div class="info-row"><span>Location:</span><span>${booking.location}</span></div></div>
               <div class="info-box"><strong>Service Information</strong><div class="info-row"><span>Service:</span><span>${booking.service}</span></div><div class="info-row"><span>Date:</span><span>${formatDisplayDate(booking.date)}</span></div><div class="info-row"><span>Time:</span><span>${booking.time}</span></div><div class="info-row"><span>Amount:</span><span>${formatCurrency(booking.amount)}</span></div></div>
               ${reviewSection}
@@ -2151,7 +2190,7 @@
           booking.receivedDate = formatDisplayDate(new Date());
           syncCustomerBookingStatusFromProvider(booking, "Completed");
           reconcileProviderPayouts(data);
-          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^[0-9a-f-]{36}$/i.test(booking.id)) {
+          if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
             window.ServeEaseApi.updateBooking(booking.id, { status: "Completed", receivedDate: booking.receivedDate }).catch(function (error) {
               console.warn("ServeEase backend complete booking sync failed.", error);
             });
@@ -2584,6 +2623,11 @@
       setProviderModuleData(data);
     }
     const profilePhoto = getProviderProfilePhoto(data.profile);
+    const supportedCities = getAllServeEaseCities();
+    const selectedCity = supportedCities.find(function (city) {
+      const location = String(data.profile.location || '').toLowerCase();
+      return location && (location.indexOf(city.name.toLowerCase()) !== -1 || (city.name === 'Bangalore' && location.indexOf('bengaluru') !== -1));
+    });
 
     var orgNameHtml = data.profile.organisationName
       ? `<div class="info-box"><strong>Organisation Name</strong><input type="text" class="provider-edit-input" id="providerOrgNameInput" value="${data.profile.organisationName}" /></div>`
@@ -2600,7 +2644,7 @@
       ${orgNameHtml}
       <div class="info-box"><strong>Email</strong><input type="email" class="provider-edit-input" id="providerEmailInput" value="${data.profile.email}" /></div>
       <div class="info-box"><strong>Phone</strong><input type="text" class="provider-edit-input" id="providerPhoneInput" value="${data.profile.phone}" /></div>
-      <div class="info-box"><strong>Location</strong><input type="text" class="provider-edit-input" id="providerLocationInput" value="${data.profile.location}" /></div>
+      <div class="info-box"><strong>Location</strong><select class="provider-edit-input" id="providerLocationInput"><option value="">Select provider city</option>${supportedCities.map(function (city) { return `<option value="${city.id}" ${selectedCity && selectedCity.id === city.id ? 'selected' : ''}>${city.name}</option>`; }).join('')}</select><small id="providerLocationError" class="error" aria-live="polite"></small></div>
       <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 8px;">
         <button type="button" class="btn btn-primary" id="saveProviderProfileBtn">Save Profile</button>
       </div>
@@ -2670,12 +2714,22 @@
     async function saveProfileSections(button, includeProfessional) {
       const updatedData = getProviderModuleData();
       const photoFile = document.getElementById("providerProfilePhotoInput") && document.getElementById("providerProfilePhotoInput").files[0];
+      const selectedCityId = Number(document.getElementById("providerLocationInput").value || 0);
+      const selectedCityOption = getAllServeEaseCities().find(function (city) { return Number(city.id) === selectedCityId; });
+      const locationError = document.getElementById("providerLocationError");
+      if (!selectedCityOption) {
+        if (locationError) locationError.textContent = "Please select a supported city.";
+        return;
+      }
+      if (locationError) locationError.textContent = "";
 
       updatedData.profile.fullName = document.getElementById("providerFullNameInput").value.trim() || updatedData.profile.fullName;
       updatedData.profile.organisationName = document.getElementById("providerOrgNameInput") ? document.getElementById("providerOrgNameInput").value.trim() : updatedData.profile.organisationName;
       updatedData.profile.email = document.getElementById("providerEmailInput").value.trim() || updatedData.profile.email;
       updatedData.profile.phone = document.getElementById("providerPhoneInput").value.trim() || updatedData.profile.phone;
-      updatedData.profile.location = document.getElementById("providerLocationInput").value.trim() || updatedData.profile.location;
+      updatedData.profile.cityId = selectedCityOption.id;
+      updatedData.profile.cityName = selectedCityOption.name;
+      updatedData.profile.location = selectedCityOption.name;
 
       if (includeProfessional) {
         updatedData.profile.category = document.getElementById("providerCategoryInput").value.trim() || updatedData.profile.category;

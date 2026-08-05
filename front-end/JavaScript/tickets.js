@@ -214,7 +214,10 @@
     const suffix = current.email === "user@serveease.com" || current.userId === "CUS001"
       ? "serveEaseCustomerModuleData"
       : "serveEaseCustomerModuleData:" + (current.userId || String(current.email || "customer").toLowerCase());
-    return JSON.parse(localStorage.getItem(suffix) || '{"bookings":[]}');
+    const data = JSON.parse(localStorage.getItem(suffix) || '{"bookings":[]}');
+    const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(data);
+    if (normalized && normalized.changed) localStorage.setItem(suffix, JSON.stringify(normalized.data));
+    return normalized ? normalized.data : data;
   }
 
   function normalizeTicket(raw) {

@@ -205,8 +205,26 @@
 
 .provider-modal-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 24px 0 12px 0;
+}
+
+.provider-modal-actions .btn,
+.provider-modal-actions .secondary-btn {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  width: auto;
+  margin-top: 0;
+}
+
+.provider-modal-actions .secondary-btn {
+  border-radius: 10px;
 }
 
 .provider-booking-card {
@@ -335,6 +353,18 @@
 .provider-modal-form {
   display: grid;
   gap: 12px;
+}
+
+.provider-modal-card .provider-modal-form {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.provider-modal-card .provider-modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: #fff;
 }
 
 .provider-modal-form label {

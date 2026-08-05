@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class Booking {
-  @ApiProperty({ example: '0691fb87-3660-4eca-82d4-b56e1c09f51e' })
+  @ApiProperty({ example: 'BOOK-20260805-1435-0001' })
   id: string;
 
   @ApiProperty({ example: 'Kitchen Cleaning' })
@@ -51,4 +51,10 @@ export class Booking {
 
   @ApiProperty({ example: 'customer@example.com' })
   customerEmail: string;
+
+  @ApiProperty({ example: '2026-08-05T14:35:00.000Z' })
+  createdAt: string;
+
+  @ApiProperty({ required: false })
+  cancellationReason?: string;
 }
