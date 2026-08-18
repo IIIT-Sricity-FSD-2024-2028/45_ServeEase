@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Administration</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/superuser.css" />
+  <link rel="stylesheet" href="CSS/administration.css" />
+</head>
+<body class="administration-page">
+  <header class="dashboard-topbar superuser-topbar admin-topbar">
+    <a class="dashboard-brand admin-brand" href="index.html" aria-label="ServeEase home">
+      <span class="brand-icon admin-brand-mark">SE</span>
+      <span>ServeEase</span>
+    </a>
+    <nav class="dashboard-topbar-actions admin-nav" aria-label="Administration navigation">
+      <a href="employee-portal.html">Employee Portal</a>
+      <a href="superuser-dashboard.html">Superuser Dashboard</a>
+      <a href="login.html">Login</a>
+    </nav>
+  </header>
+
+  <main class="dashboard-page superuser-page admin-shell">
+    <section class="panel-card superuser-title-card left-accent-blue admin-hero" aria-labelledby="administrationTitle">
+      <div>
+        <h1 id="administrationTitle">Administration</h1>
+        <p class="admin-description">Review platform operations, reports and monitoring entry points.</p>
+      </div>
+      <a class="btn btn-primary admin-primary-link" href="superuser-dashboard.html">Open Dashboard</a>
+    </section>
+
+    <section class="admin-grid" aria-label="Administration areas">
+      <article class="admin-card">
+        <span class="admin-card-code">DB</span>
+        <h2>Dashboard</h2>
+        <p>Platform overview and operational totals.</p>
+        <a href="superuser-dashboard.html">Open</a>
+      </article>
+
+      <article class="admin-card">
+        <span class="admin-card-code">AN</span>
+        <h2>Analytics</h2>
+        <p>Booking trends, service mix, and provider/customer activity.</p>
+        <a href="superuser-dashboard.html">Open</a>
+      </article>
+
+      <article class="admin-card">
+        <span class="admin-card-code">RP</span>
+        <h2>Reports</h2>
+        <p>Existing report and platform summary areas.</p>
+        <a href="superuser-dashboard.html">Open</a>
+      </article>
+
+      <article class="admin-card">
+        <span class="admin-card-code">AM</span>
+        <h2>Activity Monitoring</h2>
+        <p>Recent registrations, notifications, and system activity.</p>
+        <a href="superuser-dashboard.html#notifications">Open</a>
+      </article>
+    </section>
+
+    <section class="admin-directory" aria-labelledby="adminDirectoryTitle">
+      <div class="admin-directory-head">
+        <p class="admin-kicker">Employee Departments</p>
+        <h2 id="adminDirectoryTitle">Operational Entry Points</h2>
+      </div>
+      <div class="admin-directory-links">
+        <a href="employee-portal.html">Employee Portal</a>
+        <a href="superuser-management.html">Customer Operations</a>
+        <a href="superuser-provider-verification.html">Provider Operations</a>
+        <a href="support-dashboard.html">Support</a>
+        <a href="payment-history.html">Finance</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/administration.js"></script>
+</body>
+</html>

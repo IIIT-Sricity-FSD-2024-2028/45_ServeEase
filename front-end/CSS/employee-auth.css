@@ -1,0 +1,75 @@
+body.employee-login-page,
+body.employee-access-page {
+  background: #f5f7fb;
+}
+
+.employee-login-page .employee-login-card {
+  width: min(460px, 100%);
+}
+
+.employee-login-note {
+  margin-top: 12px;
+  color: #667a97;
+  font-size: 13px;
+  text-align: center;
+}
+
+.employee-login-note a {
+  color: #2f6df6;
+  font-weight: 700;
+}
+
+.employee-access-page .employee-access-shell {
+  width: min(720px, 92%);
+  margin: 80px auto;
+}
+
+.employee-access-page .employee-access-card {
+  padding: 26px;
+  border-left: 4px solid #ef4444;
+}
+
+.employee-access-page .employee-access-card h1 {
+  margin-bottom: 8px;
+  color: #12284a;
+  font-size: 30px;
+}
+
+.employee-access-page .employee-access-card p {
+  margin-bottom: 18px;
+  color: #667a97;
+}
+
+.employee-access-page .employee-access-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.employee-legacy-route-notice {
+  margin-bottom: 18px;
+  border-left: 4px solid #2f6df6;
+}
+
+.employee-legacy-route-notice strong,
+.employee-legacy-route-notice span {
+  display: block;
+}
+
+.employee-legacy-route-notice strong {
+  color: #12284a;
+  font-size: 18px;
+}
+
+.employee-legacy-route-notice span {
+  margin-top: 4px;
+  color: #2f6df6;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.employee-legacy-route-notice p {
+  margin-top: 8px;
+  color: #667a97;
+  font-size: 14px;
+}

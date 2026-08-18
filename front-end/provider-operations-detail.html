@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Provider Profile</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/attachments.css" />
+  <link rel="stylesheet" href="CSS/provider-operations-detail.css" />
+</head>
+<body class="provider-operations-detail-page">
+  <header class="dashboard-topbar provider-operations-detail-topbar">
+    <a class="dashboard-brand portal-brand" href="index.html" aria-label="ServeEase home">
+      <span class="brand-icon portal-brand-mark">SE</span>
+      <span>ServeEase</span>
+    </a>
+    <nav class="dashboard-topbar-actions portal-nav" aria-label="Provider profile navigation">
+      <button class="btn btn-outline" type="button" id="providerOperationsDetailLogoutBtn">Logout</button>
+    </nav>
+  </header>
+
+  <main class="dashboard-page provider-operations-detail-shell">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="index.html">Home</a><span aria-hidden="true">&gt;</span><span>Employee</span><span aria-hidden="true">&gt;</span><a href="provider-operations.html">Provider Operations</a><span aria-hidden="true">&gt;</span><strong>Provider Profile</strong>
+      </div>
+
+      <a class="provider-operations-back-link" href="provider-operations.html">&larr; Back to Provider Operations</a>
+
+      <section class="provider-operations-detail-hero" aria-labelledby="providerOperationsDetailTitle">
+        <div>
+          <h1 id="providerOperationsDetailTitle">Provider Profile</h1>
+          <p id="providerOperationsDetailHeroName">Selected provider operational view</p>
+        </div>
+      </section>
+
+      <section class="provider-operations-not-found" id="providerOperationsNotFound" hidden>
+        <h2>Provider not found.</h2>
+        <p>The selected provider ID does not match an existing ServeEase provider record.</p>
+        <a class="btn btn-outline" href="provider-operations.html">&larr; Back to Provider Operations</a>
+      </section>
+
+      <div id="providerOperationsDetailContent">
+        <section class="provider-operations-detail-card" aria-labelledby="providerInformationTitle">
+          <div class="provider-operations-section-head">
+            <h2 id="providerInformationTitle">Provider Information</h2>
+          </div>
+          <div class="provider-operations-info-grid" id="providerOperationsInfoGrid"></div>
+        </section>
+
+        <section class="provider-operations-detail-stats" id="providerOperationsDetailStats" aria-label="Selected provider statistics"></section>
+
+        <section class="provider-operations-detail-card" aria-labelledby="providerVerificationTitle">
+          <div class="provider-operations-section-head">
+            <h2 id="providerVerificationTitle">Provider Verification</h2>
+          </div>
+          <div class="provider-operations-info-grid" id="providerOperationsVerificationGrid"></div>
+          <div class="provider-operations-list" id="providerOperationsDocumentList"></div>
+        </section>
+
+        <section class="provider-operations-detail-card" aria-labelledby="providerServicesTitle">
+          <div class="provider-operations-section-head">
+            <h2 id="providerServicesTitle">Provider Services</h2>
+            <span id="providerOperationsServiceCount">0 services</span>
+          </div>
+          <div class="provider-operations-table-wrap">
+            <table class="provider-operations-table">
+              <thead>
+                <tr>
+                  <th>Service Name</th>
+                  <th>Category</th>
+                  <th>Subcategory</th>
+                  <th>Price</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="providerOperationsServiceRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="provider-operations-detail-card" aria-labelledby="providerBookingActivityTitle">
+          <div class="provider-operations-section-head">
+            <h2 id="providerBookingActivityTitle">Provider Booking Activity</h2>
+            <span id="providerOperationsBookingCount">0 bookings</span>
+          </div>
+          <div class="provider-operations-table-wrap">
+            <table class="provider-operations-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Customer</th>
+                  <th>Service</th>
+                  <th>Date / Time</th>
+                  <th>Status</th>
+                  <th>Payment Status</th>
+                </tr>
+              </thead>
+              <tbody id="providerOperationsBookingRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="provider-operations-detail-card" aria-labelledby="providerAvailabilityTitle">
+          <div class="provider-operations-section-head">
+            <h2 id="providerAvailabilityTitle">Availability Overview</h2>
+          </div>
+          <div class="provider-operations-list" id="providerOperationsAvailabilityList"></div>
+        </section>
+
+        <section class="provider-operations-detail-card" aria-labelledby="providerSupportTitle">
+          <div class="provider-operations-section-head">
+            <h2 id="providerSupportTitle">Provider Support Context</h2>
+            <span id="providerOperationsTicketCount">0 tickets</span>
+          </div>
+          <div class="provider-operations-table-wrap">
+            <table class="provider-operations-table">
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Booking Reference</th>
+                  <th>Subject</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody id="providerOperationsTicketRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="provider-operations-detail-card" aria-labelledby="providerStatusHistoryTitle">
+          <div class="provider-operations-section-head">
+            <h2 id="providerStatusHistoryTitle">Account Status History</h2>
+          </div>
+          <div class="provider-operations-table-wrap">
+            <table class="provider-operations-table">
+              <thead>
+                <tr>
+                  <th>Date / Time</th>
+                  <th>Action</th>
+                  <th>Previous Status</th>
+                  <th>New Status</th>
+                  <th>Reason</th>
+                  <th>Remarks</th>
+                  <th>Updated By</th>
+                </tr>
+              </thead>
+              <tbody id="providerOperationsHistoryRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/attachments.js"></script>
+  <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/provider-operations.js"></script>
+  <script src="JavaScript/provider-operations-detail.js"></script>
+</body>
+</html>

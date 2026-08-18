@@ -370,7 +370,12 @@ function setSession(user) {
     cityName: user.cityName || user.location || "",
     location: user.location || user.cityName || "",
     address: user.address || "",
-    providerCatalogId: user.providerCatalogId || ""
+    providerCatalogId: user.providerCatalogId || "",
+    approvalStatus: user.approvalStatus || "",
+    verificationStatus: user.verificationStatus || "",
+    accountStatus: user.accountStatus || user.status || "",
+    rejectionReason: user.rejectionReason || user.reason || "",
+    suspensionReason: user.suspensionReason || ""
   };
   sessionStorage.setItem("serveEaseSession", JSON.stringify(sessionData));
 }
@@ -445,6 +450,17 @@ function generateUserId(role, users) {
   return prefix + String(maxId + 1).padStart(3, "0");
 }
 
+function getEmployeeLoginDestination(employee) {
+  const departmentParam = "?department=" + encodeURIComponent(employee.department || "");
+  const destinations = {
+    "Customer Operations": "customer-operations.html",
+    "Provider Operations": "provider-operations.html",
+    "Support": "support-dashboard.html",
+    "Finance": "employee-department-placeholder.html" + departmentParam
+  };
+  return destinations[employee.department] || "employee-department-placeholder.html" + departmentParam;
+}
+
 function setupLoginTabs() {
   const tabsContainer = document.getElementById("loginRoleTabs");
   if (!tabsContainer) return;
@@ -454,22 +470,68 @@ function setupLoginTabs() {
   const tabs = tabsContainer.querySelectorAll(".role-tab");
   const label = document.getElementById("loginEmailLabel");
   const input = document.getElementById("loginEmail");
+  const emailGroup = document.getElementById("loginEmailGroup");
+  const employeeDepartmentGroup = document.getElementById("employeeDepartmentGroup");
+  const employeeIdGroup = document.getElementById("employeeIdGroup");
+  const employeeDepartmentInput = document.getElementById("employeeDepartment");
+  const employeeIdInput = document.getElementById("loginEmployeeId");
+  const forgotLink = document.querySelector(".login-forgot-link");
   const authSwitchText = document.getElementById("authSwitchText");
-  const signupLink = document.getElementById("signupLink");
+
+  function clearLoginMessages() {
+    [
+      "loginEmailError",
+      "employeeDepartmentError",
+      "loginEmployeeIdError",
+      "loginPasswordError",
+      "loginFormError",
+      "loginSuccess"
+    ].forEach(clearText);
+
+    [
+      input,
+      employeeDepartmentInput,
+      employeeIdInput,
+      document.getElementById("loginPassword")
+    ].forEach(clearInputState);
+  }
 
   function updateSignupVisibility(role) {
-    if (!authSwitchText || !signupLink) return;
+    if (!authSwitchText) return;
 
     if (role === "customer" || role === "provider") {
       authSwitchText.innerHTML = 'Don’t have an account? <a href="signup.html" id="signupLink">Sign Up</a>';
-    } else if (role === "support") {
-      authSwitchText.textContent = 'Support staff accounts are created by the system superuseristrator.';
+    } else if (role === "employee") {
+      authSwitchText.textContent = "Employee accounts are created by ServeEase administration.";
     } else if (role === "superuser") {
       authSwitchText.textContent = 'Super user access is restricted. No self-sign up is allowed.';
     }
   }
 
+  function updateFormMode(role) {
+    const isEmployee = role === "employee";
+
+    if (emailGroup) emailGroup.classList.toggle("hidden", isEmployee);
+    if (employeeDepartmentGroup) employeeDepartmentGroup.classList.toggle("hidden", !isEmployee);
+    if (employeeIdGroup) employeeIdGroup.classList.toggle("hidden", !isEmployee);
+    if (forgotLink) forgotLink.classList.toggle("hidden", isEmployee);
+
+    if (!isEmployee && label && input) {
+      if (role === "superuser") {
+        label.textContent = "Super User Email";
+        input.placeholder = "Enter your super user email";
+      } else if (role === "provider") {
+        label.textContent = "Provider Email";
+        input.placeholder = "Enter your provider email";
+      } else {
+        label.textContent = "Email";
+        input.placeholder = "Enter your email";
+      }
+    }
+  }
+
   updateSignupVisibility("customer");
+  updateFormMode("customer");
 
   tabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
@@ -481,23 +543,19 @@ function setupLoginTabs() {
 
       const role = tab.dataset.role;
 
+      clearLoginMessages();
       updateSignupVisibility(role);
-
-      if (role === "support") {
-        label.textContent = "Support Staff Email";
-        input.placeholder = "Enter your staff email";
-      } else if (role === "superuser") {
-        label.textContent = "Super User Email";
-        input.placeholder = "Enter your super user email";
-      } else if (role === "provider") {
-        label.textContent = "Provider Email";
-        input.placeholder = "Enter your provider email";
-      } else {
-        label.textContent = "Email";
-        input.placeholder = "Enter your email";
-      }
+      updateFormMode(role);
     });
   });
+
+  const requestedRole = new URLSearchParams(window.location.search).get("role");
+  const requestedTab = Array.from(tabs).find(function (tab) {
+    return tab.dataset.role === requestedRole;
+  });
+  if (requestedTab && !requestedTab.classList.contains("active")) {
+    requestedTab.click();
+  }
 }
 
 function setupLoginForm() {
@@ -508,21 +566,89 @@ function setupLoginForm() {
     e.preventDefault();
 
     clearText("loginEmailError");
+    clearText("employeeDepartmentError");
+    clearText("loginEmployeeIdError");
     clearText("loginPasswordError");
     clearText("loginFormError");
     clearText("loginSuccess");
 
     const emailInput = document.getElementById("loginEmail");
+    const employeeDepartmentInput = document.getElementById("employeeDepartment");
+    const employeeIdInput = document.getElementById("loginEmployeeId");
     const passwordInput = document.getElementById("loginPassword");
 
     clearInputState(emailInput);
+    clearInputState(employeeDepartmentInput);
+    clearInputState(employeeIdInput);
     clearInputState(passwordInput);
 
     const activeRole = document.querySelector("#loginRoleTabs .role-tab.active")?.dataset.role;
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
+    const email = emailInput ? emailInput.value.trim() : "";
+    const selectedDepartment = employeeDepartmentInput ? employeeDepartmentInput.value.trim() : "";
+    const employeeId = employeeIdInput ? employeeIdInput.value.trim() : "";
+    const password = passwordInput ? passwordInput.value.trim() : "";
 
     let valid = true;
+
+    if (activeRole === "employee") {
+      if (!selectedDepartment) {
+        showText("employeeDepartmentError", "Department is required.");
+        setErrorState(employeeDepartmentInput);
+        valid = false;
+      } else {
+        setSuccessState(employeeDepartmentInput);
+      }
+
+      if (!employeeId) {
+        showText("loginEmployeeIdError", "Employee ID is required.");
+        setErrorState(employeeIdInput);
+        valid = false;
+      } else {
+        setSuccessState(employeeIdInput);
+      }
+
+      if (!password) {
+        showText("loginPasswordError", "Password is required.");
+        setErrorState(passwordInput);
+        valid = false;
+      } else {
+        setSuccessState(passwordInput);
+      }
+
+      if (!valid) return;
+
+      const employeeAuth = window.ServeEaseEmployeeAuth;
+      if (!employeeAuth || typeof employeeAuth.authenticate !== "function" || typeof employeeAuth.setEmployeeSession !== "function") {
+        showText("loginFormError", "Employee authentication is unavailable. Please try again.");
+        logServeEaseActivity("employee_login_unavailable", employeeId);
+        return;
+      }
+
+      const employee = employeeAuth.authenticate(employeeId, password);
+      if (!employee) {
+        showText("loginFormError", "Invalid employee ID or password.");
+        setErrorState(employeeIdInput);
+        setErrorState(passwordInput);
+        logServeEaseActivity("employee_login_failed", employeeId);
+        return;
+      }
+
+      if (employee.department !== selectedDepartment) {
+        showText("loginFormError", "Selected department does not match this employee account.");
+        setErrorState(employeeDepartmentInput);
+        logServeEaseActivity("employee_department_mismatch", employee.employeeId + " " + selectedDepartment);
+        return;
+      }
+
+      employeeAuth.setEmployeeSession(employee);
+      logServeEaseActivity("employee_login_success", employee.employeeId + " " + employee.department);
+      showText("loginSuccess", "Login successful. Redirecting...");
+
+      setTimeout(function () {
+        window.location.href = getEmployeeLoginDestination(employee);
+      }, 900);
+      return;
+    }
 
     if (!email) {
       showText("loginEmailError", "Email is required.");
@@ -566,13 +692,13 @@ function setupLoginForm() {
         : null;
 
       if (pendingProvider) {
-        if (pendingProvider.approvalStatus === "Rejected") {
-          showText("loginFormError", "Your provider registration was rejected by the superuser.");
-          logServeEaseActivity("provider_login_rejected", email);
-        } else {
-          showText("loginFormError", "Your provider profile is pending superuser approval. Please try again after approval.");
-          logServeEaseActivity("provider_login_pending_approval", email);
-        }
+        pendingProvider.role = "provider";
+        setSession(pendingProvider);
+        showText("loginSuccess", "Login successful. Redirecting to verification status...");
+        logServeEaseActivity("provider_login_verification_status", email);
+        setTimeout(function () {
+          window.location.href = "provider-verification-status.html";
+        }, 700);
         return;
       }
 
@@ -591,8 +717,12 @@ function setupLoginForm() {
     }
 
     if (matchedUser.role === "provider" && matchedUser.approvalStatus && matchedUser.approvalStatus !== "Active") {
-      showText("loginFormError", "Your provider profile is not active yet. Current status: " + matchedUser.approvalStatus + ".");
-      logServeEaseActivity("provider_login_inactive", matchedUser.email);
+      setSession(matchedUser);
+      showText("loginSuccess", "Login successful. Redirecting to verification status...");
+      logServeEaseActivity("provider_login_status_blocked", matchedUser.email);
+      setTimeout(function () {
+        window.location.href = "provider-verification-status.html";
+      }, 700);
       return;
     }
 
@@ -909,6 +1039,9 @@ function setupSignupForm() {
       newUser.address = address;
       newUser.providerCatalogId = slugifyProviderName(organisationName || fullName);
       newUser.approvalStatus = "Pending Approval";
+      newUser.verificationStatus = "Pending";
+      newUser.accountStatus = "Under Verification";
+      newUser.status = "Under Verification";
       try {
         newUser.documents = await buildProviderDocumentPayload(newUser.id);
       } catch (error) {
@@ -916,6 +1049,15 @@ function setupSignupForm() {
         return;
       }
       newUser.registrationDate = window.ServeEaseDate ? window.ServeEaseDate.nowDate() : new Date().toLocaleDateString("en-GB");
+      newUser.statusHistory = [{
+        dateTime: window.ServeEaseDate && typeof window.ServeEaseDate.nowDateTime === "function" ? window.ServeEaseDate.nowDateTime() : new Date().toLocaleString("en-IN"),
+        action: "Provider signup submitted",
+        previousStatus: "New",
+        newStatus: "Under Verification",
+        reason: "",
+        remarks: "Awaiting Provider Operations verification",
+        performedBy: "Provider"
+      }];
     }
 
     if (role === "provider") {
@@ -930,7 +1072,7 @@ function setupSignupForm() {
     showText(
       "signupSuccess",
       role === "provider"
-        ? "Registration submitted for superuser approval. You can login after approval."
+        ? "Registration submitted for Provider Operations verification. You can log in to check status."
         : "Registration successful. Signing you in..."
     );
 

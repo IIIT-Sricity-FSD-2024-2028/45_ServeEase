@@ -1,6 +1,7 @@
 (function () {
   const session = JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
   if (!session || session.role !== "customer") {
+    if (window.ServeEaseEmployeeAuth && window.ServeEaseEmployeeAuth.handleLegacyEmployeeRoute()) return;
     return;
   }
 

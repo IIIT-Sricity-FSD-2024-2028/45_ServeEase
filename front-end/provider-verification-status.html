@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Provider Verification Status</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/provider-verification-status.css" />
+</head>
+<body class="provider-verification-status-page">
+  <header class="dashboard-topbar provider-verification-status-topbar">
+    <a class="dashboard-brand portal-brand" href="index.html" aria-label="ServeEase home">
+      <span class="brand-icon portal-brand-mark">SE</span>
+      <span>ServeEase</span>
+    </a>
+    <nav class="dashboard-topbar-actions portal-nav" aria-label="Provider verification status navigation">
+      <button class="btn btn-outline" type="button" id="providerVerificationStatusLogoutBtn">Logout</button>
+    </nav>
+  </header>
+
+  <main class="dashboard-page provider-verification-status-shell">
+    <div class="container">
+      <section class="provider-verification-status-card">
+        <span class="provider-verification-status-kicker">Provider account status</span>
+        <h1 id="providerVerificationStatusTitle">Verification in progress</h1>
+        <p id="providerVerificationStatusMessage">Your provider profile is being reviewed before dashboard access is enabled.</p>
+        <div class="provider-verification-status-info" id="providerVerificationStatusInfo"></div>
+        <div class="provider-verification-status-reason" id="providerVerificationStatusReason" hidden></div>
+        <div class="provider-verification-status-actions">
+          <a class="btn btn-primary" href="provider-dashboard.html" id="providerVerificationDashboardBtn" hidden>Go to Provider Dashboard</a>
+          <button class="btn btn-primary" type="button" id="providerVerificationResubmitBtn" hidden>Resubmit Verification</button>
+          <a class="btn btn-outline" href="index.html">Back to Home</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="JavaScript/provider-verification-status.js"></script>
+</body>
+</html>

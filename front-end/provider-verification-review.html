@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Provider Verification Review</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/attachments.css" />
+  <link rel="stylesheet" href="CSS/provider-verification-review.css" />
+</head>
+<body class="provider-verification-review-page">
+  <header class="dashboard-topbar provider-verification-review-topbar">
+    <a class="dashboard-brand portal-brand" href="index.html" aria-label="ServeEase home">
+      <span class="brand-icon portal-brand-mark">SE</span>
+      <span>ServeEase</span>
+    </a>
+    <nav class="dashboard-topbar-actions portal-nav" aria-label="Provider verification navigation">
+      <a class="btn btn-outline" href="provider-operations.html">Back to Provider Operations</a>
+      <button class="btn btn-outline" type="button" id="providerVerificationReviewLogoutBtn">Logout</button>
+    </nav>
+  </header>
+
+  <main class="dashboard-page provider-verification-review-shell">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="index.html">Home</a><span aria-hidden="true">&gt;</span><span>Employee</span><span aria-hidden="true">&gt;</span><a href="provider-operations.html">Provider Operations</a><span aria-hidden="true">&gt;</span><strong>Verification Review</strong>
+      </div>
+
+      <section class="provider-verification-review-hero">
+        <h1>Provider Verification Review</h1>
+        <p id="providerVerificationReviewHero">Approve or reject a pending provider verification request.</p>
+      </section>
+
+      <section class="provider-verification-review-not-found" id="providerVerificationReviewNotFound" hidden>
+        <h2>Provider not found.</h2>
+        <p>The selected provider does not match an existing pending verification request.</p>
+        <a class="btn btn-outline" href="provider-operations.html">Back to Provider Operations</a>
+      </section>
+
+      <div class="provider-verification-review-grid" id="providerVerificationReviewContent">
+        <section class="provider-verification-review-card">
+          <h2>Provider Information</h2>
+          <div class="provider-verification-review-info" id="providerVerificationReviewInfo"></div>
+        </section>
+
+        <section class="provider-verification-review-card">
+          <h2>Verification Documents</h2>
+          <div class="provider-verification-review-documents" id="providerVerificationReviewDocuments"></div>
+        </section>
+
+        <section class="provider-verification-review-card provider-verification-review-decision">
+          <h2>Verification Decision</h2>
+          <p>Approval activates the provider for normal dashboard operations. Rejection preserves the profile and records a reason for resubmission.</p>
+          <div class="provider-verification-review-actions">
+            <button class="btn btn-primary" type="button" id="providerVerificationApproveBtn">Approve</button>
+            <button class="btn btn-outline provider-verification-review-reject" type="button" id="providerVerificationRejectBtn">Reject</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="provider-verification-review-modal" id="providerVerificationDecisionModal" hidden>
+    <div class="provider-verification-review-modal-panel" role="dialog" aria-modal="true" aria-labelledby="providerVerificationModalTitle">
+      <h2 id="providerVerificationModalTitle">Confirm Decision</h2>
+      <p id="providerVerificationModalPrompt">Confirm this provider verification decision.</p>
+      <label id="providerVerificationReasonLabel">Reason
+        <textarea id="providerVerificationReason" rows="3"></textarea>
+      </label>
+      <label>Remarks
+        <textarea id="providerVerificationRemarks" rows="3" placeholder="Optional internal remarks"></textarea>
+      </label>
+      <p class="provider-verification-review-error" id="providerVerificationModalError"></p>
+      <div class="provider-verification-review-modal-actions">
+        <button class="btn btn-primary" type="button" id="providerVerificationDecisionSubmit">Confirm</button>
+        <button class="btn btn-outline" type="button" id="providerVerificationDecisionCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="provider-verification-review-modal" id="providerVerificationPreviewModal" hidden>
+    <div class="provider-verification-review-modal-panel provider-verification-review-preview-panel" role="dialog" aria-modal="true" aria-labelledby="providerVerificationPreviewTitle">
+      <div class="provider-verification-review-preview-head">
+        <div>
+          <h2 id="providerVerificationPreviewTitle">Document Preview</h2>
+          <p id="providerVerificationPreviewSubtitle"></p>
+        </div>
+        <button class="provider-verification-review-close" type="button" id="providerVerificationPreviewClose" aria-label="Close">&times;</button>
+      </div>
+      <div id="providerVerificationPreviewBody"></div>
+      <div class="provider-verification-review-modal-actions">
+        <button class="btn btn-outline" type="button" id="providerVerificationPreviewFooterClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/attachments.js"></script>
+  <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/provider-operations.js"></script>
+  <script src="JavaScript/provider-verification-review.js"></script>
+</body>
+</html>

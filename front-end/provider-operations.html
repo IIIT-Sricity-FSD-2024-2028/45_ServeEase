@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Provider Operations</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/provider-operations.css" />
+</head>
+<body class="provider-operations-page">
+  <header class="dashboard-topbar provider-operations-topbar">
+    <a class="dashboard-brand portal-brand" href="index.html" aria-label="ServeEase home">
+      <span class="brand-icon portal-brand-mark">SE</span>
+      <span>ServeEase</span>
+    </a>
+    <nav class="dashboard-topbar-actions portal-nav" aria-label="Provider operations navigation">
+      <button class="btn btn-outline" type="button" id="providerOperationsLogoutBtn">Logout</button>
+    </nav>
+  </header>
+
+  <main class="dashboard-page provider-operations-shell">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="index.html">Home</a><span aria-hidden="true">&gt;</span><span>Employee</span><span aria-hidden="true">&gt;</span><strong>Provider Operations</strong>
+      </div>
+
+      <section class="provider-operations-hero" aria-labelledby="providerOperationsTitle">
+        <div>
+          <h1 id="providerOperationsTitle">Provider Operations</h1>
+          <p>Internal provider management, verification and operational visibility for ServeEase.</p>
+        </div>
+      </section>
+
+      <section class="provider-operations-stats" id="providerOperationsStatsGrid" aria-label="Provider operations summary"></section>
+
+      <section class="provider-operations-card" id="provider-management">
+        <div class="provider-operations-section-head">
+          <h2>Provider Management (<span id="providerOperationsProviderCount">0</span>)</h2>
+          <select class="provider-operations-filter" id="providerOperationsStatusFilter" aria-label="Filter providers by account status">
+            <option value="all">All Status</option>
+          </select>
+        </div>
+        <label class="provider-operations-search" for="providerOperationsSearch">Search providers<input type="search" id="providerOperationsSearch" placeholder="Name, email, phone, location, or service" /></label>
+        <div class="provider-operations-table-wrap">
+          <table class="provider-operations-table">
+            <thead>
+              <tr>
+                <th>Provider ID</th>
+                <th>Name</th>
+                <th>Organisation</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Service Category</th>
+                <th>Experience</th>
+                <th>Location</th>
+                <th>No. of Services</th>
+                <th>Account Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="providerOperationsRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="provider-operations-card provider-operations-card-warning" id="pending-verification-requests">
+        <div class="provider-operations-section-head">
+          <div>
+            <h2>Pending Verification Requests (<span id="providerOperationsPendingCount">0</span>)</h2>
+            <p class="provider-operations-muted">Providers awaiting document and eligibility review.</p>
+          </div>
+        </div>
+        <div class="provider-operations-table-wrap">
+          <table class="provider-operations-table provider-operations-pending-table">
+            <thead>
+              <tr>
+                <th>Provider ID</th>
+                <th>Provider Name</th>
+                <th>Email</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Submitted</th>
+                <th>Documents</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="providerOperationsPendingRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="provider-operations-modal" id="providerOperationsActionModal" hidden>
+    <div class="provider-operations-modal-panel" role="dialog" aria-modal="true" aria-labelledby="providerOperationsModalTitle">
+      <h2 id="providerOperationsModalTitle">Update Provider Status</h2>
+      <p id="providerOperationsModalPrompt">Confirm this provider status update.</p>
+      <label>Reason
+        <textarea id="providerOperationsModalReason" rows="3" placeholder="Required for suspend, optional for activate"></textarea>
+      </label>
+      <label>Remarks
+        <textarea id="providerOperationsModalRemarks" rows="3" placeholder="Optional internal remarks"></textarea>
+      </label>
+      <p class="provider-operations-modal-error" id="providerOperationsModalError"></p>
+      <div class="provider-operations-modal-actions">
+        <button class="btn btn-primary" type="button" id="providerOperationsModalSubmit">Confirm</button>
+        <button class="btn btn-outline" type="button" id="providerOperationsModalCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/provider-operations.js"></script>
+</body>
+</html>

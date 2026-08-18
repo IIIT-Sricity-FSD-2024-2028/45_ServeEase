@@ -11,6 +11,14 @@
     const isSupportPage = document.getElementById("supportWelcomeText") || document.getElementById("supportTicketDetailGrid");
     if (!isSupportPage) return session;
 
+    if (session && session.isLoggedIn && session.role === "employee") {
+      if (window.ServeEaseEmployeeAuth && typeof window.ServeEaseEmployeeAuth.requireCurrentPageAccess === "function") {
+        return window.ServeEaseEmployeeAuth.requireCurrentPageAccess();
+      }
+      window.location.href = "login.html";
+      return null;
+    }
+
     if (!session || !allowedRoles.includes(session.role)) {
       window.location.href = "login.html";
       return null;
@@ -1386,6 +1394,7 @@ function setupHeader(agentName) {
 
   const session = requireSupportAccess();
   if (document.getElementById("supportWelcomeText") || document.getElementById("supportTicketDetailGrid")) {
+    if (!session) return;
     seedSupportData();
     mergeSupportTicketsFromUserModules();
     if (session) {

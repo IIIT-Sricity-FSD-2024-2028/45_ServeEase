@@ -1,18 +1,45 @@
 (function () {
   const session = JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
+  if (window.ServeEaseEmployeeAuth && window.ServeEaseEmployeeAuth.handleLegacyEmployeeRoute()) return;
 
-  if (
-    (document.body && (
+  const isProviderWorkspacePage = document.body && (
       document.getElementById("providerWelcomeText") ||
       document.getElementById("providerServiceGrid") ||
       document.getElementById("providerBookingsList") ||
       document.getElementById("providerEarningStats") ||
       document.getElementById("providerSupportTicketForm") ||
       document.getElementById("providerPersonalInfo")
-    )) &&
-    (!session || session.role !== "provider")
-  ) {
+    );
+
+  function normalizeProviderStatus(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function providerDashboardAllowed(currentSession) {
+    if (!currentSession || currentSession.role !== "provider") return false;
+    try {
+      const appData = JSON.parse(localStorage.getItem("serveEaseData") || "{}") || {};
+      const records = []
+        .concat(Array.isArray(appData.providerApprovalRequests) ? appData.providerApprovalRequests : [])
+        .concat((Array.isArray(appData.users) ? appData.users : []).filter(function (user) { return user.role === "provider"; }));
+      const provider = records.find(function (record) {
+        return normalizeProviderStatus(record.id) === normalizeProviderStatus(currentSession.userId) ||
+          normalizeProviderStatus(record.email) === normalizeProviderStatus(currentSession.email);
+      }) || currentSession;
+      const status = normalizeProviderStatus(provider.accountStatus || provider.status || provider.approvalStatus || provider.verificationStatus || "Active");
+      return ["active", "approved", "verified"].indexOf(status) !== -1;
+    } catch (error) {
+      return true;
+    }
+  }
+
+  if (isProviderWorkspacePage && (!session || session.role !== "provider")) {
     window.location.href = "login.html";
+    return;
+  }
+
+  if (isProviderWorkspacePage && !providerDashboardAllowed(session)) {
+    window.location.href = "provider-verification-status.html";
     return;
   }
 

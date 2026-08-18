@@ -13,12 +13,21 @@
 
   function requireAccess() {
     const isSuperuserPage = document.querySelector(".superuser-page");
-    if (!isSuperuserPage) return;
+    if (!isSuperuserPage) return true;
     const session = getSession();
+    if (session && session.isLoggedIn && session.role === "employee") {
+      if (window.ServeEaseEmployeeAuth && typeof window.ServeEaseEmployeeAuth.requireCurrentPageAccess === "function") {
+        return Boolean(window.ServeEaseEmployeeAuth.requireCurrentPageAccess());
+      } else {
+        window.location.href = "login.html";
+      }
+      return false;
+    }
     if (!session || !session.isLoggedIn || !allowedRoles.includes(session.role)) {
       window.location.href = "login.html";
-      return;
+      return false;
     }
+    return true;
   }
 
   function getData() {
@@ -2151,7 +2160,7 @@
   syncPendingProviderApprovals();
   migrateProviderOrgNames();
   syncSupportTicketsIntoSuperuserData();
-  requireAccess();
+  if (!requireAccess()) return;
   setupCommonHeader();
   setupNotificationModal();
   wireModalClosers();

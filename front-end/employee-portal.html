@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Employee Portal</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/superuser.css" />
+  <link rel="stylesheet" href="CSS/employee-portal.css" />
+</head>
+<body class="employee-portal-page">
+  <header class="dashboard-topbar superuser-topbar portal-topbar">
+    <a class="dashboard-brand portal-brand" href="index.html" aria-label="ServeEase home">
+      <span class="brand-icon portal-brand-mark">SE</span>
+      <span>ServeEase</span>
+    </a>
+    <nav class="dashboard-topbar-actions portal-nav" aria-label="Portal navigation">
+      <a href="administration.html">Administration</a>
+      <a href="superuser-dashboard.html">Superuser Dashboard</a>
+      <a href="login.html">Login</a>
+    </nav>
+  </header>
+
+  <main class="dashboard-page superuser-page portal-shell">
+    <section class="panel-card superuser-title-card left-accent-blue portal-hero" aria-labelledby="employeePortalTitle">
+      <div>
+        <h1 id="employeePortalTitle">Employee Portal</h1>
+        <p class="portal-description">Manage day-to-day platform operations across customer, provider, support and finance departments.</p>
+      </div>
+      <div class="portal-hero-actions">
+        <a class="btn btn-primary portal-primary-link" href="administration.html">Administration</a>
+        <a class="btn btn-outline portal-secondary-link" href="support-dashboard.html">Support Dashboard</a>
+      </div>
+    </section>
+
+    <section class="portal-strip" aria-label="Existing actor portals">
+      <a href="customer-dashboard.html">
+        <span>Customer Portal</span>
+        <strong>Customer Dashboard</strong>
+      </a>
+      <a href="provider-dashboard.html">
+        <span>Provider Portal</span>
+        <strong>Provider Dashboard</strong>
+      </a>
+    </section>
+
+    <section class="department-grid" aria-label="Employee departments">
+      <article class="department-card department-customer">
+        <div class="department-card-head">
+          <span class="department-code">CO</span>
+          <div>
+            <p>Employee Portal</p>
+            <h2>Customer Operations</h2>
+          </div>
+        </div>
+        <div class="department-links">
+          <a href="customer-operations.html#manage-customers">Manage Customers</a>
+          <a href="customer-operations.html#customer-profiles">Customer Profiles</a>
+          <a href="customer-operations.html#account-status">Account Status</a>
+          <a href="customer-operations.html#booking-overview">Booking Activity</a>
+        </div>
+      </article>
+
+      <article class="department-card department-provider">
+        <div class="department-card-head">
+          <span class="department-code">PO</span>
+          <div>
+            <p>Employee Portal</p>
+            <h2>Provider Operations</h2>
+          </div>
+        </div>
+        <div class="department-links">
+          <a href="provider-operations.html">Provider Management</a>
+          <a href="provider-operations.html">Provider Verification</a>
+          <a href="provider-operations.html">Provider Services</a>
+          <a href="provider-operations.html">Provider Activity</a>
+        </div>
+      </article>
+
+      <article class="department-card department-support">
+        <div class="department-card-head">
+          <span class="department-code">SP</span>
+          <div>
+            <p>Employee Portal</p>
+            <h2>Support</h2>
+          </div>
+        </div>
+        <div class="department-links">
+          <a href="support-dashboard.html">Customer Support</a>
+          <a href="support-dashboard.html">Provider Support</a>
+          <a href="superuser-escalated-tickets.html">Escalation Desk</a>
+          <a href="support-dashboard.html">All Support Tickets</a>
+        </div>
+      </article>
+
+      <article class="department-card department-finance">
+        <div class="department-card-head">
+          <span class="department-code">FN</span>
+          <div>
+            <p>Employee Portal</p>
+            <h2>Finance</h2>
+          </div>
+        </div>
+        <div class="department-links">
+          <a href="payment-history.html">Customer Payments</a>
+          <a href="provider-earnings.html">Provider Earnings</a>
+          <a href="superuser-bookings.html">Booking Payment Status</a>
+          <a href="superuser-escalated-tickets.html">Refund Decisions</a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/employee-portal.js"></script>
+</body>
+</html>

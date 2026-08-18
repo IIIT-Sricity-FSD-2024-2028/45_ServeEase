@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Customer Profile</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/customer-operations-detail.css" />
+</head>
+<body class="customer-operations-detail-page">
+  <header class="dashboard-topbar customer-operations-detail-topbar">
+    <a class="dashboard-brand portal-brand" href="index.html" aria-label="ServeEase home">
+      <span class="brand-icon portal-brand-mark">SE</span>
+      <span>ServeEase</span>
+    </a>
+    <nav class="dashboard-topbar-actions portal-nav" aria-label="Customer profile navigation">
+      <button class="btn btn-outline" type="button" id="customerOperationsDetailLogoutBtn">Logout</button>
+    </nav>
+  </header>
+
+  <main class="dashboard-page customer-operations-detail-shell">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="index.html">Home</a><span aria-hidden="true">&gt;</span><span>Employee</span><span aria-hidden="true">&gt;</span><a href="customer-operations.html">Customer Operations</a><span aria-hidden="true">&gt;</span><strong>Customer Profile</strong>
+      </div>
+
+      <a class="customer-operations-back-link" href="customer-operations.html">&larr; Back to Customer Operations</a>
+
+      <section class="customer-operations-detail-hero" aria-labelledby="customerOperationsDetailTitle">
+        <div>
+          <h1 id="customerOperationsDetailTitle">Customer Profile</h1>
+          <p>Customer information and operational activity</p>
+          <span id="customerOperationsDetailHeroName"></span>
+        </div>
+      </section>
+
+      <section class="customer-operations-not-found" id="customerOperationsNotFound" hidden>
+        <h2>Customer not found.</h2>
+        <p>The selected customer ID does not match an existing ServeEase customer record.</p>
+        <a class="btn btn-outline" href="customer-operations.html">&larr; Back to Customer Operations</a>
+      </section>
+
+      <div id="customerOperationsDetailContent">
+        <section class="customer-operations-detail-card" aria-labelledby="customerInformationTitle">
+          <div class="customer-operations-section-head">
+            <h2 id="customerInformationTitle">Customer Information</h2>
+          </div>
+          <div class="customer-operations-info-grid" id="customerOperationsInfoGrid"></div>
+        </section>
+
+        <section class="customer-operations-detail-stats" id="customerOperationsDetailStats" aria-label="Selected customer statistics"></section>
+
+        <section class="customer-operations-detail-card" aria-labelledby="customerBookingActivityTitle">
+          <div class="customer-operations-section-head">
+            <h2 id="customerBookingActivityTitle">Customer Booking Activity</h2>
+            <span id="customerOperationsDetailBookingCount">0 bookings</span>
+          </div>
+          <div class="customer-operations-table-wrap">
+            <table class="customer-operations-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Service</th>
+                  <th>Provider</th>
+                  <th>Date / Time</th>
+                  <th>Status</th>
+                  <th>Payment</th>
+                </tr>
+              </thead>
+              <tbody id="customerOperationsDetailBookingRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="customer-operations-detail-card" aria-labelledby="customerSupportTicketsTitle">
+          <div class="customer-operations-section-head">
+            <h2 id="customerSupportTicketsTitle">Customer Support Tickets</h2>
+            <span id="customerOperationsDetailTicketCount">0 tickets</span>
+          </div>
+          <div class="customer-operations-table-wrap">
+            <table class="customer-operations-table">
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Booking Reference</th>
+                  <th>Subject</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody id="customerOperationsDetailTicketRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/customer-operations-detail.js"></script>
+</body>
+</html>

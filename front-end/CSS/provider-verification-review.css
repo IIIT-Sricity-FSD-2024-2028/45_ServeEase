@@ -1,0 +1,41 @@
+.provider-verification-review-page { color: #12284a; background: #f5f7fb; }
+.provider-verification-review-topbar { grid-template-columns: 1fr auto; }
+.provider-verification-review-page .portal-nav { justify-content: flex-end; }
+.provider-verification-review-shell { padding-top: 24px; padding-bottom: 60px; font-weight: 400; line-height: 1.5; }
+.provider-verification-review-page .breadcrumb-row { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.provider-verification-review-hero { margin-bottom: 22px; padding: 28px; border-radius: 18px; background: linear-gradient(90deg, #2563eb, #a21caf); color: #fff; box-shadow: 0 8px 20px rgba(17,40,75,.08); }
+.provider-verification-review-hero h1 { margin: 0 0 8px; color: #fff; font-size: 38px; line-height: 1.2; }
+.provider-verification-review-hero p { margin: 0; color: rgba(255,255,255,.9); }
+.provider-verification-review-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); gap: 20px; }
+.provider-verification-review-card, .provider-verification-review-not-found { min-width: 0; padding: 20px; border: 1px solid #e6ebf2; border-radius: 16px; background: #fff; box-shadow: 0 8px 20px rgba(17,40,75,.06); }
+.provider-verification-review-card h2, .provider-verification-review-not-found h2 { margin: 0 0 16px; color: #12284a; font-size: 20px; }
+.provider-verification-review-info { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+.provider-verification-review-field { padding: 12px 0; border-bottom: 1px solid #edf0f5; }
+.provider-verification-review-field span { display: block; margin-bottom: 5px; color: #667a97; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.provider-verification-review-field strong { display: block; color: #12284a; font-size: 15px; overflow-wrap: anywhere; }
+.provider-verification-review-documents { display: grid; gap: 10px; }
+.provider-verification-review-document { display: flex; justify-content: space-between; gap: 14px; padding: 12px; border: 1px solid #edf0f5; border-radius: 12px; background: #f8faff; }
+.provider-verification-review-document span { display: block; margin-bottom: 4px; color: #667a97; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.provider-verification-review-document a, .provider-verification-review-document strong { color: #12284a; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.provider-verification-review-document-meta { display: flex; align-items: center; gap: 10px; }
+.provider-verification-review-document-meta span { margin: 0; color: #4254f4; text-transform: none; white-space: nowrap; }
+.provider-verification-review-decision { grid-column: 1 / -1; border-top: 4px solid #ffe3ad; }
+.provider-verification-review-decision p { margin: 0 0 16px; color: #667a97; }
+.provider-verification-review-actions, .provider-verification-review-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.provider-verification-review-reject { color: #c23939; border-color: #ffd0d0; }
+.provider-verification-review-modal[hidden], .provider-verification-review-not-found[hidden] { display: none; }
+.provider-verification-review-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 18px; background: rgba(9, 20, 38, .48); }
+.provider-verification-review-modal-panel { width: min(540px, 100%); padding: 22px; border-radius: 18px; background: #fff; box-shadow: 0 22px 60px rgba(9,20,38,.24); }
+.provider-verification-review-preview-panel { width: min(860px, 100%); }
+.provider-verification-review-preview-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+.provider-verification-review-close { width: 36px; height: 36px; border: 0; border-radius: 50%; background: #eef2ff; color: #12284a; cursor: pointer; font-size: 22px; line-height: 1; }
+.provider-verification-review-preview-media { display: block; max-width: 100%; max-height: 62vh; margin: 12px auto; border-radius: 12px; object-fit: contain; }
+.provider-verification-review-preview-frame { width: 100%; height: 62vh; border: 1px solid #dfe6f0; border-radius: 12px; }
+.provider-verification-review-preview-placeholder { padding: 24px; border: 1px dashed #cbd5ff; border-radius: 12px; background: #f8faff; color: #667a97; text-align: center; }
+.provider-verification-review-modal-panel h2 { margin: 0 0 8px; color: #12284a; font-size: 22px; }
+.provider-verification-review-modal-panel p { margin: 0 0 14px; color: #667a97; }
+.provider-verification-review-modal-panel label { display: block; margin-top: 12px; color: #667a97; font-size: 12px; font-weight: 700; }
+.provider-verification-review-modal-panel textarea { box-sizing: border-box; width: 100%; margin-top: 6px; padding: 10px 12px; border: 1px solid #dfe6f0; border-radius: 10px; color: #12284a; font: inherit; resize: vertical; }
+.provider-verification-review-error, .provider-verification-review-empty { color: #c23939; font-size: 13px; font-weight: 700; }
+@media (max-width: 900px) { .provider-verification-review-grid, .provider-verification-review-info { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .provider-verification-review-hero { padding: 22px; } .provider-verification-review-hero h1 { font-size: 32px; } .provider-verification-review-document, .provider-verification-review-actions, .provider-verification-review-modal-actions { display: block; } .provider-verification-review-actions .btn, .provider-verification-review-modal-actions .btn { width: 100%; margin-top: 8px; } }

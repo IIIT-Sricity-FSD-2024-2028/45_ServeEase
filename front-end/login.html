@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ServeEase | Login</title>
   <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/auth.css" />
+  <link rel="stylesheet" href="CSS/auth.css" />
+  <link rel="stylesheet" href="CSS/employee-auth.css" />
 </head>
 <body>
   <main class="auth-page">
@@ -23,16 +24,33 @@
           <div class="role-tabs" id="loginRoleTabs">
             <button class="role-tab active" type="button" data-role="customer">Customer</button>
             <button class="role-tab" type="button" data-role="provider">Provider</button>
-            <button class="role-tab" type="button" data-role="support">Support</button>
+            <button class="role-tab" type="button" data-role="employee">Employee</button>
             <button class="role-tab" type="button" data-role="superuser">Superuser</button>
                       </div>
 
           <form id="loginForm" novalidate>
-            <div class="form-group">
+            <div class="form-group" id="loginEmailGroup">
               <label for="loginEmail" id="loginEmailLabel">Email</label>
               <input type="email" id="loginEmail" placeholder="Enter your email" />
-              <small class="error" id="loginEmailError"></small>
-            </div>
+              <small class="error" id="loginEmailError"></small>
+            </div>
+
+            <div class="form-group hidden" id="employeeDepartmentGroup">
+              <label for="employeeDepartment">Department</label>
+              <select id="employeeDepartment">
+                <option value="Customer Operations">Customer Operations</option>
+                <option value="Provider Operations">Provider Operations</option>
+                <option value="Support">Support</option>
+                <option value="Finance">Finance</option>
+              </select>
+              <small class="error" id="employeeDepartmentError"></small>
+            </div>
+
+            <div class="form-group hidden" id="employeeIdGroup">
+              <label for="loginEmployeeId">Employee ID</label>
+              <input type="text" id="loginEmployeeId" autocomplete="username" placeholder="Enter your employee ID" />
+              <small class="error" id="loginEmployeeIdError"></small>
+            </div>
 
             <div class="form-group">
               <label for="loginPassword">Password</label>
@@ -46,8 +64,8 @@
             <small class="success-message" id="loginSuccess"></small>
 
             <button class="btn btn-primary btn-full" type="submit">Sign In</button>
-          </form>
-
+          </form>
+
           <p class="auth-switch" id="authSwitchText">
             Don’t have an account?
             <a href="signup.html" id="signupLink">Sign Up</a>
@@ -75,6 +93,7 @@
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/mockdata.js"></script>
 <script src="JavaScript/booking-draft.js"></script>
+<script src="JavaScript/employee-auth.js"></script>
 <script src="JavaScript/auth.js"></script>
 </body>
 </html>

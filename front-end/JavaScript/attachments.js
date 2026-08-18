@@ -136,6 +136,38 @@
     return true;
   }
 
+  function previewProviderDocument(providerId, providerDocument) {
+    if (!providerId || !providerDocument) return false;
+    const storedDocument = getProviderPreview(providerId, providerDocument.documentId);
+    const previewUrl = storedDocument && storedDocument.dataUrl ? storedDocument.dataUrl : providerDocument.documentUrl;
+    if (!previewUrl || String(previewUrl).indexOf("local-document://") === 0) return false;
+    if (String(previewUrl).indexOf("data:") !== 0) {
+      window.open(previewUrl, "_blank", "noopener");
+      return true;
+    }
+
+    const modal = ensureModal();
+    const filename = storedDocument && storedDocument.name ? storedDocument.name : (providerDocument.documentName || "Provider document");
+    const mimeType = storedDocument && storedDocument.type ? storedDocument.type : String(previewUrl).slice(5, String(previewUrl).indexOf(";"));
+    const type = String(mimeType || "").toLowerCase();
+    const isImage = type.indexOf("image/") === 0;
+    const isPdf = type === "application/pdf";
+    let preview = "";
+    if (isImage) {
+      preview = '<img class="attachment-preview-media" src="' + previewUrl + '" alt="' + escapeHtml(filename) + '" />';
+    } else if (isPdf) {
+      preview = '<iframe class="attachment-preview-frame" src="' + previewUrl + '" title="' + escapeHtml(filename) + '"></iframe><a class="btn btn-outline" target="_blank" rel="noopener" href="' + previewUrl + '">Open PDF in new tab</a>';
+    } else {
+      preview = '<div class="attachment-preview-placeholder"><strong>📎 ' + escapeHtml(filename) + '</strong><p>This file type does not support inline preview.</p><a class="btn btn-primary" download="' + escapeHtml(filename) + '" href="' + previewUrl + '">Download file</a></div>';
+    }
+
+    document.getElementById("attachmentPreviewTitle").textContent = providerDocument.documentType || "Provider document";
+    document.getElementById("attachmentPreviewSubtitle").textContent = filename;
+    document.getElementById("attachmentPreviewBody").innerHTML = '<div class="attachment-preview-content"><strong>Filename</strong><span>' + escapeHtml(filename) + '</span><strong>File Type</strong><span>' + escapeHtml(mimeType || "Unknown") + '</span><strong>Status</strong><span>' + escapeHtml(providerDocument.documentStatus || "Pending") + '</span><strong>Preview</strong>' + preview + '</div>';
+    modal.classList.remove("hidden");
+    return true;
+  }
+
   function actionMarkup(ticket, label) {
     return getTicketAttachment(ticket) ? '<button type="button" class="btn btn-outline serveease-attachment-preview-btn" data-attachment-ticket="' + escapeHtml(ticket.ticketId || ticket.id) + '">' + (label || "Preview attachment") + '</button>' : "";
   }
@@ -147,6 +179,7 @@
     getTicketAttachment: getTicketAttachment,
     linkTicketAttachment: linkTicketAttachment,
     previewTicketAttachment: previewTicketAttachment,
+    previewProviderDocument: previewProviderDocument,
     actionMarkup: actionMarkup,
     formatFileSize: formatFileSize
   };
