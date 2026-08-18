@@ -131,7 +131,7 @@
 
 
 
-      <input type="text" id="supportSearchInput" placeholder="Search tickets or booking references..." />
+      <input type="text" id="supportSearchInput" placeholder="Search ticket ID, subject, or requester" />
 
 
 
@@ -386,6 +386,23 @@
 
           </div>
 
+          <div class="support-filter-panel" aria-label="Support ticket filters">
+            <div class="support-queue-tabs" role="group" aria-label="Support queues">
+              <button class="active" type="button" data-support-queue="all">All</button>
+              <button type="button" data-support-queue="customer">Customer</button>
+              <button type="button" data-support-queue="provider">Provider</button>
+              <button type="button" data-support-queue="escalated">Escalated</button>
+            </div>
+            <div class="support-filter-fields">
+              <select id="supportStatusFilter" aria-label="Filter support tickets by status">
+                <option value="all">All statuses</option>
+              </select>
+              <select id="supportPriorityFilter" aria-label="Filter support tickets by priority">
+                <option value="all">All priorities</option>
+              </select>
+            </div>
+          </div>
+
 
 
 
@@ -405,14 +422,14 @@
 
 
 
-            <h3>No tickets found</h3>
+            <h3>No support tickets match the selected filters.</h3>
 
 
 
 
 
 
-            <p>Try another search term or clear the search to see all tickets.</p>
+            <p>Adjust the queue, status, priority, or search to see more tickets.</p>
 
 
 

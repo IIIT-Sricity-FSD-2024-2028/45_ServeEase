@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Finance Operations</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/home.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/finance-operations.css" />
+</head>
+<body class="finance-operations-page">
+  <header class="dashboard-topbar finance-topbar">
+    <div class="dashboard-brand">
+      <div class="brand-icon">SE</div>
+      <span>ServeEase</span>
+    </div>
+    <div class="dashboard-search">
+      <input type="search" id="financeGlobalSearch" placeholder="Search transaction, booking, customer or provider" />
+    </div>
+    <div class="dashboard-topbar-actions">
+      <div class="profile-menu-wrap">
+        <button class="profile-btn" type="button" id="financeProfileBtn">👤</button>
+        <div class="profile-dropdown hidden" id="financeProfileDropdown">
+          <div class="finance-profile-card">
+            <strong id="financeEmployeeName">Finance Employee</strong>
+            <span>Finance</span>
+          </div>
+          <button type="button" id="financeLogoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-page finance-page">
+    <div class="container">
+      <div class="breadcrumb-row">
+        <a href="index.html">Home</a> &nbsp;›&nbsp; <span>Employee</span> &nbsp;›&nbsp; <strong>Finance</strong>
+      </div>
+
+      <section class="finance-hero-card">
+        <h1>Finance Operations</h1>
+        <p>Monitor payments, provider earnings and platform financial activity.</p>
+      </section>
+
+      <section class="dashboard-stats-grid finance-stats-grid" id="financeStatsGrid"></section>
+
+      <section class="finance-dashboard-layout">
+        <div class="panel-card finance-summary-panel">
+          <div class="panel-head">
+            <h2>Financial Overview</h2>
+            <select id="financeStatusFilter" aria-label="Filter finance records by status">
+              <option value="all">All statuses</option>
+            </select>
+          </div>
+          <div class="finance-summary-grid" id="financeSummaryGrid"></div>
+        </div>
+
+        <aside class="panel-card finance-side-panel">
+          <div class="panel-head">
+            <h2>Commission</h2>
+          </div>
+          <div id="financeCommissionPanel"></div>
+        </aside>
+      </section>
+
+      <section class="panel-card finance-table-panel">
+        <div class="panel-head">
+          <h2>Payment Transactions (<span id="financePaymentCount">0</span>)</h2>
+        </div>
+        <div class="table-card">
+          <table class="data-table finance-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Booking ID</th>
+                <th>Customer</th>
+                <th>Provider</th>
+                <th>Method</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="financePaymentRows"></tbody>
+          </table>
+        </div>
+        <p class="finance-empty-state hidden" id="financePaymentsEmpty">No transactions match the selected filters.</p>
+      </section>
+
+      <section class="panel-card finance-table-panel">
+        <div class="panel-head">
+          <h2>Provider Earnings (<span id="financeEarningsCount">0</span>)</h2>
+        </div>
+        <div class="table-card">
+          <table class="data-table finance-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Provider</th>
+                <th>Booking</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Payment Date</th>
+                <th>Received Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="financeEarningRows"></tbody>
+          </table>
+        </div>
+        <p class="finance-empty-state hidden" id="financeEarningsEmpty">No provider earnings match the selected filters.</p>
+      </section>
+
+      <section class="panel-card finance-table-panel">
+        <div class="panel-head">
+          <h2>Booking Payment Status (<span id="financeBookingCount">0</span>)</h2>
+        </div>
+        <div class="table-card">
+          <table class="data-table finance-table">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Customer</th>
+                <th>Provider</th>
+                <th>Service</th>
+                <th>Amount</th>
+                <th>Payment Method</th>
+                <th>Date</th>
+                <th>Payment Status</th>
+              </tr>
+            </thead>
+            <tbody id="financeBookingRows"></tbody>
+          </table>
+        </div>
+        <p class="finance-empty-state hidden" id="financeBookingsEmpty">No booking payment records match the selected filters.</p>
+      </section>
+
+      <section class="panel-card finance-table-panel">
+        <div class="panel-head">
+          <h2>Refund Information (<span id="financeRefundCount">0</span>)</h2>
+        </div>
+        <div class="table-card">
+          <table class="data-table finance-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Booking</th>
+                <th>Customer</th>
+                <th>Provider</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="financeRefundRows"></tbody>
+          </table>
+        </div>
+        <p class="finance-empty-state hidden" id="financeRefundsEmpty">No refund records are available.</p>
+      </section>
+    </div>
+  </main>
+
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/booking-workflow.js"></script>
+  <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/finance-operations.js"></script>
+</body>
+</html>

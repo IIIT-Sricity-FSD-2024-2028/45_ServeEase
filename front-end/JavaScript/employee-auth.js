@@ -54,6 +54,7 @@
     "provider-operations.html": [permissions.PROVIDER_OPERATIONS],
     "provider-operations-detail.html": [permissions.PROVIDER_OPERATIONS],
     "provider-verification-review.html": [permissions.PROVIDER_OPERATIONS],
+    "finance-operations.html": [permissions.FINANCE],
     "support-dashboard.html": [permissions.SUPPORT],
     "support-ticket-details.html": [permissions.SUPPORT]
   };

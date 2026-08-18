@@ -456,7 +456,7 @@ function getEmployeeLoginDestination(employee) {
     "Customer Operations": "customer-operations.html",
     "Provider Operations": "provider-operations.html",
     "Support": "support-dashboard.html",
-    "Finance": "employee-department-placeholder.html" + departmentParam
+    "Finance": "finance-operations.html"
   };
   return destinations[employee.department] || "employee-department-placeholder.html" + departmentParam;
 }

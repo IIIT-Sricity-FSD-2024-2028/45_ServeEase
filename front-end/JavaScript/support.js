@@ -771,6 +771,31 @@ function setupHeader(agentName) {
     `;
   }
 
+  function getUniqueTicketValues(tickets, fieldName, fallbackValue) {
+    return Array.from(new Set(tickets.map(function (ticket) {
+      return String(ticket[fieldName] || fallbackValue || "").trim();
+    }).filter(Boolean))).sort(function (a, b) {
+      return a.localeCompare(b);
+    });
+  }
+
+  function populateTicketFilter(select, values, allLabel, currentValue) {
+    if (!select) return;
+    const selectedValue = values.includes(currentValue) ? currentValue : "all";
+    select.innerHTML = "";
+    const allOption = document.createElement("option");
+    allOption.value = "all";
+    allOption.textContent = allLabel;
+    select.appendChild(allOption);
+    values.forEach(function (value) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      select.appendChild(option);
+    });
+    select.value = selectedValue;
+  }
+
   function renderNotifications(data) {
     const notificationList = document.getElementById("supportNotificationList");
     const newCountNode = document.getElementById("supportNewNotificationCount");
@@ -803,6 +828,9 @@ function setupHeader(agentName) {
     const agentName = data.agent.fullName;
     const welcome = document.getElementById("supportWelcomeText");
     const searchInput = document.getElementById("supportSearchInput");
+    const queueButtons = Array.from(document.querySelectorAll("[data-support-queue]"));
+    const statusFilter = document.getElementById("supportStatusFilter");
+    const priorityFilter = document.getElementById("supportPriorityFilter");
     const list = document.getElementById("supportDashboardTicketList");
     const count = document.getElementById("supportTicketCount");
     const emptyState = document.getElementById("supportDashboardEmptyState");
@@ -813,14 +841,27 @@ function setupHeader(agentName) {
     if (welcome) welcome.textContent = `Welcome, Support Agent ${agentName}!`;
     statsGrid.innerHTML = buildStatsMarkup(data.tickets);
     renderNotifications(data);
+    populateTicketFilter(statusFilter, getUniqueTicketValues(data.tickets, "status", "Open"), "All statuses", statusFilter && statusFilter.value);
+    populateTicketFilter(priorityFilter, getUniqueTicketValues(data.tickets, "priority", "Medium"), "All priorities", priorityFilter && priorityFilter.value);
 
     function applyFilter() {
       const term = (searchInput ? searchInput.value : "").trim().toLowerCase();
+      const activeQueueButton = queueButtons.find(function (button) { return button.classList.contains("active"); });
+      const activeQueue = activeQueueButton ? activeQueueButton.dataset.supportQueue : "all";
+      const selectedStatus = statusFilter ? statusFilter.value : "all";
+      const selectedPriority = priorityFilter ? priorityFilter.value : "all";
       const filtered = data.tickets.filter(function (ticket) {
-        return [ticket.id, ticket.bookingReference, ticket.customerName, ticket.issueCategory, ticket.subject, ticket.status]
+        const matchesQueue = activeQueue === "all" ||
+          (activeQueue === "customer" && ticket.raisedByType === "customer") ||
+          (activeQueue === "provider" && ticket.raisedByType === "provider") ||
+          (activeQueue === "escalated" && (ticket.status === "Escalated" || Boolean(ticket.escalatedAt)));
+        const matchesStatus = selectedStatus === "all" || ticket.status === selectedStatus;
+        const matchesPriority = selectedPriority === "all" || (ticket.priority || "Medium") === selectedPriority;
+        const matchesSearch = [ticket.id, ticket.bookingReference, ticket.subject, ticket.customerName, ticket.providerName, ticket.relatedCustomer]
           .join(" ")
           .toLowerCase()
           .includes(term);
+        return matchesQueue && matchesStatus && matchesPriority && matchesSearch;
       });
 
       count.textContent = filtered.length;
@@ -835,14 +876,33 @@ function setupHeader(agentName) {
     }
 
     if (searchInput) {
-      searchInput.addEventListener("input", applyFilter);
+      searchInput.oninput = applyFilter;
     }
 
-    if (clearBtn) {
-      clearBtn.addEventListener("click", function () {
-        if (searchInput) searchInput.value = "";
+    queueButtons.forEach(function (button) {
+      button.onclick = function () {
+        queueButtons.forEach(function (item) {
+          item.classList.toggle("active", item === button);
+        });
         applyFilter();
-      });
+      };
+    });
+
+    [statusFilter, priorityFilter].forEach(function (filter) {
+      if (!filter) return;
+      filter.onchange = applyFilter;
+    });
+
+    if (clearBtn) {
+      clearBtn.onclick = function () {
+        if (searchInput) searchInput.value = "";
+        if (statusFilter) statusFilter.value = "all";
+        if (priorityFilter) priorityFilter.value = "all";
+        queueButtons.forEach(function (button) {
+          button.classList.toggle("active", button.dataset.supportQueue === "all");
+        });
+        applyFilter();
+      };
     }
 
     if (viewAllBtn) {

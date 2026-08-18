@@ -109,6 +109,53 @@
   margin-bottom: 14px;
 }
 
+.support-filter-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.support-queue-tabs,
+.support-filter-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.support-queue-tabs button {
+  min-height: 38px;
+  border: 1px solid #e6ebf2;
+  border-radius: 10px;
+  background: #fff;
+  color: #4b5563;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.support-queue-tabs button.active,
+.support-queue-tabs button:hover {
+  border-color: #bfdbfe;
+  background: #eef4ff;
+  color: #2563eb;
+}
+
+.support-filter-fields select {
+  min-height: 38px;
+  min-width: 150px;
+  border: 1px solid #e6ebf2;
+  border-radius: 10px;
+  background: #fff;
+  color: #12284a;
+  font: inherit;
+  font-size: 14px;
+  padding: 0 12px;
+}
+
 .support-section-head h2,
 .support-sidebar-head h2,
 .support-card-title h2,
@@ -606,6 +653,11 @@
   .support-dashboard-layout,
   .support-detail-layout {
     grid-template-columns: 1fr;
+  }
+
+  .support-filter-panel {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
