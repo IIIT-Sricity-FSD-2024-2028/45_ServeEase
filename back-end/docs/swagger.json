@@ -1787,6 +1787,64 @@
         ]
       }
     },
+    "/api/admin/providers/verification/{id}": {
+      "patch": {
+        "operationId": "ProviderVerificationController_update",
+        "summary": "Update an existing provider verification request",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" or \"superuser\" to access provider verification.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderVerificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider verification request updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProviderVerification"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-provider-verification"
+        ]
+      }
+    },
     "/api/admin/providers/{id}": {
       "get": {
         "operationId": "ProviderVerificationController_findById",
@@ -4286,6 +4344,10 @@
       "CreateProviderDocumentDto": {
         "type": "object",
         "properties": {
+          "documentId": {
+            "type": "string",
+            "example": "DOC-PRO018-1"
+          },
           "documentType": {
             "type": "string",
             "example": "ID Proof"

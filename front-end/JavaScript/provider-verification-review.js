@@ -73,7 +73,17 @@
     if (window.ServeEaseAttachments && typeof window.ServeEaseAttachments.previewProviderDocument === "function") {
       if (window.ServeEaseAttachments.previewProviderDocument(state.provider.id, document)) return;
     }
-    window.alert("No stored preview is available for this document.");
+    const body = byId("providerVerificationPreviewBody");
+    const modal = byId("providerVerificationPreviewModal");
+    const subtitle = byId("providerVerificationPreviewSubtitle");
+    if (subtitle) subtitle.textContent = document.documentName || "Provider document";
+    if (body) body.innerHTML = '<p class="provider-verification-review-preview-placeholder">Preview unavailable because the stored file content is missing or corrupted.</p>';
+    if (modal) modal.hidden = false;
+  }
+
+  function closePreview() {
+    const modal = byId("providerVerificationPreviewModal");
+    if (modal) modal.hidden = true;
   }
 
   function openModal(decision) {
@@ -140,4 +150,8 @@
   if (rejectBtn) rejectBtn.addEventListener("click", function () { openModal("reject"); });
   if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
   if (submitBtn) submitBtn.addEventListener("click", submitDecision);
+  const previewClose = byId("providerVerificationPreviewClose");
+  const previewFooterClose = byId("providerVerificationPreviewFooterClose");
+  if (previewClose) previewClose.addEventListener("click", closePreview);
+  if (previewFooterClose) previewFooterClose.addEventListener("click", closePreview);
 })();

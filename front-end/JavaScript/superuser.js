@@ -443,6 +443,12 @@
     return appData.providerApprovalRequests;
   }
 
+  function supportedProviderDocuments(documents) {
+    return (Array.isArray(documents) ? documents : []).filter(function (document) {
+      return String(document && document.documentType || "").toLowerCase().indexOf("police verification") !== 0;
+    });
+  }
+
   function normalizeProviderApproval(request) {
     return {
       ...request,
@@ -609,7 +615,7 @@
           }
 
           if (!request) return;
-          request.documents = Array.isArray(provider.documents) ? provider.documents : request.documents;
+          request.documents = supportedProviderDocuments(Array.isArray(provider.documents) ? provider.documents : request.documents);
           request.verificationStatus = provider.status || request.verificationStatus;
           if (provider.status === "Verified") {
             request.approvalStatus = "Active";

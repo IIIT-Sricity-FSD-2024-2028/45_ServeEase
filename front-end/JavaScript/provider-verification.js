@@ -25,15 +25,26 @@
     return String(value || "").toLowerCase().replace(/\s+/g, "-");
   }
 
+  function isSupportedDocument(document) {
+    const type = String(document && document.documentType || "").toLowerCase();
+    return ["id proof", "address proof", "skill certificate", "experience proof", "profile photo"].some(function (label) {
+      return type === label || type.indexOf(label + " - ") === 0;
+    });
+  }
+
+  function supportedDocuments(documents) {
+    return (Array.isArray(documents) ? documents : []).filter(isSupportedDocument);
+  }
+
   function requiredDocumentsReviewed(provider) {
-    const documents = provider && Array.isArray(provider.documents) ? provider.documents : [];
+    const documents = supportedDocuments(provider && provider.documents);
     return documents.length > 0 && documents
       .filter(function (document) { return document.required; })
       .every(function (document) { return document.documentStatus !== "Pending"; });
   }
 
   function allRequiredDocumentsApproved(provider) {
-    const documents = provider && Array.isArray(provider.documents) ? provider.documents : [];
+    const documents = supportedDocuments(provider && provider.documents);
     return documents.length > 0 && documents
       .filter(function (document) { return document.required; })
       .every(function (document) { return document.documentStatus === "Approved"; });
@@ -209,11 +220,11 @@
   function catalogDocuments(providerId) {
     const now = new Date().toISOString();
     return [
-      ["ID Proof", "Catalog ID proof verified"],
-      ["Address Proof", "Catalog address proof verified"],
-      ["Skill Certificate", "Catalog skill certificate verified"],
-      ["Experience Proof", "Catalog experience proof verified"],
-      ["Profile Photo", "Catalog profile photo verified"]
+      ["ID Proof", "Catalog ID proof verified", true],
+      ["Address Proof", "Catalog address proof verified", true],
+      ["Skill Certificate", "Catalog skill certificate verified", false],
+      ["Experience Proof", "Catalog experience proof verified", false],
+      ["Profile Photo", "Catalog profile photo verified", true]
     ].map(function (item, index) {
       return {
         documentId: "CAT-DOC-" + providerId + "-" + (index + 1),
@@ -221,7 +232,7 @@
         documentName: item[1],
         documentUrl: "",
         documentStatus: "Approved",
-        required: true,
+        required: item[2],
         uploadedAt: now
       };
     });
@@ -297,7 +308,7 @@
       submittedDate: submittedDate,
       joinedDate: submittedDate,
       status: verificationStatus,
-      documents: documents.map(function (document, index) {
+      documents: supportedDocuments(documents).map(function (document, index) {
         return {
           documentId: document.documentId || "DOC-" + request.id + "-" + (index + 1),
           documentType: document.documentType,
@@ -522,7 +533,7 @@
       '<section><h4>Professional Details</h4><div class="superuser-detail-grid">' +
       detail("Skills", (provider.skills || []).join(", ")) + detail("Certifications", (provider.certifications || []).join(", ")) +
       detail("Completed Jobs", provider.completedJobs) + detail("Rating", provider.rating) + '</div></section>' +
-      '<section><h4>Verification Documents</h4><div class="provider-document-list">' + documentsMarkup(provider.documents || []) + '</div></section>' +
+        '<section><h4>Verification Documents</h4><div class="provider-document-list">' + documentsMarkup(supportedDocuments(provider.documents)) + '</div></section>' +
       '<section><h4>Status History</h4><div class="provider-history-list">' + historyMarkup(provider.statusHistory || []) + '</div></section>' +
       '<section><h4>Admin Remarks</h4><div class="superuser-detail-card">' + escapeHtml(provider.adminRemarks || provider.rejectionReason || "No remarks added yet.") + '</div></section>';
   }
@@ -533,7 +544,7 @@
 
   function documentsMarkup(documents) {
     if (!documents.length) return '<div class="superuser-empty-state">No documents uploaded.</div>';
-    return documents.map(function (document) {
+    return supportedDocuments(documents).map(function (document) {
       return '<article class="provider-document-card">' +
         '<div><h5>' + escapeHtml(document.documentType) + (document.required ? ' <span class="provider-required-chip">Required</span>' : '') + '</h5>' +
         '<p>' + escapeHtml(document.documentName) + '</p>' +
@@ -698,7 +709,7 @@
       address: provider.address || provider.location,
       providerCatalogId: provider.id,
       registrationDate: provider.joinedDate || provider.submittedDate || "01 Jan 2026",
-      documents: provider.documents || [],
+      documents: supportedDocuments(provider.documents),
       verificationStatus: "Suspended",
       approvalStatus: "Suspended",
       adminRemarks: remarks || reason,
@@ -729,7 +740,7 @@
     const request = requests.find(function (item) { return item.id === action.providerId; });
     if (!request) return;
 
-    request.documents = Array.isArray(request.documents) ? request.documents : [];
+    request.documents = supportedDocuments(request.documents);
     if (action.type === "document") {
       const document = request.documents.find(function (item) {
         return item.documentId === action.documentId;
@@ -759,7 +770,7 @@
       return;
     }
 
-    request.documents = Array.isArray(request.documents) ? request.documents : [];
+    request.documents = supportedDocuments(request.documents);
     if (action.type === "document") {
       const document = request.documents.find(function (item) {
         return item.documentId === action.documentId;

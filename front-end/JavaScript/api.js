@@ -269,6 +269,13 @@
         body: JSON.stringify(provider)
       });
     },
+    updateProviderVerificationRequest: function (providerId, provider) {
+      return request(`/admin/providers/verification/${encodeURIComponent(providerId)}`, {
+        method: "PATCH",
+        headers: { role: "user" },
+        body: JSON.stringify(provider)
+      });
+    },
     getProviderVerificationDetails: function (id) {
       return request(`/admin/providers/${encodeURIComponent(id)}`, { method: "GET", headers: { role: "admin" } });
     },

@@ -66,8 +66,9 @@
 
       <section class="panel-card finance-table-panel">
         <div class="panel-head">
-          <h2>Payment Transactions (<span id="financePaymentCount">0</span>)</h2>
+          <h2>Customer Payment Transactions (<span id="financePaymentCount">0</span>)</h2>
         </div>
+        <div class="dashboard-search finance-table-search"><input type="search" id="financePaymentSearch" placeholder="Search transaction, booking, customer, or provider..." aria-label="Search customer payment transactions" /></div>
         <div class="table-card">
           <table class="data-table finance-table">
             <thead>
@@ -85,37 +86,40 @@
             <tbody id="financePaymentRows"></tbody>
           </table>
         </div>
-        <p class="finance-empty-state hidden" id="financePaymentsEmpty">No transactions match the selected filters.</p>
+        <p class="finance-empty-state hidden" id="financePaymentsEmpty">No matching records found.</p>
       </section>
 
       <section class="panel-card finance-table-panel">
         <div class="panel-head">
           <h2>Provider Earnings (<span id="financeEarningsCount">0</span>)</h2>
         </div>
+        <div class="dashboard-search finance-table-search"><input type="search" id="financeEarningsSearch" placeholder="Search transaction, provider, booking, or customer..." aria-label="Search provider earnings" /></div>
         <div class="table-card">
           <table class="data-table finance-table">
             <thead>
               <tr>
-                <th>Transaction ID</th>
+                <th>Transaction / Payment ID</th>
                 <th>Provider</th>
                 <th>Booking</th>
                 <th>Customer</th>
-                <th>Amount</th>
+                <th>Gross Amount</th>
+                <th>Commission</th>
+                <th>Provider Earnings</th>
                 <th>Payment Date</th>
-                <th>Received Date</th>
-                <th>Status</th>
+                <th>Payout Status</th>
               </tr>
             </thead>
             <tbody id="financeEarningRows"></tbody>
           </table>
         </div>
-        <p class="finance-empty-state hidden" id="financeEarningsEmpty">No provider earnings match the selected filters.</p>
+        <p class="finance-empty-state hidden" id="financeEarningsEmpty">No matching records found.</p>
       </section>
 
       <section class="panel-card finance-table-panel">
         <div class="panel-head">
-          <h2>Booking Payment Status (<span id="financeBookingCount">0</span>)</h2>
+          <h2>Commission Ledger (<span id="financeCommissionCount">0</span>)</h2>
         </div>
+        <div class="dashboard-search finance-table-search"><input type="search" id="financeCommissionSearch" placeholder="Search booking, customer, or provider..." aria-label="Search commission ledger" /></div>
         <div class="table-card">
           <table class="data-table finance-table">
             <thead>
@@ -123,23 +127,25 @@
                 <th>Booking ID</th>
                 <th>Customer</th>
                 <th>Provider</th>
-                <th>Service</th>
-                <th>Amount</th>
-                <th>Payment Method</th>
+                <th>Gross Amount</th>
+                <th>Commission Rate</th>
+                <th>Platform Commission</th>
+                <th>Provider Earnings</th>
+                <th>Status</th>
                 <th>Date</th>
-                <th>Payment Status</th>
               </tr>
             </thead>
-            <tbody id="financeBookingRows"></tbody>
+            <tbody id="financeCommissionRows"></tbody>
           </table>
         </div>
-        <p class="finance-empty-state hidden" id="financeBookingsEmpty">No booking payment records match the selected filters.</p>
+        <p class="finance-empty-state hidden" id="financeCommissionEmpty">No matching records found.</p>
       </section>
 
       <section class="panel-card finance-table-panel">
         <div class="panel-head">
           <h2>Refund Information (<span id="financeRefundCount">0</span>)</h2>
         </div>
+        <div class="dashboard-search finance-table-search"><input type="search" id="financeRefundSearch" placeholder="Search reference, booking, customer, or provider..." aria-label="Search refund information" /></div>
         <div class="table-card">
           <table class="data-table finance-table">
             <thead>
@@ -156,7 +162,7 @@
             <tbody id="financeRefundRows"></tbody>
           </table>
         </div>
-        <p class="finance-empty-state hidden" id="financeRefundsEmpty">No refund records are available.</p>
+        <p class="finance-empty-state hidden" id="financeRefundsEmpty">No matching records found.</p>
       </section>
     </div>
   </main>

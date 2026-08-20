@@ -97,6 +97,13 @@
     return clean(record.id || record.providerId || record.ownerProviderId || record.userId);
   }
 
+  function isSupportedDocument(record) {
+    const type = normalizeKey(record && (record.documentType || record.type || record.label || record.name));
+    return ["id proof", "address proof", "skill certificate", "experience proof", "profile photo"].some(function (label) {
+      return type === label || type.indexOf(label + " - ") === 0;
+    });
+  }
+
   function getStoredProviderDocument(providerId, documentId) {
     if (!providerId || !documentId) return null;
     if (window.ServeEaseAttachments && typeof window.ServeEaseAttachments.getProviderPreview === "function") {
@@ -128,13 +135,15 @@
 
   function providerDocuments(record) {
     const providerId = documentProviderId(record);
-    return (Array.isArray(record.documents) ? record.documents : []).map(function (document) {
+    return (Array.isArray(record.documents) ? record.documents : []).filter(isSupportedDocument).map(function (document) {
       return normalizeDocument(document, providerId);
     });
   }
 
   function verificationStatus(record) {
-    const raw = clean(record.verificationStatus || record.approvalStatus || record.status || record.accountStatus);
+    const raw = [record.verificationStatus, record.approvalStatus, record.status, record.accountStatus].map(clean).find(function (value) {
+      return value && ["not recorded", "n/a", "na"].indexOf(normalizeKey(value)) === -1;
+    }) || "";
     const key = normalizeKey(raw);
     if (!raw && record.verified === true) return "Verified";
     if (!raw && record.verified === false) return "Pending";
@@ -146,7 +155,9 @@
   }
 
   function accountStatus(record) {
-    const raw = clean(record.accountStatus || record.status || record.approvalStatus || record.verificationStatus);
+    const raw = [record.accountStatus, record.status, record.approvalStatus, record.verificationStatus].map(clean).find(function (value) {
+      return value && ["not recorded", "n/a", "na"].indexOf(normalizeKey(value)) === -1;
+    }) || "";
     const key = normalizeKey(raw);
     if (["active", "approved", "verified"].indexOf(key) !== -1) return "Active";
     if (key === "suspended") return "Suspended";
@@ -154,7 +165,24 @@
     if (["pending approval", "pending", "under verification"].indexOf(key) !== -1) return "Under Verification";
     if (!raw && record.verified === true) return "Active";
     if (!raw && record.verified === false) return "Under Verification";
-    return raw || (verificationStatus(record) === "Verified" ? "Active" : emptyValue);
+    return raw || "Active";
+  }
+
+  function statusRank(value) {
+    const key = normalizeKey(value);
+    if (key === "suspended") return 4;
+    if (key === "verification rejected" || key === "rejected") return 3;
+    if (key === "active" || key === "approved" || key === "verified") return 2;
+    if (key === "under verification" || key === "pending" || key === "pending approval") return 1;
+    return 0;
+  }
+
+  function canonicalVerificationStatus(account) {
+    const key = normalizeKey(account);
+    if (["active", "approved", "verified", "suspended"].indexOf(key) !== -1) return "Verified";
+    if (["verification rejected", "rejected"].indexOf(key) !== -1) return "Rejected";
+    if (["under verification", "pending", "pending approval"].indexOf(key) !== -1) return "Pending";
+    return emptyValue;
   }
 
   function providerIdentity(record) {
@@ -187,7 +215,7 @@
     const category = display(record.serviceType || record.category || record.serviceCategory);
     const experience = display(record.experience || record.yearsOfExperience);
     const location = display(record.cityName || record.location || record.address);
-    const registrationDate = display(record.registrationDate || record.createdAt || record.createdDate || record.submittedDate || record.joinedDate);
+    const registrationDate = display(record.resubmittedDate || record.submittedDate || record.registrationDate || record.createdAt || record.createdDate || record.joinedDate);
     const catalogId = clean(record.providerCatalogId || record.catalogProviderId || record.id);
     const aliases = [id, catalogId, record.ownerProviderId, email, name, organisationName]
       .map(normalizeKey)
@@ -236,8 +264,8 @@
     target.rejectionReason = keep(target.rejectionReason, incoming.rejectionReason);
     target.suspensionReason = keep(target.suspensionReason, incoming.suspensionReason);
     target.adminRemarks = keep(target.adminRemarks, incoming.adminRemarks);
-    if (incoming.accountStatus !== emptyValue) target.accountStatus = incoming.accountStatus;
-    if (incoming.verificationStatus !== emptyValue) target.verificationStatus = incoming.verificationStatus;
+    if (target.source !== "Provider approval request" && incoming.accountStatus !== emptyValue && statusRank(incoming.accountStatus) >= statusRank(target.accountStatus)) target.accountStatus = incoming.accountStatus;
+    if (target.accountStatus !== emptyValue) target.verificationStatus = canonicalVerificationStatus(target.accountStatus);
     if (!target.documents.length && incoming.documents.length) target.documents = incoming.documents;
     if (incoming.statusHistory.length) target.statusHistory = target.statusHistory.concat(incoming.statusHistory);
     incoming.aliases.forEach(function (alias) {
@@ -286,10 +314,6 @@
     (Array.isArray(superuserData.providers) ? superuserData.providers : []).forEach(function (provider) {
       addProvider(map, provider, "Superuser provider data");
     });
-    (Array.isArray(superuserData.pendingProviders) ? superuserData.pendingProviders : []).forEach(function (provider) {
-      addProvider(map, provider, "Pending provider data");
-    });
-
     localStorageKeys("serveEaseProviderModuleData").forEach(function (key) {
       const moduleData = readJson(key, {});
       const profile = moduleData.profile || {};
@@ -511,7 +535,11 @@
   }
 
   function pendingProviders(data) {
-    return data.providers.filter(isPendingProvider);
+    return data.providers.filter(function (provider) {
+      if (!isPendingProvider(provider)) return false;
+      if (["Service catalog provider", "Superuser provider data", "Pending provider data"].indexOf(provider.source) !== -1) return false;
+      return provider.documents.length > 0;
+    });
   }
 
   function statCard(label, value, helper, icon) {

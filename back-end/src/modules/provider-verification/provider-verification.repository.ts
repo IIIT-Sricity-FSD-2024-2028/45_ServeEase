@@ -130,11 +130,9 @@ export class ProviderVerificationRepository {
       submittedDate,
       joinedDate: submittedDate,
       status: 'Pending',
-      documents: data.documents.map((document, index) => ({
-        documentId: `DOC-${data.id}-${index + 1}`,
-        documentType: document.documentType,
-        documentName: document.documentName,
-        documentUrl: document.documentUrl,
+      documents: data.documents.filter((document) => !document.documentType.toLowerCase().startsWith('police verification')).map((document, index) => ({
+        ...document,
+        documentId: document.documentId || `DOC-${data.id}-${index + 1}`,
         documentStatus: 'Pending',
         required: document.required !== false,
         uploadedAt: submittedDate,
@@ -155,6 +153,50 @@ export class ProviderVerificationRepository {
     }
 
     this.providers.unshift(provider);
+    return provider;
+  }
+
+  resubmit(id: string, data: CreateProviderVerificationDto): ProviderVerification {
+    const provider = this.findById(id);
+    if (!provider) throw new Error(`Provider with id "${id}" was not found.`);
+
+    const submittedDate = new Date().toISOString();
+    const submittedDocuments = data.documents.filter((document) => !document.documentType.toLowerCase().startsWith('police verification'));
+    const existingDocumentByKey = new Map(provider.documents.map((document) => [document.documentId || document.documentType.toLowerCase(), document]));
+    const nextDocuments = submittedDocuments.map((document, index) => {
+      const key = document.documentId || document.documentType.toLowerCase();
+      const existing = existingDocumentByKey.get(key);
+      return {
+        ...existing,
+        ...document,
+        documentId: document.documentId || existing?.documentId || `DOC-${id}-${index + 1}`,
+        documentStatus: 'Pending' as const,
+        required: document.required !== false,
+        uploadedAt: submittedDate,
+        rejectionReason: undefined,
+      };
+    });
+
+    provider.name = data.name;
+    provider.email = data.email;
+    provider.organisationName = data.organisationName || data.name;
+    provider.phone = data.phone;
+    provider.category = data.category;
+    provider.experience = Number(data.experience) || 0;
+    provider.location = data.location;
+    provider.address = data.address;
+    provider.submittedDate = submittedDate;
+    provider.status = 'Pending';
+    provider.verifiedAt = undefined;
+    provider.suspendedAt = undefined;
+    provider.rejectionReason = undefined;
+    provider.documents = nextDocuments;
+    provider.statusHistory.unshift({
+      status: 'Pending',
+      note: 'Provider resubmitted verification request.',
+      updatedBy: 'Provider',
+      updatedAt: submittedDate,
+    });
     return provider;
   }
 
@@ -195,33 +237,22 @@ export class ProviderVerificationRepository {
   }
 
   private createDocuments(providerId: string, approvedRequiredDocuments: number): VerificationDocument[] {
-    const required = [
-      ['ID Proof', 'Aadhaar Card'],
-      ['Address Proof', 'Electricity Bill'],
-      ['Skill Certificate', 'Skill Training Certificate'],
-      ['Experience Proof', 'Previous Employer Letter'],
-      ['Profile Photo', 'Profile Photo'],
+    const definitions: Array<[string, string, boolean]> = [
+      ['ID Proof', 'Aadhaar Card', true],
+      ['Address Proof', 'Electricity Bill', true],
+      ['Skill Certificate', 'Skill Training Certificate', false],
+      ['Experience Proof', 'Previous Employer Letter', false],
+      ['Profile Photo', 'Profile Photo', true],
     ];
-
-    const documents = required.map(([documentType, documentName], index) => ({
+    const documents: VerificationDocument[] = definitions.map(([documentType, documentName, required], index) => ({
       documentId: `DOC-${providerId}-${index + 1}`,
       documentType,
       documentName,
       documentUrl: `/documents/providers/${providerId}/${documentType.toLowerCase().replace(/\s+/g, '-')}.pdf`,
       documentStatus: index < approvedRequiredDocuments ? 'Approved' as const : 'Pending' as const,
-      required: true,
+      required,
       uploadedAt: '2026-03-08T10:30:00.000Z',
     }));
-
-    documents.push({
-      documentId: `DOC-${providerId}-6`,
-      documentType: 'Police Verification Certificate',
-      documentName: 'Police Verification Certificate',
-      documentUrl: `/documents/providers/${providerId}/police-verification.pdf`,
-      documentStatus: 'Pending',
-      required: false,
-      uploadedAt: '2026-03-08T10:30:00.000Z',
-    });
 
     return documents;
   }

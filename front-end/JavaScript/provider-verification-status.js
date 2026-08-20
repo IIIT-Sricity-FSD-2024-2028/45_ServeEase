@@ -44,7 +44,7 @@
     const data = readJson("serveEaseData", {});
     const users = Array.isArray(data.users) ? data.users : [];
     const requests = Array.isArray(data.providerApprovalRequests) ? data.providerApprovalRequests : [];
-    const all = requests.concat(users.filter(function (user) { return user.role === "provider"; }));
+    const all = users.filter(function (user) { return user.role === "provider"; }).concat(requests);
     return all.find(function (item) {
       return normalizeKey(item.id) === normalizeKey(currentSession.userId) ||
         normalizeKey(item.email) === normalizeKey(currentSession.email);
@@ -88,6 +88,8 @@
       if (message) message.textContent = "Your provider profile is pending Provider Operations review. Dashboard access will unlock after approval.";
     }
 
+    if (status !== "Active" && dashboardBtn) dashboardBtn.remove();
+
     if (info) {
       info.innerHTML = [
         field("Provider ID", record.id || record.userId),
@@ -120,8 +122,8 @@
   const resubmitBtn = byId("providerVerificationResubmitBtn");
   if (resubmitBtn) {
     resubmitBtn.addEventListener("click", function () {
-      sessionStorage.removeItem("serveEaseSession");
       try {
+        sessionStorage.setItem("serveEaseProviderResubmitId", provider.id || currentSession.userId || "");
         sessionStorage.setItem("serveEaseProviderResubmitEmail", provider.email || currentSession.email || "");
       } catch (error) {}
       window.location.href = "signup.html";

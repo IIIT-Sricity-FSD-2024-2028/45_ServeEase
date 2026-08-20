@@ -25,8 +25,8 @@
 .provider-operations-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; }
 .provider-operations-card-warning { border-color: #ffe3ad; background: linear-gradient(180deg, #fffdf8, #fff); }
 .provider-operations-muted { margin: 6px 0 0; color: #667a97; font-size: 13px; }
-.provider-operations-table { width: 100%; min-width: 1080px; table-layout: auto; border-collapse: collapse; }
-.provider-operations-pending-table { min-width: 920px; }
+.provider-operations-table { width: 100%; min-width: 1360px; table-layout: auto; border-collapse: collapse; }
+.provider-operations-pending-table { min-width: 1180px; }
 .provider-operations-table th:nth-child(1), .provider-operations-table td:nth-child(1) { width: 92px; }
 .provider-operations-table th:nth-child(2), .provider-operations-table td:nth-child(2) { min-width: 130px; }
 .provider-operations-table th:nth-child(3), .provider-operations-table td:nth-child(3) { min-width: 150px; }
@@ -38,7 +38,7 @@
 .provider-operations-table th:nth-child(10), .provider-operations-table td:nth-child(10) { min-width: 130px; }
 .provider-operations-table th:nth-child(11), .provider-operations-table td:nth-child(11) { min-width: 150px; }
 .provider-operations-table th, .provider-operations-table td { padding: 12px 10px; border-bottom: 1px solid #edf0f5; text-align: left; vertical-align: middle; font-size: 13px; font-weight: 400; line-height: 1.45; overflow-wrap: anywhere; }
-.provider-operations-table th { color: #667a97; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.provider-operations-table th { color: #667a97; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow-wrap: normal; }
 .provider-operations-actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .provider-operations-inline-action { padding: 6px 10px; border: 1px solid #cbd5ff; border-radius: 7px; background: #fff; color: #4254f4; cursor: pointer; font-size: 13px; font-weight: 700; line-height: 1.2; }
 .provider-operations-inline-action.danger { border-color: #ffd0d0; color: #c23939; }

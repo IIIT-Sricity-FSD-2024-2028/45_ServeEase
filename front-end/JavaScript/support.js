@@ -806,15 +806,23 @@ function setupHeader(agentName) {
 
     notificationList.innerHTML = data.notifications.map(function (item) {
       return `
-        <button class="support-notification-item ${item.isNew ? "" : "read"}" type="button" data-ticket-id="${item.ticketId}">
+        <button class="support-notification-item ${item.isNew ? "" : "read"}" type="button" data-notification-id="${item.id}" data-ticket-id="${item.ticketId}">
           <div class="support-notification-text">${item.text}</div>
           <div class="support-notification-time">${item.time}</div>
         </button>
       `;
     }).join("");
 
-    notificationList.querySelectorAll("button[data-ticket-id]").forEach(function (button) {
+    notificationList.querySelectorAll("button[data-notification-id]").forEach(function (button) {
       button.addEventListener("click", function () {
+        const currentData = getSupportData();
+        const notification = (currentData.notifications || []).find(function (item) {
+          return String(item.id) === String(button.dataset.notificationId);
+        });
+        if (notification && notification.isNew) {
+          notification.isNew = false;
+          setSupportData(currentData);
+        }
         window.location.href = `support-ticket-details.html?id=${encodeURIComponent(button.dataset.ticketId)}`;
       });
     });
@@ -842,7 +850,9 @@ function setupHeader(agentName) {
     statsGrid.innerHTML = buildStatsMarkup(data.tickets);
     renderNotifications(data);
     populateTicketFilter(statusFilter, getUniqueTicketValues(data.tickets, "status", "Open"), "All statuses", statusFilter && statusFilter.value);
-    populateTicketFilter(priorityFilter, getUniqueTicketValues(data.tickets, "priority", "Medium"), "All priorities", priorityFilter && priorityFilter.value);
+    const priorityValues = getUniqueTicketValues(data.tickets, "priority", "Medium");
+    if (!priorityValues.includes("Low")) priorityValues.push("Low");
+    populateTicketFilter(priorityFilter, priorityValues, "All priorities", priorityFilter && priorityFilter.value);
 
     function applyFilter() {
       const term = (searchInput ? searchInput.value : "").trim().toLowerCase();

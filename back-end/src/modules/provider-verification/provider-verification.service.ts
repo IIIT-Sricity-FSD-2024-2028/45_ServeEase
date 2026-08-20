@@ -22,10 +22,19 @@ export class ProviderVerificationService {
   }
 
   create(data: CreateProviderVerificationDto): ProviderVerification {
-    if (!data.documents.length) {
+    const supportedDocuments = data.documents.filter((document) => !document.documentType.toLowerCase().startsWith('police verification'));
+    if (!supportedDocuments.length) {
       throw new BadRequestException('Provider verification requires uploaded documents.');
     }
-    return this.providerRepository.create(data);
+    return this.providerRepository.create({ ...data, documents: supportedDocuments });
+  }
+
+  update(id: string, data: CreateProviderVerificationDto): ProviderVerification {
+    const supportedDocuments = data.documents.filter((document) => !document.documentType.toLowerCase().startsWith('police verification'));
+    if (!supportedDocuments.length) {
+      throw new BadRequestException('Provider verification requires uploaded documents.');
+    }
+    return this.providerRepository.resubmit(id, { ...data, id, documents: supportedDocuments });
   }
 
   getDocuments(providerId: string): VerificationDocument[] {

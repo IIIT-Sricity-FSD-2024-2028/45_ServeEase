@@ -443,3 +443,20 @@
   background: #fff;
   color: #13294b;
 }
+.provider-resubmission-notice { margin: 12px 0; padding: 10px 12px; border: 1px solid #cbd5ff; border-radius: 10px; background: #f3f5ff; color: #3046b8; font-size: 13px; font-weight: 600; }
+.provider-existing-documents { display: grid; gap: 7px; margin: 12px 0 16px; padding: 12px; border: 1px solid #e3e8f2; border-radius: 10px; background: #f8faff; color: #52637d; font-size: 12px; }
+.provider-existing-documents > strong { color: #12284a; font-size: 13px; }
+.provider-existing-documents > div { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) auto; gap: 10px; align-items: center; padding-top: 7px; border-top: 1px solid #e8edf5; }
+.provider-existing-documents > div span { overflow-wrap: anywhere; }
+@media (max-width: 560px) { .provider-existing-documents > div { grid-template-columns: 1fr; gap: 3px; } }
+.signup-page.provider-signup-mode .auth-wrapper { grid-template-columns: minmax(0, 920px); justify-content: center; }
+.signup-page.provider-signup-mode .auth-right { display: none; }
+.signup-page.provider-signup-mode .auth-card-large { max-width: none; }
+.signup-page.provider-signup-mode #providerFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.signup-page.provider-signup-mode #providerFields > .provider-document-upload-section { grid-column: 1 / -1; }
+.signup-page.provider-signup-mode .provider-document-upload-section { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.signup-page.provider-signup-mode .provider-document-upload-section > h3,
+.signup-page.provider-signup-mode .provider-document-upload-section > p,
+.signup-page.provider-signup-mode .provider-document-upload-section > .provider-resubmission-notice,
+.signup-page.provider-signup-mode .provider-document-upload-section > .provider-existing-documents { grid-column: 1 / -1; }
+@media (max-width: 700px) { .signup-page.provider-signup-mode #providerFields, .signup-page.provider-signup-mode .provider-document-upload-section { grid-template-columns: 1fr; } .signup-page.provider-signup-mode .provider-document-upload-section > h3, .signup-page.provider-signup-mode .provider-document-upload-section > p, .signup-page.provider-signup-mode .provider-document-upload-section > .provider-resubmission-notice, .signup-page.provider-signup-mode .provider-document-upload-section > .provider-existing-documents { grid-column: auto; } }

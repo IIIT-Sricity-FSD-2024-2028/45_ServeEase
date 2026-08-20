@@ -2238,13 +2238,34 @@
     renderBookings();
   }
 
+  function resolveProviderPayoutStatus(transaction) {
+    const existing = String(transaction && transaction.status || "").trim();
+    const lower = existing.toLowerCase();
+    if (["failed", "cancelled", "refunded"].indexOf(lower) !== -1) return existing;
+
+    const relevantDate = [transaction && transaction.receivedDate, transaction && transaction.paymentDate, transaction && transaction.date]
+      .map(function (value) {
+        const date = new Date(value || "");
+        return Number.isNaN(date.getTime()) ? null : date;
+      })
+      .find(Boolean);
+    if (!relevantDate) return existing || "Pending";
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return relevantDate.getTime() <= today.getTime() ? "Paid" : "Pending";
+  }
+
   function initProviderEarningsPage() {
     const stats = document.getElementById("providerEarningStats");
     if (!stats) return;
 
     const data = getProviderModuleData();
-    const paid = data.transactions.filter(function (item) { return item.status === "Paid"; });
-    const pending = data.transactions.filter(function (item) { return item.status === "Pending"; });
+    const displayTransactions = data.transactions.map(function (transaction) {
+      return Object.assign({}, transaction, { displayPayoutStatus: resolveProviderPayoutStatus(transaction) });
+    });
+    const paid = displayTransactions.filter(function (item) { return item.displayPayoutStatus === "Paid"; });
+    const pending = displayTransactions.filter(function (item) { return item.displayPayoutStatus === "Pending"; });
     const totalEarning = paid.reduce(function (sum, item) { return sum + item.amount; }, 0);
     const pendingAmount = pending.reduce(function (sum, item) { return sum + item.amount; }, 0);
 
@@ -2255,7 +2276,7 @@
     `;
 
     const tbody = document.getElementById("providerTransactionsTableBody");
-    tbody.innerHTML = data.transactions.map(function (transaction) {
+    tbody.innerHTML = displayTransactions.map(function (transaction) {
       return `
         <tr>
           <td>${transaction.id}</td>
@@ -2267,7 +2288,7 @@
           <td>${formatDisplayDate(transaction.serviceDate)}</td>
           <td>${formatDisplayDate(transaction.paymentDate) || "—"}</td>
           <td>${formatDisplayDate(transaction.receivedDate) || "—"}</td>
-          <td><span class="status-pill ${statusClass(transaction.status)}">${transaction.status}</span></td>
+          <td><span class="status-pill ${statusClass(transaction.displayPayoutStatus)}">${transaction.displayPayoutStatus}</span></td>
         </tr>
       `;
     }).join("");

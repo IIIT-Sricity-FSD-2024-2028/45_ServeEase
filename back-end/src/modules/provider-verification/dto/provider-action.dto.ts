@@ -27,6 +27,11 @@ export class RejectDocumentDto {
 }
 
 export class CreateProviderDocumentDto {
+  @ApiProperty({ example: 'DOC-PRO018-1', required: false })
+  @IsOptional()
+  @IsString()
+  documentId?: string;
+
   @ApiProperty({ example: 'ID Proof' })
   @IsString()
   documentType: string;

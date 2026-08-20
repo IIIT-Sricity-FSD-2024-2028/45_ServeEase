@@ -15,7 +15,7 @@
   function normalizeKey(value) { return ops.normalizeKey(value); }
 
   function detailField(label, value) {
-    return '<div class="provider-operations-detail-field"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(display(value)) + '</strong></div>';
+    return '<div class="provider-operations-detail-field"><span>' + escapeHtml(label) + ' :</span><strong>' + escapeHtml(display(value)) + '</strong></div>';
   }
 
   function statCard(label, value, helper, icon) {
@@ -102,8 +102,10 @@
     list.innerHTML = provider.documents.map(function (document) {
       return [
         '<div class="provider-operations-list-item">',
-        '  <div><span>' + escapeHtml(document.documentType || "Document") + '</span><strong>' + escapeHtml(document.documentName || "Not recorded") + '</strong></div>',
-        '  <div class="provider-operations-document-actions">' + ops.statusChip(document.documentStatus || emptyValue) + '<button class="provider-operations-inline-action" type="button" data-preview-document="' + escapeHtml(document.documentId) + '">Preview</button></div>',
+        '  <div class="provider-operations-document-type"><span>Document Type :</span><strong>' + escapeHtml(document.documentType || "Document") + '</strong></div>',
+        '  <div class="provider-operations-document-file"><span>File Name :</span><strong title="' + escapeHtml(document.documentName || "Not recorded") + '">' + escapeHtml(document.documentName || "Not recorded") + '</strong></div>',
+        '  <div class="provider-operations-document-status"><span>Status :</span>' + ops.statusChip(document.documentStatus || emptyValue) + '</div>',
+        '  <div class="provider-operations-document-action"><span>Action :</span><button class="provider-operations-inline-action" type="button" data-preview-document="' + escapeHtml(document.documentId) + '">Preview</button></div>',
         '</div>'
       ].join("");
     }).join("");
@@ -120,7 +122,11 @@
     if (window.ServeEaseAttachments && typeof window.ServeEaseAttachments.previewProviderDocument === "function") {
       if (window.ServeEaseAttachments.previewProviderDocument(provider.id, providerDocument)) return;
     }
-    window.alert("No stored preview is available for this document.");
+    const message = document.createElement("div");
+    message.className = "provider-operations-empty-state";
+    message.textContent = "Preview unavailable because the stored file content is missing or corrupted.";
+    const list = byId("providerOperationsDocumentList");
+    if (list) list.prepend(message);
   }
 
   function renderServices(services) {

@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="CSS/global.css" />
   <link rel="stylesheet" href="CSS/auth.css" />
 </head>
-<body>
+<body class="signup-page">
   <main class="auth-page">
     <div class="auth-wrapper">
       <div class="auth-left">
@@ -18,7 +18,7 @@
 
         <div class="auth-card auth-card-large">
           <h1>Welcome to ServeEase</h1>
-          <p class="auth-subtitle">Create an account to continue</p>
+          <p class="auth-subtitle" id="signupSubtitle">Create an account to continue</p>
 
           <div class="role-tabs signup-tabs" id="signupRoleTabs">
             <button class="role-tab active" type="button" data-role="customer">Customer</button>
@@ -78,7 +78,9 @@
               </div>
               <div class="provider-document-upload-section">
                 <h3>Valid Documents</h3>
-                <p>Upload the required proof documents for admin verification.</p>
+                <p>Upload the required proof documents for admin verification. Skill and experience documents are optional.</p>
+                <div class="provider-resubmission-notice hidden" id="providerResubmissionNotice"></div>
+                <div class="provider-existing-documents hidden" id="providerExistingDocuments"></div>
                 <div class="form-group">
                   <select id="idProofType" class="service-category-select">
                     <option value="">Select ID Proof Type</option>
@@ -93,7 +95,6 @@
                 <div class="form-group"><label class="auth-file-label">Skill Certificate<input type="file" id="skillCertificateFile" accept=".pdf,.jpg,.jpeg,.png" /></label><small class="error" id="skillCertificateFileError"></small></div>
                 <div class="form-group"><label class="auth-file-label">Experience Proof<input type="file" id="experienceProofFile" accept=".pdf,.jpg,.jpeg,.png" /></label><small class="error" id="experienceProofFileError"></small></div>
                 <div class="form-group"><label class="auth-file-label">Profile Photo<input type="file" id="profilePhotoFile" accept=".jpg,.jpeg,.png" /></label><small class="error" id="profilePhotoFileError"></small></div>
-                <div class="form-group"><label class="auth-file-label">Police Verification Certificate <span>Optional</span><input type="file" id="policeVerificationFile" accept=".pdf,.jpg,.jpeg,.png" /></label></div>
               </div>
             </div>
 

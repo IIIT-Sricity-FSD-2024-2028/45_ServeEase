@@ -133,24 +133,71 @@ function readFileAsDataUrl(file) {
   });
 }
 
-async function buildProviderDocumentPayload(providerId) {
+function escapeSignupHtml(value) {
+  return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function providerDocumentKey(value) {
+  const type = String(value || "").trim().toLowerCase();
+  if (type.indexOf("id proof") === 0) return "id";
+  if (type.indexOf("address proof") === 0) return "address";
+  if (type.indexOf("skill certificate") === 0) return "skill";
+  if (type.indexOf("experience proof") === 0) return "experience";
+  if (type.indexOf("profile photo") === 0) return "profile";
+  return "";
+}
+
+function readProviderPreviewStore(providerId) {
+  try {
+    return JSON.parse(localStorage.getItem("serveEaseProviderDocuments:" + providerId) || "{}") || {};
+  } catch (error) {
+    return {};
+  }
+}
+
+async function buildProviderDocumentPayload(providerId, existingDocuments) {
   const idProofType = document.getElementById("idProofType")?.value || "ID Proof";
   const documentFields = [
     { inputId: "idProofFile", type: "ID Proof - " + idProofType, required: true },
     { inputId: "addressProofFile", type: "Address Proof", required: true },
-    { inputId: "skillCertificateFile", type: "Skill Certificate", required: true },
-    { inputId: "experienceProofFile", type: "Experience Proof", required: true },
-    { inputId: "profilePhotoFile", type: "Profile Photo", required: true },
-    { inputId: "policeVerificationFile", type: "Police Verification Certificate", required: false }
+    { inputId: "skillCertificateFile", type: "Skill Certificate", required: false },
+    { inputId: "experienceProofFile", type: "Experience Proof", required: false },
+    { inputId: "profilePhotoFile", type: "Profile Photo", required: true }
   ];
 
   const documents = [];
-  const previewStore = {};
+  const existing = Array.isArray(existingDocuments) ? existingDocuments : [];
+  const previewStore = readProviderPreviewStore(providerId);
+  const usedIds = {};
+
+  function existingFor(type) {
+    return existing.find(function (document) {
+      return providerDocumentKey(document.documentType) === providerDocumentKey(type);
+    }) || null;
+  }
+
+  function nextDocumentId() {
+    let index = 1;
+    let candidate = "DOC-" + providerId + "-" + index;
+    while (usedIds[candidate] || existing.some(function (document) { return document.documentId === candidate; })) {
+      index += 1;
+      candidate = "DOC-" + providerId + "-" + index;
+    }
+    usedIds[candidate] = true;
+    return candidate;
+  }
 
   for (const field of documentFields) {
     const file = document.getElementById(field.inputId)?.files?.[0];
-    if (!file && !field.required) continue;
-    const documentId = "DOC-" + providerId + "-" + String(documents.length + 1);
+    const previous = existingFor(field.type);
+    if (!file && !field.required && !previous) continue;
+    if (!file && previous) {
+      usedIds[previous.documentId] = true;
+      documents.push(Object.assign({}, previous, { required: field.required }));
+      continue;
+    }
+    const documentId = previous && previous.documentId ? previous.documentId : nextDocumentId();
+    usedIds[documentId] = true;
     if (file) {
       try {
         previewStore[documentId] = {
@@ -184,6 +231,83 @@ async function buildProviderDocumentPayload(providerId) {
   return documents;
 }
 
+function authenticatedProviderId() {
+  try {
+    const currentSession = JSON.parse(sessionStorage.getItem("serveEaseSession") || "null") || {};
+    return currentSession.role === "provider" ? String(currentSession.userId || currentSession.id || "") : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function providerRecordMatchesId(record, providerId) {
+  const expected = String(providerId || "").toLowerCase();
+  if (!expected || !record) return false;
+  return [record.id, record.providerId, record.ownerProviderId, record.userId].some(function (value) {
+    return String(value || "").toLowerCase() === expected;
+  });
+}
+
+function getProviderResubmissionRecord() {
+  const providerId = authenticatedProviderId();
+  if (!providerId) return null;
+  const data = getData();
+  const requests = getProviderApprovalRequests(data);
+  return requests.find(function (record) {
+    return providerRecordMatchesId(record, providerId);
+  }) || (Array.isArray(data.users) ? data.users : []).find(function (record) {
+    return record.role === "provider" && providerRecordMatchesId(record, providerId);
+  }) || null;
+}
+
+function prepareProviderResubmission() {
+  const record = getProviderResubmissionRecord();
+  if (!record) return null;
+  const providerTab = document.querySelector('#signupRoleTabs .role-tab[data-role="provider"]');
+  if (providerTab) providerTab.click();
+  const fields = {
+    fullName: record.fullName || record.name,
+    email: record.email,
+    phone: record.phone,
+    organisationName: record.organisationName,
+    serviceType: record.serviceType || record.category,
+    experience: record.experience,
+    providerCity: record.cityId,
+    address: record.address
+  };
+  Object.keys(fields).forEach(function (id) {
+    const input = document.getElementById(id);
+    if (input && fields[id] !== undefined && fields[id] !== null) input.value = fields[id];
+  });
+  ["password", "confirmPassword"].forEach(function (id) {
+    const input = document.getElementById(id);
+    if (input && record.password) input.value = record.password;
+  });
+  const idType = String((record.documents || []).find(function (document) {
+    return providerDocumentKey(document.documentType) === "id";
+  })?.documentType || "").split(" - ")[1];
+  const idTypeInput = document.getElementById("idProofType");
+  if (idTypeInput && idType) idTypeInput.value = idType;
+  const notice = document.getElementById("providerResubmissionNotice");
+  if (notice) {
+    notice.classList.remove("hidden");
+    notice.textContent = "Provider Verification Resubmission for " + (record.id || "existing provider") + ". Replace only the documents that need updating.";
+  }
+  const existingTarget = document.getElementById("providerExistingDocuments");
+  const documents = (record.documents || []).filter(function (document) { return providerDocumentKey(document.documentType); });
+  if (existingTarget && documents.length) {
+    existingTarget.classList.remove("hidden");
+    existingTarget.innerHTML = "<strong>Existing submitted documents</strong>" + documents.map(function (document) {
+      return '<div><span>' + escapeSignupHtml(document.documentType) + '</span><span>Current file: ' + escapeSignupHtml(document.documentName || "Not submitted") + '</span><span>' + escapeSignupHtml(document.documentStatus || "Pending") + '</span></div>';
+    }).join("");
+  }
+  const submit = document.querySelector('#signupForm button[type="submit"]');
+  if (submit) submit.textContent = "Submit Resubmission";
+  const subtitle = document.getElementById("signupSubtitle");
+  if (subtitle) subtitle.textContent = "Update your provider verification documents and resubmit for review.";
+  return record;
+}
+
 function syncProviderVerificationRequest(provider) {
   if (!window.ServeEaseApi || typeof window.ServeEaseApi.createProviderVerificationRequest !== "function") return;
 
@@ -200,6 +324,24 @@ function syncProviderVerificationRequest(provider) {
     documents: provider.documents || []
   }).catch(function (error) {
     console.warn("Provider verification request sync skipped.", error);
+  });
+}
+
+function syncUpdatedProviderVerificationRequest(provider) {
+  if (!window.ServeEaseApi || typeof window.ServeEaseApi.updateProviderVerificationRequest !== "function") return;
+  return window.ServeEaseApi.updateProviderVerificationRequest(provider.id, {
+    id: provider.id,
+    name: provider.fullName,
+    email: provider.email,
+    organisationName: provider.organisationName || provider.fullName,
+    phone: provider.phone,
+    category: provider.serviceType,
+    experience: provider.experience,
+    location: provider.location || provider.cityName,
+    address: provider.address,
+    documents: provider.documents || []
+  }).catch(function (error) {
+    console.warn("Provider verification update sync skipped.", error);
   });
 }
 
@@ -716,7 +858,10 @@ function setupLoginForm() {
       return;
     }
 
-    if (matchedUser.role === "provider" && matchedUser.approvalStatus && matchedUser.approvalStatus !== "Active") {
+    const providerOperationalStatus = matchedUser.role === "provider"
+      ? String(matchedUser.accountStatus || matchedUser.status || matchedUser.approvalStatus || matchedUser.verificationStatus || "Under Verification").trim().toLowerCase()
+      : "";
+    if (matchedUser.role === "provider" && ["active", "approved", "verified"].indexOf(providerOperationalStatus) === -1) {
       setSession(matchedUser);
       showText("loginSuccess", "Login successful. Redirecting to verification status...");
       logServeEaseActivity("provider_login_status_blocked", matchedUser.email);
@@ -805,8 +950,10 @@ function setupSignupTabs() {
 
       if (tab.dataset.role === "provider") {
         providerFields.classList.remove("hidden");
+        document.body.classList.add("provider-signup-mode");
       } else {
         providerFields.classList.add("hidden");
+        document.body.classList.remove("provider-signup-mode");
       }
     });
   });
@@ -867,6 +1014,26 @@ function setupSignupForm() {
     ].forEach(clearInputState);
 
     const role = document.querySelector("#signupRoleTabs .role-tab.active")?.dataset.role;
+
+    const data = getData();
+
+    const approvalRequests = getProviderApprovalRequests(data);
+
+    const resubmissionProviderId =
+      role === "provider" ? authenticatedProviderId() : "";
+
+    const resubmissionRecord =
+      resubmissionProviderId
+        ? getProviderResubmissionRecord()
+        : null;
+
+    if (resubmissionProviderId && !resubmissionRecord) {
+      showText(
+        "signupFormError",
+        "Your provider profile could not be found. Please return to verification status and try again."
+      );
+      return;
+    }
 
     const fullName = fullNameInput.value.trim();
     const email = emailInput.value.trim();
@@ -960,14 +1127,29 @@ function setupSignupForm() {
       }
 
       [
-        ["idProofFile", "idProofFileError", "Upload ID proof."],
-        ["addressProofFile", "addressProofFileError", "Upload address proof."],
-        ["skillCertificateFile", "skillCertificateFileError", "Upload skill certificate."],
-        ["experienceProofFile", "experienceProofFileError", "Upload experience proof."],
-        ["profilePhotoFile", "profilePhotoFileError", "Upload profile photo."]
+        ["idProofFile", "idProofFileError", "Upload ID proof.", "id"],
+        ["addressProofFile", "addressProofFileError", "Upload address proof.", "address"],
+        ["profilePhotoFile", "profilePhotoFileError", "Upload profile photo.", "profile"]
       ].forEach(function (item) {
         const input = document.getElementById(item[0]);
-        if (!input || !input.files || !input.files.length) {
+        const hasNewFile = Boolean(
+          input &&
+          input.files &&
+          input.files.length
+        );
+
+        const hasExistingDocument = Boolean(
+          resubmissionRecord &&
+          Array.isArray(resubmissionRecord.documents) &&
+          resubmissionRecord.documents.some(function (document) {
+            return providerDocumentKey(document.documentType) === item[3];
+          })
+        );
+
+        if (
+          !hasNewFile &&
+          !(resubmissionRecord && hasExistingDocument)
+        ) {
           showText(item[1], item[2]);
           setErrorState(input);
           valid = false;
@@ -995,20 +1177,97 @@ function setupSignupForm() {
 
     if (!valid) return;
 
-    const data = getData();
+    const canonicalProviderEmail =
+      String(
+        resubmissionRecord &&
+        resubmissionRecord.email ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
 
-    const approvalRequests = getProviderApprovalRequests(data);
-    const duplicateEmail = data.users.some(function (user) {
-      return user.email.toLowerCase() === email.toLowerCase();
-    }) || approvalRequests.some(function (request) {
-      return request.email && request.email.toLowerCase() === email.toLowerCase() && request.approvalStatus !== "Rejected";
-    });
+    const canonicalProviderPhone =
+      String(
+        resubmissionRecord &&
+        resubmissionRecord.phone ||
+        ""
+      ).trim();
 
-    const duplicatePhone = data.users.some(function (user) {
-      return user.phone === phone;
-    }) || approvalRequests.some(function (request) {
-      return request.phone === phone && request.approvalStatus !== "Rejected";
-    });
+    const retainsCanonicalProviderEmail = Boolean(
+      resubmissionProviderId &&
+      canonicalProviderEmail &&
+      email.toLowerCase() === canonicalProviderEmail
+    );
+
+    const retainsCanonicalProviderPhone = Boolean(
+      resubmissionProviderId &&
+      canonicalProviderPhone &&
+      phone === canonicalProviderPhone
+    );
+
+    const duplicateEmail =
+      !retainsCanonicalProviderEmail &&
+      (
+        data.users.some(function (user) {
+          return (
+            user.email &&
+            user.email.toLowerCase() ===
+              email.toLowerCase() &&
+            (
+              !resubmissionProviderId ||
+              !providerRecordMatchesId(
+                user,
+                resubmissionProviderId
+              )
+            )
+          );
+        }) ||
+        approvalRequests.some(function (request) {
+          return (
+            request.email &&
+            request.email.toLowerCase() ===
+              email.toLowerCase() &&
+            (
+              !resubmissionProviderId ||
+              !providerRecordMatchesId(
+                request,
+                resubmissionProviderId
+              )
+            )
+          );
+        })
+      );
+
+    const duplicatePhone =
+      !retainsCanonicalProviderPhone &&
+      (
+        data.users.some(function (user) {
+          return (
+            user.phone &&
+            user.phone === phone &&
+            (
+              !resubmissionProviderId ||
+              !providerRecordMatchesId(
+                user,
+                resubmissionProviderId
+              )
+            )
+          );
+        }) ||
+        approvalRequests.some(function (request) {
+          return (
+            request.phone &&
+            request.phone === phone &&
+            (
+              !resubmissionProviderId ||
+              !providerRecordMatchesId(
+                request,
+                resubmissionProviderId
+              )
+            )
+          );
+        })
+      );
 
     if (duplicateEmail) {
       showText("signupFormError", "Email already exists.");
@@ -1020,7 +1279,7 @@ function setupSignupForm() {
       return;
     }
 
-    const newUser = {
+    const newUser = resubmissionRecord ? Object.assign({}, resubmissionRecord, { id: resubmissionProviderId }) : {
       id: generateUserId(role, data.users),
       role: role,
       fullName: fullName,
@@ -1028,6 +1287,12 @@ function setupSignupForm() {
       phone: phone,
       password: password
     };
+
+    newUser.role = role;
+    newUser.fullName = fullName;
+    newUser.email = email;
+    newUser.phone = phone;
+    newUser.password = password;
 
     if (role === "provider") {
       newUser.organisationName = organisationName;
@@ -1043,26 +1308,67 @@ function setupSignupForm() {
       newUser.accountStatus = "Under Verification";
       newUser.status = "Under Verification";
       try {
-        newUser.documents = await buildProviderDocumentPayload(newUser.id);
+        newUser.documents = await buildProviderDocumentPayload(newUser.id, resubmissionRecord && resubmissionRecord.documents);
       } catch (error) {
         showText("signupFormError", "Unable to read uploaded documents. Please try again.");
         return;
       }
-      newUser.registrationDate = window.ServeEaseDate ? window.ServeEaseDate.nowDate() : new Date().toLocaleDateString("en-GB");
-      newUser.statusHistory = [{
-        dateTime: window.ServeEaseDate && typeof window.ServeEaseDate.nowDateTime === "function" ? window.ServeEaseDate.nowDateTime() : new Date().toLocaleString("en-IN"),
-        action: "Provider signup submitted",
-        previousStatus: "New",
+      const submittedDate = window.ServeEaseDate ? window.ServeEaseDate.nowDate() : new Date().toLocaleDateString("en-GB");
+      const submittedDateTime = window.ServeEaseDate && typeof window.ServeEaseDate.nowDateTime === "function" ? window.ServeEaseDate.nowDateTime() : new Date().toLocaleString("en-IN");
+      newUser.registrationDate = newUser.registrationDate || submittedDate;
+      newUser.submittedDate = submittedDate;
+      newUser.resubmittedDate = resubmissionRecord ? submittedDate : newUser.resubmittedDate;
+      newUser.statusHistory = Array.isArray(newUser.statusHistory) ? newUser.statusHistory.slice() : [];
+      newUser.statusHistory.push({
+        dateTime: submittedDateTime,
+        action: resubmissionRecord ? "Provider verification resubmitted" : "Provider signup submitted",
+        previousStatus: resubmissionRecord ? "Rejected" : "New",
         newStatus: "Under Verification",
-        reason: "",
+        reason: resubmissionRecord ? "Provider resubmitted verification after rejection." : "",
         remarks: "Awaiting Provider Operations verification",
         performedBy: "Provider"
-      }];
+      });
+      newUser.rejectionReason = "";
     }
 
     if (role === "provider") {
-      approvalRequests.push(newUser);
-      syncProviderVerificationRequest(newUser);
+      const existingIndex = approvalRequests.findIndex(function (request) { return providerRecordMatchesId(request, newUser.id); });
+      if (existingIndex >= 0) approvalRequests[existingIndex] = newUser;
+      else approvalRequests.push(newUser);
+      data.users = data.users.map(function (user) {
+        return user.role === "provider" && providerRecordMatchesId(user, newUser.id)
+          ? Object.assign({}, user, newUser)
+          : user;
+      });
+      data.providers = (Array.isArray(data.providers) ? data.providers : []).map(function (provider) {
+        const matches = providerRecordMatchesId(provider, newUser.id);
+        return matches ? Object.assign({}, provider, {
+          accountStatus: "Under Verification",
+          approvalStatus: "Pending Approval",
+          verificationStatus: "Pending",
+          status: "Under Verification",
+          verified: false,
+          rejectionReason: ""
+        }) : provider;
+      });
+      Object.keys(localStorage).forEach(function (key) {
+        if (key.indexOf("serveEaseProviderModuleData") !== 0) return;
+        try {
+          const moduleData = JSON.parse(localStorage.getItem(key) || "null");
+          const profile = moduleData && moduleData.profile;
+          if (!profile || !providerRecordMatchesId(profile, newUser.id)) return;
+          Object.assign(profile, {
+            accountStatus: "Under Verification",
+            approvalStatus: "Pending Approval",
+            verificationStatus: "Pending",
+            status: "Under Verification",
+            rejectionReason: ""
+          });
+          localStorage.setItem(key, JSON.stringify(moduleData));
+        } catch (error) {}
+      });
+      if (resubmissionRecord) syncUpdatedProviderVerificationRequest(newUser);
+      else syncProviderVerificationRequest(newUser);
     } else {
       data.users.push(newUser);
     }
@@ -1086,6 +1392,13 @@ function setupSignupForm() {
         window.location.href = hasPendingBooking
           ? "booking-checkout.html"
           : "customer-dashboard.html";
+      } else if (resubmissionRecord) {
+        setSession(newUser);
+        try {
+          sessionStorage.removeItem("serveEaseProviderResubmitId");
+          sessionStorage.removeItem("serveEaseProviderResubmitEmail");
+        } catch (error) {}
+        window.location.href = "provider-verification-status.html";
       } else {
         // Provider accounts still require approval before login.
         window.location.href = "login.html";
@@ -1141,6 +1454,7 @@ setupLoginTabs();
 setupLoginForm();
 setupSignupTabs();
 setupSignupForm();
+prepareProviderResubmission();
 setupForgotPasswordForm();
 
 function setupPasswordVisibility() {

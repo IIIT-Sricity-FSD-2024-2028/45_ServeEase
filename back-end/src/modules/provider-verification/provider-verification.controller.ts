@@ -36,6 +36,15 @@ export class ProviderVerificationController {
     return successResponse(this.providerService.create(data));
   }
 
+  @Patch('verification/:id')
+  @Roles('admin', 'superuser', 'user')
+  @ApiOperation({ summary: 'Update an existing provider verification request' })
+  @ApiBody({ type: CreateProviderVerificationDto })
+  @ApiOkResponse({ description: 'Provider verification request updated successfully.', schema: successResponseSchema(ProviderVerification) })
+  update(@Param('id') id: string, @Body() data: CreateProviderVerificationDto) {
+    return successResponse(this.providerService.update(id, data));
+  }
+
   @Get(':id')
   @Roles('admin', 'superuser')
   @ApiOperation({ summary: 'Get provider verification details' })
