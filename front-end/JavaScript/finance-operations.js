@@ -292,6 +292,9 @@
   }
 
   function reconcileFinancialPayments(payments, bookings, providerTransactions, commissionRate) {
+    if (window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.reconcileFinancialPayments === "function") {
+      return window.ServeEaseFinanceMetrics.reconcileFinancialPayments(payments, bookings, providerTransactions, commissionRate);
+    }
     const bookingMap = {};
     bookings.forEach(function (booking) {
       bookingMap[String(booking.id || "").toLowerCase()] = booking;

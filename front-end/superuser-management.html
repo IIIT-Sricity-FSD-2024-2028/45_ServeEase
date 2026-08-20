@@ -12,7 +12,7 @@
 <body>
   <header class="dashboard-topbar superuser-topbar">
     <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
-    <div class="dashboard-search"><input type="text" id="superuserManagementSearch" placeholder="Search customers..." /></div>
+    <div class="dashboard-search"><input type="text" id="superuserManagementSearch" placeholder="Search customers or providers..." /></div>
     <div class="dashboard-topbar-actions">
       <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
       <div class="profile-menu-wrap">
@@ -31,18 +31,23 @@
     <div class="container">
       <div class="breadcrumb-row">
         <a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp;
-        <strong>Superuser Management</strong>
+        <strong>User Management</strong>
       </div>
 
       <section class="panel-card superuser-title-card left-accent-blue">
-        <h1>Platform Management</h1>
-        <p>Manage customers across the platform.</p>
-      </section>
+        <h1>User Management</h1>
+        <p>Manage registered customers and service providers across the platform.</p>
+      </section>
+
+      <nav class="superuser-management-tabs" aria-label="User management sections">
+        <button class="btn btn-primary" type="button" id="superuserCustomersTab" aria-controls="superuserCustomerManagementPanel" aria-selected="true">Customers</button>
+        <button class="btn btn-outline" type="button" id="superuserProvidersTab" aria-controls="superuserProviderManagementPanel" aria-selected="false">Providers</button>
+      </nav>
 
       <section class="superuser-two-column-layout">
         <div>
-          <section class="panel-card superuser-table-panel">
-            <div class="panel-head"><h2>Customer Management (<span id="superuserCustomerCount">0</span>)</h2><select class="superuser-status-filter" id="superuserCustomerStatusFilter"><option value="all">All Status</option><option value="Active">Active</option><option value="Blocked">Blocked</option></select></div>
+          <section class="panel-card superuser-table-panel" id="superuserCustomerManagementPanel">
+            <div class="panel-head"><h2>Customers (<span id="superuserCustomerCount">0</span>)</h2><select class="superuser-status-filter" id="superuserCustomerStatusFilter"><option value="all">All Status</option><option value="Active">Active</option><option value="Blocked">Blocked</option></select></div>
             <div class="superuser-table-wrap">
               <table class="superuser-table compact-table">
                 <thead>
@@ -61,25 +66,24 @@
             <div class="superuser-card-actions-row"><button class="btn btn-outline" type="button" id="superuserShowMoreCustomersBtn">Show More</button></div>
           </section>
 
-          <section class="panel-card superuser-provider-approval-panel left-accent-orange hidden">
+          <section class="panel-card superuser-provider-approval-panel left-accent-orange" id="superuserPendingProviderPanel">
             <div class="panel-head"><h2>Pending Service Provider Approvals (<span id="superuserPendingProviderCount">0</span>)</h2></div>
             <div id="superuserPendingProviderList" class="superuser-provider-approval-list"></div>
           </section>
 
-          <section class="panel-card superuser-table-panel hidden">
-            <div class="panel-head"><h2>Service Provider Management (<span id="superuserProviderCount">0</span>)</h2><select class="superuser-status-filter" id="superuserProviderStatusFilter"><option value="all">All Status</option><option value="Active">Active</option><option value="Blocked">Blocked</option></select></div>
+          <section class="panel-card superuser-table-panel hidden" id="superuserProviderManagementPanel">
+            <div class="panel-head"><h2>Providers (<span id="superuserProviderCount">0</span>)</h2><select class="superuser-status-filter" id="superuserProviderStatusFilter"><option value="all">All Verification States</option><option value="Active">Active</option><option value="Pending Approval">Pending Approval</option><option value="Blocked">Blocked</option><option value="Rejected">Rejected</option><option value="Suspended">Suspended</option></select></div>
             <div class="superuser-table-wrap">
               <table class="superuser-table compact-table">
                 <thead>
                   <tr>
-                    <th>Provider Name</th>
-                    <th>Organisation Name</th>
-                    <th>Email</th>
-                    <th>Category</th>
-                    <th>Experience</th>
-                    <th>Location</th>
-                    <th>Registration Date</th>
-                    <th>Status</th>
+                    <th>Provider ID</th>
+                    <th>Name</th>
+                    <th>Organisation</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Category</th>
+                    <th>Account Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -97,12 +101,6 @@
             <div id="superuserNotificationList"></div>
             <button class="btn btn-outline btn-full" type="button" id="superuserViewAllNotificationsBtn">View All Notifications</button>
           </section>
-          <section class="panel-card superuser-system-stat-card quick-stats-card">
-            <h2>Quick Stats</h2>
-            <div class="superuser-system-stat-row"><span>Total Customers</span><strong id="superuserQuickCustomerCount">0</strong></div>
-            <div class="superuser-system-stat-row"><span>Pending Approvals</span><strong id="superuserQuickPendingCount">0</strong></div>
-            <div class="superuser-system-stat-row"><span>Categories</span><strong id="superuserQuickCategoryCount">0</strong></div>
-          </section>
         </aside>
       </section>
     </div>
@@ -114,16 +112,20 @@
         <div><h3 id="superuserUserModalName">User Name</h3><p id="superuserUserModalRole">Customer Details</p></div>
         <button class="superuser-modal-close" type="button" data-close-modal="superuserUserModalBackdrop">×</button>
       </div>
-      <div class="superuser-modal-body">
-        <section>
+        <div class="superuser-modal-body">
+          <section class="hidden" id="superuserProviderUserDetails">
+            <h4>Provider Information</h4>
+            <div class="superuser-detail-grid" id="superuserProviderUserDetailsGrid"></div>
+          </section>
+          <section id="superuserUserRegistrationSection">
           <h4>Registration Information</h4>
           <div class="superuser-detail-card"><span>Registration Date</span><strong id="superuserUserRegistrationDate"></strong></div>
         </section>
-        <section>
+          <section id="superuserUserStatusSection">
           <h4>Account Status</h4>
           <div class="superuser-detail-card superuser-detail-row"><span>Current Status:</span><strong id="superuserUserStatusBadge"></strong></div>
         </section>
-        <section>
+          <section id="superuserUserActionsSection">
           <h4>Actions</h4>
           <div class="superuser-block-reason-wrap hidden" id="superuserBlockReasonWrap">
 
@@ -191,6 +193,7 @@
     </div>
   </div>
   <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/location.js"></script>
   <script src="JavaScript/mockdata.js"></script>
   <script src="JavaScript/booking-workflow.js"></script>
   <script src="JavaScript/employee-auth.js"></script>

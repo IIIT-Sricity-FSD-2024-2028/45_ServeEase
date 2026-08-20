@@ -6,6 +6,7 @@
   let editingCategoryId = "";
   let selectedBookingId = "";
   let selectedTicketId = "";
+  let managementProviderRows = [];
 
   function getSession() {
     return JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
@@ -469,6 +470,38 @@
     };
   }
 
+  function isSupportedPendingLocation(request) {
+    if (!window.ServeEaseLocation || typeof window.ServeEaseLocation.getCities !== 'function') return false;
+    const cities = window.ServeEaseLocation.getCities();
+    const cityId = Number(request && request.cityId);
+    const location = String(request && (request.cityName || request.location || '')).trim().toLowerCase();
+    const cityById = cityId ? cities.find(function (city) { return Number(city.id) === cityId; }) : null;
+    if (cityId && !cityById) return false;
+    if (location && !cities.some(function (city) { return String(city.name).toLowerCase() === location; })) return false;
+    return Boolean(cityById || location);
+  }
+
+  function isValidPendingProviderRequest(request, appData) {
+    if (!request || !appData) return false;
+    const requestId = request.id || request.providerId || request.userId;
+    if (!requestId || !isSupportedPendingLocation(request)) return false;
+    const state = String(request.verificationStatus || request.approvalStatus || request.status || request.accountStatus || '').toLowerCase();
+    if (['pending', 'pending approval', 'under verification'].indexOf(state) === -1) return false;
+    const linkedUser = (appData.users || []).find(function (user) {
+      return user && String(user.role || '').toLowerCase() === 'provider' &&
+        ((user.id && String(user.id) === String(requestId)) ||
+          (request.providerId && String(user.id) === String(request.providerId)) ||
+          (request.email && user.email && user.email.toLowerCase() === request.email.toLowerCase()));
+    });
+    const linkedProvider = (appData.providers || []).find(function (provider) {
+      return provider && ((provider.ownerProviderId && String(provider.ownerProviderId) === String(requestId)) ||
+        (provider.providerId && String(provider.providerId) === String(requestId)));
+    });
+    if (!linkedUser && !linkedProvider) return false;
+    return Boolean(request.email && (request.fullName || request.name) && (request.category || request.serviceType) &&
+      Array.isArray(request.documents) && request.documents.length);
+  }
+
   function syncPendingProviderApprovals() {
     const data = getData();
     const appData = getAppData();
@@ -485,7 +518,7 @@
     }));
 
     getProviderApprovalRequests(appData).forEach(function (request) {
-      if (!request || request.approvalStatus !== "Pending Approval") return;
+      if (!isValidPendingProviderRequest(request, appData)) return;
       const emailKey = String(request.email || "").toLowerCase();
       if (!emailKey || activeEmails.has(emailKey) || pendingEmails.has(emailKey)) return;
       data.pendingProviders.unshift(normalizeProviderApproval(request));
@@ -496,7 +529,7 @@
       const matchingRequest = getProviderApprovalRequests(appData).find(function (request) {
         return request.email && provider.email && request.email.toLowerCase() === provider.email.toLowerCase();
       });
-      return !matchingRequest || matchingRequest.approvalStatus === "Pending Approval";
+      return Boolean(matchingRequest && isValidPendingProviderRequest(matchingRequest, appData));
     });
 
     data.stats.pendingApprovals = data.pendingProviders.length;
@@ -1184,6 +1217,317 @@
     });
   }
 
+  function dashboardReadJson(key, fallback) {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? JSON.parse(value) : fallback;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function dashboardStorageKeys(prefix) {
+    return Object.keys(localStorage).filter(function (key) {
+      return key === prefix || key.indexOf(prefix + ":") === 0;
+    });
+  }
+
+  function dashboardUnique(records, identity) {
+    const seen = {};
+    return records.filter(function (record) {
+      const key = identity(record);
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function dashboardDate(value) {
+    const text = String(value || "").trim();
+    if (!text || text === "-") return null;
+    let match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+    if (match) return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+    match = text.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+    if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    const parsed = new Date(text);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  function dashboardBookings() {
+    const rows = [];
+    dashboardStorageKeys("serveEaseCustomerModuleData").forEach(function (key) {
+      const data = dashboardReadJson(key, {}) || {};
+      (Array.isArray(data.bookings) ? data.bookings : []).forEach(function (booking) { if (booking) rows.push(booking); });
+    });
+    dashboardStorageKeys("serveEaseProviderModuleData").forEach(function (key) {
+      const data = dashboardReadJson(key, {}) || {};
+      (Array.isArray(data.bookings) ? data.bookings : []).forEach(function (booking) { if (booking) rows.push(booking); });
+    });
+    return dashboardUnique(rows, function (booking) { return String(booking.id || booking.bookingRef || booking.bookingReference || "").trim(); });
+  }
+
+  function dashboardCustomers() {
+    const appData = dashboardReadJson("serveEaseData", {}) || {};
+    const users = appData.users;
+    return dashboardUnique((Array.isArray(users) ? users : []).filter(function (user) {
+      return user && String(user.role || "").toLowerCase() === "customer";
+    }), function (user) { return String(user.id || user.email || "").toLowerCase(); });
+  }
+
+  function dashboardProviders() {
+    const appData = dashboardReadJson("serveEaseData", {}) || {};
+    const candidates = [];
+    [appData.users, appData.providers, appData.providerApprovalRequests].forEach(function (records) {
+      (Array.isArray(records) ? records : []).forEach(function (provider) {
+        if (!provider) return;
+        const isProviderUser = String(provider.role || "").toLowerCase() === "provider";
+        const isRegisteredRecord = Boolean(provider.email || provider.fullName || provider.ownerProviderEmail);
+        if (isProviderUser || isRegisteredRecord) candidates.push(provider);
+      });
+    });
+    return dashboardUnique(candidates, function (provider) {
+      return String(provider.id || provider.providerId || provider.email || provider.ownerProviderEmail || "").toLowerCase();
+    });
+  }
+
+  function dashboardPendingProviders() {
+    const appData = dashboardReadJson("serveEaseData", {}) || {};
+    const requests = Array.isArray(appData.providerApprovalRequests) ? appData.providerApprovalRequests : [];
+    const pending = requests.filter(function (provider) {
+      const status = String(provider && (provider.verificationStatus || provider.approvalStatus || provider.accountStatus || provider.status) || "Pending").toLowerCase();
+      return ["pending", "pending approval", "under verification", "under_review", "under review"].includes(status) && isValidPendingProviderRequest(provider, appData);
+    });
+    return dashboardUnique(pending, function (provider) { return String(provider.id || provider.providerId || provider.email || "").toLowerCase(); });
+  }
+
+  function dashboardCategory(booking) {
+    return String(booking && (booking.category || booking.serviceType || booking.service) || "").trim().replace(/\s+/g, " ");
+  }
+
+  function dashboardCategoryKey(value) {
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, "").replace(/[\/_-]/g, "");
+  }
+
+  function dashboardProviderEarningsRecords() {
+    const records = [];
+    dashboardStorageKeys("serveEaseProviderModuleData").forEach(function (key) {
+      const data = dashboardReadJson(key, {}) || {};
+      (Array.isArray(data.transactions) ? data.transactions : []).forEach(function (transaction) {
+        if (transaction) records.push(transaction);
+      });
+    });
+    return dashboardUnique(records, function (transaction) {
+      return String(transaction.id || "") + "|" + String(transaction.bookingRef || transaction.bookingReference || "");
+    });
+  }
+
+  function dashboardCategoryCounts(bookings) {
+    const appData = dashboardReadJson("serveEaseData", {}) || {};
+    const configured = Array.isArray(appData.categories) ? appData.categories : [];
+    const categories = dashboardUnique(configured.filter(function (category) {
+      return category && (category.id || category.name);
+    }), function (category) {
+      return dashboardCategoryKey(category.id || category.name);
+    });
+    const lookup = {};
+    const counts = {};
+    categories.forEach(function (category) {
+      const name = String(category.name || category.id).trim();
+      const key = dashboardCategoryKey(name);
+      const aliases = [name, category.id].concat(Array.isArray(category.subServices) ? category.subServices : []);
+      aliases.filter(Boolean).forEach(function (alias) { lookup[dashboardCategoryKey(alias)] = name; });
+      counts[name] = 0;
+    });
+    const bookingMap = {};
+    bookings.forEach(function (booking) {
+      const id = String(booking.id || booking.bookingRef || booking.bookingReference || "").toLowerCase();
+      if (id) bookingMap[id] = booking;
+    });
+    const transactionMap = {};
+    dashboardProviderEarningsRecords().forEach(function (transaction) {
+      const transactionKey = String(transaction.bookingRef || transaction.bookingReference || "").toLowerCase();
+      if (transactionKey) transactionMap[transactionKey] = transaction;
+    });
+    const seenBookings = {};
+    const providerEarnings = window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.getProviderEarningsRows === "function"
+      ? window.ServeEaseFinanceMetrics.getProviderEarningsRows() : [];
+    let unresolvedCount = 0;
+    providerEarnings.forEach(function (earning) {
+      const bookingRef = String(earning.booking || "").trim();
+      const linkedBooking = bookingMap[bookingRef.toLowerCase()];
+      const transaction = transactionMap[bookingRef.toLowerCase()] || {};
+      const candidates = [
+        linkedBooking && linkedBooking.category,
+        linkedBooking && linkedBooking.serviceType,
+        linkedBooking && linkedBooking.service,
+        transaction.category,
+        transaction.serviceType,
+        transaction.service
+      ];
+      const matched = candidates.map(dashboardCategoryKey).map(function (key) { return lookup[key]; }).find(Boolean);
+      const uniqueBookingId = (bookingRef || earning.id || "").toLowerCase();
+      if (matched && uniqueBookingId && !seenBookings[uniqueBookingId]) {
+        counts[matched] += 1;
+        seenBookings[uniqueBookingId] = true;
+      } else if (!matched) {
+        unresolvedCount += 1;
+      }
+    });
+    const categoryTotal = Object.keys(counts).reduce(function (sum, name) { return sum + counts[name]; }, 0);
+    if (unresolvedCount) console.warn("Unresolved Finance category records: " + unresolvedCount);
+    if (categoryTotal !== providerEarnings.length) {
+      console.error("Finance category reconciliation mismatch: Provider Earnings = " + providerEarnings.length + ", Categorized = " + categoryTotal);
+    }
+    return categories.map(function (category) {
+      const name = String(category.name || category.id).trim();
+      return { name: name, bookings: counts[name] || 0 };
+    });
+  }
+
+  function dashboardStatus(booking) {
+    return String(booking && (booking.status || booking.bookingStatus || booking.paymentStatus) || "Unknown").trim().replace(/\s+/g, " ");
+  }
+
+  function dashboardBookingTrend(bookings) {
+    const grouped = {};
+    bookings.forEach(function (booking) {
+      const date = dashboardDate(booking.createdAt || booking.createdDate || booking.date || booking.serviceDate || booking.bookingDate);
+      if (!date) return;
+      const key = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
+      grouped[key] = (grouped[key] || 0) + 1;
+    });
+    return Object.keys(grouped).sort().map(function (key) {
+      const parts = key.split("-");
+      return { label: new Date(Number(parts[0]), Number(parts[1]) - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" }), value: grouped[key] };
+    });
+  }
+
+  function dashboardCounts(bookings, selector) {
+    const counts = {};
+    bookings.forEach(function (booking) {
+      const value = selector(booking);
+      if (value) counts[value] = (counts[value] || 0) + 1;
+    });
+    return Object.keys(counts).sort().map(function (name) { return { name: name, bookings: counts[name] }; });
+  }
+
+  function renderResponseMetric() {
+    const node = byId("superuserResponseTime");
+    if (!node) return;
+    const metrics = window.ServeEaseApi && typeof window.ServeEaseApi.getResponseMetrics === "function"
+      ? window.ServeEaseApi.getResponseMetrics() : null;
+    if (!metrics || !metrics.count || metrics.averageMs == null) {
+      node.textContent = "No response data yet";
+      node.removeAttribute("title");
+      return;
+    }
+    node.textContent = Math.round(metrics.averageMs) + " ms";
+    node.title = "Measured from " + metrics.count + " API request" + (metrics.count === 1 ? "" : "s");
+  }
+
+  function renderDashboard() {
+    const statsGrid = byId("superuserStatsGrid");
+    if (!statsGrid) return;
+    const data = getData() || {};
+    const bookings = dashboardBookings();
+    const customers = dashboardCustomers();
+    const providers = dashboardProviders();
+    const pending = dashboardPendingProviders();
+    const revenue = window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.calculatePlatformCommission === "function"
+      ? window.ServeEaseFinanceMetrics.calculatePlatformCommission() : null;
+    const revenueValue = revenue == null ? "Unavailable" : "₹" + revenue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    statsGrid.innerHTML = [
+      buildStatCard("", customers.length.toLocaleString(), "Registered Customers", "Users"),
+      buildStatCard("", providers.length.toLocaleString(), "Service Providers", "Pros"),
+      buildStatCard("", bookings.length.toLocaleString(), "Total Bookings", "Jobs"),
+      buildStatCard("", revenueValue, "Platform Commission", "INR"),
+      buildStatCard("", pending.length.toLocaleString(), "Pending Verifications", "Docs", "warning")
+    ].join("");
+    renderResponseMetric();
+    renderNotifications();
+    if (window.location.hash === '#notifications') {
+      setTimeout(function () {
+        const panel = document.querySelector('.superuser-notification-card');
+        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+    }
+    renderLineChart(dashboardBookingTrend(bookings));
+    renderBarChart(dashboardCategoryCounts(bookings));
+    renderPieChart(dashboardCounts(bookings, dashboardStatus));
+    renderActivities();
+    renderRecentRegistrations();
+    setupDashboardShortcuts();
+    setupGlobalSearch();
+  }
+
+  function renderLineChart(points) {
+    const host = byId("superuserLineChart");
+    if (!host) return;
+    if (!points.length) { host.innerHTML = '<div class="superuser-empty-state">No booking data available.</div>'; return; }
+    const values = points.map(function (point) { return point.value; });
+    const max = Math.max.apply(null, values) * 1.1 || 1;
+    const width = 640; const height = 220; const paddingX = 25; const stepX = points.length === 1 ? 0 : (width - paddingX * 2) / (points.length - 1); const drawHeight = 175;
+    let path = ""; let labelsMarkup = "";
+    points.forEach(function (point, index) {
+      const x = paddingX + index * stepX; const y = 195 - (point.value / max) * drawHeight;
+      path += (index === 0 ? "M" : " L") + x + " " + y;
+      labelsMarkup += '<text x="' + x + '" y="215" text-anchor="middle" font-size="12" fill="#6c7b92">' + point.label + '</text><g class="superuser-chart-point"><circle cx="' + x + '" cy="' + y + '" r="5" fill="#3766ff"></circle><text class="superuser-chart-tooltip" x="' + x + '" y="' + (y - 12) + '" text-anchor="middle">' + point.value + '</text></g>';
+    });
+    host.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none"><path d="' + path + '" fill="none" stroke="#3766ff" stroke-width="3"></path>' + labelsMarkup + '</svg>';
+  }
+
+  function renderBarChart(items) {
+    const host = byId("superuserBarChart");
+    if (!host) return;
+    if (!items.length) { host.innerHTML = '<div class="superuser-empty-state">No booking category data available.</div>'; return; }
+    host.classList.add("superuser-horizontal-bar-chart");
+    const max = Math.max.apply(null, items.map(function (item) { return item.bookings; })) || 1;
+    const width = 760; const rowHeight = 42; const height = Math.max(220, items.length * rowHeight + 24);
+    const labelWidth = 245; const barWidth = width - labelWidth - 55; let body = "";
+    items.forEach(function (item, index) {
+      const y = 18 + index * rowHeight; const barHeight = 22; const currentWidth = Math.max(3, (item.bookings / max) * barWidth);
+      body += '<text x="0" y="' + (y + 16) + '" font-size="13" fill="#13294b">' + item.name + '</text>';
+      body += '<rect x="' + labelWidth + '" y="' + y + '" width="' + currentWidth + '" height="' + barHeight + '" rx="11" fill="#7656d6"></rect>';
+      body += '<text x="' + (labelWidth + currentWidth + 10) + '" y="' + (y + 16) + '" font-size="13" font-weight="700" fill="#13294b">' + item.bookings + '</text>';
+    });
+    host.style.height = height + "px";
+    host.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Bookings per service category">' + body + '</svg>';
+  }
+
+  function renderPieChart(items) {
+    const host = byId("superuserPieChart");
+    if (!host) return;
+    if (!items.length) { host.innerHTML = '<div class="superuser-empty-state">No booking status data available.</div>'; return; }
+    const total = items.reduce(function (sum, item) { return sum + item.bookings; }, 0) || 1; const size = 210; const cx = size / 2; const cy = size / 2; const r = 88;
+    function point(angle) { const radians = (angle - 90) * Math.PI / 180; return { x: cx + r * Math.cos(radians), y: cy + r * Math.sin(radians) }; }
+    const colors = ["#1fba82", "#f34242", "#4a7fe6", "#8a5cf6", "#f59e0b", "#64748b"];
+    let start = 0; let paths = ""; let highlights = "";
+    items.forEach(function (item, index) { const color = colors[index % colors.length]; const end = start + item.bookings / total * 360; const a = point(end); const b = point(start); const large = end - start > 180 ? 1 : 0; paths += '<path d="M ' + cx + ' ' + cy + ' L ' + a.x + ' ' + a.y + ' A ' + r + ' ' + r + ' 0 ' + large + ' 0 ' + b.x + ' ' + b.y + ' Z" fill="' + color + '" stroke="#ffffff" stroke-width="2"></path>'; highlights += '<div class="superuser-pie-highlight"><span class="superuser-pie-dot" style="background:' + color + '"></span><strong>' + item.name + '</strong><span>' + item.bookings + '</span></div>'; start = end; });
+    host.innerHTML = '<div class="superuser-pie-card-layout"><div class="superuser-pie-graphic"><svg viewBox="0 0 ' + size + ' ' + size + '" preserveAspectRatio="xMidYMid meet" aria-label="Booking status distribution pie chart">' + paths + '</svg></div><div class="superuser-pie-highlights">' + highlights + '</div></div>';
+  }
+
+  function renderActivities() {
+    const list = byId("superuserActivityList");
+    if (!list) return;
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getActivities !== "function") { list.innerHTML = '<div class="superuser-empty-state">Live activity data is not currently available.</div>'; return; }
+    window.ServeEaseApi.getActivities().then(function (items) {
+      if (!Array.isArray(items) || !items.length) { list.innerHTML = '<div class="superuser-empty-state">No activity data available.</div>'; return; }
+      list.innerHTML = items.slice(0, 8).map(function (item) { return '<div class="superuser-activity-item"><div class="superuser-activity-icon blue">•</div><div class="superuser-activity-content"><strong>' + (item.action || "Activity") + '</strong><span>' + formatDisplayDateTime(item.createdAt || "") + '</span></div></div>'; }).join("");
+    }).catch(function () { list.innerHTML = '<div class="superuser-empty-state">Live activity data is not currently available.</div>'; });
+  }
+
+  function renderRecentRegistrations() {
+    const tbody = byId("superuserRecentRegistrations");
+    if (!tbody) return;
+    const appData = dashboardReadJson("serveEaseData", {}) || {};
+    const records = [];
+    (Array.isArray(appData.users) ? appData.users : []).forEach(function (item) { if (item && item.role === "customer") records.push({ item: item, role: "Customer", date: dashboardDate(item.registrationDate || item.createdAt) }); });
+    (Array.isArray(appData.providerApprovalRequests) ? appData.providerApprovalRequests : []).forEach(function (item) { if (item) records.push({ item: item, role: "Provider", date: dashboardDate(item.registrationDate || item.submittedDate || item.createdAt) }); });
+    records.sort(function (a, b) { return (b.date ? b.date.getTime() : 0) - (a.date ? a.date.getTime() : 0); });
+    if (!records.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="superuser-empty-state">No registration data available.</div></td></tr>'; return; }
+    tbody.innerHTML = records.slice(0, 8).map(function (record) { const item = record.item; const status = item.status || item.approvalStatus || item.verificationStatus || "Active"; const date = record.date ? formatDisplayDate(item.registrationDate || item.submittedDate || item.createdAt) : "Date not available"; return '<tr><td>' + (item.fullName || item.name || "User") + '</td><td><span class="superuser-chip ' + record.role.toLowerCase() + '">' + record.role + '</span></td><td>' + date + '</td><td><span class="superuser-chip ' + chipClass(status) + '">' + status + '</span></td><td>—</td></tr>'; }).join("");
+  }
+
   function setupDashboardShortcuts() {}
 
   function setupGlobalSearch() {
@@ -1219,7 +1563,9 @@
     if (!customerBody) return;
     renderNotifications();
     setupManagementSearch();
+    setupManagementTabs();
     renderCustomers(false);
+    renderPendingProviders();
     renderProviders();
     if (byId('superuserCategoryGrid')) renderCategories();
     updateManagementCounts();
@@ -1242,6 +1588,35 @@
     return sel ? sel.value : 'all';
   }
 
+  function setupManagementTabs() {
+    var customerTab = byId('superuserCustomersTab');
+    var providerTab = byId('superuserProvidersTab');
+    var customerPanel = byId('superuserCustomerManagementPanel');
+    var providerPanel = byId('superuserProviderManagementPanel');
+    var pendingPanel = byId('superuserPendingProviderPanel');
+    if (!customerTab || !providerTab || !customerPanel || !providerPanel) return;
+
+    function showTab(type) {
+      var customers = type === 'customers';
+      customerPanel.classList.toggle('hidden', !customers);
+      providerPanel.classList.toggle('hidden', customers);
+      if (pendingPanel) pendingPanel.classList.toggle('hidden', customers);
+      customerTab.classList.toggle('btn-primary', customers);
+      customerTab.classList.toggle('btn-outline', !customers);
+      providerTab.classList.toggle('btn-primary', !customers);
+      providerTab.classList.toggle('btn-outline', customers);
+      customerTab.setAttribute('aria-selected', customers ? 'true' : 'false');
+      providerTab.setAttribute('aria-selected', customers ? 'false' : 'true');
+    }
+
+    if (!customerTab.dataset.bound) {
+      customerTab.dataset.bound = 'true';
+      customerTab.addEventListener('click', function () { showTab('customers'); });
+      providerTab.addEventListener('click', function () { showTab('providers'); });
+    }
+    showTab('customers');
+  }
+
   function getCatalogCategoryName(categoryId) {
     const appData = getAppData();
     const category = (appData.categories || []).find(function (item) {
@@ -1252,7 +1627,7 @@
 
   function getCityNameFromProvider(provider) {
     const cityMap = { 1: 'Chennai', 2: 'Bangalore', 3: 'Hyderabad', 4: 'Delhi', 5: 'Mumbai' };
-    return cityMap[Number(provider.cityId)] || provider.location || 'Chennai';
+    return cityMap[Number(provider.cityId)] || provider.location || 'Not recorded';
   }
 
   function isVerifiedProviderRequest(request) {
@@ -1271,58 +1646,59 @@
   }
 
   function getPendingVerificationCount() {
-    const appData = getAppData();
-    const requests = Array.isArray(appData.providerApprovalRequests) ? appData.providerApprovalRequests : [];
-    if (requests.length) {
-      return requests.filter(function (request) {
-        if (!request || isVerifiedProviderRequest(request)) return false;
-        const status = request.verificationStatus || request.approvalStatus || 'Pending Approval';
-        return status === 'Pending' || status === 'Pending Approval';
-      }).length;
-    }
-    return (getData().pendingProviders || []).length;
+    return dashboardPendingProviders().length;
   }
 
   function getManagementProviders() {
     const appData = getAppData();
-    const superuserData = getData();
-    const sourceProviders = Array.isArray(appData.providers) && appData.providers.length
-      ? appData.providers
-      : (superuserData.providers || []);
-    const verifiedRequests = (appData.providerApprovalRequests || []).filter(function (request) {
-      return isVerifiedProviderRequest(request);
-    });
-    const mergedByEmail = {};
-
-    sourceProviders.concat(verifiedRequests).forEach(function (provider) {
-      const key = String(provider.email || provider.id || '').toLowerCase();
-      if (key) mergedByEmail[key] = provider;
-    });
-
-    return Object.keys(mergedByEmail).map(function (key) { return mergedByEmail[key]; })
-      .filter(function (provider) {
-        return provider && provider.id && (!provider.cityId || (Number(provider.cityId) >= 1 && Number(provider.cityId) <= 5));
-      })
+    const registeredUsers = Array.isArray(appData.users) ? appData.users : [];
+    return dashboardProviders()
+      .filter(function (provider) { return provider && (provider.id || provider.providerId || provider.email); })
       .map(function (provider) {
         const isCatalogProvider = !!provider.name && !provider.fullName;
+        const linkedUser = registeredUsers.find(function (user) {
+          return (provider.id && (user.id === provider.id || user.providerId === provider.id)) ||
+            (provider.email && user.email && user.email.toLowerCase() === provider.email.toLowerCase());
+        });
         return {
-          id: provider.id,
+          id: provider.id || provider.providerId || provider.email,
           fullName: provider.fullName || provider.name || 'Provider',
           organisationName: provider.organisationName || provider.name || provider.fullName || 'Provider',
-          email: provider.email || provider.ownerProviderEmail || (provider.id + '@serveease.com'),
-          category: isCatalogProvider ? getCatalogCategoryName(provider.category) : (provider.serviceType || provider.category || 'Home Service'),
+          email: provider.email || provider.ownerProviderEmail || 'Not recorded',
+          phone: resolveProviderPhone(provider, linkedUser),
+          category: isCatalogProvider ? getCatalogCategoryName(provider.category) : (provider.serviceType || provider.category || ' Not recorded'),
           experience: Number(provider.experience || provider.years) || 0,
           location: getCityNameFromProvider(provider),
-          registrationDate: provider.registrationDate || 'Catalog Provider',
+          registrationDate: provider.registrationDate || provider.registeredAt || provider.createdAt || provider.submittedDate || ' Not recorded',
           status: normalizeProviderStatus(provider),
           source: isCatalogProvider ? 'catalog' : 'management'
         };
       });
   }
 
+  function resolveProviderPhone(provider, linkedUser) {
+    if (provider && (provider.phone || provider.phoneNumber)) return provider.phone || provider.phoneNumber;
+    if (linkedUser && (linkedUser.phone || linkedUser.phoneNumber)) return linkedUser.phone || linkedUser.phoneNumber;
+    var matchedPhone = '';
+    dashboardStorageKeys('serveEaseProviderModuleData').some(function (key) {
+      const moduleData = dashboardReadJson(key, {}) || {};
+      const profile = moduleData.profile || moduleData.provider || moduleData.user || moduleData;
+      const matches = profile && ((provider.id && (profile.id === provider.id || profile.providerId === provider.id)) ||
+        (provider.email && profile.email && String(profile.email).toLowerCase() === String(provider.email).toLowerCase()));
+      if (matches && (profile.phone || profile.phoneNumber || moduleData.phone)) {
+        matchedPhone = profile.phone || profile.phoneNumber || moduleData.phone;
+        return true;
+      }
+      return false;
+    });
+    if (matchedPhone) return matchedPhone;
+    return 'Not recorded';
+  }
+
   function refreshManagementTables() {
     var term = getManagementSearchTerm();
     renderCustomers(false, term);
+    renderPendingProviders(term);
     renderProviders(term);
     if (byId('superuserCategoryGrid')) renderCategories(term);
     updateManagementCounts();
@@ -1347,17 +1723,19 @@
     const tbody = byId("superuserCustomerTableBody");
     const showMoreBtn = byId("superuserShowMoreCustomersBtn");
     if (!tbody) return;
-    const data = getData();
+    const customers = dashboardCustomers();
     var statusFilter = getCustomerStatusFilter();
-    const filtered = data.customers.filter(function (item) {
-      if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+    const filtered = customers.filter(function (item) {
+      const status = item.status || item.accountStatus || 'Active';
+      if (statusFilter !== 'all' && status !== statusFilter) return false;
       const hay = [item.fullName, item.email, item.phone, item.status].join(' ').toLowerCase();
       return !term || hay.includes(term);
     });
     var countEl = byId('superuserCustomerCount');
     if (countEl) countEl.textContent = filtered.length;
     const rows = (showAll ? filtered : filtered.slice(0, 10)).map(function (item) {
-      return '<tr><td>' + item.fullName + '</td><td>' + item.email + '</td><td>' + item.phone + '</td><td>' + formatDisplayDate(item.registrationDate) + '</td><td><span class="superuser-chip ' + chipClass(item.status) + '">' + item.status + '</span></td><td><button class="superuser-inline-action" type="button" data-user-id="' + item.id + '">◉</button></td></tr>';
+      const status = item.status || item.accountStatus || 'Active';
+      return '<tr><td>' + (item.fullName || item.name || 'Customer') + '</td><td>' + (item.email || 'Not recorded') + '</td><td>' + (item.phone || item.phoneNumber || 'Not recorded') + '</td><td>' + formatDisplayDate(item.registrationDate || item.createdAt) + '</td><td><span class="superuser-chip ' + chipClass(status) + '">' + status + '</span></td><td><button class="superuser-inline-action" type="button" data-user-id="' + item.id + '">◉</button></td></tr>';
     }).join('');
     tbody.innerHTML = rows || '<tr><td colspan="6"><div class="superuser-empty-state">No customers found for the current filter.</div></td></tr>';
     tbody.querySelectorAll('button[data-user-id]').forEach(function (button) {
@@ -1374,8 +1752,7 @@
   function renderPendingProviders(term) {
     const list = byId("superuserPendingProviderList");
     if (!list) return;
-    const data = getData();
-    const filtered = data.pendingProviders.filter(function (item) {
+    const filtered = dashboardPendingProviders().map(normalizeProviderApproval).filter(function (item) {
       const hay = [item.fullName, item.email, item.location, item.category].join(' ').toLowerCase();
       return !term || hay.includes(term);
     });
@@ -1401,16 +1778,17 @@
     const filtered = getManagementProviders().filter(function (item) {
       var providerStatus = item.status || 'Active';
       if (statusFilter !== 'all' && providerStatus !== statusFilter) return false;
-      const hay = [item.fullName, item.organisationName, item.email, item.category, item.location].join(' ').toLowerCase();
+      const hay = [item.fullName, item.organisationName, item.email, item.phone, item.category, item.location].join(' ').toLowerCase();
       return !term || hay.includes(term);
     });
+    managementProviderRows = filtered;
     var countEl = byId('superuserProviderCount');
     if (countEl) countEl.textContent = filtered.length;
     tbody.innerHTML = filtered.map(function (item) {
-      var orgName = item.organisationName || '—';
+      var orgName = item.organisationName || 'Not recorded';
       var providerStatus = item.status || item.approvalStatus || 'Active';
-      return '<tr><td><div class="superuser-provider-name-block"><span>' + item.fullName + '</span></div></td><td>' + orgName + '</td><td>' + item.email + '</td><td>' + item.category + '</td><td>' + item.experience + ' years</td><td>' + item.location + '</td><td>' + formatDisplayDate(item.registrationDate) + '</td><td><span class="superuser-chip ' + chipClass(providerStatus) + '">' + providerStatus + '</span></td><td><button class="superuser-inline-action" type="button" data-provider-action-id="' + item.id + '">◉ View</button></td></tr>';
-    }).join('') || '<tr><td colspan="9"><div class="superuser-empty-state">No providers found for the current filter.</div></td></tr>';
+      return '<tr><td>' + item.id + '</td><td><div class="superuser-provider-name-block"><span>' + item.fullName + '</span></div></td><td>' + orgName + '</td><td>' + item.email + '</td><td>' + (item.phone || 'Not recorded') + '</td><td>' + item.category + '</td><td><span class="superuser-chip ' + chipClass(providerStatus) + '">' + providerStatus + '</span></td><td><button class="superuser-inline-action" type="button" data-provider-action-id="' + item.id + '">◉ View</button></td></tr>';
+    }).join('') || '<tr><td colspan="8"><div class="superuser-empty-state">No providers found for the current filter.</div></td></tr>';
     tbody.querySelectorAll('[data-provider-action-id]').forEach(function (button) {
       button.addEventListener('click', function () {
         openManagementProviderDetails(button.dataset.providerActionId);
@@ -1419,18 +1797,61 @@
   }
 
   function openManagementProviderDetails(providerId) {
-    const provider = getManagementProviders().find(function (item) { return item.id === providerId; });
+    const provider = managementProviderRows.find(function (item) { return item.id === providerId; });
     if (!provider) return;
+    selectedUserId = provider.id;
     byId('superuserUserModalName').textContent = provider.fullName;
     byId('superuserUserModalRole').textContent = 'Provider Details';
-    byId('superuserUserRegistrationDate').textContent = formatDisplayDate(provider.registrationDate);
+    const registrationDate = provider.registrationDate && provider.registrationDate !== 'Not recorded'
+      ? formatDisplayDate(provider.registrationDate) : 'Not recorded';
+    byId('superuserUserRegistrationDate').textContent = registrationDate || 'Not recorded';
     const badge = byId('superuserUserStatusBadge');
-    badge.className = 'superuser-chip ' + chipClass(provider.status || 'Active');
-    badge.textContent = provider.status || 'Active';
+    const providerStatus = provider.status || 'Active';
+    badge.className = 'superuser-chip ' + chipClass(providerStatus);
+    badge.textContent = providerStatus;
+    const details = byId('superuserProviderUserDetails');
+    const detailsGrid = byId('superuserProviderUserDetailsGrid');
+    if (details && detailsGrid) {
+      detailsGrid.innerHTML = [
+        ['Provider ID', provider.id],
+        ['Name', provider.fullName],
+        ['Organisation', provider.organisationName],
+        ['Email', provider.email],
+        ['Phone', provider.phone],
+        ['Service Category', provider.category],
+        ['Experience', provider.experience ? provider.experience + ' years' : 'Not recorded'],
+        ['Location', provider.location],
+        ['Registration Date', registrationDate || 'Not recorded']
+      ].map(function (field) {
+        return '<div class="superuser-detail-field"><span>' + field[0] + '</span><strong>' + (field[1] || 'Not recorded') + '</strong></div>';
+      }).join('');
+      details.classList.remove('hidden');
+    }
     const reasonWrap = byId('superuserBlockReasonWrap');
     if (reasonWrap) reasonWrap.classList.add('hidden');
     const toggleBtn = byId('superuserUserStatusToggleBtn');
-    if (toggleBtn) toggleBtn.classList.add('hidden');
+    const actionsSection = byId('superuserUserActionsSection');
+    const appData = getAppData();
+    const data = getData();
+    const supportsAccountAction = Boolean(
+      (Array.isArray(appData.users) && appData.users.some(function (user) { return user.id === provider.id; })) ||
+      (Array.isArray(data.providers) && data.providers.some(function (item) { return item.id === provider.id; }))
+    );
+    const canToggle = supportsAccountAction && (providerStatus === 'Active' || providerStatus === 'Blocked');
+    if (actionsSection) actionsSection.classList.toggle('hidden', !canToggle);
+    if (toggleBtn) {
+      toggleBtn.classList.toggle('hidden', !canToggle);
+      if (canToggle) {
+        const isBlocked = providerStatus === 'Blocked';
+        toggleBtn.className = 'btn btn-full ' + (isBlocked ? 'superuser-success-btn' : 'superuser-danger-btn');
+        toggleBtn.textContent = isBlocked ? '◎ Activate Provider' : '⊘ Block Provider';
+        toggleBtn.onclick = toggleUserStatus;
+      }
+    }
+    const registrationSection = byId('superuserUserRegistrationSection');
+    const statusSection = byId('superuserUserStatusSection');
+    if (registrationSection) registrationSection.classList.remove('hidden');
+    if (statusSection) statusSection.classList.remove('hidden');
     openModal('superuserUserModalBackdrop');
   }
 
@@ -1463,10 +1884,10 @@
     const data = getData();
     const providerCount = getManagementProviders().length;
     const pendingVerificationCount = getPendingVerificationCount();
-    if (byId('superuserCustomerCount')) byId('superuserCustomerCount').textContent = data.customers.length;
+    if (byId('superuserCustomerCount')) byId('superuserCustomerCount').textContent = dashboardCustomers().length;
     if (byId('superuserPendingProviderCount')) byId('superuserPendingProviderCount').textContent = pendingVerificationCount;
     if (byId('superuserProviderCount')) byId('superuserProviderCount').textContent = providerCount;
-    if (byId('superuserQuickCustomerCount')) byId('superuserQuickCustomerCount').textContent = data.customers.length;
+    if (byId('superuserQuickCustomerCount')) byId('superuserQuickCustomerCount').textContent = dashboardCustomers().length;
     if (byId('superuserQuickProviderCount')) byId('superuserQuickProviderCount').textContent = providerCount;
     if (byId('superuserQuickPendingCount')) byId('superuserQuickPendingCount').textContent = pendingVerificationCount;
     if (byId('superuserQuickCategoryCount')) byId('superuserQuickCategoryCount').textContent = data.categories.length;
@@ -1498,10 +1919,20 @@
 
   function openUserModal(userId) {
     const data = getData();
-    const user = data.customers.find(function (item) { return item.id === userId; }) || data.providers.find(function (item) { return item.id === userId; });
+    const appData = getAppData();
+    const user = (Array.isArray(appData.users) ? appData.users.find(function (item) { return item.id === userId; }) : null) ||
+      data.customers.find(function (item) { return item.id === userId; }) || data.providers.find(function (item) { return item.id === userId; });
     if (!user) return;
     selectedUserId = user.id;
     const isProvider = user.id.startsWith('PRO');
+    const providerDetails = byId('superuserProviderUserDetails');
+    if (providerDetails) providerDetails.classList.add('hidden');
+    const actionsSection = byId('superuserUserActionsSection');
+    if (actionsSection) actionsSection.classList.remove('hidden');
+    const registrationSection = byId('superuserUserRegistrationSection');
+    const statusSection = byId('superuserUserStatusSection');
+    if (registrationSection) registrationSection.classList.remove('hidden');
+    if (statusSection) statusSection.classList.remove('hidden');
     byId('superuserUserModalName').textContent = user.fullName;
     byId('superuserUserModalRole').textContent = (isProvider ? 'Provider Details' : 'Customer Details');
     byId('superuserUserRegistrationDate').textContent = formatDisplayDate(user.registrationDate);
@@ -1561,11 +1992,18 @@
 
   function toggleUserStatus() {
     const data = getData();
-    var user = data.customers.find(function (item) { return item.id === selectedUserId; });
+    const appData = getAppData();
+    var appUser = Array.isArray(appData.users) ? appData.users.find(function (item) { return item.id === selectedUserId; }) : null;
+    var user = appUser || data.customers.find(function (item) { return item.id === selectedUserId; });
     var isProvider = false;
     if (!user) {
       user = data.providers.find(function (item) { return item.id === selectedUserId; });
       isProvider = true;
+    }
+    if (!user && Array.isArray(appData.users)) {
+      appUser = appData.users.find(function (item) { return item.id === selectedUserId; });
+      user = appUser;
+      isProvider = String(user && user.role || '').toLowerCase() === 'provider';
     }
     if (!user) return;
     var currentStatus = user.status || user.approvalStatus || 'Active';
@@ -1594,7 +2032,8 @@
     } else {
       user.status = newStatus;
     }
-    setData(data);
+    if (appUser) setAppData(appData);
+    else setData(data);
     refreshManagementTables();
     openUserModal(selectedUserId);
     renderRecentRegistrations();
@@ -2188,12 +2627,14 @@
 
   hydrateProviderApprovalsFromBackend(function () {
     syncPendingProviderApprovals();
+    renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     updateManagementCounts();
     renderDashboard();
   });
 
   hydrateVerifiedProvidersFromBackend(function () {
+    renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     updateManagementCounts();
     renderDashboard();

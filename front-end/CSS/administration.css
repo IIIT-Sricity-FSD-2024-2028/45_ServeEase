@@ -197,6 +197,41 @@ body.administration-page {
   gap: 12px;
 }
 
+.administration-page .admin-section {
+  margin-bottom: 18px;
+  align-items: start;
+}
+
+.administration-page .admin-employee-table-wrap {
+  overflow-x: auto;
+}
+
+.administration-page .admin-employee-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #1a2d4d;
+  font-size: 14px;
+}
+
+.administration-page .admin-employee-table th,
+.administration-page .admin-employee-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e8edf5;
+  text-align: left;
+  vertical-align: top;
+}
+
+.administration-page .admin-employee-table th {
+  color: #667a97;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.administration-page .admin-section:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 1020px) {
   .administration-page .admin-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

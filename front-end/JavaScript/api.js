@@ -1,5 +1,6 @@
 (function () {
   const API_BASE_URL = "http://localhost:3000/api";
+  const responseMetrics = { count: 0, totalMs: 0 };
   const MONTHS = {
     jan: 0,
     january: 0,
@@ -134,16 +135,21 @@
   }
 
   async function request(path, options) {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        role: getRole(),
-        "user-id": getSession().userId || "",
-        "user-email": getSession().email || "",
-        ...(options && options.headers ? options.headers : {})
-      }
-    });
+    const startedAt = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+    let response;
+    response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          role: getRole(),
+          "user-id": getSession().userId || "",
+          "user-email": getSession().email || "",
+          ...(options && options.headers ? options.headers : {})
+        }
+      });
+    const finishedAt = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+    responseMetrics.count += 1;
+    responseMetrics.totalMs += Math.max(0, finishedAt - startedAt);
 
     const payload = await response.json().catch(function () {
       return null;
@@ -158,6 +164,13 @@
   }
 
   window.ServeEaseApi = {
+    getResponseMetrics: function () {
+      return {
+        count: responseMetrics.count,
+        totalMs: responseMetrics.totalMs,
+        averageMs: responseMetrics.count ? responseMetrics.totalMs / responseMetrics.count : null
+      };
+    },
     saveState: function (key, value) {
       return request("/state", {
         method: "POST",

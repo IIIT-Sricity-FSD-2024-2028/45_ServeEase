@@ -261,6 +261,26 @@
   height: 100%;
 }
 
+.superuser-horizontal-bar-chart {
+  height: auto;
+  min-height: 220px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-left: 0;
+  border-bottom: 0;
+  margin-left: 18px;
+  padding-bottom: 4px;
+}
+
+.superuser-horizontal-bar-chart::before,
+.superuser-horizontal-bar-chart::after {
+  display: none;
+}
+
+.superuser-horizontal-bar-chart svg {
+  min-width: 680px;
+}
+
 .superuser-chart-legend {
   text-align: center;
   color: #4d6aff;
@@ -1475,5 +1495,24 @@
   .provider-verification-filter-grid,
   .provider-document-card {
     grid-template-columns: 1fr;
+  }
+}
+.superuser-management-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.superuser-management-tabs .btn {
+  min-width: 120px;
+}
+
+@media (max-width: 560px) {
+  .superuser-management-tabs {
+    width: 100%;
+  }
+
+  .superuser-management-tabs .btn {
+    flex: 1;
   }
 }
