@@ -1,28 +1,60 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { NextFunction, Request, Response } from 'express';
+import { json, urlencoded } from 'express';
+import helmet from 'helmet';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  const requestLogger = new Logger('ServeEaseRequest');
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
 
-  app.use((request: Request, response: Response, next: NextFunction) => {
-    const startedAt = Date.now();
-    response.on('finish', () => {
-      requestLogger.log(`${request.method} ${request.originalUrl} ${response.statusCode} ${Date.now() - startedAt}ms`);
-    });
-    next();
-  });
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrcAttr: ["'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'https://images.unsplash.com', 'data:', 'blob:'],
+          fontSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          upgradeInsecureRequests: null,
+        },
+      },
+    }),
+  );
+
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ extended: true, limit: '1mb' }));
+
+  const configuredCorsOrigins = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const allowedCorsOrigins = new Set([
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    ...configuredCorsOrigins,
+  ]);
 
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      if (!origin || allowedCorsOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'role', 'user-id', 'user-email'],
+    exposedHeaders: ['X-Request-ID'],
   });
 
   app.setGlobalPrefix('api');
@@ -33,6 +65,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.useStaticAssets(join(process.cwd(), '..', 'front-end'));
 
