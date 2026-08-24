@@ -48,6 +48,10 @@
             <h2 id="customerInformationTitle">Customer Information</h2>
           </div>
           <div class="customer-operations-info-grid" id="customerOperationsInfoGrid"></div>
+          <section class="customer-operations-account-actions" id="customerOperationsAccountActions">
+            <h2>Actions</h2>
+            <button class="btn" type="button" id="customerOperationsStatusActionBtn"></button>
+          </section>
         </section>
 
         <section class="customer-operations-detail-stats" id="customerOperationsDetailStats" aria-label="Selected customer statistics"></section>
@@ -98,9 +102,29 @@
       </div>
     </div>
   </main>
+  <dialog class="customer-operations-status-dialog" id="customerOperationsStatusDialog" aria-labelledby="customerOperationsStatusDialogTitle">
+    <form method="dialog" class="customer-operations-status-modal">
+      <header class="customer-operations-status-modal-header">
+        <h2 id="customerOperationsStatusDialogTitle"></h2>
+      </header>
+      <div class="customer-operations-status-modal-body">
+        <p id="customerOperationsStatusDialogPrompt"></p>
+        <label for="customerOperationsStatusReason">Reason <span aria-hidden="true">*</span></label>
+        <textarea id="customerOperationsStatusReason" rows="4" required placeholder="Enter the reason for this account action"></textarea>
+        <label for="customerOperationsStatusRemarks">Admin Remarks <span>(optional)</span></label>
+        <textarea id="customerOperationsStatusRemarks" rows="4" placeholder="Optional operational remarks"></textarea>
+        <small class="error" id="customerOperationsStatusError" aria-live="polite"></small>
+      </div>
+      <footer class="customer-operations-status-modal-actions">
+        <button class="btn btn-outline" type="submit" value="cancel">Cancel</button>
+        <button class="btn" type="button" id="customerOperationsStatusConfirm"></button>
+      </footer>
+    </form>
+  </dialog>
 
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/data-completion.js"></script>
   <script src="JavaScript/customer-operations-detail.js"></script>
 </body>
 </html>

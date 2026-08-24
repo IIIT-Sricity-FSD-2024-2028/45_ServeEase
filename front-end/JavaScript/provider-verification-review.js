@@ -54,7 +54,7 @@
     target.innerHTML = provider.documents.map(function (document) {
       return [
         '<div class="provider-verification-review-document">',
-        '  <div><span>' + escapeHtml(document.documentType || "Document") + '</span><strong>' + escapeHtml(document.documentName || "Not recorded") + '</strong></div>',
+        '  <div><span>' + escapeHtml(document.documentType || "Document") + '</span><strong>' + escapeHtml(document.documentName || "Not submitted") + '</strong></div>',
         '  <div class="provider-verification-review-document-meta"><span>' + escapeHtml(document.documentStatus || "Pending") + '</span><button class="btn btn-outline" type="button" data-preview-document="' + escapeHtml(document.documentId) + '">Preview</button></div>',
         '</div>'
       ].join("");

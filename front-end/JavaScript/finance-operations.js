@@ -26,7 +26,7 @@
   function display(value, fallback) {
     const text = String(value == null ? "" : value).trim();
     if (text) return text;
-    return arguments.length > 1 ? fallback : "Not recorded";
+    return arguments.length > 1 ? fallback : "N/A";
   }
 
   function escapeHtml(value) {
@@ -304,9 +304,9 @@
       return isSuccessfulStatus(payment.status) && !isRefundStatus(payment.status);
     }).map(function (payment) {
       const booking = bookingMap[String(payment.booking || "").toLowerCase()];
-      const bookingProviderName = booking && booking.provider !== "Not recorded" ? booking.provider : "";
-      const paymentProviderName = payment.provider !== "Not recorded" ? payment.provider : "";
-      const providerId = booking && booking.providerId !== "Not recorded" ? booking.providerId : "";
+      const bookingProviderName = booking && booking.provider !== "N/A" ? booking.provider : "";
+      const paymentProviderName = payment.provider !== "N/A" ? payment.provider : "";
+      const providerId = booking && booking.providerId !== "N/A" ? booking.providerId : "";
       const provider = bookingProviderName || paymentProviderName || providerId;
       const providerIdentity = providerId || normalizeProviderName(bookingProviderName) || normalizeProviderName(paymentProviderName);
       const gross = Number(payment.amount);
@@ -317,8 +317,8 @@
           String(transaction.id).toLowerCase() === String(payment.id).toLowerCase();
       }) || null;
       const commission = gross * commissionRate / 100;
-      const bookingCustomer = booking && ["Not recorded", "Customer"].indexOf(booking.customer) === -1 ? booking.customer : "";
-      const paymentCustomer = ["Not recorded", "Customer"].indexOf(payment.customer) === -1 ? payment.customer : "";
+      const bookingCustomer = booking && ["N/A", "Customer"].indexOf(booking.customer) === -1 ? booking.customer : "";
+      const paymentCustomer = ["N/A", "Customer"].indexOf(payment.customer) === -1 ? payment.customer : "";
       const financialRow = {
         id: payment.id,
         booking: payment.booking,

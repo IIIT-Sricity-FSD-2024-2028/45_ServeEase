@@ -1,5 +1,5 @@
 (function () {
-  const emptyValue = "Not recorded";
+  const emptyValue = "N/A";
 
   function clean(value) { return String(value === undefined || value === null ? "" : value).trim(); }
   function display(value) { return clean(value) || emptyValue; }

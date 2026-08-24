@@ -17,7 +17,7 @@
   }
   auth.annotateBody(session);
 
-  const emptyValue = "Not recorded";
+  const emptyValue = "N/A";
   const activeBookingStatuses = ["pending", "accepted"];
   const completedBookingStatuses = ["completed"];
   const openTicketStatuses = ["open", "pending", "in progress", "escalated", "under review"];
@@ -178,16 +178,10 @@
   function collectCustomers() {
     const map = {};
     const appData = readJson("serveEaseData", {});
-    const appUsers = Array.isArray(appData.users) ? appData.users : [];
-    appUsers.forEach(function (user) {
-      if (user && user.role === "customer") addCustomer(map, user, "Registered account");
-    });
-
-    const superuserData = readJson("serveEaseSuperuserModuleData", {});
-    const superuserCustomers = Array.isArray(superuserData.customers) ? superuserData.customers : [];
-    superuserCustomers.forEach(function (customer) {
-      addCustomer(map, customer, "Superuser customer data");
-    });
+    const appUsers = window.ServeEaseDataCompletion && typeof window.ServeEaseDataCompletion.getCanonicalCustomers === "function"
+      ? window.ServeEaseDataCompletion.getCanonicalCustomers(appData)
+      : (Array.isArray(appData.users) ? appData.users : []).filter(function (user) { return user && String(user.role).toLowerCase() === "customer"; });
+    appUsers.forEach(function (user) { addCustomer(map, user, "Registered account"); });
 
     localStorageKeys("serveEaseCustomerModuleData").forEach(function (key) {
       const moduleData = readJson(key, {});
@@ -199,7 +193,10 @@
         location: moduleData.ownerLocation || moduleData.location || moduleData.address,
         status: moduleData.status || moduleData.accountStatus
       };
-      if (customerIdentity(ownerRecord)) addCustomer(map, ownerRecord, "Customer module data");
+      const linked = appUsers.some(function (customer) {
+        return normalizeKey(customer.id) === normalizeKey(ownerRecord.id) || normalizeKey(customer.email) === normalizeKey(ownerRecord.email);
+      });
+      if (linked) addCustomer(map, ownerRecord, "Customer module data");
     });
 
     return Object.keys(map).map(function (key) { return map[key]; }).sort(function (a, b) {
@@ -357,6 +354,38 @@
       detailField("Registration Date", formatDate(customer.registrationDate)),
       detailField("Account Status", customer.status)
     ].join("");
+    const action = byId("customerOperationsStatusActionBtn");
+    const actions = byId("customerOperationsAccountActions");
+    if (action) {
+      const blocked = customer.status === "Blocked";
+      action.textContent = blocked ? "Activate Customer" : "Suspend Customer";
+      action.className = "btn " + (blocked ? "superuser-success-btn" : "superuser-danger-btn");
+      action.onclick = function () { openStatusDialog(customer, blocked ? "Active" : "Blocked"); };
+    }
+    if (actions) actions.hidden = !action;
+  }
+
+  function openStatusDialog(customer, nextStatus) {
+    const dialog = byId("customerOperationsStatusDialog");
+    if (!dialog) return;
+    const verb = nextStatus === "Blocked" ? "Suspend" : "Activate";
+    byId("customerOperationsStatusDialogTitle").textContent = verb + " Customer";
+    byId("customerOperationsStatusDialogPrompt").textContent = verb + " " + customer.fullName + "?";
+    byId("customerOperationsStatusReason").value = "";
+    byId("customerOperationsStatusRemarks").value = "";
+    byId("customerOperationsStatusError").textContent = "";
+    byId("customerOperationsStatusConfirm").textContent = "Confirm " + verb;
+    byId("customerOperationsStatusConfirm").onclick = function (event) {
+      event.preventDefault();
+      const result = window.ServeEaseDataCompletion && window.ServeEaseDataCompletion.updateCustomerAccountStatus
+        ? window.ServeEaseDataCompletion.updateCustomerAccountStatus(customer.id, nextStatus, byId("customerOperationsStatusReason").value, byId("customerOperationsStatusRemarks").value)
+        : { ok: false, message: "Customer status service is unavailable." };
+      if (!result.ok) { byId("customerOperationsStatusError").textContent = result.message; return; }
+      dialog.close();
+      customer.status = result.customer.status;
+      renderProfile(customer);
+    };
+    dialog.showModal();
   }
 
   function renderStats(bookings, tickets) {

@@ -436,6 +436,9 @@
     getMyProviderTickets: function () {
       return request("/tickets/my-provider-tickets", { method: "GET", headers: { role: "provider" } });
     },
+    getActivities: function () {
+      return request("/activities", { method: "GET", headers: { role: "admin" } });
+    },
     logActivity: function (activity) {
       return request("/activities", {
         method: "POST",

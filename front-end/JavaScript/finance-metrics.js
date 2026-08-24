@@ -21,7 +21,7 @@
 
   function display(value, fallback) {
     const text = String(value == null ? "" : value).trim();
-    return text || (arguments.length > 1 ? fallback : "Not recorded");
+    return text || (arguments.length > 1 ? fallback : "N/A");
   }
 
   function dedupeRows(rows, keyBuilder) {
@@ -152,9 +152,9 @@
       return ["successful", "success", "paid"].includes(status) && status !== "refunded";
     }).map(function (payment) {
       const booking = bookingMap[String(payment.booking || "").toLowerCase()];
-      const bookingProviderName = booking && booking.provider !== "Not recorded" ? booking.provider : "";
-      const paymentProviderName = payment.provider !== "Not recorded" ? payment.provider : "";
-      const providerId = booking && booking.providerId !== "Not recorded" ? booking.providerId : "";
+      const bookingProviderName = booking && booking.provider !== "N/A" ? booking.provider : "";
+      const paymentProviderName = payment.provider !== "N/A" ? payment.provider : "";
+      const providerId = booking && booking.providerId !== "N/A" ? booking.providerId : "";
       const provider = bookingProviderName || paymentProviderName || providerId;
       const providerIdentity = providerId || normalizeProviderName(bookingProviderName) || normalizeProviderName(paymentProviderName);
       const gross = Number(payment.amount);
@@ -164,7 +164,7 @@
       }) || null;
       const row = {
         id: payment.id, booking: payment.booking,
-        customer: booking && ["Not recorded", "Customer"].indexOf(booking.customer) === -1 ? booking.customer : (["Not recorded", "Customer"].indexOf(payment.customer) === -1 ? payment.customer : "Customer"),
+        customer: booking && ["N/A", "Customer"].indexOf(booking.customer) === -1 ? booking.customer : (["N/A", "Customer"].indexOf(payment.customer) === -1 ? payment.customer : "Customer"),
         gross: gross, commission: gross * Number(commissionRate) / 100, earnings: gross - (gross * Number(commissionRate) / 100),
         provider: provider, date: payment.date, status: payment.status, payoutStatus: payout ? payout.status : "", payoutDate: payout ? payout.date : "-", payoutAmount: payout ? payout.amount : 0
       };

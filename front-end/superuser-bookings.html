@@ -12,7 +12,7 @@
 <body>
   <header class="dashboard-topbar superuser-topbar">
     <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
-    <div class="dashboard-search"><input type="text" id="superuserBookingSearch" placeholder="Search bookings by ID, customer, provider, or service..." /></div>
+    <div class="dashboard-search"><input type="search" id="superuserBookingSearch" aria-label="Search bookings by ID, customer, email, provider, or service" placeholder="Search bookings by ID, customer, provider, or service..." /></div>
     <div class="dashboard-topbar-actions">
       <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
       <div class="profile-menu-wrap">
@@ -76,13 +76,15 @@
           <h4>Recent Notifications</h4>
           <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
         </div>
-        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+        <div class="superuser-modal-actions"><button class="btn btn-outline" type="button" id="superuserMarkAllNotificationsBtn">Mark All as Read</button><button class="btn btn-outline" type="button" id="superuserClearNotificationsBtn">Clear All</button></div>
       </div>
     </div>
   </div>
   <script src="JavaScript/booking-workflow.js"></script>
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/data-completion.js"></script>
   <script src="JavaScript/superuser.js"></script>
 <script src="JavaScript/search.js"></script>
 </body>

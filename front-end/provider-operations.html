@@ -97,22 +97,23 @@
     <div class="provider-operations-modal-panel" role="dialog" aria-modal="true" aria-labelledby="providerOperationsModalTitle">
       <h2 id="providerOperationsModalTitle">Update Provider Status</h2>
       <p id="providerOperationsModalPrompt">Confirm this provider status update.</p>
-      <label>Reason
+      <label>Reason <span class="provider-operations-required">*</span>
         <textarea id="providerOperationsModalReason" rows="3" placeholder="Required for suspend, optional for activate"></textarea>
       </label>
-      <label>Remarks
+      <label>Admin Remarks <span>(optional)</span>
         <textarea id="providerOperationsModalRemarks" rows="3" placeholder="Optional internal remarks"></textarea>
       </label>
       <p class="provider-operations-modal-error" id="providerOperationsModalError"></p>
       <div class="provider-operations-modal-actions">
-        <button class="btn btn-primary" type="button" id="providerOperationsModalSubmit">Confirm</button>
         <button class="btn btn-outline" type="button" id="providerOperationsModalCancel">Cancel</button>
+        <button class="btn btn-primary" type="button" id="providerOperationsModalSubmit">Confirm</button>
       </div>
     </div>
   </div>
 
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/data-completion.js"></script>
   <script src="JavaScript/provider-operations.js"></script>
 </body>
 </html>

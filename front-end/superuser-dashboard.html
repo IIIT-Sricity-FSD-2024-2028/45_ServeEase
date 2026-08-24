@@ -771,7 +771,6 @@
 
 
 
-                  <th>Action</th>
 
 
 
@@ -1016,7 +1015,7 @@
 
 
 
-              <label class="superuser-block-reason-label" for="superuserBlockReasonInput">Reason for Blocking <span class="superuser-block-reason-required">*</span></label>
+              <label class="superuser-block-reason-label" for="superuserBlockReasonInput">Reason <span class="superuser-block-reason-required">*</span></label>
 
 
 
@@ -1066,6 +1065,10 @@
 
 
               ></textarea>
+
+              <label class="superuser-block-reason-label" for="superuserAdminRemarksInput">Admin Remarks <span>(optional)</span></label>
+
+              <textarea id="superuserAdminRemarksInput" maxlength="500" placeholder="Optional operational remarks"></textarea>
 
 
 
@@ -1211,11 +1214,13 @@
           <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
         </div>
         <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+        <div class="superuser-modal-actions"><button class="btn btn-outline" type="button" id="superuserMarkAllNotificationsBtn">Mark All as Read</button><button class="btn btn-outline" type="button" id="superuserClearNotificationsBtn">Clear All</button></div>
       </div>
     </div>
   </div>
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/booking-workflow.js"></script>
+  <script src="JavaScript/data-completion.js"></script>
   <script src="JavaScript/finance-metrics.js"></script>
   <script src="JavaScript/employee-auth.js"></script>
   <script src="JavaScript/superuser.js"></script>

@@ -203,6 +203,12 @@
   margin-bottom: 8px;
 }
 
+.blocked-account-state { padding: 18px; border: 1px solid #f2c6c2; border-radius: 12px; background: #fff7f6; }
+.blocked-account-state h2 { margin: 0 0 8px; color: #a62d26; font-size: 21px; }
+.blocked-account-state p { margin: 0 0 10px; color: #5e6f87; line-height: 1.5; }
+.blocked-account-state .blocked-account-reason-label { margin-bottom: 3px; color: #22395d; font-size: 13px; font-weight: 700; }
+.blocked-account-state .blocked-account-reason { margin-bottom: 16px; color: #22395d; }
+
 .auth-switch {
   margin-top: 14px;
   text-align: center;

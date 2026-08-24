@@ -19,6 +19,24 @@
 .customer-operations-detail-field { min-width: 0; padding: 12px 0; border-bottom: 1px solid #edf0f5; }
 .customer-operations-detail-field span { display: block; margin-bottom: 5px; color: #667a97; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .customer-operations-detail-field strong { display: block; color: #12284a; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+.customer-operations-account-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px; padding-top: 18px; border-top: 1px solid #edf0f5; }
+.customer-operations-account-actions[hidden] { display: none; }
+.customer-operations-account-actions h2 { margin: 0; color: #12284a; font-size: 18px; }
+.customer-operations-status-dialog { box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 32px); margin: auto; padding: 0; border: 0; border-radius: 18px; overflow: hidden; background: #fff; box-shadow: 0 22px 60px rgba(9, 20, 38, .28); }
+.customer-operations-status-dialog::backdrop { background: rgba(9, 20, 38, .5); }
+.customer-operations-status-modal { display: flex; flex-direction: column; max-height: calc(100vh - 32px); margin: 0; }
+.customer-operations-status-modal-header { flex: 0 0 auto; padding: 20px 24px 14px; background: linear-gradient(90deg, #2563eb, #a21caf); color: #fff; }
+.customer-operations-status-modal-header h2 { margin: 0; color: #fff; font-size: 22px; }
+.customer-operations-status-modal-body { min-height: 0; overflow-y: auto; padding: 20px 24px; }
+.customer-operations-status-modal-body > p { margin: 0 0 18px; color: #667a97; line-height: 1.5; }
+.customer-operations-status-modal-body label { display: block; margin: 16px 0 6px; color: #22395d; font-size: 13px; font-weight: 700; }
+.customer-operations-status-modal-body label:first-of-type { margin-top: 0; }
+.customer-operations-status-modal-body label > span[aria-hidden] { color: #c23939; }
+.customer-operations-status-modal-body label > span:not([aria-hidden]) { color: #667a97; font-weight: 500; }
+.customer-operations-status-modal-body textarea { box-sizing: border-box; display: block; width: 100%; min-height: 94px; padding: 11px 12px; border: 1px solid #dfe6f0; border-radius: 10px; color: #12284a; background: #f8fafc; font: inherit; resize: vertical; }
+.customer-operations-status-modal-body textarea:focus { outline: none; border-color: #4254f4; box-shadow: 0 0 0 3px rgba(66, 84, 244, .12); background: #fff; }
+.customer-operations-status-modal-body .error { display: block; min-height: 18px; margin-top: 8px; color: #c23939; font-weight: 700; }
+.customer-operations-status-modal-actions { display: flex; justify-content: flex-end; gap: 10px; flex: 0 0 auto; padding: 14px 24px 18px; border-top: 1px solid #edf0f5; background: #fff; }
 .customer-operations-detail-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
 .customer-operations-detail-stat-card { box-sizing: border-box; width: 100%; min-width: 0; min-height: 132px; padding: 20px; border: 1px solid #e6ebf2; border-top: 4px solid #dfe5ff; border-radius: 16px; background: #fff; box-shadow: 0 8px 20px rgba(17,40,75,.06); display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 .customer-operations-detail-stat-card:nth-child(2) { border-top-color: #bdeccf; }
@@ -38,5 +56,5 @@
 .customer-operations-chip.progress { background: #fff7e8; color: #a66a00; }
 .customer-operations-empty-state { padding: 18px 8px; color: #667a97; text-align: center; }
 @media (max-width: 980px) { .customer-operations-detail-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 720px) { .customer-operations-detail-shell { padding-top: 18px; } .customer-operations-detail-hero { padding: 22px; } .customer-operations-detail-hero h1 { font-size: 32px; } .customer-operations-info-grid { grid-template-columns: 1fr; } .customer-operations-section-head { display: block; } .customer-operations-section-head span { display: inline-block; margin-top: 8px; } }
+@media (max-width: 720px) { .customer-operations-detail-shell { padding-top: 18px; } .customer-operations-detail-hero { padding: 22px; } .customer-operations-detail-hero h1 { font-size: 32px; } .customer-operations-info-grid { grid-template-columns: 1fr; } .customer-operations-section-head { display: block; } .customer-operations-section-head span { display: inline-block; margin-top: 8px; } .customer-operations-account-actions { align-items: flex-start; flex-direction: column; } .customer-operations-status-dialog, .customer-operations-status-modal { max-height: calc(100vh - 20px); } .customer-operations-status-modal-header, .customer-operations-status-modal-body, .customer-operations-status-modal-actions { padding-left: 18px; padding-right: 18px; } }
 @media (max-width: 460px) { .customer-operations-detail-stats { grid-template-columns: 1fr; } .customer-operations-detail-card, .customer-operations-not-found { padding: 16px; } }

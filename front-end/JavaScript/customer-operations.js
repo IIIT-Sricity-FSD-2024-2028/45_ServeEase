@@ -16,7 +16,7 @@
 
   auth.annotateBody(session);
 
-  const emptyValue = "Not recorded";
+  const emptyValue = "N/A";
   const state = {
     customers: [],
     bookings: [],
@@ -166,16 +166,10 @@
   function collectCustomers() {
     const map = {};
     const appData = readJson("serveEaseData", {});
-    const appUsers = Array.isArray(appData.users) ? appData.users : [];
-    appUsers.forEach(function (user) {
-      if (user && user.role === "customer") addCustomer(map, user, "Registered account");
-    });
-
-    const superuserData = readJson("serveEaseSuperuserModuleData", {});
-    const superuserCustomers = Array.isArray(superuserData.customers) ? superuserData.customers : [];
-    superuserCustomers.forEach(function (customer) {
-      addCustomer(map, customer, "Superuser customer data");
-    });
+    const appUsers = window.ServeEaseDataCompletion && typeof window.ServeEaseDataCompletion.getCanonicalCustomers === "function"
+      ? window.ServeEaseDataCompletion.getCanonicalCustomers(appData)
+      : (Array.isArray(appData.users) ? appData.users : []).filter(function (user) { return user && String(user.role).toLowerCase() === "customer"; });
+    appUsers.forEach(function (user) { addCustomer(map, user, "Registered account"); });
 
     localStorageKeys("serveEaseCustomerModuleData").forEach(function (key) {
       const moduleData = readJson(key, {});
@@ -187,7 +181,10 @@
         location: moduleData.ownerLocation || moduleData.location || moduleData.address,
         status: moduleData.status || moduleData.accountStatus
       };
-      if (customerIdentity(ownerRecord)) addCustomer(map, ownerRecord, "Customer module data");
+      const linked = appUsers.some(function (customer) {
+        return normalizeKey(customer.id) === normalizeKey(ownerRecord.id) || normalizeKey(customer.email) === normalizeKey(ownerRecord.email);
+      });
+      if (linked) addCustomer(map, ownerRecord, "Customer module data");
     });
 
     return Object.keys(map).map(function (key) { return map[key]; }).sort(function (a, b) {

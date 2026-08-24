@@ -5,7 +5,7 @@
     return;
   }
 
-  const emptyValue = ops.emptyValue || "Not recorded";
+  const emptyValue = ops.emptyValue || "N/A";
   const activeBookingStatuses = ops.activeBookingStatuses || ["pending", "accepted", "requested", "upcoming"];
   const completedBookingStatuses = ["completed"];
 
@@ -103,7 +103,7 @@
       return [
         '<div class="provider-operations-list-item">',
         '  <div class="provider-operations-document-type"><span>Document Type :</span><strong>' + escapeHtml(document.documentType || "Document") + '</strong></div>',
-        '  <div class="provider-operations-document-file"><span>File Name :</span><strong title="' + escapeHtml(document.documentName || "Not recorded") + '">' + escapeHtml(document.documentName || "Not recorded") + '</strong></div>',
+        '  <div class="provider-operations-document-file"><span>File Name :</span><strong title="' + escapeHtml(document.documentName || "Not submitted") + '">' + escapeHtml(document.documentName || "Not submitted") + '</strong></div>',
         '  <div class="provider-operations-document-status"><span>Status :</span>' + ops.statusChip(document.documentStatus || emptyValue) + '</div>',
         '  <div class="provider-operations-document-action"><span>Action :</span><button class="provider-operations-inline-action" type="button" data-preview-document="' + escapeHtml(document.documentId) + '">Preview</button></div>',
         '</div>'

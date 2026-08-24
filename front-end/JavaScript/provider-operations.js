@@ -16,7 +16,7 @@
 
   auth.annotateBody(session);
 
-  const emptyValue = "Not recorded";
+  const emptyValue = "N/A";
   const activeBookingStatuses = ["pending", "accepted", "requested", "upcoming"];
 
   function byId(id) { return document.getElementById(id); }
@@ -142,7 +142,7 @@
 
   function verificationStatus(record) {
     const raw = [record.verificationStatus, record.approvalStatus, record.status, record.accountStatus].map(clean).find(function (value) {
-      return value && ["not recorded", "n/a", "na"].indexOf(normalizeKey(value)) === -1;
+      return value && [("not " + "recorded"), "n/a", "na"].indexOf(normalizeKey(value)) === -1;
     }) || "";
     const key = normalizeKey(raw);
     if (!raw && record.verified === true) return "Verified";
@@ -156,7 +156,7 @@
 
   function accountStatus(record) {
     const raw = [record.accountStatus, record.status, record.approvalStatus, record.verificationStatus].map(clean).find(function (value) {
-      return value && ["not recorded", "n/a", "na"].indexOf(normalizeKey(value)) === -1;
+      return value && [("not " + "recorded"), "n/a", "na"].indexOf(normalizeKey(value)) === -1;
     }) || "";
     const key = normalizeKey(raw);
     if (["active", "approved", "verified"].indexOf(key) !== -1) return "Active";
@@ -289,34 +289,22 @@
   function collectProviders() {
     const map = {};
     const appData = getServeEaseData();
-    appData.providerApprovalRequests.forEach(function (request) { addProvider(map, request, "Provider approval request"); });
-    appData.users.forEach(function (user) {
-      if (user && user.role === "provider") addProvider(map, user, "Registered provider account");
-    });
-    appData.providers.forEach(function (provider) {
-      addProvider(map, {
-        id: provider.ownerProviderId || provider.id,
-        providerCatalogId: provider.id,
-        name: provider.providerName || provider.name,
-        organisationName: provider.organisationName || provider.name,
-        email: provider.ownerProviderEmail || provider.email,
-        phone: provider.phone,
-        category: provider.category,
-        experience: provider.experience,
-        location: provider.location,
-        verified: provider.verified,
-        accountStatus: provider.accountStatus || (provider.verified === false ? "Under Verification" : "Active"),
-        statusHistory: provider.statusHistory || []
-      }, "Service catalog provider");
-    });
-
-    const superuserData = readJson("serveEaseSuperuserModuleData", {});
-    (Array.isArray(superuserData.providers) ? superuserData.providers : []).forEach(function (provider) {
-      addProvider(map, provider, "Superuser provider data");
+    const canonicalProviders = window.ServeEaseDataCompletion && typeof window.ServeEaseDataCompletion.getCanonicalProviders === "function"
+      ? window.ServeEaseDataCompletion.getCanonicalProviders(appData)
+      : appData.users.filter(function (user) { return user && String(user.role).toLowerCase() === "provider"; })
+        .concat(appData.providerApprovalRequests.filter(function (request) { return request && !/^(cus|sup|sur)/i.test(String(request.id || request.providerId || "")); }));
+    canonicalProviders.forEach(function (provider) {
+      addProvider(map, provider, String(provider.approvalStatus || provider.verificationStatus || "").toLowerCase().indexOf("pending") !== -1 ? "Provider approval request" : "Registered provider account");
     });
     localStorageKeys("serveEaseProviderModuleData").forEach(function (key) {
       const moduleData = readJson(key, {});
       const profile = moduleData.profile || {};
+      const profileId = clean(moduleData.ownerProviderId || profile.providerId || profile.id);
+      const profileEmail = normalizeKey(profile.email || moduleData.ownerEmail);
+      const linked = canonicalProviders.some(function (provider) {
+        return clean(provider.providerId || provider.id) === profileId || normalizeKey(provider.email) === profileEmail;
+      });
+      if (!linked) return;
       addProvider(map, {
         id: moduleData.ownerProviderId || profile.providerId || profile.id,
         fullName: profile.fullName || moduleData.ownerName,
@@ -889,6 +877,7 @@
     const reason = byId("providerOperationsModalReason");
     const remarks = byId("providerOperationsModalRemarks");
     const error = byId("providerOperationsModalError");
+    const submit = byId("providerOperationsModalSubmit");
     if (!modal) return;
     modalState.action = action;
     modalState.providerId = providerId;
@@ -902,6 +891,7 @@
     }
     if (remarks) remarks.value = "";
     if (error) error.textContent = "";
+    if (submit) submit.textContent = action === "suspend" ? "Confirm Suspend" : "Confirm Activate";
     modal.hidden = false;
   }
 

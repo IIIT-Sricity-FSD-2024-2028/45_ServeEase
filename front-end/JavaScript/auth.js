@@ -522,6 +522,30 @@ function setSession(user) {
   sessionStorage.setItem("serveEaseSession", JSON.stringify(sessionData));
 }
 
+function getCustomerSuspensionReason(user) {
+  const history = Array.isArray(user && user.statusHistory) ? user.statusHistory : [];
+  const latest = history.find(function (entry) {
+    return String(entry.newStatus || entry.status || "").toLowerCase() === "blocked" && String(entry.reason || "").trim();
+  });
+  return String((latest && latest.reason) || (user && user.blockReason) || (user && user.suspensionReason) || "Your account has been suspended. Please contact Support for more information.").trim();
+}
+
+function showBlockedCustomerState(user) {
+  setSession(user);
+  const form = document.getElementById("loginForm");
+  const tabs = document.getElementById("loginRoleTabs");
+  const switchText = document.getElementById("authSwitchText");
+  const state = document.getElementById("blockedAccountState");
+  const reason = document.getElementById("blockedAccountReason");
+  const error = document.getElementById("loginFormError");
+  if (form) form.classList.add("hidden");
+  if (tabs) tabs.classList.add("hidden");
+  if (switchText) switchText.classList.add("hidden");
+  if (error) error.textContent = "";
+  if (reason) reason.textContent = getCustomerSuspensionReason(user);
+  if (state) state.classList.remove("hidden");
+}
+
 function logServeEaseActivity(action, details) {
   if (window.ServeEaseApi && typeof window.ServeEaseApi.logActivity === "function") {
     window.ServeEaseApi.logActivity({
@@ -861,6 +885,14 @@ function setupLoginForm() {
     const providerOperationalStatus = matchedUser.role === "provider"
       ? String(matchedUser.accountStatus || matchedUser.status || matchedUser.approvalStatus || matchedUser.verificationStatus || "Under Verification").trim().toLowerCase()
       : "";
+    const customerOperationalStatus = matchedUser.role === "customer"
+      ? String(matchedUser.accountStatus || matchedUser.status || "Active").trim().toLowerCase()
+      : "";
+    if (matchedUser.role === "customer" && customerOperationalStatus === "blocked") {
+      showBlockedCustomerState(matchedUser);
+      logServeEaseActivity("customer_login_status_blocked", matchedUser.email);
+      return;
+    }
     if (matchedUser.role === "provider" && ["active", "approved", "verified"].indexOf(providerOperationalStatus) === -1) {
       setSession(matchedUser);
       showText("loginSuccess", "Login successful. Redirecting to verification status...");

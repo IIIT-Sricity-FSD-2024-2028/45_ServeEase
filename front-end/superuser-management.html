@@ -47,7 +47,7 @@
       <section class="superuser-two-column-layout">
         <div>
           <section class="panel-card superuser-table-panel" id="superuserCustomerManagementPanel">
-            <div class="panel-head"><h2>Customers (<span id="superuserCustomerCount">0</span>)</h2><select class="superuser-status-filter" id="superuserCustomerStatusFilter"><option value="all">All Status</option><option value="Active">Active</option><option value="Blocked">Blocked</option></select></div>
+            <div class="panel-head"><h2>Customers (<span id="superuserCustomerCount">0</span>)</h2><div class="superuser-table-controls"><input class="superuser-table-search" id="superuserCustomerSearch" type="search" placeholder="Search customers" aria-label="Search customers by name, email, or phone" /><select class="superuser-status-filter" id="superuserCustomerStatusFilter"><option value="all">All Status</option><option value="Active">Active</option><option value="Blocked">Blocked</option></select></div></div>
             <div class="superuser-table-wrap">
               <table class="superuser-table compact-table">
                 <thead>
@@ -72,7 +72,7 @@
           </section>
 
           <section class="panel-card superuser-table-panel hidden" id="superuserProviderManagementPanel">
-            <div class="panel-head"><h2>Providers (<span id="superuserProviderCount">0</span>)</h2><select class="superuser-status-filter" id="superuserProviderStatusFilter"><option value="all">All Verification States</option><option value="Active">Active</option><option value="Pending Approval">Pending Approval</option><option value="Blocked">Blocked</option><option value="Rejected">Rejected</option><option value="Suspended">Suspended</option></select></div>
+            <div class="panel-head"><h2>Providers (<span id="superuserProviderCount">0</span>)</h2><div class="superuser-table-controls"><input class="superuser-table-search" id="superuserProviderSearch" type="search" placeholder="Search providers" aria-label="Search providers by ID, name, organisation, email, phone, or category" /><select class="superuser-status-filter" id="superuserProviderStatusFilter"><option value="all">All Verification States</option><option value="Active">Active</option><option value="Pending Approval">Pending Approval</option><option value="Blocked">Blocked</option><option value="Rejected">Rejected</option><option value="Suspended">Suspended</option></select></div></div>
             <div class="superuser-table-wrap">
               <table class="superuser-table compact-table">
                 <thead>
@@ -129,26 +129,21 @@
           <h4>Actions</h4>
           <div class="superuser-block-reason-wrap hidden" id="superuserBlockReasonWrap">
 
-            <!-- Shown when BLOCKING an active user -->
-            <div id="superuserBlockReasonInputSection">
-              <label class="superuser-block-reason-label" for="superuserBlockReasonInput">Reason for Blocking <span class="superuser-block-reason-required">*</span></label>
-              <textarea
-                id="superuserBlockReasonInput"
+            <div id="superuserBlockReasonInputSection">
+              <label class="superuser-block-reason-label" for="superuserBlockReasonInput">Reason <span class="superuser-block-reason-required">*</span></label>
+              <textarea
+                id="superuserBlockReasonInput"
                 class="superuser-block-reason-textarea"
                 rows="3"
                 maxlength="200"
                 placeholder="Enter a reason (max 200 characters)..."
-              ></textarea>
+              ></textarea>
+              <label class="superuser-block-reason-label" for="superuserAdminRemarksInput">Admin Remarks <span>(optional)</span></label>
+              <textarea id="superuserAdminRemarksInput" maxlength="500" placeholder="Optional operational remarks"></textarea>
               <div class="superuser-block-reason-meta">
                 <small class="error" id="superuserBlockReasonError"></small>
                 <span class="superuser-block-reason-counter" id="superuserBlockReasonCounter">0 / 200</span>
               </div>
-            </div>
-
-            <!-- Shown when ACTIVATING a blocked user -->
-            <div id="superuserBlockReasonDisplay" class="hidden">
-              <span class="superuser-block-reason-label">Blocked Reason</span>
-              <div class="superuser-block-reason-display-card" id="superuserBlockReasonText">—</div>
             </div>
 
           </div>
@@ -188,15 +183,18 @@
           <h4>Recent Notifications</h4>
           <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
         </div>
-        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+        <div class="superuser-modal-actions"><button class="btn btn-outline" type="button" id="superuserMarkAllNotificationsBtn">Mark All as Read</button><button class="btn btn-outline" type="button" id="superuserClearNotificationsBtn">Clear All</button></div>
       </div>
     </div>
   </div>
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/location.js"></script>
   <script src="JavaScript/mockdata.js"></script>
+  <script src="JavaScript/data-completion.js"></script>
   <script src="JavaScript/booking-workflow.js"></script>
   <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/provider-operations.js"></script>
   <script src="JavaScript/superuser.js"></script>
 <script src="JavaScript/search.js"></script>
 </body>

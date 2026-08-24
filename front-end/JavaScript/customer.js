@@ -1,8 +1,26 @@
 (function () {
   const session = JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
+  const isSupportCenterPage = /customer-support-center\.html$/i.test(window.location.pathname || "");
   if (!session || session.role !== "customer") {
     if (window.ServeEaseEmployeeAuth && window.ServeEaseEmployeeAuth.handleLegacyEmployeeRoute()) return;
+    if (isSupportCenterPage) window.location.href = "login.html";
     return;
+  }
+
+  const activeCustomerAccount = getCustomerAccount();
+  const isBlockedCustomer = String((activeCustomerAccount && (activeCustomerAccount.accountStatus || activeCustomerAccount.status)) || session.accountStatus || "Active").toLowerCase() === "blocked";
+  if (isBlockedCustomer && !isSupportCenterPage) {
+    sessionStorage.removeItem("serveEaseSession");
+    window.location.href = "login.html?account=blocked";
+    return;
+  }
+
+  function restrictBlockedCustomerSupportNavigation() {
+    if (!isBlockedCustomer || !isSupportCenterPage) return;
+    document.querySelectorAll("a[href]").forEach(function (link) {
+      const href = String(link.getAttribute("href") || "").toLowerCase();
+      if (["customer-dashboard.html", "my-bookings.html", "payment-history.html", "booking-checkout.html"].some(function (page) { return href.indexOf(page) === 0; })) link.remove();
+    });
   }
 
   function isDemoCustomerAccount() {
@@ -590,7 +608,7 @@
       bookingRef: booking.id,
       service: booking.service || "Service booking",
       provider: booking.provider || "ServeEase Provider",
-      method: booking.paymentMethod || "Payment method not recorded",
+      method: booking.paymentMethod || "Payment method unavailable",
       amount: Number(booking.amount) || 0,
       date: formatDisplayDate(new Date()),
       status: paymentStatus
@@ -1554,6 +1572,13 @@
       }
     }
 
+    if (isBlockedCustomer) {
+      if (categoryInput && !categoryInput.value) categoryInput.value = "Technical Issue";
+      if (subjectInput && !subjectInput.value) subjectInput.value = "Account Suspension Review";
+      const hint = document.getElementById("supportFormHint");
+      if (hint) hint.textContent = "Your account is suspended. Describe the access issue and our support team will review it.";
+    }
+
     function renderTickets() {
       list.innerHTML = data.tickets.map(ticket => `
         <div class="ticket-card">
@@ -1708,7 +1733,7 @@
       const attachmentFile = attachmentInput && attachmentInput.files ? attachmentInput.files[0] : null;
       const maxAttachmentSize = 5000 * 1024;
 
-      if (!bookingRef || !category || !subject || !description) {
+      if ((!bookingRef && !isBlockedCustomer) || !category || !subject || !description) {
         error.textContent = "Please fill all required fields.";
         return;
       }
@@ -1786,6 +1811,7 @@
   seedCustomerData();
   setupCustomerHeaderMenus();
   setupCustomerFooterLinks();
+  restrictBlockedCustomerSupportNavigation();
   initDashboard();
   initMyBookings();
   initPaymentHistory();

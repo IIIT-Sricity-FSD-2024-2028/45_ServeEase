@@ -359,7 +359,7 @@
           bookingRef: bookingId,
           service: booking.service || "Service",
           customer: booking.customer || "Customer",
-          method: (customerPayment && customerPayment.method) || booking.paymentMethod || "Payment method not recorded",
+          method: (customerPayment && customerPayment.method) || booking.paymentMethod || "Payment method unavailable",
           amount: Number(booking.amount) || 0,
           serviceDate: booking.date || "",
           paymentDate: logicalPaymentDate(booking, getCustomerPaymentDateForBooking(booking) || booking.paymentDate || booking.paidAt || ""),
@@ -372,7 +372,7 @@
 
       const nextStatus = isCompleted ? "Paid" : "Pending";
       const storedMethod = transaction.method === "Service payout" ? "" : transaction.method;
-      const nextMethod = (customerPayment && customerPayment.method) || booking.paymentMethod || storedMethod || "Payment method not recorded";
+      const nextMethod = (customerPayment && customerPayment.method) || booking.paymentMethod || storedMethod || "Payment method unavailable";
       const nextPaymentDate = logicalPaymentDate(booking, getCustomerPaymentDateForBooking(booking) || booking.paymentDate || booking.paidAt || transaction.paymentDate || "");
       const nextReceivedDate = isCompleted
         ? logicalReceivedDate(booking, booking.receivedDate || booking.completedAt || transaction.receivedDate || "")
