@@ -199,25 +199,25 @@ async function buildProviderDocumentPayload(providerId, existingDocuments) {
     const documentId = previous && previous.documentId ? previous.documentId : nextDocumentId();
     usedIds[documentId] = true;
     if (file) {
-      try {
-        previewStore[documentId] = {
-          name: file.name,
-          type: file.type || "application/octet-stream",
-          dataUrl: await (window.ServeEaseAttachments ? window.ServeEaseAttachments.readFileAsDataUrl(file) : readFileAsDataUrl(file))
-        };
-      } catch (error) {
-        previewStore[documentId] = {
-          name: file.name,
-          type: file.type || "application/octet-stream",
-          dataUrl: "",
-          previewError: "Preview unavailable"
-        };
+      if (!window.ServeEaseApi || typeof window.ServeEaseApi.uploadVerificationDocument !== "function") {
+        throw new Error("Document upload is unavailable.");
       }
+      const upload = await window.ServeEaseApi.uploadVerificationDocument(file);
+      if (!upload || !upload.fileUrl) throw new Error("Document upload failed.");
+      delete previewStore[documentId];
+      documents.push({
+        documentId: documentId,
+        documentType: field.type,
+        documentName: upload.originalFilename || file.name,
+        documentUrl: upload.fileUrl,
+        required: field.required
+      });
+      continue;
     }
     documents.push({
       documentId: documentId,
       documentType: field.type,
-      documentName: file ? file.name : "",
+      documentName: "",
       documentUrl: "local-document://" + providerId + "/" + documentId,
       required: field.required
     });

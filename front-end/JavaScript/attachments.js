@@ -72,9 +72,22 @@
       const sizeMatches = !expectedSize || Number(record.fileSize || 0) === expectedSize;
       return typeMatches && sizeMatches;
     });
-    return records[0] || Object.keys(attachments).map(function (key) { return attachments[key]; }).find(function (record) {
+    const stored = records[0] || Object.keys(attachments).map(function (key) { return attachments[key]; }).find(function (record) {
       return record && record.dataUrl && String(record.filename || "").trim().toLowerCase() === normalizedExpectedName;
-    }) || null;
+    });
+    if (stored) return stored;
+    if (ticket.attachmentUrl) {
+      return {
+        attachmentId: ticket.attachmentId || "",
+        ticketId: ticket.ticketId || ticket.id || "",
+        filename: ticket.attachmentName || String(ticket.attachmentUrl).split("/").pop(),
+        mimeType: ticket.attachmentType || "",
+        fileSize: ticket.attachmentSize || 0,
+        uploadedAt: ticket.createdAt || "",
+        dataUrl: ticket.attachmentUrl
+      };
+    }
+    return null;
   }
 
   function linkTicketAttachment(fromTicketId, toTicketId) {

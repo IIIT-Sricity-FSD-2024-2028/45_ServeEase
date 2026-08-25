@@ -69,6 +69,7 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   app.useStaticAssets(join(process.cwd(), '..', 'front-end'));
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   const config = new DocumentBuilder()
     .setTitle('ServeEase API')

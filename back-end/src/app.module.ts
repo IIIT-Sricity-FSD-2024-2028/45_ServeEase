@@ -7,10 +7,11 @@ import { StateModule } from './modules/state/state.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { AvailabilityModule } from './modules/availability/availability.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 import { RequestLoggingMiddleware } from './middleware/request-logging.middleware';
 
 @Module({
-  imports: [TasksModule, BookingsModule, CatalogModule, ActivitiesModule, StateModule, ProviderVerificationModule, TicketsModule, AvailabilityModule],
+  imports: [TasksModule, BookingsModule, CatalogModule, ActivitiesModule, StateModule, ProviderVerificationModule, TicketsModule, AvailabilityModule, UploadsModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

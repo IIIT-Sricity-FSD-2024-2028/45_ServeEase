@@ -1770,20 +1770,21 @@
         supportUpdate: "Your ticket has been received and is currently being reviewed by the support team."
       };
 
-      if (attachmentFile && window.ServeEaseAttachments && typeof window.ServeEaseAttachments.saveTicketAttachment === "function") {
+      if (attachmentFile) {
         let attachment;
         try {
-          attachment = await window.ServeEaseAttachments.saveTicketAttachment(newTicket.id, attachmentFile);
+          attachment = await window.ServeEaseApi.uploadTicketAttachment(attachmentFile);
         } catch (attachmentError) {
           console.error("Unable to save ticket attachment", attachmentError);
           error.textContent = "Attachment could not be saved. Please choose a smaller file and try again.";
           return;
         }
         if (attachment) {
-          newTicket.attachmentId = attachment.attachmentId;
-          newTicket.attachmentName = attachment.filename;
+          newTicket.attachmentId = attachment.storedFilename;
+          newTicket.attachmentName = attachment.originalFilename;
           newTicket.attachmentType = attachment.mimeType;
-          newTicket.attachmentSize = attachment.fileSize;
+          newTicket.attachmentSize = attachment.size;
+          newTicket.attachmentUrl = attachment.fileUrl;
         }
       }
 

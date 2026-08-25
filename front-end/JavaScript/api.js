@@ -163,6 +163,26 @@
     return payload ? payload.data : null;
   }
 
+  async function upload(path, file, role) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: {
+        role: role || getRole(),
+        "user-id": getSession().userId || "",
+        "user-email": getSession().email || ""
+      },
+      body: formData
+    });
+    const payload = await response.json().catch(function () { return null; });
+    if (!response.ok) {
+      const message = payload && payload.message ? payload.message : "Upload failed.";
+      throw new Error(Array.isArray(message) ? message.join(" ") : message);
+    }
+    return payload ? payload.data : null;
+  }
+
   window.ServeEaseApi = {
     getResponseMetrics: function () {
       return {
@@ -183,6 +203,15 @@
     },
     getCatalog: function () {
       return request("/catalog", { method: "GET", headers: { role: "user" } });
+    },
+    uploadVerificationDocument: function (file) {
+      return upload("/uploads/verification", file, "user");
+    },
+    uploadTicketAttachment: function (file) {
+      return upload("/uploads/tickets", file, getRole());
+    },
+    uploadProviderProfilePhoto: function (file) {
+      return upload("/uploads/profiles/photo", file, "provider");
     },
     syncCatalog: function (catalog) {
       const catalogImages = {

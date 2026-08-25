@@ -374,25 +374,24 @@
         bookingId: bookingId,
         ticketType: byId("ticketType").value,
         description: description,
-        evidenceUrl: file ? file.name : "",
+        evidenceUrl: "",
         customerId: session().userId || session().email || "CUS001",
         customerName: session().fullName || booking.customerName || "Customer"
       };
 
+      let attachmentUpload = null;
       async function finish(ticket) {
         ticket = normalizeTicket({
           ...ticket,
           providerName: ticket.providerName || booking.provider,
           providerId: ticket.providerId || booking.providerId
         });
-        if (file && window.ServeEaseAttachments) {
-          const attachment = await window.ServeEaseAttachments.saveTicketAttachment(ticket.ticketId, file);
-          if (attachment) {
-            ticket.attachmentId = attachment.attachmentId;
-            ticket.attachmentName = attachment.filename;
-            ticket.attachmentType = attachment.mimeType;
-            ticket.attachmentSize = attachment.fileSize;
-          }
+        if (attachmentUpload) {
+          ticket.attachmentId = attachmentUpload.storedFilename;
+          ticket.attachmentName = attachmentUpload.originalFilename;
+          ticket.attachmentType = attachmentUpload.mimeType;
+          ticket.attachmentSize = attachmentUpload.size;
+          ticket.attachmentUrl = attachmentUpload.fileUrl;
         }
         upsertTicket(ticket);
         success.textContent = "Ticket submitted successfully.";
@@ -402,7 +401,12 @@
       }
 
       if (window.ServeEaseApi && typeof window.ServeEaseApi.createTicket === "function") {
-        window.ServeEaseApi.createTicket(payload).then(finish).catch(function () {
+        const uploadPromise = file ? window.ServeEaseApi.uploadTicketAttachment(file) : Promise.resolve(null);
+        uploadPromise.then(function (uploaded) {
+          attachmentUpload = uploaded;
+          payload.evidenceUrl = uploaded ? uploaded.fileUrl : "";
+          return window.ServeEaseApi.createTicket(payload);
+        }).then(finish).catch(function () {
           error.textContent = "Unable to submit ticket because backend API failed. Please run the backend and try again.";
         });
       } else {

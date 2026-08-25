@@ -1,1 +1,6 @@
 package-lock.json
+
+# Runtime uploads - keep local user uploads out of Git
+/back-end/uploads/verification/
+/back-end/uploads/tickets/
+/back-end/uploads/profiles/

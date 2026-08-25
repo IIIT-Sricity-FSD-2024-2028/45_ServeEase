@@ -2590,18 +2590,16 @@
         solution: "",
         supportUpdate: "Your ticket has been received and is currently being reviewed by the support team."
       };
+      let attachmentUpload = null;
 
       async function finish(savedTicket) {
         const ticket = savedTicket ? normalizeBackendProviderTicket(savedTicket) : localTicket;
-        if (attachment && window.ServeEaseAttachments) {
-          const stored = await window.ServeEaseAttachments.saveTicketAttachment(localTicket.id, attachment);
-          if (stored) {
-            if (savedTicket) window.ServeEaseAttachments.linkTicketAttachment(localTicket.id, ticket.id);
-            ticket.attachmentId = stored.attachmentId;
-            ticket.attachmentName = stored.filename;
-            ticket.attachmentType = stored.mimeType;
-            ticket.attachmentSize = stored.fileSize;
-          }
+        if (attachmentUpload) {
+          ticket.attachmentId = attachmentUpload.storedFilename;
+          ticket.attachmentName = attachmentUpload.originalFilename;
+          ticket.attachmentType = attachmentUpload.mimeType;
+          ticket.attachmentSize = attachmentUpload.size;
+          ticket.attachmentUrl = attachmentUpload.fileUrl;
         }
         data.supportTickets.unshift(ticket);
         pushProviderTicketToSupport(ticket, data);
@@ -2614,17 +2612,21 @@
       }
 
       if (window.ServeEaseApi && typeof window.ServeEaseApi.createProviderTicket === "function") {
-        window.ServeEaseApi.createProviderTicket({
+        const uploadPromise = attachment ? window.ServeEaseApi.uploadTicketAttachment(attachment) : Promise.resolve(null);
+        uploadPromise.then(function (uploaded) {
+          attachmentUpload = uploaded;
+          return window.ServeEaseApi.createProviderTicket({
           ticketType: category,
           subject: subject,
           description: description,
           relatedBookingId: bookingRef,
           priority: priority,
-          attachmentUrl: attachment ? attachment.name : "",
+          attachmentUrl: uploaded ? uploaded.fileUrl : "",
           providerId: localTicket.providerId,
           providerName: localTicket.provider,
           customerName: relatedCustomer,
           service: service
+          });
         }).then(finish).catch(function (apiError) {
           error.textContent = apiError && apiError.message ? apiError.message : "Unable to create ticket. Please run the backend and try again.";
         });
@@ -2753,10 +2755,8 @@
       photoInput.addEventListener("change", function () {
         const file = photoInput.files && photoInput.files[0];
         if (!file) return;
-        readProviderFileAsDataUrl(file).then(function (dataUrl) {
-          const preview = document.getElementById("providerProfilePhotoPreview");
-          if (preview) preview.src = dataUrl;
-        }).catch(function () { return null; });
+        const preview = document.getElementById("providerProfilePhotoPreview");
+        if (preview) preview.src = URL.createObjectURL(file);
       });
     }
 
@@ -2789,7 +2789,8 @@
       }
 
       if (photoFile) {
-        updatedData.profile.profilePhoto = await readProviderFileAsDataUrl(photoFile);
+        const upload = await window.ServeEaseApi.uploadProviderProfilePhoto(photoFile);
+        updatedData.profile.profilePhoto = upload.fileUrl;
       }
 
       setProviderModuleData(updatedData);

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ServeEase Development Baseline</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; color: #1f2937; background: #f8fafc; }
+    main { max-width: 860px; margin: 0 auto; padding: 2rem; background: #fff; border: 1px solid #dbe3ec; border-radius: 12px; }
+    button { padding: .7rem 1rem; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
+    #results { margin-top: 1.5rem; padding-left: 1.25rem; }
+    .created { color: #166534; }
+    .skipped { color: #92400e; }
+    .error { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ServeEase Development Baseline</h1>
+    <p>This explicit development-only action initializes missing browser and backend baseline data. Existing values are skipped and never replaced.</p>
+    <button id="seedButton" type="button">Initialize Missing Baseline Data</button>
+    <ul id="results" aria-live="polite"></ul>
+  </main>
+  <script>
+    (function () {
+      const button = document.getElementById('seedButton');
+      const results = document.getElementById('results');
+      const apiBase = '/api';
+
+      function report(type, text) {
+        const item = document.createElement('li');
+        item.className = type;
+        item.textContent = '[' + type + '] ' + text;
+        results.appendChild(item);
+      }
+
+      async function request(path, options) {
+        const response = await fetch(apiBase + path, options);
+        const payload = await response.json().catch(function () { return null; });
+        return { response: response, payload: payload };
+      }
+
+      async function stateExists(key) {
+        const result = await request('/state/' + encodeURIComponent(key), { headers: { role: 'user' } });
+        if (result.response.ok) return true;
+        if (result.response.status === 404) return false;
+        throw new Error('State check failed for ' + key + ' (HTTP ' + result.response.status + ').');
+      }
+
+      async function initialize() {
+        results.innerHTML = '';
+        button.disabled = true;
+
+        try {
+          const fixtureResponse = await fetch('./development/dev-baseline.json', { cache: 'no-store' });
+          if (!fixtureResponse.ok) throw new Error('Could not load the development baseline fixture.');
+          const baseline = await fixtureResponse.json();
+
+          const catalogCheck = await request('/catalog', { headers: { role: 'user' } });
+          if (!catalogCheck.response.ok) throw new Error('Backend is not available. Start it before initializing the baseline.');
+
+          Object.keys(baseline.localStorage || {}).forEach(function (key) {
+            if (localStorage.getItem(key) !== null) {
+              report('skipped', 'localStorage key already exists: ' + key);
+              return;
+            }
+            localStorage.setItem(key, JSON.stringify(baseline.localStorage[key]));
+            report('created', 'localStorage key initialized: ' + key);
+          });
+
+          const existingCatalog = catalogCheck.payload && catalogCheck.payload.data;
+          const catalogHasData = existingCatalog && (
+            (existingCatalog.categories || []).length ||
+            (existingCatalog.providers || []).length ||
+            (existingCatalog.popularServices || []).length
+          );
+          if (catalogHasData) {
+            report('skipped', 'backend catalog already contains data');
+          } else {
+            const catalogWrite = await request('/catalog/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', role: 'admin' },
+              body: JSON.stringify(baseline.catalog)
+            });
+            if (!catalogWrite.response.ok) throw new Error('Catalog initialization failed (HTTP ' + catalogWrite.response.status + ').');
+            report('created', 'backend catalog initialized');
+          }
+
+          for (const key of Object.keys(baseline.localStorage || {})) {
+            const value = baseline.localStorage[key];
+            if (!value || Array.isArray(value) || typeof value !== 'object') {
+              report('skipped', 'backend state requires an object value: ' + key);
+              continue;
+            }
+            if (await stateExists(key)) {
+              report('skipped', 'backend state already exists: ' + key);
+              continue;
+            }
+            const stateWrite = await request('/state', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', role: 'admin' },
+              body: JSON.stringify({ key: key, value: value })
+            });
+            if (!stateWrite.response.ok) throw new Error('State initialization failed for ' + key + ' (HTTP ' + stateWrite.response.status + ').');
+            report('created', 'backend state initialized: ' + key);
+          }
+        } catch (error) {
+          report('error', error instanceof Error ? error.message : String(error));
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      button.addEventListener('click', initialize);
+    })();
+  </script>
+</body>
+</html>

@@ -2909,6 +2909,126 @@
           "tickets"
         ]
       }
+    },
+    "/api/uploads/verification": {
+      "post": {
+        "operationId": "UploadsController_verification",
+        "summary": "Upload a provider verification document",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/api/uploads/tickets": {
+      "post": {
+        "operationId": "UploadsController_ticket",
+        "summary": "Upload a support ticket attachment",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/api/uploads/profiles/photo": {
+      "post": {
+        "operationId": "UploadsController_profilePhoto",
+        "summary": "Upload a provider profile photo",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "uploads"
+        ]
+      }
     }
   },
   "info": {
