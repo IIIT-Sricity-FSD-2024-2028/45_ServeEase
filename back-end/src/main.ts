@@ -31,8 +31,9 @@ async function bootstrap() {
     }),
   );
 
-  app.use(json({ limit: '1mb' }));
-  app.use(urlencoded({ extended: true, limit: '1mb' }));
+  // Temporary compatibility limit for full-state/catalog sync; revisit with granular React/Redux/API state.
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
 
   const configuredCorsOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')

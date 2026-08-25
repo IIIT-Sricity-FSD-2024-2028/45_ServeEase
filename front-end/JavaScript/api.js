@@ -185,12 +185,50 @@
       return request("/catalog", { method: "GET", headers: { role: "user" } });
     },
     syncCatalog: function (catalog) {
+      const catalogImages = {
+        "home-cleaning": "assets/images/home-cleaning/clean1.jpg",
+        "carpentry": "assets/images/carpentry/carpentry1.jpg.jpeg",
+        "painting": "assets/images/painting/painting1.jpg.jpeg",
+        "salon-at-home": "assets/images/salon-at-home/salon1.jpg",
+        "plumbing": "assets/images/plumbing/plumbing1.jpg.jpeg",
+        "electrician": "assets/images/electrician/ele1.jpg.jpeg",
+        "appliance-repair-installation": "assets/images/appliance-repair/ACrepair.jpg.jpeg",
+        "pest-control": "assets/images/pest-control/pest1.jpg.jpeg"
+      };
+      const catalogProviders = (catalog.providers || []).map(function (provider) {
+        const image = String(provider.image || "");
+        const catalogImage = image && !/^data:/i.test(image) && image.length <= 300
+          ? image
+          : (catalogImages[provider.category] || catalogImages["home-cleaning"]);
+
+        return {
+          id: provider.id,
+          name: provider.name,
+          category: provider.category,
+          subServices: provider.subServices,
+          years: provider.years,
+          rating: provider.rating,
+          reviews: provider.reviews,
+          distance: provider.distance,
+          startingPrice: provider.startingPrice,
+          location: provider.location,
+          jobsDone: provider.jobsDone,
+          availableToday: provider.availableToday,
+          verified: provider.verified,
+          cityId: provider.cityId,
+          image: catalogImage,
+          availabilitySlots: provider.availabilitySlots,
+          ownerProviderId: provider.ownerProviderId,
+          ownerProviderEmail: provider.ownerProviderEmail
+        };
+      });
+
       return request("/catalog/sync", {
         method: "POST",
         headers: { role: "admin" },
         body: JSON.stringify({
           categories: catalog.categories || [],
-          providers: catalog.providers || [],
+          providers: catalogProviders,
           popularServices: catalog.popularServices || []
         })
       });

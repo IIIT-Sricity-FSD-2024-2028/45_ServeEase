@@ -2316,10 +2316,11 @@
     const chatInput = document.getElementById("providerChatInput");
     let activeProviderChatTicketId = "";
     const providerFaqs = [
-      { q: "How do I update my service pricing?", a: "Open Manage Services, click Edit Service, update the price, and save the changes. The updated amount is shown instantly in your service card." },
       { q: "How do I manage booking requests?", a: "Go to Booking Management to accept, reject, or complete requests. You can also open View Details to see the full booking information." },
       { q: "Where can I view my payout details?", a: "Open Earnings & Payments to review transaction history, pending payouts, and processed payment details." },
-      { q: "How do I contact customer support?", a: "Create a support ticket from this page or use Chat with Support inside My Support Tickets for quick follow-up." }
+      { q: "How do I contact customer support?", a: "Create a support ticket from this page or use Chat with Support inside My Support Tickets for quick follow-up." },
+      { q: "How do I update my availability?", a: "Open your provider availability settings from the dashboard, update the days and hours you can accept bookings, and save your changes." },
+      { q: "How do I update my service details?", a: "Open Manage Services, select the service you want to change, update its details, and save the changes so customers see the latest information." }
     ];
     const getSearchTerm = setupProviderSearch(".dashboard-search input", function () { renderTickets(); renderFaqs(); });
 
