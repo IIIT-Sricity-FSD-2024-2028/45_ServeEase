@@ -74,6 +74,12 @@ export class CatalogProvider {
 
   @ApiProperty({ example: 'fresh@example.com', required: false })
   ownerProviderEmail?: string;
+
+  @ApiProperty({ example: { 'Kitchen Cleaning': 799, 'Bathroom Cleaning': 599 }, required: false })
+  servicePricing?: Record<string, number>;
+
+  @ApiProperty({ required: false })
+  services?: any[];
 }
 
 export class PopularService {

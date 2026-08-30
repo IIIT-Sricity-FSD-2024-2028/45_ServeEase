@@ -64,11 +64,16 @@
 
   function getProviderModuleData() {
     const data = JSON.parse(localStorage.getItem(providerDataKey));
+    if (!data) return data;
     const transactionResult = standardizeProviderTransactionIds(data);
     if (transactionResult.changed) localStorage.setItem(providerDataKey, JSON.stringify(transactionResult.data));
     const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(transactionResult.data);
-    if (normalized && normalized.changed) localStorage.setItem(providerDataKey, JSON.stringify(normalized.data));
-    return normalized ? normalized.data : data;
+    const currentData = normalized ? normalized.data : transactionResult.data;
+    const restored = restoreProviderBookingsFromCustomerData(currentData);
+    if ((normalized && normalized.changed) || restored) {
+      localStorage.setItem(providerDataKey, JSON.stringify(currentData));
+    }
+    return currentData;
   }
 
   function standardizeProviderTransactionIds(data) {
@@ -135,18 +140,31 @@
   function restoreProviderBookingsFromCustomerData(data) {
     if (!data || !data.profile || !Array.isArray(data.bookings)) return false;
 
-    const providerIds = [data.profile.providerId, data.profile.providerCatalogId].filter(Boolean);
-    const providerNames = [data.profile.fullName, data.profile.organisationName].map(normalizeName).filter(Boolean);
+    const providerIds = [
+      data.profile.providerId,
+      data.profile.providerCatalogId,
+      data.profile.providerBaseId,
+      data.profile.id,
+      session && session.providerCatalogId,
+      session && session.userId
+    ].concat(typeof getProviderCatalogIds === "function" ? getProviderCatalogIds(data) : []).filter(Boolean);
+    const providerNames = [
+      data.profile.fullName,
+      data.profile.organisationName,
+      session && session.fullName,
+      session && session.organisationName,
+      session && session.name
+    ].map(normalizeName).filter(Boolean);
     let changed = false;
 
     Object.keys(localStorage).filter(function (key) {
       return key === "serveEaseCustomerModuleData" || key.indexOf("serveEaseCustomerModuleData:") === 0;
     }).forEach(function (key) {
       try {
-      const rawCustomerData = JSON.parse(localStorage.getItem(key) || "null");
-      const normalizedCustomerData = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(rawCustomerData);
-      const customerData = normalizedCustomerData ? normalizedCustomerData.data : rawCustomerData;
-      if (normalizedCustomerData && normalizedCustomerData.changed) localStorage.setItem(key, JSON.stringify(customerData));
+        const rawCustomerData = JSON.parse(localStorage.getItem(key) || "null");
+        const normalizedCustomerData = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(rawCustomerData);
+        const customerData = normalizedCustomerData ? normalizedCustomerData.data : rawCustomerData;
+        if (normalizedCustomerData && normalizedCustomerData.changed) localStorage.setItem(key, JSON.stringify(customerData));
         if (!customerData || !Array.isArray(customerData.bookings)) return;
 
         customerData.bookings.forEach(function (booking) {
@@ -155,6 +173,13 @@
             providerNames.indexOf(normalizeName(booking.provider)) !== -1;
           if (!providerMatches || !booking.customerEmail) return;
 
+          const autoCancelReason = "Automatically cancelled because the provider did not confirm the booking before the scheduled service date.";
+          if (booking.cancellationReason === autoCancelReason) {
+            booking.status = "Pending";
+            booking.category = "Pending";
+            delete booking.cancellationReason;
+          }
+
           let providerBooking = data.bookings.find(function (item) {
             return String(item.id || "") === String(booking.id || "");
           });
@@ -162,6 +187,12 @@
             providerBooking = { id: booking.id };
             data.bookings.unshift(providerBooking);
             changed = true;
+          }
+
+          if (providerBooking.cancellationReason === autoCancelReason) {
+            providerBooking.status = "Pending";
+            providerBooking.category = "Pending";
+            delete providerBooking.cancellationReason;
           }
 
           // The provider's decision is authoritative once it is no longer pending.
@@ -353,49 +384,89 @@
         return String(item.bookingRef || "").toLowerCase() === bookingId.toLowerCase();
       });
 
+      // Calculate Canonical Financial Breakdown for the Provider
+      const rawServiceFee = Number(booking.serviceFee || (customerPayment && customerPayment.serviceFee));
+      const rawTotal = Number(booking.customerTotal || (customerPayment && customerPayment.customerTotal) || booking.amount) || 0;
+      let serviceFee = 0;
+      if (Number.isFinite(rawServiceFee) && rawServiceFee > 0) {
+        serviceFee = rawServiceFee;
+      } else if (rawTotal > 90 && (rawTotal - 90) % 10 === 9) {
+        serviceFee = rawTotal - 90;
+      } else {
+        serviceFee = Math.round((rawTotal / 1.15) * 100) / 100;
+        if (serviceFee <= 0) serviceFee = rawTotal;
+      }
+
+      const financeEngine = window.ServeEaseFinance;
+      const breakdown = financeEngine
+        ? financeEngine.calculateBreakdown(serviceFee)
+        : {
+            serviceFee: serviceFee,
+            providerCommissionRate: 10,
+            providerCommissionAmount: Math.round(serviceFee * 10) / 100,
+            providerPayout: Math.round(serviceFee * 0.90 * 100) / 100
+          };
+
+      const nextStatus = isCompleted ? "Paid" : "Pending";
+      const storedMethod = transaction && transaction.method === "Service payout" ? "" : (transaction ? transaction.method : "");
+      const nextMethod = (customerPayment && customerPayment.method) || booking.paymentMethod || storedMethod || "Payment method unavailable";
+      const nextPaymentDate = logicalPaymentDate(booking, getCustomerPaymentDateForBooking(booking) || booking.paymentDate || booking.paidAt || (transaction && transaction.paymentDate) || "");
+      const nextReceivedDate = isCompleted
+        ? logicalReceivedDate(booking, booking.receivedDate || booking.completedAt || (transaction && transaction.receivedDate) || "")
+        : "";
+      const nextPayoutDate = isCompleted
+        ? ((transaction && transaction.payoutDate) || nextReceivedDate || nextPaymentDate || (window.ServeEaseDate ? window.ServeEaseDate.nowDateTime() : new Date().toISOString()))
+        : "";
+
       if (!transaction) {
         transaction = {
           id: nextProviderTransactionId(data.transactions),
           bookingRef: bookingId,
           service: booking.service || "Service",
           customer: booking.customer || "Customer",
-          method: (customerPayment && customerPayment.method) || booking.paymentMethod || "Payment method unavailable",
-          amount: Number(booking.amount) || 0,
+          method: nextMethod,
+          serviceFee: breakdown.serviceFee,
+          providerCommissionRate: breakdown.providerCommissionRate,
+          providerCommissionAmount: breakdown.providerCommissionAmount,
+          providerPayout: breakdown.providerPayout,
+          amount: breakdown.providerPayout,
           serviceDate: booking.date || "",
-          paymentDate: logicalPaymentDate(booking, getCustomerPaymentDateForBooking(booking) || booking.paymentDate || booking.paidAt || ""),
-          receivedDate: isCompleted ? logicalReceivedDate(booking, booking.receivedDate || booking.completedAt || "") : "",
-          status: "Pending"
+          paymentDate: nextPaymentDate,
+          receivedDate: nextReceivedDate,
+          payoutDate: nextPayoutDate,
+          status: nextStatus
         };
         data.transactions.unshift(transaction);
         changed = true;
-      }
-
-      const nextStatus = isCompleted ? "Paid" : "Pending";
-      const storedMethod = transaction.method === "Service payout" ? "" : transaction.method;
-      const nextMethod = (customerPayment && customerPayment.method) || booking.paymentMethod || storedMethod || "Payment method unavailable";
-      const nextPaymentDate = logicalPaymentDate(booking, getCustomerPaymentDateForBooking(booking) || booking.paymentDate || booking.paidAt || transaction.paymentDate || "");
-      const nextReceivedDate = isCompleted
-        ? logicalReceivedDate(booking, booking.receivedDate || booking.completedAt || transaction.receivedDate || "")
-        : "";
-      if (
-        transaction.service !== (booking.service || "Service") ||
-        transaction.customer !== (booking.customer || "Customer") ||
-        transaction.method !== nextMethod ||
-        Number(transaction.amount) !== (Number(booking.amount) || 0) ||
-        transaction.serviceDate !== (booking.date || "") ||
-        transaction.status !== nextStatus ||
-        transaction.paymentDate !== nextPaymentDate ||
-        transaction.receivedDate !== nextReceivedDate
-      ) {
-        transaction.service = booking.service || "Service";
-        transaction.customer = booking.customer || "Customer";
-        transaction.method = nextMethod;
-        transaction.amount = Number(booking.amount) || 0;
-        transaction.serviceDate = booking.date || "";
-        transaction.status = nextStatus;
-        transaction.paymentDate = nextPaymentDate;
-        transaction.receivedDate = nextReceivedDate;
-        changed = true;
+      } else {
+        if (
+          transaction.service !== (booking.service || "Service") ||
+          transaction.customer !== (booking.customer || "Customer") ||
+          transaction.method !== nextMethod ||
+          Number(transaction.serviceFee) !== breakdown.serviceFee ||
+          Number(transaction.providerPayout) !== breakdown.providerPayout ||
+          Number(transaction.amount) !== breakdown.providerPayout ||
+          transaction.serviceDate !== (booking.date || "") ||
+          transaction.status !== nextStatus ||
+          transaction.paymentDate !== nextPaymentDate ||
+          transaction.receivedDate !== nextReceivedDate ||
+          transaction.payoutDate !== nextPayoutDate
+        ) {
+          transaction.service = booking.service || "Service";
+          transaction.customer = booking.customer || "Customer";
+          transaction.method = nextMethod;
+          transaction.serviceFee = breakdown.serviceFee;
+          transaction.providerCommissionRate = breakdown.providerCommissionRate;
+          transaction.providerCommissionAmount = breakdown.providerCommissionAmount;
+          transaction.providerPayout = breakdown.providerPayout;
+          transaction.amount = breakdown.providerPayout;
+          transaction.serviceDate = booking.date || "";
+          transaction.status = nextStatus;
+          transaction.paymentDate = nextPaymentDate;
+          transaction.receivedDate = nextReceivedDate;
+          transaction.payoutDate = nextPayoutDate;
+          changed = true;
+        }
       }
     });
 
@@ -856,6 +927,8 @@
           name: getProviderCatalogName(data.profile),
           category: categoryId,
           subServices: [],
+          services: [],
+          servicePricing: {},
           years: Number(String(data.profile.experience || "").match(/\d+/)?.[0]) || 1,
           rating: data.profile.rating || 4.5,
           reviews: 0,
@@ -877,6 +950,18 @@
       if (groupedServices[groupKey].subServices.indexOf(service.name) === -1) {
         groupedServices[groupKey].subServices.push(service.name);
       }
+      if (!groupedServices[groupKey].services) groupedServices[groupKey].services = [];
+      groupedServices[groupKey].services.push({
+        id: service.id,
+        name: service.name,
+        category: service.category,
+        description: service.description,
+        price: Number(service.price),
+        duration: service.duration,
+        status: service.status
+      });
+      if (!groupedServices[groupKey].servicePricing) groupedServices[groupKey].servicePricing = {};
+      groupedServices[groupKey].servicePricing[service.name] = Number(service.price);
       groupedServices[groupKey].startingPrice = Math.min(groupedServices[groupKey].startingPrice, Number(service.price) || 499);
     });
 
@@ -1073,19 +1158,154 @@
     }));
   }
 
+  function getDefaultPriceForSubService(serviceName, category, fallbackPrice) {
+    const name = String(serviceName || "").trim().toLowerCase();
+
+    if (name.indexOf("full home") !== -1) return 899;
+    if (name.indexOf("kitchen") !== -1) return 799;
+    if (name.indexOf("bathroom") !== -1) return 599;
+    if (name.indexOf("floor") !== -1) return 699;
+
+    if (name.indexOf("haircut") !== -1 || name.indexOf("styling") !== -1) return 399;
+    if (name.indexOf("facial") !== -1 || name.indexOf("cleanup") !== -1) return 599;
+    if (name.indexOf("manicure") !== -1 || name.indexOf("pedicure") !== -1) return 499;
+
+    if (name === "ac" || name.indexOf("ac ") !== -1 || name.indexOf("ac repair") !== -1) return 799;
+    if (name.indexOf("washing machine") !== -1) return 599;
+    if (name.indexOf("refrigerator") !== -1) return 599;
+    if (name.indexOf("chimney") !== -1) return 699;
+    if (name.indexOf("laptop") !== -1 || name.indexOf("desktop") !== -1) return 649;
+    if (name.indexOf("geyser") !== -1) return 499;
+    if (name.indexOf("tv") !== -1) return 499;
+
+    if (name.indexOf("termite") !== -1) return 1199;
+    if (name.indexOf("cockroach") !== -1) return 799;
+    if (name.indexOf("general pest") !== -1 || name.indexOf("pest") !== -1) return 899;
+
+    if (name.indexOf("door") !== -1) return 499;
+    if (name.indexOf("furniture") !== -1) return 449;
+
+    if (name.indexOf("painting") !== -1) return 1299;
+    if (name.indexOf("plumbing") !== -1) return 399;
+    if (name.indexOf("electrician") !== -1) return 349;
+
+    const numFallback = Number(fallbackPrice);
+    return Number.isFinite(numFallback) && numFallback > 0 ? numFallback : 499;
+  }
+
   function buildInitialServiceFromProfile(profile) {
     return {
       id: "SVC001",
       name: profile.subCategory || profile.category || "General Service",
       category: profile.category || "General Service",
       description: (profile.subCategory || profile.category || "Service") + " offered by " + (profile.organisationName || profile.fullName),
-      price: 499,
+      price: getDefaultPriceForSubService(profile.subCategory || profile.category, profile.category, 499),
       duration: "2 hours",
       cityId: profile.cityId || getCityIdFromLocation(profile.location || "Chennai"),
       cityName: profile.cityName || getCityNameFromLocation(profile.location || "Chennai"),
       location: profile.cityName || profile.location || "Chennai",
       status: "Active"
     };
+  }
+
+  function buildInitialServicesForProvider(profile) {
+    if (isDemoProviderAccount()) {
+      return [
+        {
+          id: "SVC001",
+          name: "Kitchen Cleaning",
+          category: "Cleaning Services",
+          description: "Professional kitchen deep cleaning service",
+          price: 799,
+          duration: "2 hours",
+          cityId: profile.cityId,
+          cityName: profile.cityName,
+          location: profile.cityName,
+          status: "Active"
+        },
+        {
+          id: "SVC002",
+          name: "Bathroom Cleaning",
+          category: "Cleaning Services",
+          description: "Complete bathroom cleaning and sanitization",
+          price: 599,
+          duration: "1.5 hours",
+          cityId: profile.cityId,
+          cityName: profile.cityName,
+          location: profile.cityName,
+          status: "Active"
+        },
+        {
+          id: "SVC003",
+          name: "Floor Cleaning Service",
+          category: "Cleaning Services",
+          description: "Home floor and tile deep cleaning",
+          price: 699,
+          duration: "2 hours",
+          cityId: profile.cityId,
+          cityName: profile.cityName,
+          location: profile.cityName,
+          status: "Active"
+        }
+      ];
+    }
+
+    // Lookup matching provider in catalog
+    try {
+      const store = JSON.parse(localStorage.getItem("serveEaseData") || "{}");
+      const catalogProviders = Array.isArray(store.providers) ? store.providers : [];
+      const matched = catalogProviders.find(function (p) {
+        if (!p) return false;
+        if (profile.providerCatalogId && p.id === profile.providerCatalogId) return true;
+        if (profile.providerBaseId && p.id && p.id.indexOf(profile.providerBaseId) === 0) return true;
+        const orgName = String(profile.organisationName || "").trim().toLowerCase();
+        const fullName = String(profile.fullName || "").trim().toLowerCase();
+        const pName = String(p.name || "").trim().toLowerCase();
+        return pName === orgName || pName === fullName;
+      });
+
+      if (matched) {
+        if (Array.isArray(matched.services) && matched.services.length) {
+          return matched.services.map(function (s, idx) {
+            return {
+              id: s.id || ("SVC" + String(idx + 1).padStart(3, "0")),
+              name: s.name,
+              category: s.category || profile.category || "General Service",
+              description: s.description || (s.name + " offered by " + (profile.organisationName || profile.fullName)),
+              price: Number(s.price) || Number(matched.startingPrice) || 499,
+              duration: s.duration || "2 hours",
+              cityId: profile.cityId,
+              cityName: profile.cityName,
+              location: profile.cityName,
+              status: s.status || "Active"
+            };
+          });
+        }
+
+        if (Array.isArray(matched.subServices) && matched.subServices.length) {
+          return matched.subServices.map(function (subName, idx) {
+            const price = (matched.servicePricing && matched.servicePricing[subName]) ||
+              getDefaultPriceForSubService(subName, matched.category, matched.startingPrice);
+            return {
+              id: "SVC" + String(idx + 1).padStart(3, "0"),
+              name: subName,
+              category: matched.category || profile.category || "General Service",
+              description: subName + " offered by " + (profile.organisationName || profile.fullName),
+              price: Number(price) || Number(matched.startingPrice) || 499,
+              duration: "2 hours",
+              cityId: profile.cityId,
+              cityName: profile.cityName,
+              location: profile.cityName,
+              status: "Active"
+            };
+          });
+        }
+      }
+    } catch (e) {
+      /* ignore catalog parse error */
+    }
+
+    return [buildInitialServiceFromProfile(profile)];
   }
 
   function seedProviderData() {
@@ -1122,6 +1342,8 @@
             service.location = nextProfile.cityName;
             service.status = "Active";
           });
+        } else if (!Array.isArray(data.services) || data.services.length === 0) {
+          data.services = buildInitialServicesForProvider(nextProfile);
         }
         setProviderModuleData(data);
         syncProviderServicesToCatalog(data);
@@ -1130,49 +1352,10 @@
     }
 
     const profile = buildProviderProfile();
-    const demoServices = [
-      {
-        id: "SVC001",
-        name: "Kitchen Cleaning",
-        category: "Cleaning Services",
-        description: "Professional kitchen deep cleaning service",
-        price: 799,
-        duration: "2 hours",
-        cityId: profile.cityId,
-        cityName: profile.cityName,
-        location: profile.cityName,
-        status: "Active"
-      },
-      {
-        id: "SVC002",
-        name: "Bathroom Cleaning",
-        category: "Cleaning Services",
-        description: "Complete bathroom cleaning and sanitization",
-        price: 599,
-        duration: "1.5 hours",
-        cityId: profile.cityId,
-        cityName: profile.cityName,
-        location: profile.cityName,
-        status: "Active"
-      },
-      {
-        id: "SVC003",
-        name: "Floor Cleaning Service",
-        category: "Cleaning Services",
-        description: "Home floor and tile deep cleaning",
-        price: 699,
-        duration: "2 hours",
-        cityId: profile.cityId,
-        cityName: profile.cityName,
-        location: profile.cityName,
-        status: "Active"
-      }
-    ];
-
     const data = {
       ownerProviderId: profile.providerId,
       profile: profile,
-      services: isDemoProviderAccount() ? demoServices : [buildInitialServiceFromProfile(profile)],
+      services: buildInitialServicesForProvider(profile),
       availability: {
         days: [
           { label: "Monday", active: true },
@@ -2261,13 +2444,41 @@
     if (!stats) return;
 
     const data = getProviderModuleData();
-    const displayTransactions = data.transactions.map(function (transaction) {
-      return Object.assign({}, transaction, { displayPayoutStatus: resolveProviderPayoutStatus(transaction) });
+    reconcileProviderPayouts(data);
+    const financeEngine = window.ServeEaseFinance;
+
+    function getTransactionFinancials(t) {
+      if (t && Number.isFinite(Number(t.serviceFee)) && Number(t.serviceFee) > 0) {
+        return financeEngine
+          ? financeEngine.calculateBreakdown(Number(t.serviceFee))
+          : {
+              serviceFee: Number(t.serviceFee),
+              providerCommissionAmount: Math.round(Number(t.serviceFee) * 10) / 100,
+              providerPayout: Math.round(Number(t.serviceFee) * 0.90 * 100) / 100
+            };
+      }
+      const raw = Number(t.providerPayout != null ? t.providerPayout : t.amount) || 0;
+      return {
+        serviceFee: Math.round((raw / 0.90) * 100) / 100,
+        providerCommissionAmount: Math.round((raw / 0.90 * 0.10) * 100) / 100,
+        providerPayout: raw
+      };
+    }
+
+    const displayTransactions = (Array.isArray(data.transactions) ? data.transactions : []).map(function (transaction) {
+      const fin = getTransactionFinancials(transaction);
+      return Object.assign({}, transaction, {
+        resolvedServiceFee: fin.serviceFee,
+        resolvedCommission: fin.providerCommissionAmount,
+        resolvedPayout: fin.providerPayout,
+        displayPayoutStatus: resolveProviderPayoutStatus(transaction)
+      });
     });
+
     const paid = displayTransactions.filter(function (item) { return item.displayPayoutStatus === "Paid"; });
     const pending = displayTransactions.filter(function (item) { return item.displayPayoutStatus === "Pending"; });
-    const totalEarning = paid.reduce(function (sum, item) { return sum + item.amount; }, 0);
-    const pendingAmount = pending.reduce(function (sum, item) { return sum + item.amount; }, 0);
+    const totalEarning = paid.reduce(function (sum, item) { return sum + item.resolvedPayout; }, 0);
+    const pendingAmount = pending.reduce(function (sum, item) { return sum + item.resolvedPayout; }, 0);
 
     stats.innerHTML = `
       <div class="stat-card-dashboard"><div class="feature-icon blue">💰</div><h3>${formatCurrency(totalEarning)}</h3><p>Total Earnings</p></div>
@@ -2276,22 +2487,23 @@
     `;
 
     const tbody = document.getElementById("providerTransactionsTableBody");
-    tbody.innerHTML = displayTransactions.map(function (transaction) {
+    tbody.innerHTML = displayTransactions.length ? displayTransactions.map(function (transaction) {
       return `
         <tr>
           <td>${transaction.id}</td>
           <td>${transaction.bookingRef}</td>
           <td>${transaction.service}</td>
           <td>${transaction.customer}</td>
-          <td>${transaction.method}</td>
-          <td>${formatCurrency(transaction.amount)}</td>
+          <td>${formatCurrency(transaction.resolvedServiceFee)}</td>
+          <td>${formatCurrency(transaction.resolvedCommission)}</td>
+          <td><strong>${formatCurrency(transaction.resolvedPayout)}</strong></td>
+          <td>${transaction.method || "Payment method"}</td>
           <td>${formatDisplayDate(transaction.serviceDate)}</td>
-          <td>${formatDisplayDate(transaction.paymentDate) || "—"}</td>
-          <td>${formatDisplayDate(transaction.receivedDate) || "—"}</td>
+          <td>${formatDisplayDate(transaction.payoutDate || transaction.receivedDate || transaction.paymentDate) || "—"}</td>
           <td><span class="status-pill ${statusClass(transaction.displayPayoutStatus)}">${transaction.displayPayoutStatus}</span></td>
         </tr>
       `;
-    }).join("");
+    }).join("") : '<tr><td colspan="11">No payout transactions found.</td></tr>';
   }
 
   function initProviderSupportPage() {
@@ -2735,9 +2947,9 @@
       updatedData.profile.accountHolder = document.getElementById("accountHolderInput").value;
       updatedData.profile.accountNumber = document.getElementById("accountNumberInput").value;
       updatedData.profile.ifsc = document.getElementById("ifscInput").value;
-      
+
       setProviderModuleData(updatedData);
-      
+
       const btn = this;
       const originalText = btn.textContent;
       btn.textContent = "Saved Successfully!";

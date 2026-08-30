@@ -46,6 +46,63 @@ export class CreateBookingDto {
   @IsPositive()
   amount: number;
 
+  @ApiProperty({ example: 799, required: false })
+  @IsOptional()
+  @IsNumber()
+  serviceFee?: number;
+
+  @ApiProperty({ example: 10, required: false })
+  @IsOptional()
+  @IsNumber()
+  taxRate?: number;
+
+  @ApiProperty({ example: 79.9, required: false })
+  @IsOptional()
+  @IsNumber()
+  taxAmount?: number;
+
+  @ApiProperty({ example: 5, required: false })
+  @IsOptional()
+  @IsNumber()
+  platformFeeRate?: number;
+
+  @ApiProperty({ example: 39.95, required: false })
+  @IsOptional()
+  @IsNumber()
+  platformFeeAmount?: number;
+
+  @ApiProperty({ example: 918.85, required: false })
+  @IsOptional()
+  @IsNumber()
+  customerTotal?: number;
+
+  @ApiProperty({ example: 10, required: false })
+  @IsOptional()
+  @IsNumber()
+  providerCommissionRate?: number;
+
+  @ApiProperty({ example: 79.9, required: false })
+  @IsOptional()
+  @IsNumber()
+  providerCommissionAmount?: number;
+
+  @ApiProperty({ example: 719.1, required: false })
+  @IsOptional()
+  @IsNumber()
+  providerPayout?: number;
+
+  @ApiProperty({ example: '2026-05-12', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  payoutDate?: string;
+
+  @ApiProperty({ example: 'Pending', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  payoutStatus?: string;
+
   @ApiProperty({ example: 'Pending', required: false, enum: ['Pending', 'Accepted', 'Completed', 'Cancelled'] })
   @IsOptional()
   @IsString()

@@ -78,7 +78,10 @@
                 <th>Customer</th>
                 <th>Provider</th>
                 <th>Method</th>
-                <th>Amount</th>
+                <th>Service Fee</th>
+                <th>Tax (10%)</th>
+                <th>Platform Fee (5%)</th>
+                <th>Total Paid</th>
                 <th>Date</th>
                 <th>Status</th>
               </tr>
@@ -102,9 +105,9 @@
                 <th>Provider</th>
                 <th>Booking</th>
                 <th>Customer</th>
-                <th>Gross Amount</th>
-                <th>Commission</th>
-                <th>Provider Earnings</th>
+                <th>Service Fee</th>
+                <th>Commission (10%)</th>
+                <th>Provider Payout (90%)</th>
                 <th>Payment Date</th>
                 <th>Payout Status</th>
               </tr>
@@ -127,10 +130,11 @@
                 <th>Booking ID</th>
                 <th>Customer</th>
                 <th>Provider</th>
-                <th>Gross Amount</th>
-                <th>Commission Rate</th>
-                <th>Platform Commission</th>
-                <th>Provider Earnings</th>
+                <th>Service Fee</th>
+                <th>Customer Fee (5%)</th>
+                <th>Provider Comm (10%)</th>
+                <th>Platform Revenue (15%)</th>
+                <th>Provider Payout (90%)</th>
                 <th>Status</th>
                 <th>Date</th>
               </tr>
@@ -150,11 +154,12 @@
           <table class="data-table finance-table">
             <thead>
               <tr>
-                <th>Reference</th>
-                <th>Booking</th>
+                <th>Refund ID</th>
+                <th>Booking Ref</th>
                 <th>Customer</th>
                 <th>Provider</th>
-                <th>Amount</th>
+                <th>Original Amount</th>
+                <th>Refunded Amount</th>
                 <th>Date</th>
                 <th>Status</th>
               </tr>
@@ -167,6 +172,7 @@
     </div>
   </main>
 
+  <script src="JavaScript/finance-engine.js"></script>
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/booking-workflow.js"></script>
   <script src="JavaScript/data-completion.js"></script>

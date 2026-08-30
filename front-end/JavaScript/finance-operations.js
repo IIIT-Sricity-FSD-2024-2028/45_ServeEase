@@ -70,9 +70,20 @@
   }
 
   function getFinanceConfig() {
+    const financeEngine = window.ServeEaseFinance;
+    if (financeEngine && typeof financeEngine.getConfig === "function") {
+      return financeEngine.getConfig();
+    }
     const stored = readJson(financeConfigKey, null);
-    if (stored && Number.isFinite(Number(stored.commissionRate))) return stored;
-    const config = { commissionRate: 10 };
+    if (stored && Number.isFinite(Number(stored.commissionRate))) {
+      return {
+        customerTaxRate: Number(stored.customerTaxRate) || 10,
+        customerPlatformFeeRate: Number(stored.customerPlatformFeeRate) || 5,
+        providerCommissionRate: Number(stored.providerCommissionRate || stored.commissionRate) || 10,
+        commissionRate: Number(stored.providerCommissionRate || stored.commissionRate) || 10
+      };
+    }
+    const config = { customerTaxRate: 10, customerPlatformFeeRate: 5, providerCommissionRate: 10, commissionRate: 10 };
     localStorage.setItem(financeConfigKey, JSON.stringify(config));
     return config;
   }
@@ -291,10 +302,41 @@
     return dedupeRows(rows, function (row) { return row.id + "|" + row.booking; });
   }
 
-  function reconcileFinancialPayments(payments, bookings, providerTransactions, commissionRate) {
-    if (window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.reconcileFinancialPayments === "function") {
-      return window.ServeEaseFinanceMetrics.reconcileFinancialPayments(payments, bookings, providerTransactions, commissionRate);
+  function getPaymentRowBreakdown(row) {
+    const financeEngine = window.ServeEaseFinance;
+    if (row && Number.isFinite(Number(row.serviceFee)) && Number(row.serviceFee) > 0) {
+      return financeEngine
+        ? financeEngine.calculateBreakdown(Number(row.serviceFee))
+        : {
+            serviceFee: Number(row.serviceFee),
+            taxAmount: Number(row.taxAmount) || Math.round(Number(row.serviceFee) * 10) / 100,
+            platformFeeAmount: Number(row.platformFeeAmount) || Math.round(Number(row.serviceFee) * 5) / 100,
+            customerTotal: Number(row.customerTotal || row.amount || row.gross) || Math.round(Number(row.serviceFee) * 1.15 * 100) / 100,
+            providerCommissionAmount: Math.round(Number(row.serviceFee) * 10) / 100,
+            providerPayout: Math.round(Number(row.serviceFee) * 0.90 * 100) / 100,
+            platformRevenue: Math.round(Number(row.serviceFee) * 0.15 * 100) / 100
+          };
     }
+    return financeEngine && financeEngine.normalizeFinancialRecord
+      ? financeEngine.normalizeFinancialRecord(row)
+      : {
+          serviceFee: Number(row.amount || row.gross) || 0,
+          taxAmount: Math.round((Number(row.amount || row.gross) || 0) * 10) / 100,
+          platformFeeAmount: Math.round((Number(row.amount || row.gross) || 0) * 5) / 100,
+          customerTotal: Number(row.amount || row.gross) || 0,
+          providerCommissionAmount: Math.round((Number(row.amount || row.gross) || 0) * 10) / 100,
+          providerPayout: Math.round((Number(row.amount || row.gross) || 0) * 0.90 * 100) / 100,
+          platformRevenue: Math.round((Number(row.amount || row.gross) || 0) * 0.15 * 100) / 100
+        };
+  }
+
+  function reconcileFinancialPayments(payments, bookings, providerTransactions, customRates) {
+    if (window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.reconcileFinancialPayments === "function") {
+      return window.ServeEaseFinanceMetrics.reconcileFinancialPayments(payments, bookings, providerTransactions, customRates);
+    }
+    const financeEngine = window.ServeEaseFinance;
+    const config = financeEngine ? financeEngine.getConfig() : { customerTaxRate: 10, customerPlatformFeeRate: 5, providerCommissionRate: 10 };
+
     const bookingMap = {};
     bookings.forEach(function (booking) {
       bookingMap[String(booking.id || "").toLowerCase()] = booking;
@@ -316,7 +358,33 @@
         return String(transaction.booking || "").toLowerCase() === String(payment.booking || "").toLowerCase() ||
           String(transaction.id).toLowerCase() === String(payment.id).toLowerCase();
       }) || null;
-      const commission = gross * commissionRate / 100;
+
+      const isBookingCompleted = String(booking.status || "").toLowerCase() === "completed";
+      const resolvedPayoutStatus = payout ? payout.status : (isBookingCompleted ? "Paid" : "Pending");
+
+      const rawServiceFee = Number(payment.serviceFee || (booking && booking.serviceFee));
+      let serviceFee = 0;
+      if (Number.isFinite(rawServiceFee) && rawServiceFee > 0) {
+        serviceFee = rawServiceFee;
+      } else if (gross > 90 && (gross - 90) % 10 === 9) {
+        serviceFee = gross - 90;
+      } else {
+        serviceFee = Math.round((gross / 1.15) * 100) / 100;
+        if (serviceFee <= 0) serviceFee = gross;
+      }
+
+      const breakdown = financeEngine
+        ? financeEngine.calculateBreakdown(serviceFee, config)
+        : {
+            serviceFee: serviceFee,
+            taxAmount: Math.round(serviceFee * 10) / 100,
+            platformFeeAmount: Math.round(serviceFee * 5) / 100,
+            customerTotal: Math.round(serviceFee * 1.15 * 100) / 100,
+            providerCommissionAmount: Math.round(serviceFee * 10) / 100,
+            providerPayout: Math.round(serviceFee * 0.90 * 100) / 100,
+            platformRevenue: Math.round(serviceFee * 0.15 * 100) / 100
+          };
+
       const bookingCustomer = booking && ["N/A", "Customer"].indexOf(booking.customer) === -1 ? booking.customer : "";
       const paymentCustomer = ["N/A", "Customer"].indexOf(payment.customer) === -1 ? payment.customer : "";
       const financialRow = {
@@ -324,17 +392,24 @@
         booking: payment.booking,
         customer: bookingCustomer || paymentCustomer || "Customer",
         provider: provider,
-        gross: gross,
-        commission: commission,
-        earnings: gross - commission,
+        serviceFee: breakdown.serviceFee,
+        taxAmount: breakdown.taxAmount,
+        platformFeeAmount: breakdown.platformFeeAmount,
+        customerTotal: breakdown.customerTotal,
+        gross: breakdown.customerTotal,
+        commission: breakdown.providerCommissionAmount,
+        providerCommission: breakdown.providerCommissionAmount,
+        earnings: breakdown.providerPayout,
+        providerEarnings: breakdown.providerPayout,
+        providerPayout: breakdown.providerPayout,
+        platformRevenue: breakdown.platformRevenue,
         date: payment.date,
         status: payment.status,
-        payoutStatus: payout ? payout.status : "",
-        payoutDate: payout ? payout.date : "-",
-        payoutAmount: payout ? payout.amount : 0,
+        payoutStatus: resolvedPayoutStatus,
+        payoutDate: payout ? payout.date : (isBookingCompleted ? (payment.date || "-") : "-"),
+        payoutAmount: breakdown.providerPayout,
         searchText: [payment.id, payment.booking, payment.customer, provider, payment.status].join(" ").toLowerCase()
       };
-      financialRow.payoutStatus = resolvePayoutStatus(financialRow);
       financialRow.searchText = [
         financialRow.id,
         financialRow.booking,
@@ -342,25 +417,27 @@
         financialRow.provider,
         financialRow.payoutStatus,
         financialRow.status,
-        financialRow.gross
+        financialRow.serviceFee,
+        financialRow.customerTotal,
+        financialRow.providerEarnings
       ].join(" ").toLowerCase();
       return financialRow;
     }).filter(Boolean);
   }
 
-  function renderStats(payments, financialRows, refunds, commissionRate) {
-    const grossPayments = financialRows.reduce(function (sum, row) { return sum + row.gross; }, 0);
-    const providerEarnings = financialRows.reduce(function (sum, row) { return sum + row.earnings; }, 0);
-    const platformCommission = financialRows.reduce(function (sum, row) { return sum + row.commission; }, 0);
+  function renderStats(payments, financialRows, refunds, financeConfig) {
+    const grossCustomerPayments = financialRows.reduce(function (sum, row) { return sum + (Number(row.customerTotal) || Number(row.gross) || 0); }, 0);
+    const providerEarnings = financialRows.reduce(function (sum, row) { return sum + (Number(row.providerPayout) || Number(row.earnings) || 0); }, 0);
+    const platformRevenue = financialRows.reduce(function (sum, row) { return sum + (Number(row.platformRevenue) || Number(row.commission) || 0); }, 0);
     const pendingPayout = financialRows.filter(function (row) { return String(row.payoutStatus).toLowerCase() === "pending"; }).reduce(function (sum, row) {
-      const payout = Number(row.payoutAmount);
+      const payout = Number(row.payoutAmount != null ? row.payoutAmount : row.providerPayout);
       return sum + (Number.isFinite(payout) ? payout : 0);
     }, 0);
 
     byId("financeStatsGrid").innerHTML = [
-      statCard("green", "₹", formatCurrency(grossPayments), "Gross Payment Volume"),
+      statCard("green", "₹", formatCurrency(grossCustomerPayments), "Gross Customer Payments"),
       statCard("blue", "↗", formatPreciseCurrency(providerEarnings), "Provider Earnings"),
-      statCard("purple", "◆", formatPreciseCurrency(platformCommission), "Platform Commission"),
+      statCard("purple", "◆", formatPreciseCurrency(platformRevenue), "Platform Revenue (15%)"),
       statCard("orange", "◔", formatCurrency(pendingPayout), "Pending Payouts"),
       statCard("blue", "↺", String(refunds.length), "Refund Records")
     ].join("");
@@ -368,7 +445,7 @@
     byId("financeSummaryGrid").innerHTML = [
       summaryItem("Customer Payment Transactions", payments.length),
       summaryItem("Provider Earnings", financialRows.length),
-      summaryItem("Commission Rate", commissionRate + "%"),
+      summaryItem("Dual-Commission Model", "5% Customer Fee + 10% Provider Comm"),
       summaryItem("Financial Source", "Payment + Booking records"),
       summaryItem("Last updated", new Date().toLocaleString("en-IN"))
     ].join("");
@@ -382,10 +459,17 @@
     return '<div class="finance-summary-item"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
   }
 
-  function renderCommission(commissionRate) {
+  function renderCommission(financeConfig) {
+    const config = typeof financeConfig === "object" ? financeConfig : { providerCommissionRate: Number(financeConfig) || 10, customerPlatformFeeRate: 5, customerTaxRate: 10 };
+    const totalPlatformRate = (Number(config.customerPlatformFeeRate) || 5) + (Number(config.providerCommissionRate) || 10);
     byId("financeCommissionPanel").innerHTML = [
-      '<div class="finance-commission-value">' + escapeHtml(commissionRate + "%") + '</div>',
-      '<p class="finance-commission-note">Platform commission is calculated from each eligible successful customer payment.</p>'
+      '<div class="finance-commission-value">' + escapeHtml(totalPlatformRate + "%") + '</div>',
+      '<div style="font-size:0.875rem; color:var(--text-secondary, #64748b); margin-top:0.5rem; line-height:1.5;">' +
+      '  <div><strong>Customer Fee:</strong> ' + escapeHtml(config.customerPlatformFeeRate || 5) + '%</div>' +
+      '  <div><strong>Provider Commission:</strong> ' + escapeHtml(config.providerCommissionRate || 10) + '%</div>' +
+      '  <div><strong>Customer Tax (GST):</strong> ' + escapeHtml(config.customerTaxRate || 10) + '% (Excluded from revenue)</div>' +
+      '</div>',
+      '<p class="finance-commission-note" style="margin-top:0.75rem;">Total platform revenue is 15% of service fee (5% customer platform fee + 10% provider commission). Payouts to providers are 90% of service fee.</p>'
     ].join("");
   }
 
@@ -400,19 +484,22 @@
   }
 
   function paymentRow(row) {
-    return '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(row.method) + '</td><td>' + escapeHtml(formatCurrency(row.amount)) + '</td><td>' + escapeHtml(row.date) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td></tr>';
+    const b = getPaymentRowBreakdown(row);
+    return '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(row.method) + '</td><td>' + escapeHtml(formatCurrency(b.serviceFee)) + '</td><td>' + escapeHtml(formatPreciseCurrency(b.taxAmount)) + '</td><td>' + escapeHtml(formatPreciseCurrency(b.platformFeeAmount)) + '</td><td><strong>' + escapeHtml(formatCurrency(b.customerTotal)) + '</strong></td><td>' + escapeHtml(row.date) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td></tr>';
   }
 
   function earningRow(row) {
-    return '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(formatCurrency(row.gross)) + '</td><td>' + escapeHtml(formatPreciseCurrency(row.commission)) + '</td><td>' + escapeHtml(formatPreciseCurrency(row.earnings)) + '</td><td>' + escapeHtml(row.date) + '</td><td>' + escapeHtml(row.payoutStatus || "—") + '</td></tr>';
+    const b = getPaymentRowBreakdown(row);
+    return '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(formatCurrency(b.serviceFee)) + '</td><td>' + escapeHtml(formatPreciseCurrency(b.providerCommissionAmount)) + '</td><td><strong>' + escapeHtml(formatPreciseCurrency(b.providerPayout)) + '</strong></td><td>' + escapeHtml(row.payoutDate || row.date) + '</td><td><span class="status-pill ' + statusClass(row.payoutStatus) + '">' + escapeHtml(row.payoutStatus || "—") + '</span></td></tr>';
   }
 
-  function commissionRow(row, commissionRate) {
-    return '<tr><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(formatCurrency(row.gross)) + '</td><td>' + escapeHtml(commissionRate + "%") + '</td><td>' + escapeHtml(formatPreciseCurrency(row.commission)) + '</td><td>' + escapeHtml(formatPreciseCurrency(row.earnings)) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td><td>' + escapeHtml(row.date) + '</td></tr>';
+  function commissionRow(row) {
+    const b = getPaymentRowBreakdown(row);
+    return '<tr><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(formatCurrency(b.serviceFee)) + '</td><td>' + escapeHtml(formatPreciseCurrency(b.platformFeeAmount)) + '</td><td>' + escapeHtml(formatPreciseCurrency(b.providerCommissionAmount)) + '</td><td><strong>' + escapeHtml(formatPreciseCurrency(b.platformRevenue)) + '</strong></td><td>' + escapeHtml(formatPreciseCurrency(b.providerPayout)) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td><td>' + escapeHtml(row.date) + '</td></tr>';
   }
 
   function refundRow(row) {
-    return '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(formatCurrency(row.amount)) + '</td><td>' + escapeHtml(row.date) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td></tr>';
+    return '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(formatCurrency(row.amount)) + '</td><td>' + escapeHtml(formatCurrency(row.amount)) + '</td><td>' + escapeHtml(row.date) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td></tr>';
   }
 
   function render() {
@@ -420,8 +507,7 @@
     const bookings = collectBookings();
     const providerTransactions = collectProviderTransactions();
     const financeConfig = getFinanceConfig();
-    const commissionRate = Number(financeConfig.commissionRate);
-    const financialRows = reconcileFinancialPayments(payments, bookings, providerTransactions, commissionRate);
+    const financialRows = reconcileFinancialPayments(payments, bookings, providerTransactions, financeConfig);
     const refunds = collectRefunds(payments, bookings);
     const ledgerRows = financialRows;
     const allRows = payments.concat(financialRows, refunds);
@@ -432,14 +518,14 @@
     const refundTerm = String(byId("financeRefundSearch") && byId("financeRefundSearch").value || "").trim().toLowerCase();
     const status = byId("financeStatusFilter") ? byId("financeStatusFilter").value : "all";
 
-    renderStats(payments, financialRows, refunds, commissionRate);
-    renderCommission(commissionRate);
+    renderStats(payments, financialRows, refunds, financeConfig);
+    renderCommission(financeConfig);
     populateStatusFilter(allRows);
 
     const activeStatus = byId("financeStatusFilter") ? byId("financeStatusFilter").value : status;
     renderTable(payments.filter(function (row) { return rowMatches(row, term, activeStatus, paymentTerm); }), "financePaymentRows", "financePaymentsEmpty", "financePaymentCount", paymentRow);
     renderTable(financialRows.filter(function (row) { return rowMatches(row, term, activeStatus, earningsTerm); }), "financeEarningRows", "financeEarningsEmpty", "financeEarningsCount", earningRow);
-    renderTable(ledgerRows.filter(function (row) { return rowMatches(row, term, activeStatus, commissionTerm); }), "financeCommissionRows", "financeCommissionEmpty", "financeCommissionCount", function (row) { return commissionRow(row, commissionRate); });
+    renderTable(ledgerRows.filter(function (row) { return rowMatches(row, term, activeStatus, commissionTerm); }), "financeCommissionRows", "financeCommissionEmpty", "financeCommissionCount", commissionRow);
     renderTable(refunds.filter(function (row) { return rowMatches(row, term, activeStatus, refundTerm); }), "financeRefundRows", "financeRefundsEmpty", "financeRefundCount", refundRow);
   }
 

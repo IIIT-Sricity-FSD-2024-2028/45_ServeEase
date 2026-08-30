@@ -144,9 +144,26 @@
     return relevantDate.getTime() <= today.getTime() ? "Paid" : "Pending";
   }
 
-  function reconcileFinancialPayments(payments, bookings, providerTransactions, commissionRate) {
+  function roundMoney(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? Math.round((num + Number.EPSILON) * 100) / 100 : 0;
+  }
+
+  function reconcileFinancialPayments(payments, bookings, providerTransactions, customRates) {
+    const financeEngine = window.ServeEaseFinance;
+    const config = financeEngine ? financeEngine.getConfig() : { customerTaxRate: 10, customerPlatformFeeRate: 5, providerCommissionRate: 10 };
+    if (customRates && typeof customRates === "object") {
+      if (Number.isFinite(Number(customRates.providerCommissionRate))) config.providerCommissionRate = Number(customRates.providerCommissionRate);
+      if (Number.isFinite(Number(customRates.commissionRate))) config.providerCommissionRate = Number(customRates.commissionRate);
+      if (Number.isFinite(Number(customRates.customerTaxRate))) config.customerTaxRate = Number(customRates.customerTaxRate);
+      if (Number.isFinite(Number(customRates.customerPlatformFeeRate))) config.customerPlatformFeeRate = Number(customRates.customerPlatformFeeRate);
+    } else if (Number.isFinite(Number(customRates))) {
+      config.providerCommissionRate = Number(customRates);
+    }
+
     const bookingMap = {};
     bookings.forEach(function (booking) { bookingMap[String(booking.id || "").toLowerCase()] = booking; });
+
     return payments.filter(function (payment) {
       const status = String(payment.status || "").toLowerCase();
       return ["successful", "success", "paid"].includes(status) && status !== "refunded";
@@ -157,34 +174,96 @@
       const providerId = booking && booking.providerId !== "N/A" ? booking.providerId : "";
       const provider = bookingProviderName || paymentProviderName || providerId;
       const providerIdentity = providerId || normalizeProviderName(bookingProviderName) || normalizeProviderName(paymentProviderName);
-      const gross = Number(payment.amount);
-      if (!booking || !providerIdentity || !Number.isFinite(gross) || gross < 0) return null;
+
+      const rawPaymentAmount = Number(payment.amount);
+      if (!booking || !providerIdentity || !Number.isFinite(rawPaymentAmount) || rawPaymentAmount < 0) return null;
+
+      // Determine Base Service Fee (S)
+      let serviceFee = 0;
+      if (payment.serviceFee && Number(payment.serviceFee) > 0) {
+        serviceFee = Number(payment.serviceFee);
+      } else if (booking.serviceFee && Number(booking.serviceFee) > 0) {
+        serviceFee = Number(booking.serviceFee);
+      } else if (rawPaymentAmount > 90 && (rawPaymentAmount - 90) % 10 === 9) {
+        // Old legacy fixed ₹50 + ₹40 = ₹90 format
+        serviceFee = rawPaymentAmount - 90;
+      } else {
+        serviceFee = roundMoney(rawPaymentAmount / (1 + (config.customerTaxRate + config.customerPlatformFeeRate) / 100));
+        if (serviceFee <= 0) serviceFee = rawPaymentAmount;
+      }
+
+      const breakdown = financeEngine
+        ? financeEngine.calculateBreakdown(serviceFee, config)
+        : {
+            serviceFee: serviceFee,
+            taxAmount: roundMoney(serviceFee * (config.customerTaxRate / 100)),
+            platformFeeAmount: roundMoney(serviceFee * (config.customerPlatformFeeRate / 100)),
+            customerTotal: roundMoney(serviceFee + roundMoney(serviceFee * (config.customerTaxRate / 100)) + roundMoney(serviceFee * (config.customerPlatformFeeRate / 100))),
+            providerCommissionAmount: roundMoney(serviceFee * (config.providerCommissionRate / 100)),
+            providerPayout: roundMoney(serviceFee - roundMoney(serviceFee * (config.providerCommissionRate / 100))),
+            platformRevenue: roundMoney(roundMoney(serviceFee * (config.customerPlatformFeeRate / 100)) + roundMoney(serviceFee * (config.providerCommissionRate / 100)))
+          };
+
       const payout = providerTransactions.find(function (transaction) {
         return String(transaction.booking || "").toLowerCase() === String(payment.booking || "").toLowerCase() || String(transaction.id).toLowerCase() === String(payment.id).toLowerCase();
       }) || null;
+
+      const isBookingCompleted = String(booking.status || "").toLowerCase() === "completed";
+      const resolvedPayoutStatus = payout
+        ? (payout.status || resolvePayoutStatus(payout))
+        : (isBookingCompleted ? "Paid" : "Pending");
+
       const row = {
-        id: payment.id, booking: payment.booking,
+        id: payment.id,
+        booking: payment.booking,
         customer: booking && ["N/A", "Customer"].indexOf(booking.customer) === -1 ? booking.customer : (["N/A", "Customer"].indexOf(payment.customer) === -1 ? payment.customer : "Customer"),
-        gross: gross, commission: gross * Number(commissionRate) / 100, earnings: gross - (gross * Number(commissionRate) / 100),
-        provider: provider, date: payment.date, status: payment.status, payoutStatus: payout ? payout.status : "", payoutDate: payout ? payout.date : "-", payoutAmount: payout ? payout.amount : 0
+        provider: provider,
+        serviceFee: breakdown.serviceFee,
+        taxAmount: breakdown.taxAmount,
+        platformFeeAmount: breakdown.platformFeeAmount,
+        customerTotal: breakdown.customerTotal,
+        gross: breakdown.customerTotal,
+        commission: breakdown.providerCommissionAmount,
+        providerCommission: breakdown.providerCommissionAmount,
+        earnings: breakdown.providerPayout,
+        providerEarnings: breakdown.providerPayout,
+        providerPayout: breakdown.providerPayout,
+        platformFee: breakdown.platformFeeAmount,
+        platformRevenue: breakdown.platformRevenue,
+        date: payment.date,
+        status: payment.status,
+        payoutStatus: resolvedPayoutStatus,
+        payoutDate: payout ? payout.date : (isBookingCompleted ? (payment.date || "-") : "-"),
+        payoutAmount: breakdown.providerPayout
       };
-      row.payoutStatus = resolvePayoutStatus(row);
-      row.searchText = [row.id, row.booking, row.customer, row.provider, row.payoutStatus, row.status, row.gross].join(" ").toLowerCase();
+
+      row.searchText = [
+        row.id,
+        row.booking,
+        row.customer,
+        row.provider,
+        row.payoutStatus,
+        row.status,
+        row.serviceFee,
+        row.customerTotal,
+        row.providerEarnings
+      ].join(" ").toLowerCase();
+
       return row;
     }).filter(Boolean);
   }
 
+  function calculatePlatformRevenue(customRates) {
+    return reconcileFinancialPayments(collectPayments(), collectBookings(), collectProviderTransactions(), customRates)
+      .reduce(function (sum, row) { return roundMoney(sum + row.platformRevenue); }, 0);
+  }
+
   function calculatePlatformCommission(commissionRate) {
-    const stored = readJson("serveEaseFinanceConfig", null);
-    const rate = Number.isFinite(Number(commissionRate)) ? Number(commissionRate) : (stored && Number.isFinite(Number(stored.commissionRate)) ? Number(stored.commissionRate) : 10);
-    return reconcileFinancialPayments(collectPayments(), collectBookings(), collectProviderTransactions(), rate)
-      .reduce(function (sum, row) { return sum + row.commission; }, 0);
+    return calculatePlatformRevenue(commissionRate);
   }
 
   function getProviderEarningsRows(commissionRate) {
-    const stored = readJson("serveEaseFinanceConfig", null);
-    const rate = Number.isFinite(Number(commissionRate)) ? Number(commissionRate) : (stored && Number.isFinite(Number(stored.commissionRate)) ? Number(stored.commissionRate) : 10);
-    return reconcileFinancialPayments(collectPayments(), collectBookings(), collectProviderTransactions(), rate);
+    return reconcileFinancialPayments(collectPayments(), collectBookings(), collectProviderTransactions(), commissionRate);
   }
 
   window.ServeEaseFinanceMetrics = {
@@ -192,6 +271,7 @@
     collectBookings: collectBookings,
     collectProviderTransactions: collectProviderTransactions,
     reconcileFinancialPayments: reconcileFinancialPayments,
+    calculatePlatformRevenue: calculatePlatformRevenue,
     calculatePlatformCommission: calculatePlatformCommission,
     getProviderEarningsRows: getProviderEarningsRows
   };

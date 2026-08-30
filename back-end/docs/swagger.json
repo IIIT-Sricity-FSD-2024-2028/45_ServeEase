@@ -3184,6 +3184,50 @@
             "type": "number",
             "example": 889
           },
+          "serviceFee": {
+            "type": "number",
+            "example": 799
+          },
+          "taxRate": {
+            "type": "number",
+            "example": 10
+          },
+          "taxAmount": {
+            "type": "number",
+            "example": 79.9
+          },
+          "platformFeeRate": {
+            "type": "number",
+            "example": 5
+          },
+          "platformFeeAmount": {
+            "type": "number",
+            "example": 39.95
+          },
+          "customerTotal": {
+            "type": "number",
+            "example": 918.85
+          },
+          "providerCommissionRate": {
+            "type": "number",
+            "example": 10
+          },
+          "providerCommissionAmount": {
+            "type": "number",
+            "example": 79.9
+          },
+          "providerPayout": {
+            "type": "number",
+            "example": 719.1
+          },
+          "payoutDate": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
+          "payoutStatus": {
+            "type": "string",
+            "example": "Pending"
+          },
           "customerName": {
             "type": "string",
             "example": "Raghava Kumar"
@@ -3252,6 +3296,50 @@
           "amount": {
             "type": "number",
             "example": 889
+          },
+          "serviceFee": {
+            "type": "number",
+            "example": 799
+          },
+          "taxRate": {
+            "type": "number",
+            "example": 10
+          },
+          "taxAmount": {
+            "type": "number",
+            "example": 79.9
+          },
+          "platformFeeRate": {
+            "type": "number",
+            "example": 5
+          },
+          "platformFeeAmount": {
+            "type": "number",
+            "example": 39.95
+          },
+          "customerTotal": {
+            "type": "number",
+            "example": 918.85
+          },
+          "providerCommissionRate": {
+            "type": "number",
+            "example": 10
+          },
+          "providerCommissionAmount": {
+            "type": "number",
+            "example": 79.9
+          },
+          "providerPayout": {
+            "type": "number",
+            "example": 719.1
+          },
+          "payoutDate": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
+          "payoutStatus": {
+            "type": "string",
+            "example": "Pending"
           },
           "status": {
             "type": "string",
@@ -3331,6 +3419,50 @@
           "amount": {
             "type": "number",
             "example": 889
+          },
+          "serviceFee": {
+            "type": "number",
+            "example": 799
+          },
+          "taxRate": {
+            "type": "number",
+            "example": 10
+          },
+          "taxAmount": {
+            "type": "number",
+            "example": 79.9
+          },
+          "platformFeeRate": {
+            "type": "number",
+            "example": 5
+          },
+          "platformFeeAmount": {
+            "type": "number",
+            "example": 39.95
+          },
+          "customerTotal": {
+            "type": "number",
+            "example": 918.85
+          },
+          "providerCommissionRate": {
+            "type": "number",
+            "example": 10
+          },
+          "providerCommissionAmount": {
+            "type": "number",
+            "example": 79.9
+          },
+          "providerPayout": {
+            "type": "number",
+            "example": 719.1
+          },
+          "payoutDate": {
+            "type": "string",
+            "example": "2026-05-12"
+          },
+          "payoutStatus": {
+            "type": "string",
+            "example": "Pending"
           },
           "status": {
             "type": "string",
@@ -3747,6 +3879,19 @@
           "ownerProviderEmail": {
             "type": "string",
             "example": "fresh@example.com"
+          },
+          "servicePricing": {
+            "type": "object",
+            "example": {
+              "Kitchen Cleaning": 799,
+              "Bathroom Cleaning": 599
+            }
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -3950,6 +4095,19 @@
           "ownerProviderEmail": {
             "type": "string",
             "example": "fresh@example.com"
+          },
+          "servicePricing": {
+            "type": "object",
+            "example": {
+              "Kitchen Cleaning": 799,
+              "Bathroom Cleaning": 599
+            }
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -4113,6 +4271,19 @@
           "ownerProviderEmail": {
             "type": "string",
             "example": "fresh@example.com"
+          },
+          "servicePricing": {
+            "type": "object",
+            "example": {
+              "Kitchen Cleaning": 799,
+              "Bathroom Cleaning": 599
+            }
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

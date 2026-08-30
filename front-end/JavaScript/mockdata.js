@@ -114,7 +114,29 @@
   // cityId mapping: 1=Chennai, 2=Bangalore, 3=Hyderabad, 4=Delhi, 5=Mumbai
   const updatedProviders = [
     // ── Chennai (cityId: 1) ──────────────────────────────────────────────────
-    { id: "cleanpro-service", name: "Cleanpro Services", category: "home-cleaning", subServices: ["Kitchen Cleaning", "Bathroom Cleaning", "Floor Cleaning Service"], years: 8, rating: 4.9, reviews: 487, distance: "2.1 km", startingPrice: 599, location: "Chennai, Tamil Nadu", jobsDone: 1217, availableToday: true, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean1.jpg" },
+    {
+      id: "cleanpro-service",
+      name: "Cleanpro Services",
+      category: "home-cleaning",
+      subServices: ["Kitchen Cleaning", "Bathroom Cleaning", "Floor Cleaning Service"],
+      servicePricing: { "Kitchen Cleaning": 799, "Bathroom Cleaning": 599, "Floor Cleaning Service": 699 },
+      services: [
+        { id: "SVC001", name: "Kitchen Cleaning", price: 799, category: "Cleaning Services", description: "Professional kitchen deep cleaning service", duration: "2 hours", status: "Active" },
+        { id: "SVC002", name: "Bathroom Cleaning", price: 599, category: "Cleaning Services", description: "Complete bathroom cleaning and sanitization", duration: "1.5 hours", status: "Active" },
+        { id: "SVC003", name: "Floor Cleaning Service", price: 699, category: "Cleaning Services", description: "Home floor and tile deep cleaning", duration: "2 hours", status: "Active" }
+      ],
+      years: 8,
+      rating: 4.9,
+      reviews: 487,
+      distance: "2.1 km",
+      startingPrice: 599,
+      location: "Chennai, Tamil Nadu",
+      jobsDone: 1217,
+      availableToday: true,
+      verified: true,
+      cityId: 1,
+      image: "assets/images/home-cleaning/clean1.jpg"
+    },
     { id: "fresh-space-cleaning", name: "Fresh Space Cleaning", category: "home-cleaning", subServices: ["Kitchen Cleaning"], years: 6, rating: 4.8, reviews: 392, distance: "3.0 km", startingPrice: 699, location: "Chennai, Tamil Nadu", jobsDone: 932, availableToday: true, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean2.jpg" },
     { id: "urban-shine-cleaner", name: "Urban Shine Cleaner", category: "home-cleaning", subServices: ["Bathroom Cleaning"], years: 5, rating: 4.7, reviews: 301, distance: "1.9 km", startingPrice: 499, location: "Chennai, Tamil Nadu", jobsDone: 743, availableToday: false, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean3.jpg" },
     { id: "sparkle-home-care", name: "Sparkle Home Care", category: "home-cleaning", subServices: ["Full Home Cleaning", "Bathroom Cleaning"], years: 7, rating: 4.8, reviews: 418, distance: "2.6 km", startingPrice: 899, location: "Chennai, Tamil Nadu", jobsDone: 1083, availableToday: true, verified: true, cityId: 1, image: "assets/images/home-cleaning/clean4.jpg" },
@@ -362,6 +384,76 @@
     return Object.keys(byKey).map(function (key) { return byKey[key]; });
   }
 
+  function getDefaultPriceForSubService(serviceName, category, fallbackPrice) {
+    const name = String(serviceName || "").trim().toLowerCase();
+
+    if (name.indexOf("full home") !== -1) return 899;
+    if (name.indexOf("kitchen") !== -1) return 799;
+    if (name.indexOf("bathroom") !== -1) return 599;
+    if (name.indexOf("floor") !== -1) return 699;
+
+    if (name.indexOf("haircut") !== -1 || name.indexOf("styling") !== -1) return 399;
+    if (name.indexOf("facial") !== -1 || name.indexOf("cleanup") !== -1) return 599;
+    if (name.indexOf("manicure") !== -1 || name.indexOf("pedicure") !== -1) return 499;
+
+    if (name === "ac" || name.indexOf("ac ") !== -1 || name.indexOf("ac repair") !== -1) return 799;
+    if (name.indexOf("washing machine") !== -1) return 599;
+    if (name.indexOf("refrigerator") !== -1) return 599;
+    if (name.indexOf("chimney") !== -1) return 699;
+    if (name.indexOf("laptop") !== -1 || name.indexOf("desktop") !== -1) return 649;
+    if (name.indexOf("geyser") !== -1) return 499;
+    if (name.indexOf("tv") !== -1) return 499;
+
+    if (name.indexOf("termite") !== -1) return 1199;
+    if (name.indexOf("cockroach") !== -1) return 799;
+    if (name.indexOf("general pest") !== -1 || name.indexOf("pest") !== -1) return 899;
+
+    if (name.indexOf("door") !== -1) return 499;
+    if (name.indexOf("furniture") !== -1) return 449;
+
+    if (name.indexOf("painting") !== -1) return 1299;
+    if (name.indexOf("plumbing") !== -1) return 399;
+    if (name.indexOf("electrician") !== -1) return 349;
+
+    const numFallback = Number(fallbackPrice);
+    return Number.isFinite(numFallback) && numFallback > 0 ? numFallback : 499;
+  }
+
+  // Ensure every provider in updatedProviders has complete services array and servicePricing map
+  updatedProviders.forEach(function (provider) {
+    if (!provider) return;
+    if (!provider.servicePricing) provider.servicePricing = {};
+    if (!Array.isArray(provider.services)) provider.services = [];
+
+    const subs = Array.isArray(provider.subServices) && provider.subServices.length ? provider.subServices : [provider.name];
+    subs.forEach(function (subName, idx) {
+      if (typeof provider.servicePricing[subName] !== "number") {
+        if (subs.length === 1 && typeof provider.startingPrice === "number") {
+          provider.servicePricing[subName] = Number(provider.startingPrice);
+        } else {
+          provider.servicePricing[subName] = getDefaultPriceForSubService(subName, provider.category, provider.startingPrice);
+        }
+      }
+      const existingService = provider.services.find(function (s) { return s && s.name === subName; });
+      if (!existingService) {
+        provider.services.push({
+          id: "SVC" + String(idx + 1).padStart(3, "0"),
+          name: subName,
+          price: provider.servicePricing[subName],
+          category: provider.category,
+          description: subName + " offered by " + provider.name,
+          duration: "2 hours",
+          status: "Active"
+        });
+      }
+    });
+
+    const prices = Object.values(provider.servicePricing);
+    if (prices.length) {
+      provider.startingPrice = Math.min(...prices);
+    }
+  });
+
   function cleanupRemovedProviderStorage() {
     if (Array.isArray(existingData.users)) {
       existingData.users = existingData.users.filter(function (user) {
@@ -429,6 +521,8 @@
               name: isCleanproProviderRecord(data.profile) ? "Cleanpro Services" : data.profile.organisationName || data.profile.fullName,
               category: normalizedCategoryId,
               subServices: [],
+              services: [],
+              servicePricing: {},
               years: Number(String(data.profile.experience || "").match(/\d+/)?.[0]) || 1,
               rating: data.profile.rating || 4.5,
               reviews: 0,
@@ -448,6 +542,18 @@
           if (grouped[id].subServices.indexOf(service.name) === -1) {
             grouped[id].subServices.push(service.name);
           }
+          if (!grouped[id].services) grouped[id].services = [];
+          grouped[id].services.push({
+            id: service.id,
+            name: service.name,
+            category: service.category,
+            description: service.description,
+            price: Number(service.price),
+            duration: service.duration,
+            status: service.status
+          });
+          if (!grouped[id].servicePricing) grouped[id].servicePricing = {};
+          grouped[id].servicePricing[service.name] = Number(service.price);
           grouped[id].startingPrice = Math.min(grouped[id].startingPrice, Number(service.price) || 499);
         });
 

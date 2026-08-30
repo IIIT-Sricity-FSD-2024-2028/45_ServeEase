@@ -1288,14 +1288,16 @@
     const customers = dashboardCustomers();
     const providers = dashboardProviders();
     const pending = dashboardPendingProviders();
-    const revenue = window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.calculatePlatformCommission === "function"
-      ? window.ServeEaseFinanceMetrics.calculatePlatformCommission() : null;
+    const revenue = window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.calculatePlatformRevenue === "function"
+      ? window.ServeEaseFinanceMetrics.calculatePlatformRevenue()
+      : (window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.calculatePlatformCommission === "function"
+        ? window.ServeEaseFinanceMetrics.calculatePlatformCommission() : null);
     const revenueValue = revenue == null ? "Unavailable" : "₹" + revenue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     statsGrid.innerHTML = [
       buildStatCard("", customers.length.toLocaleString(), "Registered Customers", "Users"),
       buildStatCard("", providers.length.toLocaleString(), "Service Providers", "Pros"),
       buildStatCard("", bookings.length.toLocaleString(), "Total Bookings", "Jobs"),
-      buildStatCard("", revenueValue, "Platform Commission", "INR"),
+      buildStatCard("", revenueValue, "Platform Revenue (15%)", "INR"),
       buildStatCard("", pending.length.toLocaleString(), "Pending Verifications", "Docs", "warning")
     ].join("");
     renderResponseMetric();
@@ -2146,7 +2148,9 @@
   function canonicalBookings() {
     const rows = [];
     const superuserData = getData() || {};
-    function normalizedStatus(value) {
+    const autoCancelReason = "Automatically cancelled because the provider did not confirm the booking before the scheduled service date.";
+    function normalizedStatus(value, reason) {
+      if (reason === autoCancelReason) return 'Requested';
       const raw = String(value || 'Requested').trim();
       const key = raw.toLowerCase();
       if (['pending', 'requested'].indexOf(key) !== -1) return 'Requested';
@@ -2159,9 +2163,10 @@
       if (!record) return;
       const id = String(record.id || record.bookingId || record.bookingRef || record.bookingReference || '').trim();
       if (!id) return;
+      const reason = record.reason || record.cancelReason || record.cancellationReason;
       rows.push({
         id: id,
-        status: normalizedStatus(record.status || record.bookingStatus),
+        status: normalizedStatus(record.status || record.bookingStatus, reason),
         customer: record.customer || record.customerName || (owner && owner.customer) || 'Customer',
         email: record.email || record.customerEmail || (owner && owner.email) || 'N/A',
         provider: record.provider || record.providerName || (owner && owner.provider) || 'ServeEase Provider',
@@ -2171,7 +2176,7 @@
         serviceTime: record.serviceTime || record.time || 'N/A',
         paymentStatus: record.paymentStatus || record.payment || record.paymentState || 'Pending',
         amount: Number(record.amount) || 0,
-        reason: record.reason || record.cancelReason || 'N/A'
+        reason: (reason === autoCancelReason ? 'N/A' : (reason || 'N/A'))
       });
     }
     (Array.isArray(superuserData.bookings) ? superuserData.bookings : []).forEach(function (booking) { add(booking); });
@@ -2188,8 +2193,18 @@
     });
     const merged = {};
     rows.forEach(function (row) {
-      if (!merged[row.id]) merged[row.id] = row;
-      else Object.keys(row).forEach(function (key) { if (merged[row.id][key] === 'N/A' || merged[row.id][key] === 'Customer' || merged[row.id][key] === 'ServeEase Provider') merged[row.id][key] = row[key]; });
+      if (!merged[row.id]) {
+        merged[row.id] = row;
+      } else {
+        if (merged[row.id].status === 'Requested' && row.status !== 'Requested') {
+          merged[row.id].status = row.status;
+        }
+        Object.keys(row).forEach(function (key) {
+          if (merged[row.id][key] === 'N/A' || merged[row.id][key] === 'Customer' || merged[row.id][key] === 'ServeEase Provider') {
+            merged[row.id][key] = row[key];
+          }
+        });
+      }
     });
     return Object.keys(merged).map(function (id) { return merged[id]; });
   }

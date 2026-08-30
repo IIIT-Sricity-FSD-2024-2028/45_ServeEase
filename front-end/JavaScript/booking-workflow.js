@@ -58,12 +58,13 @@
 
   function autoCancel(bookings, now) {
     let changed = false;
-    const current = now instanceof Date ? now : new Date();
     (Array.isArray(bookings) ? bookings : []).forEach(function (booking) {
-      const status = String(booking && (booking.status || booking.category) || "Pending").toLowerCase();
-      const serviceDate = parseServiceDate(booking && (booking.date || booking.serviceDate));
-      if (status === "pending" && serviceDate && current.getTime() >= serviceDate.getTime()) {
-        booking.status = "Cancelled"; booking.category = "Cancelled"; booking.cancellationReason = AUTO_CANCEL_REASON; changed = true;
+      if (!booking) return;
+      if (booking.cancellationReason === AUTO_CANCEL_REASON) {
+        booking.status = "Pending";
+        booking.category = "Pending";
+        delete booking.cancellationReason;
+        changed = true;
       }
     });
     return changed;

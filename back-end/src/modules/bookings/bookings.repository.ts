@@ -103,15 +103,13 @@ export class BookingsRepository {
   }
 
   private autoCancelExpiredPending(): void {
-    const now = new Date();
     this.bookings.forEach((booking) => {
-      if (booking.status !== 'Pending') return;
-      const serviceDate = this.parseServiceDate(booking.date);
-      if (!serviceDate || now.getTime() < serviceDate.getTime()) return;
-      booking.status = 'Cancelled';
-      booking.category = 'Cancelled';
-      booking.paymentStatus = 'Refunded';
-      booking.cancellationReason = 'Automatically cancelled because the provider did not confirm the booking before the scheduled service date.';
+      if (booking.cancellationReason === 'Automatically cancelled because the provider did not confirm the booking before the scheduled service date.') {
+        booking.status = 'Pending';
+        booking.category = 'Pending';
+        booking.paymentStatus = 'Pending';
+        delete (booking as any).cancellationReason;
+      }
     });
   }
 

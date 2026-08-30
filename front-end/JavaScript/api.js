@@ -248,7 +248,9 @@
           image: catalogImage,
           availabilitySlots: provider.availabilitySlots,
           ownerProviderId: provider.ownerProviderId,
-          ownerProviderEmail: provider.ownerProviderEmail
+          ownerProviderEmail: provider.ownerProviderEmail,
+          servicePricing: provider.servicePricing,
+          services: provider.services
         };
       });
 

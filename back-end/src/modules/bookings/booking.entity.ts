@@ -43,6 +43,39 @@ export class Booking {
   @ApiProperty({ example: 889 })
   amount: number;
 
+  @ApiProperty({ example: 799, required: false })
+  serviceFee?: number;
+
+  @ApiProperty({ example: 10, required: false })
+  taxRate?: number;
+
+  @ApiProperty({ example: 79.9, required: false })
+  taxAmount?: number;
+
+  @ApiProperty({ example: 5, required: false })
+  platformFeeRate?: number;
+
+  @ApiProperty({ example: 39.95, required: false })
+  platformFeeAmount?: number;
+
+  @ApiProperty({ example: 918.85, required: false })
+  customerTotal?: number;
+
+  @ApiProperty({ example: 10, required: false })
+  providerCommissionRate?: number;
+
+  @ApiProperty({ example: 79.9, required: false })
+  providerCommissionAmount?: number;
+
+  @ApiProperty({ example: 719.1, required: false })
+  providerPayout?: number;
+
+  @ApiProperty({ example: '2026-05-12', required: false })
+  payoutDate?: string;
+
+  @ApiProperty({ example: 'Pending', required: false })
+  payoutStatus?: string;
+
   @ApiProperty({ example: 'Raghava Kumar' })
   customerName: string;
 

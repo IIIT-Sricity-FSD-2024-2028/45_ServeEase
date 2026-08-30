@@ -603,13 +603,42 @@
       return;
     }
 
+    const rawServiceFee = Number(booking.serviceFee);
+    const rawTotal = Number(booking.customerTotal || booking.amount) || 0;
+    const serviceFee = Number.isFinite(rawServiceFee) && rawServiceFee > 0
+      ? rawServiceFee
+      : (rawTotal > 90 && (rawTotal - 90) % 10 === 9 ? rawTotal - 90 : Math.round((rawTotal / 1.15) * 100) / 100);
+    const financeEngine = window.ServeEaseFinance;
+    const breakdown = financeEngine
+      ? financeEngine.calculateBreakdown(serviceFee)
+      : {
+          serviceFee: serviceFee,
+          taxRate: 10,
+          taxAmount: Math.round(serviceFee * 10) / 100,
+          platformFeeRate: 5,
+          platformFeeAmount: Math.round(serviceFee * 5) / 100,
+          customerTotal: Math.round(serviceFee * 1.15 * 100) / 100,
+          providerCommissionRate: 10,
+          providerCommissionAmount: Math.round(serviceFee * 10) / 100,
+          providerPayout: Math.round(serviceFee * 0.90 * 100) / 100
+        };
+
     data.payments.unshift({
       id: "TXN-" + String(booking.id).replace(/[^a-z0-9]/gi, "").slice(-10).toUpperCase(),
       bookingRef: booking.id,
       service: booking.service || "Service booking",
       provider: booking.provider || "ServeEase Provider",
       method: booking.paymentMethod || "Payment method unavailable",
-      amount: Number(booking.amount) || 0,
+      serviceFee: breakdown.serviceFee,
+      taxRate: breakdown.taxRate,
+      taxAmount: breakdown.taxAmount,
+      platformFeeRate: breakdown.platformFeeRate,
+      platformFeeAmount: breakdown.platformFeeAmount,
+      customerTotal: breakdown.customerTotal,
+      amount: breakdown.customerTotal,
+      providerCommissionRate: breakdown.providerCommissionRate,
+      providerCommissionAmount: breakdown.providerCommissionAmount,
+      providerPayout: breakdown.providerPayout,
       date: formatDisplayDate(new Date()),
       status: paymentStatus
     });
@@ -1444,10 +1473,42 @@
     const tbody = document.getElementById("paymentHistoryTableBody");
     if (!tbody) return;
 
+    function getPaymentFinancialBreakdown(item) {
+      const financeEngine = window.ServeEaseFinance;
+      if (item && Number.isFinite(Number(item.serviceFee)) && Number(item.serviceFee) > 0) {
+        return financeEngine
+          ? financeEngine.calculateBreakdown(Number(item.serviceFee))
+          : {
+              serviceFee: Number(item.serviceFee),
+              taxRate: item.taxRate || 10,
+              taxAmount: Number(item.taxAmount) || Math.round(Number(item.serviceFee) * 10) / 100,
+              platformFeeRate: item.platformFeeRate || 5,
+              platformFeeAmount: Number(item.platformFeeAmount) || Math.round(Number(item.serviceFee) * 5) / 100,
+              customerTotal: Number(item.customerTotal || item.amount) || Math.round(Number(item.serviceFee) * 1.15 * 100) / 100
+            };
+      }
+      return financeEngine && financeEngine.normalizeFinancialRecord
+        ? financeEngine.normalizeFinancialRecord(item)
+        : {
+            serviceFee: Number(item.amount) || 0,
+            taxRate: 10,
+            taxAmount: Math.round((Number(item.amount) || 0) * 10) / 100,
+            platformFeeRate: 5,
+            platformFeeAmount: Math.round((Number(item.amount) || 0) * 5) / 100,
+            customerTotal: Number(item.amount) || 0
+          };
+    }
+
     function renderPaymentHistory() {
-      const totalPaid = data.payments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const totalPaid = data.payments.reduce((sum, item) => {
+        const b = getPaymentFinancialBreakdown(item);
+        return sum + (Number(b.customerTotal) || Number(item.amount) || 0);
+      }, 0);
       const successfulCount = data.payments.filter(item => item.status === "Successful").length;
-      const refunded = data.payments.filter(item => item.status === "Refunded").reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const refunded = data.payments.filter(item => item.status === "Refunded").reduce((sum, item) => {
+        const b = getPaymentFinancialBreakdown(item);
+        return sum + (Number(b.customerTotal) || Number(item.amount) || 0);
+      }, 0);
 
       summary.innerHTML = `
         <div class="stat-card-dashboard"><div class="feature-icon green">✅</div><h3>${formatPrice(totalPaid)}</h3><p>Total Payments Made</p></div>
@@ -1455,33 +1516,38 @@
         <div class="stat-card-dashboard"><div class="feature-icon blue">🔄</div><h3>${formatPrice(refunded)}</h3><p>Refunded Amount</p></div>
       `;
 
-      tbody.innerHTML = data.payments.length ? data.payments.map(item => `
+      tbody.innerHTML = data.payments.length ? data.payments.map(item => {
+        const b = getPaymentFinancialBreakdown(item);
+        return `
         <tr>
           <td>${item.id}</td>
           <td>${item.bookingRef}</td>
           <td>${item.service}</td>
           <td>${item.provider}</td>
-          <td>${item.method}</td>
-          <td>${formatPrice(item.amount)}</td>
+          <td>${item.method || "Payment method"}</td>
+          <td>${formatPrice(b.serviceFee)}</td>
+          <td>${formatPrice(b.taxAmount)}</td>
+          <td>${formatPrice(b.platformFeeAmount)}</td>
+          <td>${formatPrice(b.customerTotal)}</td>
           <td>${formatDisplayDate(item.date)}</td>
           <td><span class="status-pill ${statusClass(item.status)}">${item.status}</span></td>
           <td><button class="table-link-btn" data-view-payment="${item.id}">View Details</button></td>
         </tr>
-      `).join("") : '<tr><td colspan="9">No payments found.</td></tr>';
+      `}).join("") : '<tr><td colspan="12">No payments found.</td></tr>';
     }
 
     renderPaymentHistory();
-    setupPaymentModal(data);
+    setupPaymentModal(data, getPaymentFinancialBreakdown);
     syncCustomerBookingsFromBackend(function (latestData) {
       data.bookings = latestData.bookings || [];
       data.payments = latestData.payments || [];
       data.tickets = latestData.tickets || [];
       renderPaymentHistory();
-      setupPaymentModal(data);
+      setupPaymentModal(data, getPaymentFinancialBreakdown);
     });
   }
 
-  function setupPaymentModal(data) {
+  function setupPaymentModal(data, breakdownHelper) {
     const backdrop = document.getElementById("paymentModalBackdrop");
     const closeBtn = document.getElementById("closePaymentModal");
     const content = document.getElementById("paymentModalContent");
@@ -1500,6 +1566,8 @@
         const payment = data.payments.find(item => item.id === this.dataset.viewPayment);
         if (!payment) return;
 
+        const b = typeof breakdownHelper === "function" ? breakdownHelper(payment) : payment;
+
         content.innerHTML = `
           <div class="info-grid">
             <div class="info-box">
@@ -1516,9 +1584,12 @@
             </div>
 
             <div class="info-box">
-              <strong>Payment Information</strong>
+              <strong>Payment Breakdown</strong>
               <div class="info-row"><span>Payment Method:</span><span>${payment.method}</span></div>
-              <div class="info-row"><span>Amount Paid:</span><span>${formatPrice(payment.amount)}</span></div>
+              <div class="info-row"><span>Service Fee:</span><span>${formatPrice(b.serviceFee)}</span></div>
+              <div class="info-row"><span>Tax (10% GST):</span><span>${formatPrice(b.taxAmount)}</span></div>
+              <div class="info-row"><span>Platform Fee (5%):</span><span>${formatPrice(b.platformFeeAmount)}</span></div>
+              <div class="info-row"><span>Total Paid:</span><strong>${formatPrice(b.customerTotal)}</strong></div>
               <div class="info-row"><span>Payment Date:</span><span>${formatDisplayDate(payment.date)}</span></div>
             </div>
           </div>

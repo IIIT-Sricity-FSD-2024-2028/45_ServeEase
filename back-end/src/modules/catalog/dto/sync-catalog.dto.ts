@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   MaxLength,
@@ -138,6 +139,16 @@ export class CatalogProviderDto {
   @IsString()
   @MaxLength(160)
   ownerProviderEmail?: string;
+
+  @ApiProperty({ required: false, example: { 'Kitchen Cleaning': 799, 'Bathroom Cleaning': 599 } })
+  @IsOptional()
+  @IsObject()
+  servicePricing?: Record<string, number>;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  services?: any[];
 }
 
 export class PopularServiceDto {

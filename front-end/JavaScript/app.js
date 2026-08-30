@@ -16,6 +16,98 @@ function getAppData() {
   };
 }
 
+function getDefaultPriceForSubService(serviceName, category, fallbackPrice) {
+  const name = String(serviceName || "").trim().toLowerCase();
+
+  if (name.indexOf("full home") !== -1) return 899;
+  if (name.indexOf("kitchen") !== -1) return 799;
+  if (name.indexOf("bathroom") !== -1) return 599;
+  if (name.indexOf("floor") !== -1) return 699;
+
+  if (name.indexOf("haircut") !== -1 || name.indexOf("styling") !== -1) return 399;
+  if (name.indexOf("facial") !== -1 || name.indexOf("cleanup") !== -1) return 599;
+  if (name.indexOf("manicure") !== -1 || name.indexOf("pedicure") !== -1) return 499;
+
+  if (name === "ac" || name.indexOf("ac ") !== -1 || name.indexOf("ac repair") !== -1) return 799;
+  if (name.indexOf("washing machine") !== -1) return 599;
+  if (name.indexOf("refrigerator") !== -1) return 599;
+  if (name.indexOf("chimney") !== -1) return 699;
+  if (name.indexOf("laptop") !== -1 || name.indexOf("desktop") !== -1) return 649;
+  if (name.indexOf("geyser") !== -1) return 499;
+  if (name.indexOf("tv") !== -1) return 499;
+
+  if (name.indexOf("termite") !== -1) return 1199;
+  if (name.indexOf("cockroach") !== -1) return 799;
+  if (name.indexOf("general pest") !== -1 || name.indexOf("pest") !== -1) return 899;
+
+  if (name.indexOf("door") !== -1) return 499;
+  if (name.indexOf("furniture") !== -1) return 449;
+
+  if (name.indexOf("painting") !== -1) return 1299;
+  if (name.indexOf("plumbing") !== -1) return 399;
+  if (name.indexOf("electrician") !== -1) return 349;
+
+  const numFallback = Number(fallbackPrice);
+  return Number.isFinite(numFallback) && numFallback > 0 ? numFallback : 499;
+}
+
+function getProviderServicePrice(provider, serviceName) {
+  if (!provider) return 499;
+  const name = String(serviceName || "").trim().toLowerCase();
+
+  if (provider.servicePricing && typeof provider.servicePricing === "object") {
+    for (const key of Object.keys(provider.servicePricing)) {
+      if (key.trim().toLowerCase() === name) {
+        const val = Number(provider.servicePricing[key]);
+        if (Number.isFinite(val) && val > 0) return val;
+      }
+    }
+  }
+
+  if (Array.isArray(provider.services)) {
+    const found = provider.services.find(function (s) {
+      return s && String(s.name || "").trim().toLowerCase() === name;
+    });
+    if (found && Number.isFinite(Number(found.price)) && Number(found.price) > 0) {
+      return Number(found.price);
+    }
+  }
+
+  try {
+    const keys = [
+      "serveEaseProviderModuleData",
+      "serveEaseProviderModuleData:" + provider.id,
+      "serveEaseProviderModuleData:" + provider.ownerProviderId
+    ];
+    for (const k of keys) {
+      const raw = localStorage.getItem(k);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.services)) {
+          const match = parsed.services.find(function (s) {
+            return s && String(s.name || "").trim().toLowerCase() === name && s.status === "Active";
+          });
+          if (match && Number.isFinite(Number(match.price)) && Number(match.price) > 0) {
+            return Number(match.price);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    /* ignore local parse issues */
+  }
+
+  const isCleanpro = String(provider.id || "").toLowerCase().indexOf("cleanpro") !== -1 ||
+    String(provider.name || "").toLowerCase().indexOf("cleanpro") !== -1;
+  if (isCleanpro) {
+    if (name.indexOf("kitchen") !== -1) return 799;
+    if (name.indexOf("bathroom") !== -1) return 599;
+    if (name.indexOf("floor") !== -1) return 699;
+  }
+
+  return getDefaultPriceForSubService(serviceName, provider.category, provider.startingPrice);
+}
+
 function getCurrentSession() {
   return JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
 }
@@ -475,13 +567,21 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
     });
   }
 
+  const activeServices = Array.isArray(provider.services) && provider.services.length
+    ? provider.services.filter(function (s) { return s && s.status !== "Inactive"; })
+    : [];
+  const displaySubServices = activeServices.length
+    ? activeServices.map(function (s) { return s.name; })
+    : (Array.isArray(provider.subServices) && provider.subServices.length ? provider.subServices : [provider.name]);
+
   function renderBookingForm() {
     bookingCard.innerHTML = `
       <h2>Book Appointment</h2>
       <label for="bookingService">Select Service</label>
       <select id="bookingService">
-        ${provider.subServices.map(function (service) {
-          return `<option value="${service}">${service}</option>`;
+        ${displaySubServices.map(function (service) {
+          const price = getProviderServicePrice(provider, service);
+          return `<option value="${service}">${service} - ${formatCurrency(price)}</option>`;
         }).join("")}
       </select>
       <section class="availability-section" aria-labelledby="availableDatesHeading">
@@ -514,9 +614,28 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
     });
 
     document.getElementById("proceedToBookingBtn").addEventListener("click", function () {
+      const selectedService = document.getElementById("bookingService").value;
+      const unitPrice = getProviderServicePrice(provider, selectedService);
+      const financeEngine = window.ServeEaseFinance;
+      const breakdown = financeEngine
+        ? financeEngine.calculateBreakdown(unitPrice)
+        : {
+            serviceFee: unitPrice,
+            taxRate: 10,
+            taxAmount: Math.round(unitPrice * 10) / 100,
+            platformFeeRate: 5,
+            platformFeeAmount: Math.round(unitPrice * 5) / 100,
+            customerTotal: Math.round(unitPrice * 1.15 * 100) / 100,
+            providerCommissionRate: 10,
+            providerCommissionAmount: Math.round(unitPrice * 10) / 100,
+            providerPayout: Math.round(unitPrice * 0.90 * 100) / 100
+          };
+      const platformFee = breakdown.platformFeeAmount;
+      const tax = breakdown.taxAmount;
+      const totalAmount = breakdown.customerTotal;
+
       if (!(session && session.role === "customer")) {
         if (window.ServeEaseBookingDraft) {
-          const selectedService = document.getElementById("bookingService").value;
           window.ServeEaseBookingDraft.save({
             providerId: provider.id,
             providerName: provider.name,
@@ -525,11 +644,20 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
             serviceName: selectedService,
             selectedDate: selectedDate,
             selectedTimeSlot: selectedSlot,
-            amount: provider.startingPrice,
-            servicePrice: provider.startingPrice,
-            platformFee: 50,
-            tax: 40,
-            totalAmount: provider.startingPrice + 50 + 40
+            amount: totalAmount,
+            serviceFee: unitPrice,
+            servicePrice: unitPrice,
+            taxRate: breakdown.taxRate,
+            tax: tax,
+            taxAmount: tax,
+            platformFeeRate: breakdown.platformFeeRate,
+            platformFee: platformFee,
+            platformFeeAmount: platformFee,
+            customerTotal: totalAmount,
+            totalAmount: totalAmount,
+            providerCommissionRate: breakdown.providerCommissionRate,
+            providerCommissionAmount: breakdown.providerCommissionAmount,
+            providerPayout: breakdown.providerPayout
           });
         }
         window.location.href = "login.html";
@@ -537,11 +665,11 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
       }
       if (!selectedDate || !selectedSlot) return;
 
-      const selectedService = document.getElementById("bookingService").value;
       if (window.ServeEaseBookingDraft) window.ServeEaseBookingDraft.clear();
       window.location.href =
         `booking-checkout.html?provider=${encodeURIComponent(provider.id)}` +
         `&service=${encodeURIComponent(selectedService)}` +
+        `&price=${encodeURIComponent(unitPrice)}` +
         `&date=${encodeURIComponent(selectedDate)}` +
         `&time=${encodeURIComponent(selectedSlot)}`;
     });
@@ -602,6 +730,12 @@ function initProviderProfilePage() {
   }
 
   const ratingMetric = providerMetricRating(provider);
+  const activeServices = Array.isArray(provider.services) && provider.services.length
+    ? provider.services.filter(function (s) { return s && s.status !== "Inactive"; })
+    : [];
+  const displaySubServices = activeServices.length
+    ? activeServices.map(function (s) { return s.name; })
+    : (Array.isArray(provider.subServices) && provider.subServices.length ? provider.subServices : [provider.name]);
 
   summaryCard.innerHTML = `
     <div class="summary-top">
@@ -611,7 +745,7 @@ function initProviderProfilePage() {
         <div class="summary-services">
           <strong>Services Offered:</strong>
           <div class="subservice-list">
-            ${provider.subServices.map(function (service) {
+            ${displaySubServices.map(function (service) {
               return `<span class="tag-pill">${service}</span>`;
             }).join("")}
           </div>
@@ -630,11 +764,12 @@ function initProviderProfilePage() {
   `;
 
   if (pricingCard) {
-    const pricingRows = provider.subServices.map(function (service) {
+    const pricingRows = displaySubServices.map(function (service) {
+      const price = getProviderServicePrice(provider, service);
       return `
         <div class="price-table-row">
           <span>${service}</span>
-          <strong>${formatCurrency(provider.startingPrice)}</strong>
+          <strong>${formatCurrency(price)}</strong>
         </div>
       `;
     }).join("");
@@ -763,10 +898,28 @@ async function submitBookingCheckout() {
     return;
   }
 
-  const servicePrice = Number(bookingDraft && bookingDraft.servicePrice) || provider.startingPrice;
-  const platformFee = Number(bookingDraft && bookingDraft.platformFee) || 50;
-  const tax = Number(bookingDraft && bookingDraft.tax) || 40;
-  const total = Number(bookingDraft && (bookingDraft.totalAmount || bookingDraft.amount)) || servicePrice + platformFee + tax;
+  const queriedPrice = Number(getQueryParam("price"));
+  const resolvedServicePrice = (Number.isFinite(queriedPrice) && queriedPrice > 0)
+    ? queriedPrice
+    : getProviderServicePrice(provider, service);
+  const servicePrice = Number(bookingDraft && (bookingDraft.serviceFee || bookingDraft.servicePrice)) || resolvedServicePrice;
+  const financeEngine = window.ServeEaseFinance;
+  const breakdown = financeEngine
+    ? financeEngine.calculateBreakdown(servicePrice)
+    : {
+        serviceFee: servicePrice,
+        taxRate: 10,
+        taxAmount: Math.round(servicePrice * 10) / 100,
+        platformFeeRate: 5,
+        platformFeeAmount: Math.round(servicePrice * 5) / 100,
+        customerTotal: Math.round(servicePrice * 1.15 * 100) / 100,
+        providerCommissionRate: 10,
+        providerCommissionAmount: Math.round(servicePrice * 10) / 100,
+        providerPayout: Math.round(servicePrice * 0.90 * 100) / 100
+      };
+  const platformFee = breakdown.platformFeeAmount;
+  const tax = breakdown.taxAmount;
+  const total = breakdown.customerTotal;
 
   const activePayment = document.querySelector(".payment-option.active-option");
   const paymentType = activePayment ? activePayment.dataset.paymentOption : "card";
@@ -851,6 +1004,15 @@ async function submitBookingCheckout() {
     address: address,
     status: "Pending",
     amount: total,
+    serviceFee: servicePrice,
+    taxRate: breakdown.taxRate,
+    taxAmount: tax,
+    platformFeeRate: breakdown.platformFeeRate,
+    platformFeeAmount: platformFee,
+    customerTotal: total,
+    providerCommissionRate: breakdown.providerCommissionRate,
+    providerCommissionAmount: breakdown.providerCommissionAmount,
+    providerPayout: breakdown.providerPayout,
     category: "Pending",
     paymentMethod: paymentMethod,
     customerName: name,
@@ -869,6 +1031,15 @@ async function submitBookingCheckout() {
         time: time,
         address: address,
         amount: total,
+        serviceFee: servicePrice,
+        taxRate: breakdown.taxRate,
+        taxAmount: tax,
+        platformFeeRate: breakdown.platformFeeRate,
+        platformFeeAmount: platformFee,
+        customerTotal: total,
+        providerCommissionRate: breakdown.providerCommissionRate,
+        providerCommissionAmount: breakdown.providerCommissionAmount,
+        providerPayout: breakdown.providerPayout,
         status: "Pending",
         paymentMethod: paymentMethod,
         customerName: name,
@@ -887,6 +1058,15 @@ async function submitBookingCheckout() {
           address: apiBooking.address,
           status: apiBooking.status,
           amount: apiBooking.amount,
+          serviceFee: apiBooking.serviceFee || servicePrice,
+          taxRate: apiBooking.taxRate || breakdown.taxRate,
+          taxAmount: apiBooking.taxAmount || tax,
+          platformFeeRate: apiBooking.platformFeeRate || breakdown.platformFeeRate,
+          platformFeeAmount: apiBooking.platformFeeAmount || platformFee,
+          customerTotal: apiBooking.customerTotal || total,
+          providerCommissionRate: apiBooking.providerCommissionRate || breakdown.providerCommissionRate,
+          providerCommissionAmount: apiBooking.providerCommissionAmount || breakdown.providerCommissionAmount,
+          providerPayout: apiBooking.providerPayout || breakdown.providerPayout,
           paymentMethod: apiBooking.paymentMethod || paymentMethod,
           customerName: apiBooking.customerName || name,
           customerPhone: apiBooking.customerPhone || phone,
@@ -906,7 +1086,16 @@ async function submitBookingCheckout() {
     service: service,
     provider: provider.name,
     method: paymentMethod,
+    serviceFee: servicePrice,
+    taxRate: breakdown.taxRate,
+    taxAmount: tax,
+    platformFeeRate: breakdown.platformFeeRate,
+    platformFeeAmount: platformFee,
+    customerTotal: total,
     amount: total,
+    providerCommissionRate: breakdown.providerCommissionRate,
+    providerCommissionAmount: breakdown.providerCommissionAmount,
+    providerPayout: breakdown.providerPayout,
     date: formatDisplayDate(new Date()),
     status: "Pending"
   };
@@ -956,10 +1145,28 @@ function initBookingCheckoutPage() {
 
   const category = findCategoryById(provider.category);
   const serviceName = service;
-  const servicePrice = Number(bookingDraft && bookingDraft.servicePrice) || provider.startingPrice;
-  const platformFee = Number(bookingDraft && bookingDraft.platformFee) || 50;
-  const tax = Number(bookingDraft && bookingDraft.tax) || 40;
-  const total = Number(bookingDraft && (bookingDraft.totalAmount || bookingDraft.amount)) || servicePrice + platformFee + tax;
+  const queriedPrice = Number(getQueryParam("price"));
+  const resolvedServicePrice = (Number.isFinite(queriedPrice) && queriedPrice > 0)
+    ? queriedPrice
+    : getProviderServicePrice(provider, serviceName);
+  const servicePrice = Number(bookingDraft && (bookingDraft.serviceFee || bookingDraft.servicePrice)) || resolvedServicePrice;
+  const financeEngine = window.ServeEaseFinance;
+  const breakdown = financeEngine
+    ? financeEngine.calculateBreakdown(servicePrice)
+    : {
+        serviceFee: servicePrice,
+        taxRate: 10,
+        taxAmount: Math.round(servicePrice * 10) / 100,
+        platformFeeRate: 5,
+        platformFeeAmount: Math.round(servicePrice * 5) / 100,
+        customerTotal: Math.round(servicePrice * 1.15 * 100) / 100,
+        providerCommissionRate: 10,
+        providerCommissionAmount: Math.round(servicePrice * 10) / 100,
+        providerPayout: Math.round(servicePrice * 0.90 * 100) / 100
+      };
+  const platformFee = breakdown.platformFeeAmount;
+  const tax = breakdown.taxAmount;
+  const total = breakdown.customerTotal;
 
   const breadcrumbs = document.getElementById("checkoutBreadcrumbs");
   if (breadcrumbs) {
@@ -1146,11 +1353,10 @@ function initBookingCheckoutPage() {
   if (pricingBreakdownCard) {
     pricingBreakdownCard.innerHTML = `
       <h2>Pricing Breakdown</h2>
-      <div class="checkout-info-row"><span>Service Price</span><strong>${formatCurrency(servicePrice)}</strong></div>
-      <div class="checkout-info-row"><span>Platform Service Fee</span><strong>${formatCurrency(platformFee)}</strong></div>
-      <div class="checkout-info-row"><span>Taxes (GST)</span><strong>${formatCurrency(tax)}</strong></div>
-      <div class="checkout-total-row"><span>Total Amount</span><strong>${formatCurrency(total)}</strong></div>
-
+      <div class="checkout-info-row"><span>Service Fee</span><strong>${formatCurrency(servicePrice)}</strong></div>
+      <div class="checkout-info-row"><span>Tax (${breakdown.taxRate}%)</span><strong>${formatCurrency(tax)}</strong></div>
+      <div class="checkout-info-row"><span>Platform Fee (${breakdown.platformFeeRate}%)</span><strong>${formatCurrency(platformFee)}</strong></div>
+      <div class="checkout-total-row"><span>Total Payable</span><strong>${formatCurrency(total)}</strong></div>
     `;
   }
 
