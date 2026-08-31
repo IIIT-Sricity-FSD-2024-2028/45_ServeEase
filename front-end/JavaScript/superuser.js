@@ -153,6 +153,10 @@
           subject: ticket.subject || "Customer support request",
           description: ticket.description || ticket.subject || "No description provided.",
           attachmentName: ticket.attachmentName || "No attachment",
+          attachmentId: ticket.attachmentId || "",
+          attachmentUrl: ticket.attachmentUrl || "",
+          attachmentType: ticket.attachmentType || "",
+          attachmentSize: ticket.attachmentSize || 0,
           phone: ticket.customerPhone || "",
           email: ticket.customerEmail || customerData.ownerEmail || "",
           status: ticket.status || "Open",
@@ -188,6 +192,10 @@
           subject: ticket.subject || "Provider support request",
           description: ticket.description || ticket.subject || "No description provided.",
           attachmentName: ticket.attachmentName || "No attachment",
+          attachmentId: ticket.attachmentId || "",
+          attachmentUrl: ticket.attachmentUrl || "",
+          attachmentType: ticket.attachmentType || "",
+          attachmentSize: ticket.attachmentSize || 0,
           phone: ticket.phone || profile.phone || "",
           email: ticket.email || profile.email || "",
           status: ticket.status || "Open",
@@ -2425,7 +2433,10 @@
         subject: ticket.subject,
         description: ticket.description,
         attachmentName: ticket.attachmentName || ticket.attachmentUrl || (ticket.attachments ? "Attachment available" : "No attachment"),
+        attachmentId: ticket.attachmentId || "",
         attachmentUrl: ticket.attachmentUrl || "",
+        attachmentType: ticket.attachmentType || "",
+        attachmentSize: ticket.attachmentSize || 0,
         phone: ticket.phone || "",
         email: ticket.email || "",
         createdDate: ticket.created || "Just now",
@@ -2441,7 +2452,10 @@
     supportTicket.supportUpdate = supportTicket.solution || ticket.supportUpdate || supportTicket.supportUpdate || "Admin updated your ticket.";
     supportTicket.updatedAt = superuserStamp();
     supportTicket.attachmentName = ticket.attachmentName || ticket.attachmentUrl || supportTicket.attachmentName || (ticket.attachments ? "Attachment available" : "No attachment");
+    supportTicket.attachmentId = ticket.attachmentId || supportTicket.attachmentId || "";
     supportTicket.attachmentUrl = ticket.attachmentUrl || supportTicket.attachmentUrl || "";
+    supportTicket.attachmentType = ticket.attachmentType || supportTicket.attachmentType || "";
+    supportTicket.attachmentSize = ticket.attachmentSize || supportTicket.attachmentSize || 0;
     if (!Array.isArray(supportTicket.messages)) supportTicket.messages = [];
     if (!Array.isArray(supportTicket.history)) supportTicket.history = [];
 

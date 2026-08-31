@@ -1349,6 +1349,7 @@
             const handleYes = function() {
               booking.status = "Cancelled";
               booking.category = "Cancelled";
+              ensurePaymentForBooking(data, booking);
               setCustomerData(data);
               if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
                 window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
@@ -1378,6 +1379,7 @@
             if (confirm(`Are you sure you want to cancel booking ${booking.id}?`)) {
               booking.status = "Cancelled";
               booking.category = "Cancelled";
+              ensurePaymentForBooking(data, booking);
               setCustomerData(data);
               if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
                 window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
