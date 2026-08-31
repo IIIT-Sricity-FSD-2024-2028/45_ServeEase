@@ -66,11 +66,6 @@
             <div class="superuser-card-actions-row"><button class="btn btn-outline" type="button" id="superuserShowMoreCustomersBtn">Show More</button></div>
           </section>
 
-          <section class="panel-card superuser-provider-approval-panel left-accent-orange" id="superuserPendingProviderPanel">
-            <div class="panel-head"><h2>Pending Service Provider Approvals (<span id="superuserPendingProviderCount">0</span>)</h2></div>
-            <div id="superuserPendingProviderList" class="superuser-provider-approval-list"></div>
-          </section>
-
           <section class="panel-card superuser-table-panel hidden" id="superuserProviderManagementPanel">
             <div class="panel-head"><h2>Providers (<span id="superuserProviderCount">0</span>)</h2><div class="superuser-table-controls"><input class="superuser-table-search" id="superuserProviderSearch" type="search" placeholder="Search providers" aria-label="Search providers by ID, name, organisation, email, phone, or category" /><select class="superuser-status-filter" id="superuserProviderStatusFilter"><option value="all">All Verification States</option><option value="Active">Active</option><option value="Pending Approval">Pending Approval</option><option value="Blocked">Blocked</option><option value="Rejected">Rejected</option><option value="Suspended">Suspended</option></select></div></div>
             <div class="superuser-table-wrap">
@@ -151,21 +146,6 @@
         </section>
       </div>
       <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="superuserUserModalBackdrop">Close</button></div>
-    </div>
-  </div>
-
-  <div class="superuser-modal-backdrop hidden" id="superuserProviderApprovalModalBackdrop">
-    <div class="superuser-modal superuser-booking-modal">
-      <div class="superuser-modal-header gradient-header">
-        <div><h3 id="superuserProviderModalName">Provider Details</h3><p>Pending Approval</p></div>
-        <button class="superuser-modal-close" type="button" data-close-modal="superuserProviderApprovalModalBackdrop">×</button>
-      </div>
-      <div class="superuser-modal-body" id="superuserProviderModalBody"></div>
-      <div class="superuser-modal-actions split-actions">
-        <button class="btn superuser-success-btn" type="button" id="superuserApproveProviderFromModalBtn">✓ Approve</button>
-        <button class="btn superuser-danger-outline-btn" type="button" id="superuserRejectProviderFromModalBtn">⊘ Reject</button>
-      </div>
-      <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="superuserProviderApprovalModalBackdrop">Close</button></div>
     </div>
   </div>
 

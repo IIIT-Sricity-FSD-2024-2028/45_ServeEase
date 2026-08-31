@@ -163,18 +163,21 @@
     return payload ? payload.data : null;
   }
 
-  async function upload(path, file, role) {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: "POST",
-      headers: {
-        role: role || getRole(),
-        "user-id": getSession().userId || "",
-        "user-email": getSession().email || ""
-      },
-      body: formData
-    });
+async function upload(path, file, role, userId) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const session = getSession();
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: {
+      role: role || getRole(),
+      "user-id": userId || session.userId || "",
+      "user-email": session.email || ""
+    },
+    body: formData
+  });
     const payload = await response.json().catch(function () { return null; });
     if (!response.ok) {
       const message = payload && payload.message ? payload.message : "Upload failed.";
@@ -204,9 +207,9 @@
     getCatalog: function () {
       return request("/catalog", { method: "GET", headers: { role: "user" } });
     },
-    uploadVerificationDocument: function (file) {
-      return upload("/uploads/verification", file, "user");
-    },
+    uploadVerificationDocument: function (file, userId) {
+  return upload("/uploads/verification", file, "user", userId);
+},
     uploadTicketAttachment: function (file) {
       return upload("/uploads/tickets", file, getRole());
     },

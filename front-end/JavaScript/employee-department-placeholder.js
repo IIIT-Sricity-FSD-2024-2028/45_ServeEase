@@ -11,7 +11,7 @@
     return;
   }
 
-  const allowedDepartments = ["Customer Operations", "Provider Operations", "Support", "Finance"];
+  const allowedDepartments = ["Customer Operations", "Provider Operations", "Support"];
   if (!allowedDepartments.includes(session.department)) {
     sessionStorage.removeItem("serveEaseSession");
     window.location.href = "login.html";

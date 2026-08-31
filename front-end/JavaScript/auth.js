@@ -202,7 +202,7 @@ async function buildProviderDocumentPayload(providerId, existingDocuments) {
       if (!window.ServeEaseApi || typeof window.ServeEaseApi.uploadVerificationDocument !== "function") {
         throw new Error("Document upload is unavailable.");
       }
-      const upload = await window.ServeEaseApi.uploadVerificationDocument(file);
+      const upload = await window.ServeEaseApi.uploadVerificationDocument(file, providerId);
       if (!upload || !upload.fileUrl) throw new Error("Document upload failed.");
       delete previewStore[documentId];
       documents.push({
@@ -621,8 +621,7 @@ function getEmployeeLoginDestination(employee) {
   const destinations = {
     "Customer Operations": "customer-operations.html",
     "Provider Operations": "provider-operations.html",
-    "Support": "support-dashboard.html",
-    "Finance": "finance-operations.html"
+    "Support": "support-dashboard.html"
   };
   return destinations[employee.department] || "employee-department-placeholder.html" + departmentParam;
 }

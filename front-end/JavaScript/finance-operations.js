@@ -105,25 +105,14 @@
     });
   }
 
-  function populateStatusFilter(rows) {
-    const filter = byId("financeStatusFilter");
+  function populateStatusFilter(rows, filterId) {
+    const filter = byId(filterId);
     if (!filter) return;
     const current = filter.value || "all";
     const values = uniqueValues(rows);
-    filter.innerHTML = "";
-
-    const allOption = document.createElement("option");
-    allOption.value = "all";
-    allOption.textContent = "All statuses";
-    filter.appendChild(allOption);
-
-    values.forEach(function (status) {
-      const option = document.createElement("option");
-      option.value = status;
-      option.textContent = status;
-      filter.appendChild(option);
-    });
-
+    filter.innerHTML = '<option value="all">All statuses</option>' + values.map(function (status) {
+      return '<option value="' + escapeHtml(status) + '">' + escapeHtml(status) + '</option>';
+    }).join("");
     filter.value = values.includes(current) ? current : "all";
   }
 
@@ -437,7 +426,7 @@
     byId("financeStatsGrid").innerHTML = [
       statCard("green", "₹", formatCurrency(grossCustomerPayments), "Gross Customer Payments"),
       statCard("blue", "↗", formatPreciseCurrency(providerEarnings), "Provider Earnings"),
-      statCard("purple", "◆", formatPreciseCurrency(platformRevenue), "Platform Revenue (15%)"),
+      statCard("purple", "◆", formatPreciseCurrency(platformRevenue), "Total Platform Revenue (15%)"),
       statCard("orange", "◔", formatCurrency(pendingPayout), "Pending Payouts"),
       statCard("blue", "↺", String(refunds.length), "Refund Records")
     ].join("");
@@ -445,7 +434,6 @@
     byId("financeSummaryGrid").innerHTML = [
       summaryItem("Customer Payment Transactions", payments.length),
       summaryItem("Provider Earnings", financialRows.length),
-      summaryItem("Dual-Commission Model", "5% Customer Fee + 10% Provider Comm"),
       summaryItem("Financial Source", "Payment + Booking records"),
       summaryItem("Last updated", new Date().toLocaleString("en-IN"))
     ].join("");
@@ -463,13 +451,11 @@
     const config = typeof financeConfig === "object" ? financeConfig : { providerCommissionRate: Number(financeConfig) || 10, customerPlatformFeeRate: 5, customerTaxRate: 10 };
     const totalPlatformRate = (Number(config.customerPlatformFeeRate) || 5) + (Number(config.providerCommissionRate) || 10);
     byId("financeCommissionPanel").innerHTML = [
-      '<div class="finance-commission-value">' + escapeHtml(totalPlatformRate + "%") + '</div>',
-      '<div style="font-size:0.875rem; color:var(--text-secondary, #64748b); margin-top:0.5rem; line-height:1.5;">' +
-      '  <div><strong>Customer Fee:</strong> ' + escapeHtml(config.customerPlatformFeeRate || 5) + '%</div>' +
-      '  <div><strong>Provider Commission:</strong> ' + escapeHtml(config.providerCommissionRate || 10) + '%</div>' +
-      '  <div><strong>Customer Tax (GST):</strong> ' + escapeHtml(config.customerTaxRate || 10) + '% (Excluded from revenue)</div>' +
+      '<div class="finance-revenue-streams">' +
+      '<div class="finance-revenue-stream"><span>Customer Platform Fee</span><strong>' + escapeHtml((config.customerPlatformFeeRate || 5) + "%") + '</strong><small>of Service Fee</small></div>' +
+      '<div class="finance-revenue-stream"><span>Provider-Side Commission</span><strong>' + escapeHtml((config.providerCommissionRate || 10) + "%") + '</strong><small>of Service Fee</small></div>' +
       '</div>',
-      '<p class="finance-commission-note" style="margin-top:0.75rem;">Total platform revenue is 15% of service fee (5% customer platform fee + 10% provider commission). Payouts to providers are 90% of service fee.</p>'
+      '<div class="finance-total-revenue"><span>Total Platform Revenue</span><strong>' + escapeHtml(totalPlatformRate + "% of Service Fee") + '</strong></div>'
     ].join("");
   }
 
@@ -510,23 +496,23 @@
     const financialRows = reconcileFinancialPayments(payments, bookings, providerTransactions, financeConfig);
     const refunds = collectRefunds(payments, bookings);
     const ledgerRows = financialRows;
-    const allRows = payments.concat(financialRows, refunds);
     const term = String(byId("financeGlobalSearch") && byId("financeGlobalSearch").value || "").trim().toLowerCase();
     const paymentTerm = String(byId("financePaymentSearch") && byId("financePaymentSearch").value || "").trim().toLowerCase();
     const earningsTerm = String(byId("financeEarningsSearch") && byId("financeEarningsSearch").value || "").trim().toLowerCase();
     const commissionTerm = String(byId("financeCommissionSearch") && byId("financeCommissionSearch").value || "").trim().toLowerCase();
     const refundTerm = String(byId("financeRefundSearch") && byId("financeRefundSearch").value || "").trim().toLowerCase();
-    const status = byId("financeStatusFilter") ? byId("financeStatusFilter").value : "all";
 
     renderStats(payments, financialRows, refunds, financeConfig);
     renderCommission(financeConfig);
-    populateStatusFilter(allRows);
+    populateStatusFilter(payments, "financePaymentStatusFilter");
+    populateStatusFilter(financialRows, "financeEarningsStatusFilter");
 
-    const activeStatus = byId("financeStatusFilter") ? byId("financeStatusFilter").value : status;
-    renderTable(payments.filter(function (row) { return rowMatches(row, term, activeStatus, paymentTerm); }), "financePaymentRows", "financePaymentsEmpty", "financePaymentCount", paymentRow);
-    renderTable(financialRows.filter(function (row) { return rowMatches(row, term, activeStatus, earningsTerm); }), "financeEarningRows", "financeEarningsEmpty", "financeEarningsCount", earningRow);
-    renderTable(ledgerRows.filter(function (row) { return rowMatches(row, term, activeStatus, commissionTerm); }), "financeCommissionRows", "financeCommissionEmpty", "financeCommissionCount", commissionRow);
-    renderTable(refunds.filter(function (row) { return rowMatches(row, term, activeStatus, refundTerm); }), "financeRefundRows", "financeRefundsEmpty", "financeRefundCount", refundRow);
+    const customerPaymentStatus = byId("financePaymentStatusFilter") ? byId("financePaymentStatusFilter").value : "all";
+    const providerEarningsStatus = byId("financeEarningsStatusFilter") ? byId("financeEarningsStatusFilter").value : "all";
+    renderTable(payments.filter(function (row) { return rowMatches(row, term, customerPaymentStatus, paymentTerm); }), "financePaymentRows", "financePaymentsEmpty", "financePaymentCount", paymentRow);
+    renderTable(financialRows.filter(function (row) { return rowMatches(row, term, providerEarningsStatus, earningsTerm); }), "financeEarningRows", "financeEarningsEmpty", "financeEarningsCount", earningRow);
+    renderTable(ledgerRows.filter(function (row) { return rowMatches(row, term, "all", commissionTerm); }), "financeCommissionRows", "financeCommissionEmpty", "financeCommissionCount", commissionRow);
+    renderTable(refunds.filter(function (row) { return rowMatches(row, term, "all", refundTerm); }), "financeRefundRows", "financeRefundsEmpty", "financeRefundCount", refundRow);
   }
 
   function setupHeader(session) {
@@ -534,7 +520,7 @@
     const profileBtn = byId("financeProfileBtn");
     const dropdown = byId("financeProfileDropdown");
     const logoutBtn = byId("financeLogoutBtn");
-    if (nameNode) nameNode.textContent = session && (session.fullName || session.name) || "Finance Employee";
+    if (nameNode) nameNode.textContent = session && (session.fullName || session.name) || "Superuser";
 
     if (profileBtn && dropdown) {
       profileBtn.addEventListener("click", function (event) {
@@ -562,18 +548,22 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    const session = window.ServeEaseEmployeeAuth && typeof window.ServeEaseEmployeeAuth.requireCurrentPageAccess === "function"
-      ? window.ServeEaseEmployeeAuth.requireCurrentPageAccess()
-      : null;
-    if (!session) return;
+    const session = JSON.parse(sessionStorage.getItem("serveEaseSession") || "null");
+    const isSuperuser = session && session.isLoggedIn && ["superuser", "admin"].includes(session.role);
+    if (!isSuperuser) {
+      window.location.href = "login.html";
+      return;
+    }
 
     setupHeader(session);
     render();
 
     const search = byId("financeGlobalSearch");
-    const status = byId("financeStatusFilter");
+    const statusFilters = [byId("financePaymentStatusFilter"), byId("financeEarningsStatusFilter")].filter(Boolean);
     if (search) search.addEventListener("input", render);
-    if (status) status.addEventListener("change", render);
+    statusFilters.forEach(function (status) {
+      status.addEventListener("change", render);
+    });
     ["financePaymentSearch", "financeEarningsSearch", "financeCommissionSearch", "financeRefundSearch"].forEach(function (id) {
       const input = byId(id);
       if (input) input.addEventListener("input", render);

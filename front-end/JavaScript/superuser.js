@@ -1443,7 +1443,6 @@
     setupManagementSearch();
     setupManagementTabs();
     renderCustomers(false);
-    renderPendingProviders();
     renderProviders();
     if (byId('superuserCategoryGrid')) renderCategories();
     updateManagementCounts();
@@ -1481,14 +1480,12 @@
     var providerTab = byId('superuserProvidersTab');
     var customerPanel = byId('superuserCustomerManagementPanel');
     var providerPanel = byId('superuserProviderManagementPanel');
-    var pendingPanel = byId('superuserPendingProviderPanel');
     if (!customerTab || !providerTab || !customerPanel || !providerPanel) return;
 
     function showTab(type) {
       var customers = type === 'customers';
       customerPanel.classList.toggle('hidden', !customers);
       providerPanel.classList.toggle('hidden', customers);
-      if (pendingPanel) pendingPanel.classList.toggle('hidden', customers);
       customerTab.classList.toggle('btn-primary', customers);
       customerTab.classList.toggle('btn-outline', !customers);
       providerTab.classList.toggle('btn-primary', !customers);
@@ -1586,7 +1583,6 @@
   function refreshManagementTables() {
     var globalTerm = getManagementSearchTerm();
     renderCustomers(false, [globalTerm, getTableSearchTerm('superuserCustomerSearch')].filter(Boolean).join(' '));
-    renderPendingProviders([globalTerm, getTableSearchTerm('superuserProviderSearch')].filter(Boolean).join(' '));
     renderProviders([globalTerm, getTableSearchTerm('superuserProviderSearch')].filter(Boolean).join(' '));
     if (byId('superuserCategoryGrid')) renderCategories(globalTerm);
     updateManagementCounts();
@@ -1640,28 +1636,6 @@
       showMoreBtn.onclick = function () { renderCustomers(true, term); };
       showMoreBtn.classList.toggle('hidden', filtered.length <= 10 || showAll);
     }
-  }
-
-  function renderPendingProviders(term) {
-    const list = byId("superuserPendingProviderList");
-    if (!list) return;
-    const filtered = dashboardPendingProviders().map(normalizeProviderApproval).filter(function (item) {
-      const hay = [item.fullName, item.email, item.location, item.category].join(' ').toLowerCase();
-      return matchesManagementSearch(hay, term);
-    });
-    list.innerHTML = filtered.map(function (item) {
-      var orgLine = item.organisationName ? '<p class="superuser-provider-org">🏢 ' + item.organisationName + '</p>' : '';
-      return '<article class="superuser-provider-card"><div class="superuser-provider-main"><h3>' + item.fullName + ' <span class="superuser-chip pending">Pending Approval</span></h3>' + orgLine + '<p>✉ ' + item.email + '</p><p>🏬 ' + item.category + '</p><p>◷ ' + item.experience + ' years Experience</p></div><div class="superuser-provider-meta"><p>☎ ' + item.phone + '</p><p>⌖ ' + item.location + '</p><p>🗓 Registered: ' + formatDisplayDate(item.registrationDate) + '</p></div><div class="superuser-provider-actions"><button class="superuser-inline-action" type="button" data-provider-id="' + item.id + '">◉ View Details</button><button class="btn superuser-success-btn" type="button" data-provider-approve="' + item.id + '">✓ Approve</button><button class="btn superuser-danger-outline-btn" type="button" data-provider-reject="' + item.id + '">⊘ Reject</button></div></article>';
-    }).join('') || '<div class="superuser-empty-state">No pending providers found.</div>';
-    list.querySelectorAll('[data-provider-id]').forEach(function (button) {
-      button.addEventListener('click', function () { openProviderModal(button.dataset.providerId); });
-    });
-    list.querySelectorAll('[data-provider-approve]').forEach(function (button) {
-      button.addEventListener('click', function () { approveProvider(button.dataset.providerApprove); });
-    });
-    list.querySelectorAll('[data-provider-reject]').forEach(function (button) {
-      button.addEventListener('click', function () { rejectProvider(button.dataset.providerReject); });
-    });
   }
 
   function renderProviders(term) {
@@ -1796,7 +1770,6 @@
     const data = getData();
     const providerCount = getManagementProviders().length;
     const pendingVerificationCount = getPendingVerificationCount();
-    if (byId('superuserPendingProviderCount')) byId('superuserPendingProviderCount').textContent = pendingVerificationCount;
     if (byId('superuserQuickCustomerCount')) byId('superuserQuickCustomerCount').textContent = dashboardCustomers().length;
     if (byId('superuserQuickProviderCount')) byId('superuserQuickProviderCount').textContent = providerCount;
     if (byId('superuserQuickPendingCount')) byId('superuserQuickPendingCount').textContent = pendingVerificationCount;
@@ -1918,54 +1891,6 @@
     refreshManagementTables();
     openUserModal(selectedUserId);
     renderRecentRegistrations();
-  }
-
-  function openProviderModal(providerId) {
-    const data = getData();
-    const provider = data.pendingProviders.find(function (item) { return item.id === providerId; });
-    if (!provider) return;
-    selectedProviderId = provider.id;
-    byId('superuserProviderModalName').textContent = provider.fullName;
-    var orgInfo = provider.organisationName ? '<div class="superuser-detail-field"><span>Organisation:</span><strong>' + provider.organisationName + '</strong></div>' : '';
-    byId('superuserProviderModalBody').innerHTML = '<section><h4>Provider Information</h4><div class="superuser-detail-grid">' + orgInfo + '<div class="superuser-detail-field"><span>Email:</span><strong>' + provider.email + '</strong></div><div class="superuser-detail-field"><span>Phone:</span><strong>' + provider.phone + '</strong></div><div class="superuser-detail-field"><span>Category:</span><strong>' + provider.category + '</strong></div><div class="superuser-detail-field"><span>Location:</span><strong>' + provider.location + '</strong></div><div class="superuser-detail-field"><span>Experience:</span><strong>' + provider.experience + ' years</strong></div><div class="superuser-detail-field"><span>Registered:</span><strong>' + formatDisplayDate(provider.registrationDate) + '</strong></div></div></section>';
-    byId('superuserApproveProviderFromModalBtn').onclick = function () { approveProvider(provider.id, true); };
-    byId('superuserRejectProviderFromModalBtn').onclick = function () { rejectProvider(provider.id, true); };
-    openModal('superuserProviderApprovalModalBackdrop');
-  }
-
-  function approveProvider(providerId, closeAfter) {
-    const data = getData();
-    const index = data.pendingProviders.findIndex(function (item) { return item.id === providerId; });
-    if (index === -1) return;
-    const provider = data.pendingProviders.splice(index, 1)[0];
-    provider.approvalStatus = 'Active';
-    provider.status = 'Active';
-    data.providers.unshift(provider);
-    data.stats.pendingApprovals = data.pendingProviders.length;
-    addNotification(data, { id: 'AN-provider-approved-' + provider.id, text: 'Provider approved - ' + provider.fullName, type: 'blue', referenceId: provider.id, actionPage: 'superuser-management.html' });
-    setData(data);
-    promoteProviderToActiveLogin(provider);
-    renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
-    renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
-    updateManagementCounts();
-    renderDashboard();
-    renderNotifications();
-    if (closeAfter) closeModal('superuserProviderApprovalModalBackdrop');
-  }
-
-  function rejectProvider(providerId, closeAfter) {
-    const data = getData();
-    const rejectedProvider = data.pendingProviders.find(function (item) { return item.id === providerId; });
-    data.pendingProviders = data.pendingProviders.filter(function (item) { return item.id !== providerId; });
-    data.stats.pendingApprovals = data.pendingProviders.length;
-    addNotification(data, { id: 'AN-provider-rejected-' + provider.id, text: 'Provider application rejected - ' + provider.fullName, type: 'red', referenceId: provider.id, actionPage: 'superuser-management.html' });
-    setData(data);
-    markProviderApprovalRejected(rejectedProvider);
-    renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
-    updateManagementCounts();
-    renderDashboard();
-    renderNotifications();
-    if (closeAfter) closeModal('superuserProviderApprovalModalBackdrop');
   }
 
   function promoteProviderToActiveLogin(provider) {
@@ -2360,7 +2285,7 @@
       '<div class="superuser-detail-field"><span>Escalation Reason:</span><strong>' + (ticket.escalationReason || 'No escalation reason saved') + '</strong></div>' +
       '<div class="superuser-detail-field"><span>Assigned Support:</span><strong>' + (ticket.assignedSupportName || 'N/A') + '</strong></div>' +
       '<div class="superuser-detail-field"><span>Escalated At:</span><strong>' + (ticket.escalatedAt ? formatDisplayDateTime(ticket.escalatedAt) : 'N/A') + '</strong></div>' +
-      '<div class="superuser-detail-field"><span>Attachment:</span><strong>' + (ticket.attachmentName && ticket.attachmentName !== 'No attachment' ? ticket.attachmentName : (ticket.attachments ? ticket.attachments + ' file(s)' : 'No attachment')) + '</strong>' + (window.ServeEaseAttachments ? window.ServeEaseAttachments.actionMarkup(ticket, 'Preview attachment') : '') + '</div>';
+      '<div class="superuser-detail-field"><span>Attachment:</span><div class="superuser-ticket-attachment-value"><strong>' + (ticket.attachmentName && ticket.attachmentName !== 'No attachment' ? ticket.attachmentName : (ticket.attachments ? ticket.attachments + ' file(s)' : 'No attachment')) + '</strong>' + (window.ServeEaseAttachments ? window.ServeEaseAttachments.actionMarkup(ticket, 'Preview') : '') + '</div></div>';
     const attachmentButton = byId('superuserTicketContactGrid').querySelector('.serveease-attachment-preview-btn');
     if (attachmentButton && window.ServeEaseAttachments) attachmentButton.addEventListener('click', function () { window.ServeEaseAttachments.previewTicketAttachment(ticket); });
     byId('superuserTicketDescriptionBlock').innerHTML =
@@ -2580,14 +2505,12 @@
 
   hydrateProviderApprovalsFromBackend(function () {
     syncPendingProviderApprovals();
-    renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     updateManagementCounts();
     renderDashboard();
   });
 
   hydrateVerifiedProvidersFromBackend(function () {
-    renderPendingProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     renderProviders(byId('superuserManagementSearch') ? byId('superuserManagementSearch').value.trim().toLowerCase() : '');
     updateManagementCounts();
     renderDashboard();

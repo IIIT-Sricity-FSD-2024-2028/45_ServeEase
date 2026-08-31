@@ -23,8 +23,8 @@
         <button class="profile-btn" type="button" id="financeProfileBtn">👤</button>
         <div class="profile-dropdown hidden" id="financeProfileDropdown">
           <div class="finance-profile-card">
-            <strong id="financeEmployeeName">Finance Employee</strong>
-            <span>Finance</span>
+            <strong id="financeEmployeeName">Superuser</strong>
+            <span>Superuser</span>
           </div>
           <button type="button" id="financeLogoutBtn">Logout</button>
         </div>
@@ -35,7 +35,7 @@
   <main class="dashboard-page finance-page">
     <div class="container">
       <div class="breadcrumb-row">
-        <a href="index.html">Home</a> &nbsp;›&nbsp; <span>Employee</span> &nbsp;›&nbsp; <strong>Finance</strong>
+        <a href="index.html">Home</a> &nbsp;›&nbsp; <span>Superuser</span> &nbsp;›&nbsp; <strong>Finance &amp; Revenue</strong>
       </div>
 
       <section class="finance-hero-card">
@@ -49,16 +49,13 @@
         <div class="panel-card finance-summary-panel">
           <div class="panel-head">
             <h2>Financial Overview</h2>
-            <select id="financeStatusFilter" aria-label="Filter finance records by status">
-              <option value="all">All statuses</option>
-            </select>
           </div>
           <div class="finance-summary-grid" id="financeSummaryGrid"></div>
         </div>
 
         <aside class="panel-card finance-side-panel">
           <div class="panel-head">
-            <h2>Commission</h2>
+            <h2>Revenue Model</h2>
           </div>
           <div id="financeCommissionPanel"></div>
         </aside>
@@ -68,7 +65,7 @@
         <div class="panel-head">
           <h2>Customer Payment Transactions (<span id="financePaymentCount">0</span>)</h2>
         </div>
-        <div class="dashboard-search finance-table-search"><input type="search" id="financePaymentSearch" placeholder="Search transaction, booking, customer, or provider..." aria-label="Search customer payment transactions" /></div>
+        <div class="finance-table-controls"><div class="dashboard-search finance-table-search"><input type="search" id="financePaymentSearch" placeholder="Search transaction, booking, customer, or provider..." aria-label="Search customer payment transactions" /></div><select class="finance-status-filter" id="financePaymentStatusFilter" aria-label="Filter customer payments by status"><option value="all">All statuses</option></select></div>
         <div class="table-card">
           <table class="data-table finance-table">
             <thead>
@@ -96,7 +93,7 @@
         <div class="panel-head">
           <h2>Provider Earnings (<span id="financeEarningsCount">0</span>)</h2>
         </div>
-        <div class="dashboard-search finance-table-search"><input type="search" id="financeEarningsSearch" placeholder="Search transaction, provider, booking, or customer..." aria-label="Search provider earnings" /></div>
+        <div class="finance-table-controls"><div class="dashboard-search finance-table-search"><input type="search" id="financeEarningsSearch" placeholder="Search transaction, provider, booking, or customer..." aria-label="Search provider earnings" /></div><select class="finance-status-filter" id="financeEarningsStatusFilter" aria-label="Filter provider earnings by status"><option value="all">All statuses</option></select></div>
         <div class="table-card">
           <table class="data-table finance-table">
             <thead>
@@ -106,7 +103,7 @@
                 <th>Booking</th>
                 <th>Customer</th>
                 <th>Service Fee</th>
-                <th>Commission (10%)</th>
+                <th>Provider-Side Commission (10%)</th>
                 <th>Provider Payout (90%)</th>
                 <th>Payment Date</th>
                 <th>Payout Status</th>
@@ -131,9 +128,9 @@
                 <th>Customer</th>
                 <th>Provider</th>
                 <th>Service Fee</th>
-                <th>Customer Fee (5%)</th>
-                <th>Provider Comm (10%)</th>
-                <th>Platform Revenue (15%)</th>
+                <th>Customer Platform Fee (5%)</th>
+                <th>Provider-Side Commission (10%)</th>
+                <th>Total Platform Revenue (15%)</th>
                 <th>Provider Payout (90%)</th>
                 <th>Status</th>
                 <th>Date</th>

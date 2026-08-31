@@ -797,6 +797,18 @@
   max-height: calc(100vh - 32px);
 }
 
+.superuser-ticket-attachment-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.superuser-ticket-attachment-value strong {
+  overflow-wrap: anywhere;
+}
+
 .superuser-modal-header,
 .superuser-ticket-modal-top {
   display: flex;

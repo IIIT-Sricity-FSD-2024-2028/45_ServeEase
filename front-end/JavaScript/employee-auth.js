@@ -7,14 +7,12 @@
     PROVIDER_OPERATIONS: "PROVIDER_OPERATIONS",
     SUPPORT: "SUPPORT",
     ESCALATION: "ESCALATION",
-    FINANCE: "FINANCE"
   };
 
   const departments = [
     { name: "Customer Operations", permission: permissions.CUSTOMER_OPERATIONS },
     { name: "Provider Operations", permission: permissions.PROVIDER_OPERATIONS },
-    { name: "Support", permission: permissions.SUPPORT },
-    { name: "Finance", permission: permissions.FINANCE }
+    { name: "Support", permission: permissions.SUPPORT }
   ];
 
   const demoEmployees = [
@@ -39,13 +37,6 @@
       permissions: [permissions.SUPPORT],
       password: demoPassword
     },
-    {
-      employeeId: "EMP-FIN-001",
-      name: "Finance Employee",
-      department: "Finance",
-      permissions: [permissions.FINANCE],
-      password: demoPassword
-    }
   ];
 
   const routeAccess = {
@@ -54,7 +45,6 @@
     "provider-operations.html": [permissions.PROVIDER_OPERATIONS],
     "provider-operations-detail.html": [permissions.PROVIDER_OPERATIONS],
     "provider-verification-review.html": [permissions.PROVIDER_OPERATIONS],
-    "finance-operations.html": [permissions.FINANCE],
     "support-dashboard.html": [permissions.SUPPORT],
     "support-ticket-details.html": [permissions.SUPPORT]
   };

@@ -340,6 +340,19 @@
       return request && request.id;
     }).filter(Boolean));
     const suspendedCatalogIds = new Set(getSuspendedCatalogIds());
+
+    // Local provider requests contain the same canonical lifecycle state used
+    // by Provider Operations. Seed backend data first so a delayed/stale API
+    // response cannot overwrite a freshly completed local transition.
+    (backendProviders || []).forEach(function (provider) {
+      if (!provider || !provider.id) return;
+      byId[provider.id] = {
+        ...provider,
+        organisationName: provider.organisationName || provider.name,
+        location: cityNameFromId(provider.cityId) || provider.location,
+        source: "backend"
+      };
+    });
     (data.providers || []).forEach(function (provider) {
       if (!provider || !provider.id || Number(provider.cityId) < 1 || Number(provider.cityId) > 5) return;
       if (provider.ownerProviderId && registeredProviderIds.has(provider.ownerProviderId)) return;
@@ -349,15 +362,6 @@
     (data.providerApprovalRequests || []).forEach(function (request) {
       if (!request || !request.id) return;
       byId[request.id] = mapRegisteredProvider(request);
-    });
-    (backendProviders || []).forEach(function (provider) {
-      if (!provider || !provider.id) return;
-      byId[provider.id] = {
-        ...provider,
-        organisationName: provider.organisationName || provider.name,
-        location: cityNameFromId(provider.cityId) || provider.location,
-        source: "backend"
-      };
     });
     return Object.keys(byId).map(function (id) { return byId[id]; });
   }
@@ -585,15 +589,22 @@
   function previewDocument(documentId) {
     const document = (selectedProvider.documents || []).find(function (item) { return item.documentId === documentId; });
     if (!document) return;
-    const storedDocument = getStoredDocumentPreview(selectedProvider.id, document.documentId);
-    const previewUrl = storedDocument ? storedDocument.dataUrl : document.documentUrl;
-    const isDataPreview = previewUrl && String(previewUrl).indexOf("data:") === 0;
-    const isImagePreview = isDataPreview && String(previewUrl).indexOf("data:image/") === 0;
-    const previewMarkup = isImagePreview
+    const resolver = window.ServeEaseAttachments && window.ServeEaseAttachments.canonicalResolveProviderDocument;
+    const resolved = resolver ? resolver(selectedProvider.id, document) : null;
+    const previewUrl = resolved && resolved.previewUrl;
+    const mimeType = String((resolved && resolved.mimeType) || document.mimeType || "").toLowerCase();
+    const fileName = String((resolved && resolved.filename) || document.documentName || "").toLowerCase();
+    const isImagePreview = mimeType.indexOf("image/") === 0 || /\.(png|jpe?g|gif|webp|bmp|svg)(?:$|\?)/.test(fileName);
+    const isPdfPreview = mimeType === "application/pdf" || /\.pdf(?:$|\?)/.test(fileName);
+    const previewMarkup = previewUrl && isImagePreview
       ? '<img class="provider-document-preview-media" src="' + previewUrl + '" alt="' + escapeHtml(document.documentName) + '" />'
-      : (isDataPreview
-        ? '<iframe class="provider-document-preview-frame" src="' + previewUrl + '" title="' + escapeHtml(document.documentName) + '"></iframe>'
-        : '<div class="provider-document-placeholder">This demo document is stored as verification metadata. Newly uploaded provider files preview here after registration.</div>');
+      : (previewUrl && isPdfPreview
+        ? '<div class="provider-document-pdf-actions"><p>PDF preview is available using the original uploaded file.</p><a class="btn btn-primary" target="_blank" rel="noopener" href="' + previewUrl + '">Open PDF</a><a class="btn btn-outline" target="_blank" rel="noopener" download="' + escapeHtml(resolved.filename) + '" href="' + previewUrl + '">Download PDF</a></div>'
+        : (previewUrl
+          ? '<div class="provider-document-placeholder"><strong>' + escapeHtml(resolved.filename) + '</strong><p>This file type does not support inline preview.</p><a class="btn btn-primary" target="_blank" rel="noopener" download="' + escapeHtml(resolved.filename) + '" href="' + previewUrl + '">Open or download file</a></div>'
+          : '<div class="provider-document-placeholder">' + (resolved && resolved.metadataOnly
+          ? 'This document contains verification metadata only; no uploaded file content is stored.'
+          : 'Preview unavailable because the stored file content is missing or corrupted.') + '</div>'));
     byId("providerDocumentTitle").textContent = document.documentType;
     byId("providerDocumentSubtitle").textContent = document.documentName;
     byId("providerDocumentBody").innerHTML =
@@ -657,14 +668,8 @@
       reasonError.textContent = "Catalog providers are already active. Only suspension is available for active catalog providers.";
       return;
     }
-    if (provider && provider.source === "registration") {
-      handleLocalRegistrationAction(pendingAction, reason, remarks);
-      return;
-    }
     if (pendingAction.type === "provider") {
-      if (pendingAction.action === "approve") request = api.approveProviderVerification(pendingAction.providerId, { adminRemarks: remarks });
-      if (pendingAction.action === "reject") request = api.rejectProviderVerification(pendingAction.providerId, { rejectionReason: reason, adminRemarks: remarks });
-      if (pendingAction.action === "suspend") request = api.suspendProviderVerification(pendingAction.providerId, { adminRemarks: remarks || reason, suspensionReason: reason });
+      request = canonicalProviderAction(pendingAction, provider, reason, remarks);
     } else {
       request = pendingAction.action === "approve"
         ? api.approveProviderDocument(pendingAction.providerId, pendingAction.documentId)
@@ -683,6 +688,35 @@
     }).finally(function () {
       byId("providerConfirmSubmitBtn").disabled = false;
     });
+  }
+
+  function canonicalProviderAction(action, provider, reason, remarks) {
+    const operations = window.ServeEaseProviderOperations;
+    if (!operations) return Promise.reject(new Error("Provider approval service is unavailable."));
+
+    // Provider Operations owns the provider lifecycle transition. Keep the
+    // verification page as a caller so all provider records receive one
+    // consistent state update, keyed by the canonical provider ID.
+    const result = action.action === "approve"
+      ? operations.approveProvider(action.providerId, remarks)
+      : action.action === "reject"
+        ? operations.rejectProvider(action.providerId, reason, remarks)
+        : operations.suspendProvider(action.providerId, reason, remarks);
+    if (!result || !result.ok) return Promise.reject(new Error((result && result.message) || "Unable to update provider verification."));
+
+    // Retain the existing backend synchronization for API-backed requests.
+    if (provider && provider.source !== "registration" && window.ServeEaseApi) {
+      const sync = action.action === "approve"
+        ? window.ServeEaseApi.approveProviderVerification(action.providerId, { adminRemarks: remarks })
+        : action.action === "reject"
+          ? window.ServeEaseApi.rejectProviderVerification(action.providerId, { rejectionReason: reason, adminRemarks: remarks })
+          : window.ServeEaseApi.suspendProviderVerification(action.providerId, { adminRemarks: remarks || reason, suspensionReason: reason });
+      return sync.catch(function (error) {
+        console.warn("Provider verification backend synchronization skipped after local canonical update.", error);
+        return null;
+      });
+    }
+    return Promise.resolve(result);
   }
 
   function handleCatalogSuspend(provider, reason, remarks) {

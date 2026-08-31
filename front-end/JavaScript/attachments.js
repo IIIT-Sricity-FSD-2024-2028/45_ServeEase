@@ -20,6 +20,24 @@
     return previews[documentId] || null;
   }
 
+  function canonicalResolveProviderDocument(providerId, providerDocument) {
+    if (!providerId || !providerDocument) return null;
+    const stored = getProviderPreview(providerId, providerDocument.documentId);
+    const storedContent = stored && (stored.dataUrl || stored.previewUrl || stored.url);
+    const documentUrl = providerDocument.documentUrl || providerDocument.url || "";
+    const usableDocumentUrl = documentUrl && String(documentUrl).indexOf("local-document://") !== 0;
+    return {
+      providerId: providerId,
+      documentId: providerDocument.documentId || "",
+      document: providerDocument,
+      stored: stored || null,
+      previewUrl: storedContent || (usableDocumentUrl ? documentUrl : ""),
+      filename: stored && (stored.name || stored.filename) || providerDocument.documentName || "Provider document",
+      mimeType: stored && (stored.type || stored.mimeType) || providerDocument.mimeType || "",
+      metadataOnly: !storedContent && !usableDocumentUrl
+    };
+  }
+
   function removeTicketAliases(attachments) {
     Object.keys(attachments).forEach(function (key) {
       const record = attachments[key];
@@ -129,8 +147,14 @@
 
   function previewTicketAttachment(ticket) {
     const attachment = getTicketAttachment(ticket);
-    if (!attachment || !attachment.dataUrl) return false;
     const modal = ensureModal();
+    if (!attachment || !attachment.dataUrl) {
+      document.getElementById("attachmentPreviewTitle").textContent = (ticket && ticket.attachmentName) || "Attachment";
+      document.getElementById("attachmentPreviewSubtitle").textContent = "Attachment preview";
+      document.getElementById("attachmentPreviewBody").innerHTML = '<div class="attachment-preview-placeholder">Preview unavailable because the stored attachment could not be resolved.</div>';
+      modal.classList.remove("hidden");
+      return true;
+    }
     const type = String(attachment.mimeType || "").toLowerCase();
     const isImage = ["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(type);
     const isPdf = type === "application/pdf";
@@ -150,18 +174,17 @@
   }
 
   function previewProviderDocument(providerId, providerDocument) {
-    if (!providerId || !providerDocument) return false;
-    const storedDocument = getProviderPreview(providerId, providerDocument.documentId);
-    const previewUrl = storedDocument && storedDocument.dataUrl ? storedDocument.dataUrl : providerDocument.documentUrl;
-    if (!previewUrl || String(previewUrl).indexOf("local-document://") === 0) return false;
+    const resolved = canonicalResolveProviderDocument(providerId, providerDocument);
+    if (!resolved || !resolved.previewUrl) return false;
+    const previewUrl = resolved.previewUrl;
     if (String(previewUrl).indexOf("data:") !== 0) {
       window.open(previewUrl, "_blank", "noopener");
       return true;
     }
 
     const modal = ensureModal();
-    const filename = storedDocument && storedDocument.name ? storedDocument.name : (providerDocument.documentName || "Provider document");
-    const mimeType = storedDocument && storedDocument.type ? storedDocument.type : String(previewUrl).slice(5, String(previewUrl).indexOf(";"));
+    const filename = resolved.filename;
+    const mimeType = resolved.mimeType || String(previewUrl).slice(5, String(previewUrl).indexOf(";"));
     const type = String(mimeType || "").toLowerCase();
     const isImage = type.indexOf("image/") === 0;
     const isPdf = type === "application/pdf";
@@ -182,12 +205,14 @@
   }
 
   function actionMarkup(ticket, label) {
-    return getTicketAttachment(ticket) ? '<button type="button" class="btn btn-outline serveease-attachment-preview-btn" data-attachment-ticket="' + escapeHtml(ticket.ticketId || ticket.id) + '">' + (label || "Preview attachment") + '</button>' : "";
+    const hasReference = ticket && (ticket.attachmentId || ticket.attachmentUrl || (ticket.attachmentName && ticket.attachmentName !== "No attachment"));
+    return hasReference ? '<button type="button" class="btn btn-outline serveease-attachment-preview-btn" data-attachment-ticket="' + escapeHtml(ticket.ticketId || ticket.id) + '">' + (label || "Preview attachment") + '</button>' : "";
   }
 
   window.ServeEaseAttachments = {
     readFileAsDataUrl: readFileAsDataUrl,
     getProviderPreview: getProviderPreview,
+    canonicalResolveProviderDocument: canonicalResolveProviderDocument,
     saveTicketAttachment: saveTicketAttachment,
     getTicketAttachment: getTicketAttachment,
     linkTicketAttachment: linkTicketAttachment,
