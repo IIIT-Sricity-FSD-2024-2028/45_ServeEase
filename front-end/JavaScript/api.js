@@ -115,6 +115,101 @@
     }
   };
 
+  function normalizeBookingId(value) {
+    const source = String(value || '').trim();
+    if (/^BOOK-\d{8}-\d{4}-\d{4}$/i.test(source)) return source.toUpperCase();
+    const legacy = source.match(/^BK[-_](\d+)$/i) || source.match(/^BOOK[-_](\d+)$/i);
+    if (legacy) return 'BOOK-LEGACY-' + String(Number(legacy[1])).padStart(8, '0');
+    return source;
+  }
+
+  function normalizeCustomerEmail(value) { return String(value || '').trim().toLowerCase(); }
+
+  function normalizeBooking(record) {
+    const item = record || {};
+    const status = String(item.status || item.bookingStatus || 'Pending').trim();
+    return {
+      ...item,
+      id: normalizeBookingId(item.id || item.bookingRef || item.bookingReference || item.bookingId),
+      customerId: String(item.customerId || item.ownerCustomerId || '').trim(),
+      customerEmail: normalizeCustomerEmail(item.customerEmail || item.email),
+      providerId: String(item.providerId || item.ownerProviderId || '').trim(),
+      service: item.service || item.serviceType || '',
+      category: item.category || item.serviceCategory || item.service || '',
+      status: ['Requested', 'Pending', 'Accepted', 'Completed', 'Cancelled', 'Rejected'].includes(status) ? status : 'Pending',
+      paymentStatus: ['Pending', 'Successful', 'Refunded', 'Failed'].includes(String(item.paymentStatus || '')) ? item.paymentStatus : 'Pending'
+    };
+  }
+
+  function isBookingBlockingAvailability(booking) {
+    return ['Requested', 'Pending', 'Accepted'].includes(String(booking && booking.status || ''));
+  }
+
+  function upsertBookingList(list, booking) {
+    const normalized = normalizeBooking(booking);
+    if (!normalized.id) return list;
+    const index = list.findIndex(function (item) { return normalizeBookingId(item && (item.id || item.bookingRef)) === normalized.id; });
+    if (index === -1) list.unshift(normalized);
+    else list[index] = Object.assign({}, list[index], normalized);
+    return list;
+  }
+
+  window.ServeEaseBooking = {
+    normalizeBookingId: normalizeBookingId,
+    normalizeBooking: normalizeBooking,
+    normalizeCustomerEmail: normalizeCustomerEmail,
+    isBookingBlockingAvailability: isBookingBlockingAvailability,
+    upsertBookingList: upsertBookingList
+  };
+
+  function notificationHash(value) {
+    return String(value || '').split('').reduce(function (hash, char) {
+      return ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+    }, 0).toString(36).replace('-', 'n');
+  }
+
+  function normalizeNotifications(records, scope) {
+    const seen = {};
+    return (Array.isArray(records) ? records : []).map(function (record) {
+      const item = record || {};
+      const reference = item.eventId || item.referenceId || item.ticketId || item.entityId || item.bookingId || item.paymentId || item.id || '';
+      const type = String(item.type || item.eventType || 'notification').trim().toLowerCase();
+      const eventId = String(item.eventId || (type + ':' + reference + ':' + (scope || ''))).trim();
+      const createdAt = item.createdAt || item.createdAtIso || item.timestamp || item.time || '1970-01-01T00:00:00.000Z';
+      const id = String(item.id || 'N-' + notificationHash(eventId));
+      const hasReadState = item.read !== undefined || item.isRead !== undefined || item.isNew !== undefined;
+      const read = hasReadState ? (item.read === true || item.isRead === true || item.isNew === false) : true;
+      return Object.assign({}, item, {
+        id: id,
+        eventId: eventId,
+        type: type,
+        message: item.message || item.text || '',
+        text: item.text || item.message || '',
+        createdAt: createdAt,
+        read: read,
+        isRead: read,
+        isNew: !read
+      });
+    }).filter(function (item) {
+      if (!item.eventId || seen[item.eventId]) return false;
+      seen[item.eventId] = true;
+      return true;
+    });
+  }
+
+  window.ServeEaseNotifications = {
+    normalize: normalizeNotifications,
+    unreadCount: function (records) { return normalizeNotifications(records).filter(function (item) { return !item.read; }).length; }
+  };
+
+  function canonicalProfilePhotoReference(value) {
+    const reference = String(value || '').trim();
+    if (!reference || reference.length > 300) return undefined;
+    if (/^\/uploads\/profiles\/[^?#\s]+$/i.test(reference)) return reference;
+    if (/^https?:\/\/[^/]+\/uploads\/profiles\/[^?#\s]+$/i.test(reference)) return reference;
+    return undefined;
+  }
+
   function normalizeRole(role) {
     if (role === "admin" || role === "superuser") return "admin";
     if (role === "support") return "support";
@@ -160,7 +255,12 @@
       throw new Error(Array.isArray(message) ? message.join(" ") : message);
     }
 
-    return payload ? payload.data : null;
+    const result = payload ? payload.data : null;
+    const method = String(options && options.method || 'GET').toUpperCase();
+    if (method !== 'GET' && /\/(bookings|state|availability)(\/|$)/.test(path)) {
+      window.dispatchEvent(new CustomEvent('serveease:business-state-changed', { detail: { path: path, method: method } }));
+    }
+    return result;
   }
 
 async function upload(path, file, role, userId) {
@@ -214,7 +314,7 @@ async function upload(path, file, role, userId) {
       return upload("/uploads/tickets", file, getRole());
     },
     uploadProviderProfilePhoto: function (file) {
-      return upload("/uploads/profiles/photo", file, "provider");
+      return upload("/uploads/profiles/photo", file, "provider", arguments[1]);
     },
     syncCatalog: function (catalog) {
       const catalogImages = {
@@ -252,6 +352,10 @@ async function upload(path, file, role, userId) {
           availabilitySlots: provider.availabilitySlots,
           ownerProviderId: provider.ownerProviderId,
           ownerProviderEmail: provider.ownerProviderEmail,
+          accountStatus: provider.accountStatus,
+          approvalStatus: provider.approvalStatus,
+          verificationStatus: provider.verificationStatus,
+          profilePhoto: canonicalProfilePhotoReference(provider.profilePhoto),
           servicePricing: provider.servicePricing,
           services: provider.services
         };
@@ -291,6 +395,9 @@ async function upload(path, file, role, userId) {
     },
     getBookings: function () {
       return request("/bookings", { method: "GET", headers: { role: "user" } });
+    },
+    getCanonicalBookings: function () {
+      return this.getBookings().then(function (items) { return (Array.isArray(items) ? items : []).map(normalizeBooking); });
     },
     getProviderAvailability: function (providerId) {
       return request(`/availability/providers/${encodeURIComponent(providerId)}`, {
@@ -550,8 +657,9 @@ async function upload(path, file, role, userId) {
 
     function providerKey(provider) {
       if (!provider) return "";
+      const registrationId = provider.providerCatalogId || provider.catalogProviderId;
       return [
-        normalize(provider.ownerProviderId || baseId(provider)),
+        normalize(registrationId || baseId(provider) || provider.providerId || provider.ownerProviderId),
         provider.category || "",
         Number(provider.cityId) || 0
       ].join("|");
@@ -579,9 +687,28 @@ async function upload(path, file, role, userId) {
       provider = normalizeProvider(provider);
       const key = providerKey(provider);
       const existing = bestByKey[key];
-      if (!existing || providerScore(provider, sourcePriority) > providerScore(existing.provider, existing.sourcePriority)) {
+      if (!existing) {
         bestByKey[key] = { provider: provider, sourcePriority: sourcePriority };
+        return;
       }
+
+      const merged = { ...existing.provider };
+      Object.keys(provider).forEach(function (field) {
+        const value = provider[field];
+        if (value !== undefined && value !== null && value !== "") merged[field] = value;
+      });
+      ["subServices", "services"].forEach(function (field) {
+        if (Array.isArray(existing.provider[field]) || Array.isArray(provider[field])) {
+          merged[field] = (Array.isArray(existing.provider[field]) ? existing.provider[field] : [])
+            .concat(Array.isArray(provider[field]) ? provider[field] : [])
+            .filter(function (item, index, list) { return list.indexOf(item) === index; });
+        }
+      });
+      if (existing.provider.servicePricing || provider.servicePricing) merged.servicePricing = Object.assign({}, existing.provider.servicePricing || {}, provider.servicePricing || {});
+      const preferred = providerScore(provider, sourcePriority) > providerScore(existing.provider, existing.sourcePriority) ? provider : existing.provider;
+      merged.id = preferred.id || merged.id;
+      merged.name = preferred.name || merged.name;
+      bestByKey[key] = { provider: merged, sourcePriority: Math.max(sourcePriority, existing.sourcePriority) };
     }
 
     backendProviders.forEach(function (provider) {

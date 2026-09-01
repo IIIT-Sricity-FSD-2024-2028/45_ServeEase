@@ -4,3 +4,6 @@ package-lock.json
 /back-end/uploads/verification/
 /back-end/uploads/tickets/
 /back-end/uploads/profiles/
+
+# Runtime state persisted by the API (availability and frontend state bridge)
+/back-end/data/

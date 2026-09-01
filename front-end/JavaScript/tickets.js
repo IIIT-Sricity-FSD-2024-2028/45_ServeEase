@@ -211,9 +211,17 @@
 
   function customerData() {
     const current = session();
-    const suffix = current.email === "user@serveease.com" || current.userId === "CUS001"
+    const canonicalKey = current.email === "user@serveease.com" || current.userId === "CUS001"
       ? "serveEaseCustomerModuleData"
-      : "serveEaseCustomerModuleData:" + (current.userId || String(current.email || "customer").toLowerCase());
+      : "serveEaseCustomerModuleData:" + String(current.userId || "").toLowerCase();
+    const legacyKey = current.email === "user@serveease.com" || current.userId === "CUS001"
+      ? canonicalKey
+      : "serveEaseCustomerModuleData:" + String(current.email || "").toLowerCase();
+    const canonical = JSON.parse(localStorage.getItem(canonicalKey) || "null");
+    const legacy = JSON.parse(localStorage.getItem(legacyKey) || "null");
+    const canonicalCount = canonical ? [].concat(canonical.bookings || [], canonical.payments || [], canonical.tickets || []).length : 0;
+    const legacyCount = legacy ? [].concat(legacy.bookings || [], legacy.payments || [], legacy.tickets || []).length : 0;
+    const suffix = canonicalCount > 0 || canonicalKey === legacyKey || legacyCount === 0 ? canonicalKey : legacyKey;
     const data = JSON.parse(localStorage.getItem(suffix) || '{"bookings":[]}');
     const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(data);
     if (normalized && normalized.changed) localStorage.setItem(suffix, JSON.stringify(normalized.data));

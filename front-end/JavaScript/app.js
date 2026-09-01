@@ -295,21 +295,32 @@ function getProviderReviewItems(provider) {
 
 function providerDisplayImage(provider) {
   if (!provider) return "";
-  if (provider.profilePhoto) return provider.profilePhoto;
-  const providerId = provider.ownerProviderId || provider.providerId;
-  if (providerId) {
-    try {
-      const previews = JSON.parse(localStorage.getItem("serveEaseProviderDocuments:" + providerId) || "{}");
-      const photoKey = Object.keys(previews).find(function (key) {
-        const item = previews[key];
-        return item && item.dataUrl && String(item.type || "").indexOf("image/") === 0;
-      });
-      if (photoKey) return previews[photoKey].dataUrl;
-    } catch (error) {
-      /* keep existing image fallback */
-    }
-  }
+  const profilePhoto = String(provider.profilePhoto || "").trim();
+  if (/^(https?:\/\/|\/)?uploads\/profiles\//i.test(profilePhoto) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(profilePhoto)) return profilePhoto;
   return provider.image || "assets/images/home-cleaning/clean1.jpg";
+}
+
+function providerAccountState(provider) {
+  return String(provider && (provider.accountStatus || provider.status || provider.approvalStatus || provider.verificationStatus) || "Active")
+    .trim().toLowerCase().replace(/[_-]+/g, " ");
+}
+
+function providerIsDiscoverable(provider) {
+  const state = providerAccountState(provider);
+  return !["suspended", "blocked", "rejected", "verification rejected", "under verification", "pending", "pending approval"].includes(state) && provider.verified !== false;
+}
+
+function providerIdentityKey(provider) {
+  const registrationId = String(provider && (provider.providerCatalogId || provider.catalogProviderId) || "").trim().toLowerCase();
+  const rawSource = registrationId || String(provider && provider.id || "").trim().toLowerCase();
+  const rawId = String(provider && (rawSource || provider.providerId || provider.ownerProviderId) || "").trim().toLowerCase();
+  const base = provider && provider.category && provider.cityId
+    ? rawId.replace(new RegExp("-" + String(provider.category).toLowerCase() + "-" + Number(provider.cityId) + "$"), "")
+    : rawId;
+  if (base) return base;
+  return [provider && provider.name, provider && provider.category, provider && provider.cityId].map(function (value) {
+    return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+  }).join("|");
 }
 
 function findProviderById(providerId) {
@@ -394,9 +405,16 @@ function setupFooterLinks() {
       ? window.ServeEaseLocation.getProvidersByCity(cityId)
       : (data.providers || []);
 
-    var allCategoryProviders = cityProviders.filter(function (p) {
-      return p.category === categoryId;
+    var categoryRows = cityProviders.filter(function (p) {
+      return p.category === categoryId && providerIsDiscoverable(p);
     });
+    var providersByIdentity = {};
+    categoryRows.forEach(function (provider) {
+      const key = providerIdentityKey(provider);
+      const existing = providersByIdentity[key];
+      if (!existing || (provider.ownerProviderId && !existing.ownerProviderId) || (provider.subServices || []).length > (existing.subServices || []).length) providersByIdentity[key] = provider;
+    });
+    var allCategoryProviders = Object.keys(providersByIdentity).map(function (key) { return providersByIdentity[key]; });
 
     var filteredProviders = allCategoryProviders.filter(function (provider) {
       if (provider.startingPrice > selectedPrice) return false;
@@ -425,7 +443,7 @@ function setupFooterLinks() {
       return `
         <div class="provider-card">
           <div class="provider-image-wrap">
-            <img src="${providerDisplayImage(provider)}" alt="${provider.name}">
+            <img src="${providerDisplayImage(provider)}" alt="${provider.name}" onerror="this.onerror=null;this.src='assets/images/home-cleaning/clean1.jpg';">
             ${provider.availableToday ? `<span class="provider-status">Available Today</span>` : ""}
           </div>
           <div class="provider-card-body">
@@ -502,6 +520,7 @@ function availabilityDateParts(item) {
 async function initAvailabilityBookingFlow(bookingCard, provider, session) {
   let selectedDate = "";
   let selectedSlot = "";
+  let selectedService = "";
   let availabilityDates = [];
 
   function renderLoading() {
@@ -581,7 +600,7 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
       <select id="bookingService">
         ${displaySubServices.map(function (service) {
           const price = getProviderServicePrice(provider, service);
-          return `<option value="${service}">${service} - ${formatCurrency(price)}</option>`;
+          return `<option value="${service}" ${selectedService === service ? "selected" : ""}>${service} - ${formatCurrency(price)}</option>`;
         }).join("")}
       </select>
       <section class="availability-section" aria-labelledby="availableDatesHeading">
@@ -605,6 +624,13 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
 
     renderTimes();
 
+    const serviceSelect = document.getElementById("bookingService");
+    if (serviceSelect) {
+      if (!selectedService || !displaySubServices.includes(selectedService)) selectedService = serviceSelect.value;
+      serviceSelect.value = selectedService;
+      serviceSelect.addEventListener("change", function () { selectedService = serviceSelect.value; });
+    }
+
     bookingCard.querySelectorAll("[data-date]").forEach(function (button) {
       button.addEventListener("click", function () {
         selectedDate = button.dataset.date;
@@ -614,7 +640,7 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
     });
 
     document.getElementById("proceedToBookingBtn").addEventListener("click", function () {
-      const selectedService = document.getElementById("bookingService").value;
+      selectedService = document.getElementById("bookingService").value;
       const unitPrice = getProviderServicePrice(provider, selectedService);
       const financeEngine = window.ServeEaseFinance;
       const breakdown = financeEngine
@@ -642,6 +668,7 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
             providerCategory: provider.category,
             providerLocation: provider.location,
             serviceName: selectedService,
+            serviceId: (activeServices.find(function (item) { return item.name === selectedService; }) || {}).id || selectedService,
             selectedDate: selectedDate,
             selectedTimeSlot: selectedSlot,
             amount: totalAmount,
@@ -989,13 +1016,11 @@ async function submitBookingCheckout() {
 
   const createdAt = new Date().toISOString();
   const workflow = window.ServeEaseBookingWorkflow;
-  const bookingRef = workflow
-    ? workflow.generateReference(customerModuleData.bookings, createdAt, time)
-    : `BOOK-${createdAt.slice(0, 10).replace(/-/g, "")}-${createdAt.slice(11, 16).replace(/:/g, "")}-0001`;
-  const paymentRef = `TXN-2026-${4500 + customerModuleData.payments.length + 1}`;
+  const normalizedCustomerEmail = String(email).trim().toLowerCase();
 
   let bookingEntry = {
-    id: bookingRef,
+    id: "",
+    customerId: checkoutSession.userId || "",
     service: service,
     provider: provider.name,
     providerId: provider.id,
@@ -1013,11 +1038,11 @@ async function submitBookingCheckout() {
     providerCommissionRate: breakdown.providerCommissionRate,
     providerCommissionAmount: breakdown.providerCommissionAmount,
     providerPayout: breakdown.providerPayout,
-    category: "Pending",
+    category: provider.category || "Home Service",
     paymentMethod: paymentMethod,
     customerName: name,
     customerPhone: phone,
-    customerEmail: email,
+    customerEmail: normalizedCustomerEmail,
     createdAt: createdAt
   };
 
@@ -1044,12 +1069,16 @@ async function submitBookingCheckout() {
         paymentMethod: paymentMethod,
         customerName: name,
         customerPhone: phone,
-        customerEmail: email
+        customerId: checkoutSession.userId || "",
+        customerEmail: normalizedCustomerEmail,
+        category: provider.category || "Home Service",
+        paymentStatus: "Pending"
       });
 
       if (apiBooking && apiBooking.id) {
         bookingEntry = {
           id: workflow ? workflow.normalizeReference(apiBooking.id) : apiBooking.id,
+          customerId: apiBooking.customerId || checkoutSession.userId || "",
           service: apiBooking.service,
           provider: apiBooking.provider,
           providerId: apiBooking.providerId || provider.id,
@@ -1072,13 +1101,23 @@ async function submitBookingCheckout() {
           customerPhone: apiBooking.customerPhone || phone,
           customerEmail: apiBooking.customerEmail || email,
           category: apiBooking.category || apiBooking.status,
+          paymentStatus: apiBooking.paymentStatus || "Pending",
           createdAt: apiBooking.createdAt || createdAt
         };
       }
     } catch (error) {
-      console.warn("ServeEase backend unavailable, using local booking storage.", error);
+      if (errorBox) errorBox.textContent = "Booking could not be created. Please try again.";
+      console.warn("ServeEase canonical booking creation failed.", error);
+      return;
     }
   }
+
+  if (!bookingEntry.id) {
+    if (errorBox) errorBox.textContent = "Booking could not be created. Please try again.";
+    return;
+  }
+
+  const paymentRef = `TXN-${new Date().getFullYear()}-${4500 + customerModuleData.payments.length + 1}`;
 
   const paymentEntry = {
     id: paymentRef,

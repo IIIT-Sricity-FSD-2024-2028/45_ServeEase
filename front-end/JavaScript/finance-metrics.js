@@ -70,9 +70,25 @@
         rows.push({
           id: display(payment.id), booking: display(payment.bookingRef || payment.bookingReference), customer: owner,
           provider: display(payment.provider || payment.providerName), amount: Number(payment.amount) || 0,
+          providerId: display(payment.providerId), category: display(payment.category || payment.serviceCategory),
+          serviceType: display(payment.serviceType || payment.service), service: display(payment.service),
+          serviceId: display(payment.serviceId),
           date: display(payment.date || payment.paymentDate || payment.createdAtIso),
           status: display(payment.status || payment.paymentStatus, "Pending")
         });
+      });
+    });
+    const canonical = Array.isArray(window.__serveEaseCanonicalBookings) ? window.__serveEaseCanonicalBookings : [];
+    const localBookingIds = {};
+    rows.forEach(function (row) { if (row.booking) localBookingIds[String(row.booking).toLowerCase()] = true; });
+    canonical.forEach(function (booking) {
+      const normalized = normalizeBooking(booking, {});
+      const status = String(normalized && normalized.status || '').toLowerCase();
+      if (!normalized || !normalized.id || localBookingIds[normalized.id.toLowerCase()] || !['successful', 'success', 'paid'].includes(status)) return;
+      rows.push({
+        id: 'PAY-' + normalized.id, booking: normalized.id, customer: normalized.customer,
+        provider: normalized.provider, amount: Number(normalized.customerTotal || normalized.amount) || 0,
+        serviceFee: Number(normalized.serviceFee) || 0, date: normalized.date, status: normalized.status
       });
     });
     return dedupeRows(rows, function (row) { return row.id + "|" + row.booking; });
@@ -83,7 +99,7 @@
     storageKeys(providerPrefix).forEach(function (key) {
       const data = readJson(key, {}) || {};
       (Array.isArray(data.transactions) ? data.transactions : []).forEach(function (transaction) {
-        rows.push({ id: display(transaction.id), booking: display(transaction.bookingRef || transaction.bookingReference), amount: Number(transaction.amount) || 0, status: display(transaction.status), date: display(transaction.receivedDate || transaction.paymentDate || transaction.date, "-") });
+        rows.push({ id: display(transaction.id), booking: display(transaction.bookingRef || transaction.bookingReference), amount: Number(transaction.amount) || 0, status: display(transaction.status), date: display(transaction.receivedDate || transaction.paymentDate || transaction.date, "-"), provider: display(transaction.provider || transaction.providerName), providerId: display(transaction.providerId), category: display(transaction.category || transaction.serviceCategory), serviceType: display(transaction.serviceType || transaction.service), service: display(transaction.service), serviceId: display(transaction.serviceId) });
       });
     });
     return dedupeRows(rows, function (row) { return row.id + "|" + row.booking; });
@@ -96,8 +112,13 @@
       customer: display(booking.customer || booking.customerName || owner.customer),
       provider: display(booking.provider || booking.providerName || owner.provider),
       providerId: display(booking.providerId),
+      category: display(booking.category || booking.serviceCategory),
+      serviceType: display(booking.serviceType || booking.service),
+      serviceId: display(booking.serviceId),
       service: display(booking.service || booking.serviceType || booking.category),
       amount: Number(booking.amount) || 0,
+      serviceFee: Number(booking.serviceFee) || 0,
+      customerTotal: Number(booking.customerTotal || booking.totalAmount) || 0,
       date: display(booking.paymentDate || booking.paidAt || booking.serviceDate || booking.date),
       status: display(booking.paymentStatus || booking.payment || booking.paymentState, "Pending")
     };
@@ -105,6 +126,10 @@
 
   function collectBookings() {
     const rows = [];
+    (Array.isArray(window.__serveEaseCanonicalBookings) ? window.__serveEaseCanonicalBookings : []).forEach(function (booking) {
+      const normalized = normalizeBooking(booking, {});
+      if (normalized) rows.push(normalized);
+    });
     const superuserData = readJson("serveEaseSuperuserModuleData", {}) || {};
     (Array.isArray(superuserData.bookings) ? superuserData.bookings : []).forEach(function (booking) {
       const normalized = normalizeBooking(booking, {});
@@ -236,6 +261,11 @@
         payoutDate: payout ? payout.date : (isBookingCompleted ? (payment.date || "-") : "-"),
         payoutAmount: breakdown.providerPayout
       };
+      row.providerId = providerId || display((payout && payout.providerId) || payment.providerId);
+      row.category = display(booking && (booking.category || booking.serviceCategory) || payment.category || (payout && (payout.category || payout.serviceCategory)));
+      row.serviceType = display(booking && booking.serviceType || payment.serviceType || (payout && payout.serviceType));
+      row.service = display(booking && booking.service || payment.service || (payout && payout.service));
+      row.serviceId = display(booking && booking.serviceId || payment.serviceId || (payout && payout.serviceId));
 
       row.searchText = [
         row.id,

@@ -30,6 +30,13 @@
   function getSupportData() {
     const data = JSON.parse(localStorage.getItem(supportStorageKey) || "null");
     if (!data || !Array.isArray(data.tickets)) return data;
+    if (window.ServeEaseNotifications && typeof window.ServeEaseNotifications.normalize === "function") {
+      const normalizedNotifications = window.ServeEaseNotifications.normalize(data.notifications, "support");
+      if (JSON.stringify(normalizedNotifications) !== JSON.stringify(data.notifications || [])) {
+        data.notifications = normalizedNotifications;
+        localStorage.setItem(supportStorageKey, JSON.stringify(data));
+      }
+    }
 
     const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(data);
     if (normalized && normalized.changed) localStorage.setItem(supportStorageKey, JSON.stringify(normalized.data));
@@ -194,7 +201,7 @@
             moduleChanged = true;
           }
           data.tickets.unshift(normalized);
-          data.notifications.unshift({ id: "NT" + Date.now() + ticket.id, text: "New support ticket created - " + ticket.id, time: todayStamp(), isNew: true, ticketId: ticket.id });
+          addNotification(data, "New support ticket created - " + ticket.id, ticket.id, true, "support:ticket:" + ticket.id + ":created");
           existingIds.add(ticket.id);
           changed = true;
         });
@@ -225,7 +232,7 @@
             moduleChanged = true;
           }
           data.tickets.unshift(normalized);
-          data.notifications.unshift({ id: "NT" + Date.now() + ticket.id, text: "New provider support ticket created - " + ticket.id, time: todayStamp(), isNew: true, ticketId: ticket.id });
+          addNotification(data, "New provider support ticket created - " + ticket.id, ticket.id, true, "support:ticket:" + ticket.id + ":created");
           existingIds.add(ticket.id);
           changed = true;
         });
@@ -363,10 +370,13 @@
         });
         if (!hasNotification) {
           superuserData.notifications.unshift({
-            id: "AN" + Date.now(),
+            id: "AN-support-escalated-" + normalized.id,
+            eventId: "support:ticket:" + normalized.id + ":escalated",
             text: "Support escalated ticket - " + normalized.id,
-            time: "Just now",
+            createdAt: new Date().toISOString(),
+            time: new Date().toISOString(),
             type: "red",
+            read: false,
             isNew: true,
             ticketId: normalized.id,
             actionPage: "superuser-escalated-tickets.html"
@@ -801,12 +811,12 @@ function setupHeader(agentName) {
     const newCountNode = document.getElementById("supportNewNotificationCount");
     if (!notificationList || !newCountNode) return;
 
-    const newCount = data.notifications.filter(function (item) { return item.isNew; }).length;
+    const newCount = data.notifications.filter(function (item) { return item.read !== true && item.isNew !== false; }).length;
     newCountNode.textContent = `${newCount} New`;
 
     notificationList.innerHTML = data.notifications.map(function (item) {
       return `
-        <button class="support-notification-item ${item.isNew ? "" : "read"}" type="button" data-notification-id="${item.id}" data-ticket-id="${item.ticketId}">
+        <button class="support-notification-item ${item.read === true || item.isNew === false ? "read" : ""}" type="button" data-notification-id="${item.id}" data-ticket-id="${item.ticketId}">
           <div class="support-notification-text">${item.text}</div>
           <div class="support-notification-time">${item.time}</div>
         </button>
@@ -819,7 +829,9 @@ function setupHeader(agentName) {
         const notification = (currentData.notifications || []).find(function (item) {
           return String(item.id) === String(button.dataset.notificationId);
         });
-        if (notification && notification.isNew) {
+        if (notification && notification.read !== true && notification.isNew !== false) {
+          notification.read = true;
+          notification.isRead = true;
           notification.isNew = false;
           setSupportData(currentData);
         }
@@ -1179,11 +1191,18 @@ function setupHeader(agentName) {
     return '<div class="support-attachment-row">📎 <strong>' + name + '</strong> · ' + label + ' · ' + (stored ? window.ServeEaseAttachments.formatFileSize(stored.fileSize) : formatAttachmentSize(ticket.attachmentSize)) + ' ' + action + '</div>';
   }
 
-  function addNotification(data, text, ticketId, isNew) {
+  function addNotification(data, text, ticketId, isNew, eventId) {
+    eventId = eventId || "support:ticket:" + String(ticketId || "").toLowerCase() + ":update:" + String(data.notifications.length + 1);
+    if (data.notifications.some(function (item) { return item.eventId === eventId; })) return;
+    const createdAt = new Date().toISOString();
     data.notifications.unshift({
-      id: `NT${Date.now()}`,
+      id: "N-" + eventId.replace(/[^a-z0-9:_-]/gi, "-"),
+      eventId: eventId,
       text: text,
-      time: todayStamp(),
+      createdAt: createdAt,
+      time: createdAt,
+      read: !Boolean(isNew),
+      isRead: !Boolean(isNew),
       isNew: Boolean(isNew),
       ticketId: ticketId
     });
@@ -1279,7 +1298,7 @@ function setupHeader(agentName) {
         ticket.history.forEach(function (entry, index) {
           entry.active = index === ticket.history.length - 1;
         });
-        addNotification(data, `Support update saved - ${ticket.id}`, ticket.id, true);
+        addNotification(data, `Support update saved - ${ticket.id}`, ticket.id, true, "support:ticket:" + ticket.id + ":solution");
         persistTicketUpdate(data, ticket);
         solutionSuccess.textContent = "Solution saved and shared with the user.";
         refreshPage();
@@ -1360,7 +1379,7 @@ function setupHeader(agentName) {
         ticket.history.forEach(function (entry, index) {
           entry.active = index === ticket.history.length - 1;
         });
-        addNotification(data, `New reply sent for ${ticket.id}`, ticket.id, true);
+        addNotification(data, `New reply sent for ${ticket.id}`, ticket.id, true, "support:ticket:" + ticket.id + ":reply:" + (ticket.messages || []).length);
         persistTicketUpdate(data, ticket);
         replyInput.value = "";
         replySuccess.textContent = "Reply sent successfully.";
@@ -1397,7 +1416,7 @@ function setupHeader(agentName) {
         ticket.history.forEach(function (entry, index) {
           entry.active = index === ticket.history.length - 1;
         });
-        addNotification(data, `Ticket status updated - ${ticket.id}`, ticket.id, true);
+        addNotification(data, `Ticket status updated - ${ticket.id}`, ticket.id, true, "support:ticket:" + ticket.id + ":status:" + ticket.status);
         persistTicketUpdate(data, ticket);
         replyError.textContent = "";
         replySuccess.textContent = "Ticket status updated successfully.";
@@ -1451,7 +1470,7 @@ function setupHeader(agentName) {
         ticket.history.forEach(function (entry, index) {
           entry.active = index === ticket.history.length - 1;
         });
-        addNotification(data, `Ticket escalated to superuser - ${ticket.id}`, ticket.id, true);
+        addNotification(data, `Ticket escalated to superuser - ${ticket.id}`, ticket.id, true, "support:ticket:" + ticket.id + ":escalated");
         persistTicketUpdate(data, ticket);
         syncTicketToSuperuserModule(ticket);
         replySuccess.textContent = "Ticket escalated to superuser successfully.";
@@ -1484,6 +1503,14 @@ function setupHeader(agentName) {
       if (event.key !== supportStorageKey && event.key !== "serveEaseSupportModuleData") return;
       if (document.getElementById("supportWelcomeText")) renderDashboard();
       if (document.getElementById("supportTicketDetailGrid")) renderDetailPage();
+    });
+    window.addEventListener("serveease:business-state-changed", function (event) {
+      if (event.detail && /state|bookings/.test(event.detail.path || "")) {
+        hydrateSupportDataFromBackend(function () {
+          if (document.getElementById("supportWelcomeText")) renderDashboard();
+          if (document.getElementById("supportTicketDetailGrid")) renderDetailPage();
+        });
+      }
     });
   }
 })();

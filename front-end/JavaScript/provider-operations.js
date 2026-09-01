@@ -498,7 +498,9 @@
     return {
       providers: providers,
       services: collectServices(providers),
-      bookings: collectBookings(providers),
+      bookings: Array.isArray(window.__serveEaseCanonicalBookings)
+        ? dedupeById(window.__serveEaseCanonicalBookings.filter(function (booking) { return providers.some(function (provider) { return providerMatches(provider, booking.providerId); }); }).concat(collectBookings(providers)))
+        : collectBookings(providers),
       tickets: collectTickets(),
       availability: collectAvailability(providers)
     };
@@ -949,6 +951,9 @@
     if (!byId("providerOperationsRows")) return;
     setupActionModal();
     refreshListPage();
+    if (window.ServeEaseApi && window.ServeEaseApi.getCanonicalBookings) {
+      window.ServeEaseApi.getCanonicalBookings().then(function (bookings) { window.__serveEaseCanonicalBookings = bookings; refreshListPage(); }).catch(function () {});
+    }
     const search = byId("providerOperationsSearch");
     const status = byId("providerOperationsStatusFilter");
     if (search) search.addEventListener("input", refreshListPage);

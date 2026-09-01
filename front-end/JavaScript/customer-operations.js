@@ -402,6 +402,14 @@
     state.tickets = collectTickets();
   }
 
+  function loadCanonicalBookings() {
+    if (!window.ServeEaseApi || !window.ServeEaseApi.getCanonicalBookings) return Promise.resolve();
+    return window.ServeEaseApi.getCanonicalBookings().then(function (bookings) {
+      window.__serveEaseCanonicalBookings = bookings;
+      state.bookings = dedupeById(bookings.map(function (booking) { return normalizeBooking(booking, "Canonical booking API"); }).concat(collectBookings()));
+    }).catch(function () {});
+  }
+
   function setupFilters() {
     const search = byId("customerOperationsSearch");
     const status = byId("customerOperationsStatusFilter");
@@ -414,4 +422,5 @@
   setupFilters();
   renderStats();
   renderCustomers();
+  loadCanonicalBookings().then(function () { renderStats(); renderCustomers(); });
 })();

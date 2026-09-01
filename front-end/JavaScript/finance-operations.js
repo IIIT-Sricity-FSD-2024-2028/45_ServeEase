@@ -184,6 +184,24 @@
         rows.push(row);
       });
     });
+    if (Array.isArray(window.__serveEaseCanonicalBookings)) {
+      window.__serveEaseCanonicalBookings.forEach(function (booking) {
+        const bookingId = display(booking.id);
+        if (rows.some(function (row) { return row.booking === bookingId; })) return;
+        const status = display(booking.paymentStatus, "Pending");
+        rows.push({
+          id: "PAY-" + bookingId,
+          booking: bookingId,
+          customer: display(booking.customerName || booking.customerEmail),
+          provider: display(booking.provider),
+          method: display(booking.paymentMethod),
+          amount: Number(booking.amount) || 0,
+          date: display(booking.paymentDate || booking.createdAt),
+          status: status,
+          searchText: [bookingId, booking.customerName, booking.customerEmail, booking.provider, status].join(" ").toLowerCase()
+        });
+      });
+    }
     return dedupeRows(rows, function (row) { return row.id + "|" + row.booking; });
   }
 
@@ -224,6 +242,12 @@
   function collectBookings() {
     const rows = [];
     const superuserData = readJson(superuserKey, {}) || {};
+    if (Array.isArray(window.__serveEaseCanonicalBookings)) {
+      window.__serveEaseCanonicalBookings.forEach(function (booking) {
+        const normalized = normalizeBooking(booking, {});
+        if (normalized) rows.push(normalized);
+      });
+    }
     (Array.isArray(superuserData.bookings) ? superuserData.bookings : []).forEach(function (booking) {
       const normalized = normalizeBooking(booking, {});
       if (normalized) rows.push(normalized);
@@ -557,6 +581,9 @@
 
     setupHeader(session);
     render();
+    if (window.ServeEaseApi && window.ServeEaseApi.getCanonicalBookings) {
+      window.ServeEaseApi.getCanonicalBookings().then(function (bookings) { window.__serveEaseCanonicalBookings = bookings; render(); }).catch(function () {});
+    }
 
     const search = byId("financeGlobalSearch");
     const statusFilters = [byId("financePaymentStatusFilter"), byId("financeEarningsStatusFilter")].filter(Boolean);
@@ -571,6 +598,13 @@
 
     window.addEventListener("storage", function (event) {
       if (!event.key || event.key === superuserKey || event.key.indexOf(customerPrefix) === 0 || event.key.indexOf(providerPrefix) === 0) render();
+    });
+    window.addEventListener("serveease:business-state-changed", function (event) {
+      if (event.detail && /bookings|state|availability/.test(event.detail.path || "")) {
+        if (window.ServeEaseApi && window.ServeEaseApi.getCanonicalBookings) {
+          window.ServeEaseApi.getCanonicalBookings().then(function (bookings) { window.__serveEaseCanonicalBookings = bookings; render(); }).catch(function () { render(); });
+        } else render();
+      }
     });
   });
 })();

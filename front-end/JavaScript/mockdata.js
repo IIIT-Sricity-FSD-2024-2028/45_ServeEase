@@ -349,7 +349,7 @@
 
   function getProviderDedupeKey(provider) {
     if (!provider) return "";
-    const owner = provider.ownerProviderId || getProviderBaseId(provider);
+    const owner = provider.providerCatalogId || provider.catalogProviderId || getProviderBaseId(provider) || provider.providerId || provider.ownerProviderId;
     return [
       normalizeProviderText(owner),
       provider.category || "",
@@ -534,6 +534,8 @@
               verified: true,
               cityId: cityId,
               image: "assets/images/home-cleaning/clean1.jpg",
+              profilePhoto: data.profile.profilePhoto || "",
+              providerCatalogId: data.profile.providerCatalogId || data.profile.providerBaseId || "",
               ownerProviderId: data.profile.providerId,
               ownerProviderEmail: data.profile.email
             };

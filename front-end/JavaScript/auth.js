@@ -202,7 +202,9 @@ async function buildProviderDocumentPayload(providerId, existingDocuments) {
       if (!window.ServeEaseApi || typeof window.ServeEaseApi.uploadVerificationDocument !== "function") {
         throw new Error("Document upload is unavailable.");
       }
-      const upload = await window.ServeEaseApi.uploadVerificationDocument(file, providerId);
+      const upload = providerDocumentKey(field.type) === "profile"
+        ? await window.ServeEaseApi.uploadProviderProfilePhoto(file, providerId)
+        : await window.ServeEaseApi.uploadVerificationDocument(file, providerId);
       if (!upload || !upload.fileUrl) throw new Error("Document upload failed.");
       delete previewStore[documentId];
       documents.push({

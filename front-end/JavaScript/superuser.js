@@ -676,34 +676,10 @@
 
     window.ServeEaseApi.getBookings()
       .then(function (bookings) {
-        if (!Array.isArray(bookings) || !bookings.length) return;
-        const data = getData();
-        if (!data || !Array.isArray(data.bookings)) return;
-
-        const existingIds = new Set(data.bookings.map(function (booking) { return booking.id; }));
-        let changed = false;
-
-        bookings.forEach(function (booking) {
-          if (existingIds.has(booking.id)) return;
-          data.bookings.unshift({
-            id: booking.id,
-            status: booking.status === "Pending" ? "Requested" : booking.status,
-            paymentStatus: "Paid",
-            category: booking.category || "Home Service",
-            serviceType: booking.service,
-            provider: booking.provider,
-            customer: booking.customerName || "Customer",
-            serviceDate: booking.date,
-            serviceTime: booking.time,
-            amount: booking.amount,
-            reason: "Awaiting provider approval",
-            email: booking.customerEmail || ""
-          });
-          existingIds.add(booking.id);
-          changed = true;
+        if (!Array.isArray(bookings)) return;
+        window.__serveEaseCanonicalBookings = bookings.map(function (booking) {
+          return window.ServeEaseBooking && window.ServeEaseBooking.normalizeBooking ? window.ServeEaseBooking.normalizeBooking(booking) : booking;
         });
-
-        if (changed) setData(data);
       })
       .catch(function (error) {
         console.warn("ServeEase backend superuser booking sync skipped.", error);
@@ -938,15 +914,18 @@
   }
 
   function getVisibleNotifications(data) {
+    const canonical = window.ServeEaseNotifications && typeof window.ServeEaseNotifications.normalize === "function"
+      ? window.ServeEaseNotifications.normalize(data.notifications, "superuser") : (data.notifications || []);
     const seen = {};
-    return (Array.isArray(data.notifications) ? data.notifications : []).map(function (item) {
-      const createdAt = item.createdAt || item.timestamp || (dashboardDate(item.time) ? item.time : "");
+    return canonical.map(function (item) {
+      const createdAt = item.createdAt;
       return {
-        id: String(item.id || [item.type, item.referenceId || item.ticketId || "", createdAt].join("|")),
+        id: String(item.id),
+        eventId: item.eventId,
         text: item.text || item.message || "Platform update",
         type: item.type || "default",
         createdAt: createdAt,
-        isRead: item.isRead === true || item.isNew === false,
+        isRead: item.read === true,
         actionPage: item.actionPage || "superuser-dashboard.html"
       };
     }).filter(function (item) {
@@ -993,16 +972,16 @@
   function addNotification(data, notification) {
     if (!Array.isArray(data.notifications)) data.notifications = [];
     const referenceId = notification.referenceId || notification.ticketId || "";
+    const eventId = notification.eventId || [notification.type || "notification", referenceId, "superuser"].join(":");
     const duplicate = data.notifications.some(function (item) {
-      return String(item.id) === String(notification.id) ||
-        (String(item.type || "") === String(notification.type || "") &&
-          String(item.referenceId || item.ticketId || "") === String(referenceId) &&
-          String(item.text || item.message || "") === String(notification.text || notification.message || ""));
+      return (item.eventId && String(item.eventId) === String(eventId)) || String(item.id) === String(notification.id);
     });
     if (duplicate) return false;
     data.notifications.unshift(Object.assign({
-      id: "AN" + Date.now(),
+      id: "AN-" + eventId.replace(/[^a-z0-9:_-]/gi, "-"),
+      eventId: eventId,
       createdAt: new Date().toISOString(),
+      read: false,
       isRead: false,
       isNew: true,
       actionPage: "superuser-dashboard.html"
@@ -1171,6 +1150,66 @@
     return String(value || "").trim().toLowerCase().replace(/\s+/g, "").replace(/[\/_-]/g, "");
   }
 
+  let lastFinanceCategoryReconciliationSignature = "";
+
+  function dashboardProviderMatches(provider, earning) {
+    if (!provider || !earning) return false;
+    const providerId = String(earning.providerId || "").trim().toLowerCase();
+    const earningName = String(earning.provider || "").trim().toLowerCase();
+    return (providerId && [provider.id, provider.providerId, provider.ownerProviderId, provider.providerCatalogId].some(function (value) {
+      return String(value || "").trim().toLowerCase() === providerId;
+    })) || (earningName && [provider.fullName, provider.name, provider.organisationName].some(function (value) {
+      return String(value || "").trim().toLowerCase() === earningName;
+    }));
+  }
+
+  function dashboardResolveFinanceCategory(earning, linkedBooking, transaction, lookup, categories) {
+    const appData = dashboardReadJson("serveEaseData", {}) || {};
+    const providerRecords = [];
+    [appData.providers, appData.users, appData.providerApprovalRequests].forEach(function (records) {
+      (Array.isArray(records) ? records : []).forEach(function (provider) { if (provider) providerRecords.push(provider); });
+    });
+    dashboardStorageKeys("serveEaseProviderModuleData").forEach(function (key) {
+      const providerData = dashboardReadJson(key, {}) || {};
+      if (providerData.profile) providerRecords.push({
+        ...providerData.profile,
+        services: Array.isArray(providerData.services) ? providerData.services : []
+      });
+    });
+    const directCandidates = [];
+    const metadataCandidates = [];
+    const legacyCandidates = [];
+    const addCandidate = function (list, value) { if (value != null && String(value).trim()) list.push(value); };
+    // Resolve stable category fields before service/display fallbacks.
+    [earning && earning.category, linkedBooking && (linkedBooking.category || linkedBooking.serviceCategory), transaction && (transaction.category || transaction.serviceCategory)].forEach(function (value) { addCandidate(directCandidates, value); });
+    const matchedProvider = providerRecords.find(function (provider) { return dashboardProviderMatches(provider, earning); });
+    if (matchedProvider) {
+      addCandidate(metadataCandidates, matchedProvider.category || matchedProvider.serviceType || matchedProvider.serviceCategory);
+      const services = Array.isArray(matchedProvider.services) ? matchedProvider.services : [];
+      services.forEach(function (service) {
+        if (!service) return;
+        const serviceId = String(service.id || service.serviceId || "").toLowerCase();
+        if (earning.serviceId && serviceId && serviceId === String(earning.serviceId).toLowerCase()) {
+          addCandidate(metadataCandidates, service.category || service.serviceCategory || service.serviceType);
+        }
+        if (dashboardCategoryKey(service.name || service.service || service.serviceType) === dashboardCategoryKey(earning.serviceType || earning.service)) {
+          addCandidate(metadataCandidates, service.category || service.serviceCategory || service.serviceType);
+        }
+      });
+    }
+    const resolved = directCandidates.concat(metadataCandidates);
+    for (let index = 0; index < resolved.length; index += 1) {
+      const key = dashboardCategoryKey(resolved[index]);
+      if (lookup[key]) return lookup[key];
+    }
+    [earning && earning.serviceType, earning && earning.service, linkedBooking && linkedBooking.serviceType, linkedBooking && linkedBooking.service, transaction && transaction.serviceType, transaction && transaction.service].forEach(function (value) { addCandidate(legacyCandidates, value); });
+    for (let index = 0; index < legacyCandidates.length; index += 1) {
+      const key = dashboardCategoryKey(legacyCandidates[index]);
+      if (lookup[key]) return lookup[key];
+    }
+    return null;
+  }
+
   function dashboardProviderEarningsRecords() {
     const records = [];
     dashboardStorageKeys("serveEaseProviderModuleData").forEach(function (key) {
@@ -1211,35 +1250,37 @@
       const transactionKey = String(transaction.bookingRef || transaction.bookingReference || "").toLowerCase();
       if (transactionKey) transactionMap[transactionKey] = transaction;
     });
-    const seenBookings = {};
     const providerEarnings = window.ServeEaseFinanceMetrics && typeof window.ServeEaseFinanceMetrics.getProviderEarningsRows === "function"
       ? window.ServeEaseFinanceMetrics.getProviderEarningsRows() : [];
-    let unresolvedCount = 0;
+    const unresolvedRecords = [];
     providerEarnings.forEach(function (earning) {
       const bookingRef = String(earning.booking || "").trim();
       const linkedBooking = bookingMap[bookingRef.toLowerCase()];
       const transaction = transactionMap[bookingRef.toLowerCase()] || {};
-      const candidates = [
-        linkedBooking && linkedBooking.category,
-        linkedBooking && linkedBooking.serviceType,
-        linkedBooking && linkedBooking.service,
-        transaction.category,
-        transaction.serviceType,
-        transaction.service
-      ];
-      const matched = candidates.map(dashboardCategoryKey).map(function (key) { return lookup[key]; }).find(Boolean);
-      const uniqueBookingId = (bookingRef || earning.id || "").toLowerCase();
-      if (matched && uniqueBookingId && !seenBookings[uniqueBookingId]) {
+      const matched = dashboardResolveFinanceCategory(earning, linkedBooking, transaction, lookup, categories);
+      const earningKey = (String(earning.id || "") + "|" + bookingRef).toLowerCase();
+      if (matched && earningKey) {
         counts[matched] += 1;
-        seenBookings[uniqueBookingId] = true;
       } else if (!matched) {
-        unresolvedCount += 1;
+        unresolvedRecords.push({
+          bookingId: bookingRef || "N/A",
+          transactionId: earning.id || transaction.id || "N/A",
+          provider: earning.provider || transaction.provider || "N/A",
+          service: earning.serviceType || earning.service || transaction.serviceType || transaction.service || "N/A",
+          category: earning.category || (linkedBooking && (linkedBooking.category || linkedBooking.serviceCategory)) || transaction.category || "N/A",
+          providerId: earning.providerId || transaction.providerId || "N/A",
+          serviceId: earning.serviceId || transaction.serviceId || "N/A"
+        });
       }
     });
     const categoryTotal = Object.keys(counts).reduce(function (sum, name) { return sum + counts[name]; }, 0);
-    if (unresolvedCount) console.warn("Unresolved Finance category records: " + unresolvedCount);
-    if (categoryTotal !== providerEarnings.length) {
-      console.error("Finance category reconciliation mismatch: Provider Earnings = " + providerEarnings.length + ", Categorized = " + categoryTotal);
+    const signature = JSON.stringify({ earnings: providerEarnings.map(function (earning) { return [earning.id, earning.booking, earning.providerId, earning.category, earning.serviceType, earning.service]; }), categories: categories.map(function (category) { return [category.id, category.name, category.subServices]; }) });
+    if (signature !== lastFinanceCategoryReconciliationSignature) {
+      lastFinanceCategoryReconciliationSignature = signature;
+      if (unresolvedRecords.length) console.warn("Unresolved Finance category records: " + unresolvedRecords.length, unresolvedRecords);
+      if (categoryTotal + unresolvedRecords.length !== providerEarnings.length) {
+        console.error("Finance category reconciliation mismatch: Provider Earnings = " + providerEarnings.length + ", Categorized = " + categoryTotal + ", Unresolved = " + unresolvedRecords.length);
+      }
     }
     return categories.map(function (category) {
       const name = String(category.name || category.id).trim();
@@ -2080,6 +2121,7 @@
 
   function canonicalBookings() {
     const rows = [];
+    const canonicalIds = new Set();
     const superuserData = getData() || {};
     const autoCancelReason = "Automatically cancelled because the provider did not confirm the booking before the scheduled service date.";
     function normalizedStatus(value, reason) {
@@ -2112,6 +2154,13 @@
         reason: (reason === autoCancelReason ? 'N/A' : (reason || 'N/A'))
       });
     }
+    if (Array.isArray(window.__serveEaseCanonicalBookings)) {
+      window.__serveEaseCanonicalBookings.forEach(function (booking) {
+        add(booking);
+        const id = String(booking && booking.id || '').trim();
+        if (id) canonicalIds.add(id);
+      });
+    }
     (Array.isArray(superuserData.bookings) ? superuserData.bookings : []).forEach(function (booking) { add(booking); });
     dashboardStorageKeys('serveEaseCustomerModuleData').forEach(function (key) {
       const moduleData = dashboardReadJson(key, {}) || {};
@@ -2129,7 +2178,7 @@
       if (!merged[row.id]) {
         merged[row.id] = row;
       } else {
-        if (merged[row.id].status === 'Requested' && row.status !== 'Requested') {
+        if (!canonicalIds.has(row.id) && merged[row.id].status === 'Requested' && row.status !== 'Requested') {
           merged[row.id].status = row.status;
         }
         Object.keys(row).forEach(function (key) {
@@ -2407,9 +2456,12 @@
       entry.active = index === supportTicket.history.length - 1;
     });
     supportData.notifications.unshift({
-      id: "NT" + Date.now(),
+      id: "N-support-ticket-" + ticket.id + "-status-" + ticket.status,
+      eventId: "support:ticket:" + ticket.id + ":status:" + ticket.status,
       text: "Superuser moved " + ticket.id + " to " + ticket.status,
-      time: superuserStamp(),
+      createdAt: new Date().toISOString(),
+      time: new Date().toISOString(),
+      read: false,
       isNew: true,
       ticketId: ticket.id
     });
@@ -2487,6 +2539,16 @@
   setupCommonHeader();
   setupNotificationModal();
   wireModalClosers();
+  window.addEventListener('storage', function (event) {
+    if (!event.key || event.key.indexOf('serveEase') === 0) {
+      syncSuperuserBookingsFromBackend(function () { renderDashboard(); renderBookingsPage(); });
+    }
+  });
+  window.addEventListener('serveease:business-state-changed', function (event) {
+    if (event.detail && /bookings|state|availability/.test(event.detail.path || '')) {
+      syncSuperuserBookingsFromBackend(function () { renderDashboard(); renderBookingsPage(); });
+    }
+  });
   setupCategoryForm();
   renderDashboard();
   renderManagement();

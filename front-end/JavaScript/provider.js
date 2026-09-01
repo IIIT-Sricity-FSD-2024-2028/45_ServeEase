@@ -69,8 +69,7 @@
     if (transactionResult.changed) localStorage.setItem(providerDataKey, JSON.stringify(transactionResult.data));
     const normalized = window.ServeEaseBookingWorkflow && window.ServeEaseBookingWorkflow.normalizeData(transactionResult.data);
     const currentData = normalized ? normalized.data : transactionResult.data;
-    const restored = restoreProviderBookingsFromCustomerData(currentData);
-    if ((normalized && normalized.changed) || restored) {
+    if (normalized && normalized.changed) {
       localStorage.setItem(providerDataKey, JSON.stringify(currentData));
     }
     return currentData;
@@ -274,9 +273,10 @@
     });
     if (!customerBooking) return;
 
-    const isCancelled = nextStatus === "Rejected" || nextStatus === "Cancelled";
-    customerBooking.status = isCancelled ? "Cancelled" : nextStatus;
-    customerBooking.category = isCancelled ? "Cancelled" : nextStatus;
+    const isCancelled = nextStatus === "Cancelled";
+    const isRefund = isCancelled || nextStatus === "Rejected";
+    customerBooking.status = nextStatus;
+    customerBooking.category = customerBooking.category || "Home Service";
     if (Array.isArray(customerData.payments)) {
       customerData.payments.forEach(function (payment) {
         if (String(payment.bookingRef || "").toLowerCase() === String(booking.id || "").toLowerCase()) {
@@ -284,7 +284,7 @@
             ? "Successful"
             : nextStatus === "Accepted"
               ? "Pending"
-              : isCancelled ? "Refunded" : payment.status;
+              : isRefund ? "Refunded" : payment.status;
         }
       });
     }
@@ -520,19 +520,8 @@
   }
 
   function getProviderProfilePhoto(profile) {
-    if (profile && profile.profilePhoto) return profile.profilePhoto;
-    const providerId = profile && profile.providerId;
-    if (!providerId) return "";
-    try {
-      const previews = JSON.parse(localStorage.getItem("serveEaseProviderDocuments:" + providerId) || "{}");
-      const photoKey = Object.keys(previews).find(function (key) {
-        const item = previews[key];
-        return item && item.dataUrl && String(item.type || "").indexOf("image/") === 0;
-      });
-      return photoKey ? previews[photoKey].dataUrl : "";
-    } catch (error) {
-      return "";
-    }
+    const value = String(profile && profile.profilePhoto || "").trim();
+    return /^(https?:\/\/|\/)?uploads\/profiles\//i.test(value) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(value) ? value : "";
   }
 
   function syncProviderTicketsFromSupport(data) {
@@ -600,7 +589,7 @@
         { label: "Ticket created by provider", time: ticket.created || "Just now", active: true }
       ]
     });
-    supportData.notifications.unshift({ id: "NT" + Date.now(), text: "New provider support ticket created - " + ticket.id, time: window.ServeEaseDate ? window.ServeEaseDate.nowDateTime() : new Date().toISOString(), isNew: true, ticketId: ticket.id });
+    supportData.notifications.unshift({ id: "N-support-ticket-" + ticket.id, eventId: "support:ticket:" + ticket.id + ":created", text: "New provider support ticket created - " + ticket.id, createdAt: new Date().toISOString(), time: new Date().toISOString(), read: false, isNew: true, ticketId: ticket.id });
     setSupportData(supportData);
   }
 
@@ -646,13 +635,7 @@
     supportTicket.history.forEach(function (entry, index) {
       entry.active = index === supportTicket.history.length - 1;
     });
-    supportData.notifications.unshift({
-      id: "NT" + Date.now(),
-      text: "Provider replied to ticket " + supportTicket.id,
-      time: "Just now",
-      isNew: true,
-      ticketId: supportTicket.id
-    });
+    supportData.notifications.unshift({ id: "N-support-ticket-" + supportTicket.id + "-reply", eventId: "support:ticket:" + supportTicket.id + ":reply:" + supportTicket.messages.length, text: "Provider replied to ticket " + supportTicket.id, createdAt: new Date().toISOString(), time: new Date().toISOString(), read: false, isNew: true, ticketId: supportTicket.id });
     setSupportData(supportData);
   }
 
@@ -941,6 +924,7 @@
           cityId: cityId,
           image: getProviderProfilePhoto(data.profile) || getCategoryImage(categoryId),
           profilePhoto: getProviderProfilePhoto(data.profile),
+          providerCatalogId: data.profile.providerCatalogId || data.profile.providerBaseId || baseId,
           availabilitySlots: activeSlots,
           ownerProviderId: data.profile.providerId,
           ownerProviderEmail: data.profile.email
@@ -1858,10 +1842,8 @@
     }
 
     function lockedSlotsFor(date, slots, disabledSlots) {
-      const available = availableSlotsFor(date);
-      return available === null ? [] : slots.filter(function (slot) {
-        return !available.includes(slot) && !disabledSlots.includes(slot);
-      });
+      const item = (availability.dates || []).find(function (entry) { return entry.date === date; });
+      return item && item.slotStates ? slots.filter(function (slot) { return item.slotStates[slot] === 'booked' && !disabledSlots.includes(slot); }) : [];
     }
 
     function renderLoading() {
@@ -1922,7 +1904,9 @@
               ${slots.length ? slots.map(function (slot) {
                 const locked = lockedSlots.includes(slot);
                 const disabled = override.disabledSlots.includes(slot);
-                return `<label class="availability-override-slot${locked ? ' is-locked' : ''}" title="${locked ? 'This slot already has a booking.' : ''}"><input type="checkbox" data-override-slot="${slot}" ${disabled ? '' : 'checked'} ${locked || isPast ? 'disabled' : ''}><span>${formatSlot(slot)}</span>${locked ? '<em>🔒 Booked</em>' : ''}</label>`;
+                const state = (availableSlotsFor(selectedDate) === null ? '' : (((availability.dates || []).find(function (entry) { return entry.date === selectedDate; }) || {}).slotStates || {})[slot] || 'available');
+                const label = locked ? 'Booked' : state === 'past' ? 'Past' : state === 'too-soon' ? 'Too soon' : disabled ? 'Disabled' : '';
+                return `<label class="availability-override-slot${locked ? ' is-locked' : ''}" title="${label}"><input type="checkbox" data-override-slot="${slot}" ${disabled ? '' : 'checked'} ${locked || isPast || state === 'past' || state === 'too-soon' ? 'disabled' : ''}><span>${formatSlot(slot)}</span>${label ? '<em>' + label + '</em>' : ''}</label>`;
               }).join('') : '<p class="availability-drawer-note">This weekday has no active recurring slots.</p>'}
             </div>`}
           <small class="error availability-override-error" aria-live="polite">${overrideError}</small>
@@ -2333,7 +2317,6 @@
           booking.status = "Accepted";
           booking.progress = bookingProgressForStatus(booking.status);
           booking.statusUpdatedAt = new Date().toISOString();
-          syncCustomerBookingStatusFromProvider(booking, "Accepted");
           reconcileProviderPayouts(data);
           if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
             window.ServeEaseApi.updateBooking(booking.id, { status: "Accepted" }).catch(function (error) {
@@ -2352,13 +2335,12 @@
             return item.id === button.dataset.rejectBooking;
           });
           if (!booking) return;
-          booking.status = "Cancelled";
+          booking.status = "Rejected";
           booking.progress = bookingProgressForStatus(booking.status);
           booking.statusUpdatedAt = new Date().toISOString();
-          syncCustomerBookingStatusFromProvider(booking, "Cancelled");
           reconcileProviderPayouts(data);
           if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
-            window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
+            window.ServeEaseApi.updateBooking(booking.id, { status: "Rejected", paymentStatus: "Refunded" }).catch(function (error) {
               console.warn("ServeEase backend reject booking sync failed.", error);
             });
           }
@@ -2398,10 +2380,9 @@
           booking.progress = bookingProgressForStatus(booking.status);
           booking.statusUpdatedAt = new Date().toISOString();
           booking.receivedDate = formatDisplayDate(new Date());
-          syncCustomerBookingStatusFromProvider(booking, "Completed");
           reconcileProviderPayouts(data);
           if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
-            window.ServeEaseApi.updateBooking(booking.id, { status: "Completed", receivedDate: booking.receivedDate }).catch(function (error) {
+            window.ServeEaseApi.updateBooking(booking.id, { status: "Completed", paymentStatus: "Successful", payoutStatus: "Paid", payoutDate: booking.receivedDate, receivedDate: booking.receivedDate }).catch(function (error) {
               console.warn("ServeEase backend complete booking sync failed.", error);
             });
           }
@@ -2897,7 +2878,7 @@
       : '';
     personal.innerHTML = `
       <div class="provider-profile-photo-box">
-        <img src="${profilePhoto || getCategoryImage(getCategoryIdFromServiceCategory(data.profile.category))}" alt="${data.profile.organisationName || data.profile.fullName}" id="providerProfilePhotoPreview" />
+        <img src="${profilePhoto || getCategoryImage(getCategoryIdFromServiceCategory(data.profile.category))}" onerror="this.onerror=null;this.src='${getCategoryImage(getCategoryIdFromServiceCategory(data.profile.category))}'" alt="${data.profile.organisationName || data.profile.fullName}" id="providerProfilePhotoPreview" />
         <div>
           <strong>Profile Photo</strong>
           <input type="file" class="provider-edit-input" id="providerProfilePhotoInput" accept="image/*" />

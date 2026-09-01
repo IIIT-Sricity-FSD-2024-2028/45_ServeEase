@@ -44,6 +44,20 @@
     }
   }
 
+  function getClearedNotificationIds() {
+    try {
+      const value = JSON.parse(localStorage.getItem("serveEaseCustomerNotificationCleared:" + getAccountStorageSuffix()) || "[]");
+      return Array.isArray(value) ? value : [];
+    } catch (error) { return []; }
+  }
+
+  function clearCustomerNotifications(notifications) {
+    const cleared = new Set(getClearedNotificationIds());
+    (Array.isArray(notifications) ? notifications : getCustomerNotifications()).forEach(function (item) { if (item && item.id) cleared.add(item.id); });
+    localStorage.setItem("serveEaseCustomerNotificationCleared:" + getAccountStorageSuffix(), JSON.stringify(Array.from(cleared)));
+    renderCustomerNotifications();
+  }
+
   function setReadNotificationIds(ids) {
     localStorage.setItem(getCustomerNotificationReadKey(), JSON.stringify(ids));
   }
@@ -68,8 +82,7 @@
   function parseNotificationTimestamp(value) {
     if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getTime();
     const text = String(value || "").trim();
-    if (!text || text === "Just now") return Date.now();
-    if (text === "Recently") return Date.now() - 60000;
+    if (!text || text === "Just now" || text === "Recently") return 0;
 
     const iso = new Date(text);
     if (!Number.isNaN(iso.getTime())) return iso.getTime();
@@ -130,12 +143,11 @@
     if (timestamp) {
       return formatDisplayDateTime(new Date(timestamp));
     }
-    return text || "Recently";
+    return text && !/^(just now|recently)$/i.test(text) ? text : "Older notification";
   }
 
   function openCustomerNotificationsView() {
     const latestNotifications = getCustomerNotifications();
-    markNotificationsAsRead(latestNotifications);
     openCustomerNotificationsModal(latestNotifications);
     return false;
   }
@@ -144,11 +156,35 @@
     openAll: openCustomerNotificationsView
   };
 
-  const seedKey = isDemoCustomerAccount()
+  const canonicalSeedKey = isDemoCustomerAccount()
     ? "serveEaseCustomerModuleData"
-    : "serveEaseCustomerModuleData:" + getAccountStorageSuffix();
+    : "serveEaseCustomerModuleData:" + String(session.userId || "").toLowerCase();
+  const legacyEmailSeedKey = isDemoCustomerAccount()
+    ? canonicalSeedKey
+    : "serveEaseCustomerModuleData:" + String(session.email || "").toLowerCase();
+
+  function customerRecordScore(value) {
+    try {
+      const data = JSON.parse(value || "null") || {};
+      return (Array.isArray(data.bookings) ? data.bookings.length : 0) +
+        (Array.isArray(data.payments) ? data.payments.length : 0) +
+        (Array.isArray(data.tickets) ? data.tickets.length : 0);
+    } catch (error) { return -1; }
+  }
+
+  function resolveCustomerStorageKey() {
+    if (canonicalSeedKey === legacyEmailSeedKey) return canonicalSeedKey;
+    const canonical = localStorage.getItem(canonicalSeedKey);
+    const legacy = localStorage.getItem(legacyEmailSeedKey);
+    if (canonical && customerRecordScore(canonical) > 0) return canonicalSeedKey;
+    if (legacy && customerRecordScore(legacy) > 0) return legacyEmailSeedKey;
+    return canonicalSeedKey;
+  }
+
+  let seedKey = resolveCustomerStorageKey();
 
   function seedCustomerData() {
+    seedKey = resolveCustomerStorageKey();
     const existing = localStorage.getItem(seedKey);
     if (existing) return;
 
@@ -472,13 +508,7 @@
         { label: "Ticket created by customer", time: ticket.date, active: true }
       ]
     });
-    supportData.notifications.unshift({
-      id: "NT" + Date.now(),
-      text: "New support ticket created - " + ticket.id,
-      time: formatDisplayDateTime(new Date().toISOString()),
-      isNew: true,
-      ticketId: ticket.id
-    });
+    supportData.notifications.unshift({ id: "N-support-ticket-" + ticket.id, eventId: "support:ticket:" + ticket.id + ":created", text: "New support ticket created - " + ticket.id, createdAt: ticket.createdAtIso || new Date().toISOString(), time: ticket.createdAtIso || new Date().toISOString(), read: false, isNew: true, ticketId: ticket.id });
     setSupportData(supportData);
   }
 
@@ -522,13 +552,7 @@
     supportTicket.history.forEach(function (entry, index) {
       entry.active = index === supportTicket.history.length - 1;
     });
-    supportData.notifications.unshift({
-      id: "NT" + Date.now(),
-      text: "Customer replied to ticket " + supportTicket.id,
-      time: formatDisplayDateTime(new Date().toISOString()),
-      isNew: true,
-      ticketId: supportTicket.id
-    });
+    supportData.notifications.unshift({ id: "N-support-ticket-" + supportTicket.id + "-reply", eventId: "support:ticket:" + supportTicket.id + ":reply:" + supportTicket.messages.length, text: "Customer replied to ticket " + supportTicket.id, createdAt: new Date().toISOString(), time: new Date().toISOString(), read: false, isNew: true, ticketId: supportTicket.id });
     setSupportData(supportData);
   }
 
@@ -541,7 +565,20 @@
     window.ServeEaseApi.getState("serveEaseSupportModuleData")
       .then(function (entry) {
         if (entry && entry.value) {
-          localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(entry.value));
+          const current = getSupportData();
+          const backend = entry.value;
+          const ticketMap = {};
+          const notificationMap = {};
+          (Array.isArray(backend.tickets) ? backend.tickets : []).forEach(function (ticket) { if (ticket && ticket.id) ticketMap[ticket.id] = ticket; });
+          (Array.isArray(current.tickets) ? current.tickets : []).forEach(function (ticket) { if (ticket && ticket.id) ticketMap[ticket.id] = Object.assign({}, ticketMap[ticket.id] || {}, ticket); });
+          (Array.isArray(backend.notifications) ? backend.notifications : []).forEach(function (item) { if (item && (item.eventId || item.id)) notificationMap[item.eventId || item.id] = item; });
+          (Array.isArray(current.notifications) ? current.notifications : []).forEach(function (item) { if (item && (item.eventId || item.id)) notificationMap[item.eventId || item.id] = Object.assign({}, notificationMap[item.eventId || item.id] || {}, item); });
+          const merged = Object.assign({}, backend, current, {
+            agent: current.agent || backend.agent || { fullName: "Priya Sharma" },
+            tickets: Object.keys(ticketMap).map(function (id) { return ticketMap[id]; }),
+            notifications: Object.keys(notificationMap).map(function (id) { return notificationMap[id]; })
+          });
+          localStorage.setItem("serveEaseSupportModuleData", JSON.stringify(merged));
         }
       })
       .catch(function () {
@@ -574,23 +611,20 @@
   }
 
   function normalizeBookingCategory(status) {
-    const value = String(status || "Pending");
-    if (value.toLowerCase() === "rejected") return "Cancelled";
-    return value;
+    return String(status || "Pending");
   }
 
   function customerMatchesBooking(booking) {
     if (!booking) return false;
+    if (booking.customerId && session.userId) return String(booking.customerId) === String(session.userId);
     if (!booking.customerEmail || !session.email) return false;
-    return String(booking.customerEmail).toLowerCase() === String(session.email).toLowerCase();
+    return String(booking.customerEmail).trim().toLowerCase() === String(session.email).trim().toLowerCase();
   }
 
   function ensurePaymentForBooking(data, booking) {
     if (!booking || !booking.id) return;
     if (!Array.isArray(data.payments)) data.payments = [];
-    const paymentStatus = ["cancelled", "rejected"].includes(String(booking.status || booking.category || "").toLowerCase())
-      ? "Refunded"
-      : "Successful";
+    const paymentStatus = booking.paymentStatus || "Pending";
     const hasPayment = data.payments.some(function (payment) {
       return String(payment.bookingRef || "").toLowerCase() === String(booking.id).toLowerCase();
     });
@@ -623,6 +657,7 @@
           providerPayout: Math.round(serviceFee * 0.90 * 100) / 100
         };
 
+    if (!booking.paymentStatus) return;
     data.payments.unshift({
       id: "TXN-" + String(booking.id).replace(/[^a-z0-9]/gi, "").slice(-10).toUpperCase(),
       bookingRef: booking.id,
@@ -648,7 +683,7 @@
     if (!customerMatchesBooking(booking)) return false;
     if (!Array.isArray(data.bookings)) data.bookings = [];
 
-    const category = normalizeBookingCategory(booking.category || booking.status);
+    const lifecycleStatus = String(booking.status || "Pending");
     const existingBooking = data.bookings.find(function (item) {
       return String(item.id || "").toLowerCase() === String(booking.id || "").toLowerCase();
     });
@@ -657,6 +692,7 @@
       existingBooking.service = booking.service || existingBooking.service;
       existingBooking.provider = booking.provider || existingBooking.provider;
       existingBooking.providerId = booking.providerId || existingBooking.providerId;
+      existingBooking.customerId = booking.customerId || existingBooking.customerId || session.userId || "";
       existingBooking.date = booking.date || existingBooking.date;
       existingBooking.time = booking.time || existingBooking.time;
       existingBooking.address = booking.address || existingBooking.address;
@@ -665,7 +701,8 @@
       existingBooking.customerName = booking.customerName || existingBooking.customerName;
       existingBooking.customerPhone = booking.customerPhone || existingBooking.customerPhone;
       existingBooking.customerEmail = booking.customerEmail || existingBooking.customerEmail;
-      existingBooking.category = category || existingBooking.category;
+      existingBooking.category = booking.category || existingBooking.category || "Home Service";
+      existingBooking.paymentStatus = booking.paymentStatus || existingBooking.paymentStatus || "Pending";
       existingBooking.cancellationReason = booking.cancellationReason || existingBooking.cancellationReason;
       existingBooking.createdAt = booking.createdAt || existingBooking.createdAt || "";
       ensurePaymentForBooking(data, existingBooking);
@@ -674,6 +711,7 @@
 
     data.bookings.unshift({
       id: booking.id,
+      customerId: booking.customerId || session.userId || "",
       service: booking.service || "Service booking",
       provider: booking.provider || "ServeEase Provider",
       providerId: booking.providerId || "",
@@ -681,11 +719,12 @@
       time: booking.time || "",
       address: booking.address || "",
       status: booking.status || "Pending",
+      paymentStatus: booking.paymentStatus || "Pending",
       amount: Number(booking.amount) || 0,
       customerName: booking.customerName || session.fullName || "Customer",
       customerPhone: booking.customerPhone || session.phone || "",
       customerEmail: booking.customerEmail || session.email || "",
-      category: category || "Pending",
+      category: booking.category || "Home Service",
       createdAt: booking.createdAt || "",
       cancellationReason: booking.cancellationReason || ""
     });
@@ -738,11 +777,13 @@
   function getCustomerNotifications(data) {
     const source = data || getCustomerData() || {};
     const readIds = new Set(getReadNotificationIds());
+    const clearedIds = new Set(getClearedNotificationIds());
     const notifications = [];
 
     (source.tickets || []).forEach(function (ticket) {
       const ticketStatus = String(ticket.status || "Open");
-      const createdLabel = formatNotificationTime(ticket.createdAtIso || ticket.date || ticket.createdDate || ticket.created);
+      const createdValue = ticket.createdAtIso || ticket.createdAt || ticket.createdDate || ticket.date || ticket.created || "1970-01-01T00:00:00.000Z";
+      const createdLabel = formatNotificationTime(createdValue);
       const notificationId = "ticket:" + String(ticket.id || "").toLowerCase() + ":" + ticketStatus.toLowerCase();
       notifications.push({
         id: notificationId,
@@ -750,7 +791,7 @@
           ? "Support ticket " + ticket.id + " has been resolved."
           : "Support ticket " + ticket.id + " is " + ticketStatus.toLowerCase() + ".",
         time: createdLabel,
-        sortAt: parseNotificationTimestamp(ticket.createdAtIso || ticket.date),
+        sortAt: parseNotificationTimestamp(createdValue),
         isNew: ticketStatus.toLowerCase() === "open" && !readIds.has(notificationId),
         actionPage: "customer-support-center.html"
       });
@@ -759,13 +800,14 @@
     (source.bookings || []).forEach(function (booking) {
       const status = String(booking.status || booking.category || "updated");
       const statusKey = status.toLowerCase();
-      const createdLabel = formatNotificationTime(booking.createdAtIso || booking.date);
+      const createdValue = booking.createdAtIso || booking.createdAt || booking.createdDate || booking.date || "1970-01-01T00:00:00.000Z";
+      const createdLabel = formatNotificationTime(createdValue);
       const notificationId = "booking:" + String(booking.id || "").toLowerCase() + ":" + statusKey;
       notifications.push({
         id: notificationId,
         text: (booking.service || "Your booking") + " is " + statusKey + ".",
         time: createdLabel,
-        sortAt: parseNotificationTimestamp(booking.createdAtIso || booking.date),
+        sortAt: parseNotificationTimestamp(createdValue),
         isNew: (statusKey === "pending" || statusKey === "accepted") && !readIds.has(notificationId),
         actionPage: "my-bookings.html"
       });
@@ -773,19 +815,26 @@
 
     (source.payments || []).forEach(function (payment) {
       const paymentStatus = String(payment.status || "updated");
-      const paymentLabel = formatNotificationTime(payment.createdAtIso || payment.date);
+      const createdValue = payment.createdAtIso || payment.createdAt || payment.createdDate || payment.date || "1970-01-01T00:00:00.000Z";
+      const paymentLabel = formatNotificationTime(createdValue);
       const notificationId = "payment:" + String(payment.id || "").toLowerCase() + ":" + paymentStatus.toLowerCase();
       notifications.push({
         id: notificationId,
         text: "Payment " + (payment.id || "") + " for " + (payment.service || "your service") + " is " + paymentStatus.toLowerCase() + ".",
         time: paymentLabel,
-        sortAt: parseNotificationTimestamp(payment.createdAtIso || payment.date),
+        sortAt: parseNotificationTimestamp(createdValue),
         isNew: (paymentStatus.toLowerCase() === "pending" || paymentStatus.toLowerCase() === "failed") && !readIds.has(notificationId),
         actionPage: "payment-history.html"
       });
     });
 
-    return notifications
+    const unique = {};
+    return notifications.filter(function (item) {
+        if (clearedIds.has(item.id)) return false;
+        if (unique[item.id]) return false;
+        unique[item.id] = true;
+        return true;
+      })
       .sort(function (a, b) {
         return (b.sortAt || 0) - (a.sortAt || 0);
       })
@@ -818,6 +867,7 @@
         '    <h2>All Notifications</h2>',
         '    <button class="close-modal-btn" type="button" id="closeCustomerNotificationsModal">&times;</button>',
         '  </div>',
+        '  <div class="notification-modal-actions"><button type="button" id="customerMarkAllNotificationsBtn">Mark All as Read</button><button type="button" id="customerClearNotificationsBtn">Clear All</button></div>',
         '  <div id="customerNotificationsModalList"></div>',
         '</div>'
       ].join("");
@@ -836,6 +886,10 @@
     }
 
     const list = document.getElementById("customerNotificationsModalList");
+    const markAll = document.getElementById("customerMarkAllNotificationsBtn");
+    if (markAll) markAll.onclick = function () { markNotificationsAsRead(notifications); renderCustomerNotifications(); openCustomerNotificationsModal(getCustomerNotifications()); };
+    const clearAll = document.getElementById("customerClearNotificationsBtn");
+    if (clearAll) clearAll.onclick = function () { clearCustomerNotifications(notifications); backdrop.classList.add("hidden"); };
     if (list) {
       list.innerHTML = renderNotificationItems(notifications);
       list.querySelectorAll("[data-notification-page]").forEach(function (button) {
@@ -899,7 +953,6 @@
         e.stopPropagation();
         notificationPanel.classList.toggle("hidden");
         if (!notificationPanel.classList.contains("hidden")) {
-          markNotificationsAsRead(getCustomerNotifications());
           renderCustomerNotifications();
         }
         if (profileDropdown) profileDropdown.classList.add("hidden");
@@ -909,6 +962,10 @@
         e.stopPropagation();
       });
     }
+
+    window.addEventListener("storage", function (event) {
+      if (!event.key || event.key.indexOf("serveEase") === 0) renderCustomerNotifications();
+    });
 
     if (profileBtn && profileDropdown) {
       profileBtn.addEventListener("click", function (e) {
@@ -1084,7 +1141,7 @@
 
       const statsContainer = document.getElementById("customerStats");
       const totalBookings = data.bookings.length;
-      const upcomingBookings = data.bookings.filter(item => item.category === "Accepted" || item.category === "Pending").length;
+      const upcomingBookings = data.bookings.filter(item => item.status === "Accepted" || item.status === "Pending" || item.status === "Requested").length;
       const successfulPayments = data.payments.filter(item => item.status === "Successful").length;
       const openTickets = data.tickets.filter(item => item.status === "Open").length;
 
@@ -1096,7 +1153,7 @@
       `;
 
       const upcomingBox = document.getElementById("dashboardUpcomingBookings");
-      const upcomingItems = data.bookings.filter(item => item.category === "Accepted" || item.category === "Pending").slice(0, 3);
+      const upcomingItems = data.bookings.filter(item => item.status === "Accepted" || item.status === "Pending" || item.status === "Requested").slice(0, 3);
       upcomingBox.innerHTML = upcomingItems.length ? upcomingItems.map(item => `
         <div class="preview-item">
           <div class="preview-title">${item.service}</div>
@@ -1130,7 +1187,7 @@
     if (!tabs) return;
 
     const data = getCustomerData();
-    const categories = ["All", "Pending", "Accepted", "Completed", "Cancelled"];
+    const categories = ["All", "Pending", "Requested", "Accepted", "Completed", "Rejected", "Cancelled"];
     let activeTab = "All";
 
     const upcomingSection = document.getElementById("upcomingBookingsSection");
@@ -1211,7 +1268,7 @@
       tabs.innerHTML = categories.map(category => {
         const count = category === "All"
           ? data.bookings.length
-          : data.bookings.filter(item => item.category === category).length;
+          : data.bookings.filter(item => item.status === category).length;
 
         return `<button class="tab-btn ${activeTab === category ? "active" : ""}" data-category="${category}">${category} <span>${count}</span></button>`;
       }).join("");
@@ -1234,27 +1291,27 @@
       let history = [];
 
       if (activeTab === "All") {
-        upcoming = data.bookings.filter(item => item.category === "Accepted" || item.category === "Pending");
-        history = data.bookings.filter(item => item.category === "Completed" || item.category === "Cancelled");
+        upcoming = data.bookings.filter(item => item.status === "Accepted" || item.status === "Pending" || item.status === "Requested");
+        history = data.bookings.filter(item => item.status === "Completed" || item.status === "Cancelled" || item.status === "Rejected");
         if (upcomingSection) upcomingSection.classList.remove("hidden");
         if (historySection) historySection.classList.remove("hidden");
         if (upcomingHeading) upcomingHeading.textContent = "Upcoming Bookings";
         if (historyHeading) historyHeading.textContent = "Past Booking History";
       } else if (activeTab === "Pending" || activeTab === "Accepted") {
-        upcoming = data.bookings.filter(item => item.category === activeTab);
+        upcoming = data.bookings.filter(item => item.status === activeTab);
         history = [];
         if (upcomingSection) upcomingSection.classList.remove("hidden");
         if (historySection) historySection.classList.add("hidden");
         if (upcomingHeading) upcomingHeading.textContent = `${activeTab} Bookings`;
       } else if (activeTab === "Completed") {
         upcoming = [];
-        history = data.bookings.filter(item => item.category === "Completed");
+        history = data.bookings.filter(item => item.status === "Completed");
         if (upcomingSection) upcomingSection.classList.add("hidden");
         if (historySection) historySection.classList.remove("hidden");
         if (historyHeading) historyHeading.textContent = "Completed Bookings";
       } else if (activeTab === "Cancelled") {
         upcoming = [];
-        history = data.bookings.filter(item => item.category === "Cancelled");
+        history = data.bookings.filter(item => item.status === "Cancelled" || item.status === "Rejected");
         if (upcomingSection) upcomingSection.classList.add("hidden");
         if (historySection) historySection.classList.remove("hidden");
         if (historyHeading) historyHeading.textContent = "Cancelled Bookings";
@@ -1295,7 +1352,7 @@
           <td>${formatPrice(item.amount)}</td>
           <td>${getBookingReference(item)}</td>
           <td><span class="status-pill ${statusClass(item.status)}">${item.status}</span></td>
-          <td>${item.category === "Completed" ? reviewCell(item) : "—"}</td>
+          <td>${item.status === "Completed" ? reviewCell(item) : "—"}</td>
           <td>
             <button class="table-link-btn" data-view-booking="${item.id}">View</button>
             <button class="table-link-btn" data-raise-ticket="${item.id}">Raise Ticket</button>
@@ -1348,11 +1405,11 @@
 
             const handleYes = function() {
               booking.status = "Cancelled";
-              booking.category = "Cancelled";
+              booking.paymentStatus = "Refunded";
               ensurePaymentForBooking(data, booking);
               setCustomerData(data);
               if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
-                window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
+                window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled", paymentStatus: "Refunded" }).catch(function (error) {
                   console.warn("ServeEase backend cancellation sync failed.", error);
                 });
               }
@@ -1378,11 +1435,11 @@
             // Fallback just in case
             if (confirm(`Are you sure you want to cancel booking ${booking.id}?`)) {
               booking.status = "Cancelled";
-              booking.category = "Cancelled";
+              booking.paymentStatus = "Refunded";
               ensurePaymentForBooking(data, booking);
               setCustomerData(data);
               if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
-                window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) {
+                  window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled", paymentStatus: "Refunded" }).catch(function (error) {
                   console.warn("ServeEase backend cancellation sync failed.", error);
                 });
               }
@@ -1432,7 +1489,7 @@
 
     title.textContent = "Booking Details";
     const review = window.ServeEaseReviews && window.ServeEaseReviews.find(booking.id);
-    const customerReview = String(booking.category || booking.status).toLowerCase() === "completed"
+    const customerReview = String(booking.status).toLowerCase() === "completed"
       ? `<div class="info-box booking-review-section"><strong>Customer Review</strong>${review ? `<div class="review-rating"><span class="review-stars">${window.ServeEaseReviews.stars(review.rating)}</span><span class="booking-rating-value">${Number(review.rating).toFixed(1)}</span></div><div class="review-feedback"><strong>Feedback:</strong><div>${review.feedback || "No review provided."}</div></div>` : "<div>No review submitted.</div>"}</div>`
       : "";
     content.innerHTML = `

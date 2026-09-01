@@ -123,10 +123,15 @@
   function pushSuperuserNotification(text, type, page) {
     const data = getSuperuserData();
     if (!Array.isArray(data.notifications)) data.notifications = [];
+    const eventId = "provider-verification:" + String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    if (data.notifications.some(function (item) { return item.eventId === eventId; })) return;
     data.notifications.unshift({
-      id: "AN" + Date.now(),
+      id: "AN-provider-verification-" + String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + (page || ""),
+      eventId: eventId,
       text: text,
-      time: "Just now",
+      createdAt: new Date().toISOString(),
+      time: new Date().toISOString(),
+      read: false,
       type: type || "blue",
       isNew: true,
       actionPage: page || "superuser-provider-verification.html"
