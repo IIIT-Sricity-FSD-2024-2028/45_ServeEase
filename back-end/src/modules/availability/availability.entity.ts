@@ -7,6 +7,8 @@ export class WeeklyScheduleDay {
 
   @ApiProperty({ example: ['09:00-12:00', '13:00-17:00'] })
   slots: string[];
+  @ApiProperty({ required: false, additionalProperties: { type: 'string' } })
+  slotStates?: Record<string, string>;
 }
 
 export class WeeklySchedule {

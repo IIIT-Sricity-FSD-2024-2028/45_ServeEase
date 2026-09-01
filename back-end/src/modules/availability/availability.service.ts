@@ -60,7 +60,18 @@ export class AvailabilityService {
   getAvailability(providerId: string): ProviderAvailability {
     this.validateProviderId(providerId);
     this.ensureScheduleForAvailability(providerId);
-    const dates: AvailableDate[] = this.windowDates(this.today()).map((date) => ({ date, dayOfWeek: this.weekdayForDate(date), slots: this.availableSlotsForDate(providerId, date) }));
+    const dates: AvailableDate[] = this.windowDates(this.today()).map((date) => {
+      const allSlots = this.applyOverride(this.slotsForDate(providerId, date), this.repository.findOverride(providerId, date));
+      const booked = new Set(this.bookings.findByProviderAndDate(providerId, date).filter((booking) => this.isBookingBlockingAvailability(booking)).map((booking) => this.normalizeSlot(booking.time)));
+      const slotStates: Record<string, string> = {};
+      allSlots.forEach((slot) => {
+        if (booked.has(slot)) slotStates[slot] = 'booked';
+        else if (this.isPast(date, slot)) slotStates[slot] = 'past';
+        else if (!this.meetsMinimumBookingNotice(date, slot)) slotStates[slot] = 'too-soon';
+        else slotStates[slot] = 'available';
+      });
+      return { date, dayOfWeek: this.weekdayForDate(date), slots: allSlots.filter((slot) => slotStates[slot] === 'available'), slotStates };
+    });
     return { providerId, bookingWindowDays: BOOKING_WINDOW_DAYS, dates };
   }
 
@@ -75,8 +86,14 @@ export class AvailabilityService {
 
   private availableSlotsForDate(providerId: string, date: string, excludeBookingId?: string): string[] {
     const slots = this.applyOverride(this.slotsForDate(providerId, date), this.repository.findOverride(providerId, date));
-    const booked = new Set(this.bookings.findByProviderAndDate(providerId, date).filter((booking) => booking.id !== excludeBookingId).map((booking) => this.normalizeSlot(booking.time)));
+    const booked = new Set(this.bookings.findByProviderAndDate(providerId, date)
+      .filter((booking) => booking.id !== excludeBookingId && this.isBookingBlockingAvailability(booking))
+      .map((booking) => this.normalizeSlot(booking.time)));
     return slots.filter((slot) => !booked.has(slot) && this.meetsMinimumBookingNotice(date, slot));
+  }
+
+  private isBookingBlockingAvailability(booking: Booking): boolean {
+    return ['Pending', 'Requested', 'Accepted'].includes(String(booking.status || ''));
   }
 
   private applyOverride(slots: string[], override?: DateOverride): string[] {
@@ -104,9 +121,14 @@ export class AvailabilityService {
     const [hour, minute] = start.split(':').map(Number);
     const slotStart = this.parseDate(date);
     slotStart.setHours(hour, minute, 0, 0);
-    const minimumStart = new Date();
-    minimumStart.setHours(minimumStart.getHours() + MIN_BOOKING_NOTICE_HOURS);
-    return slotStart.getTime() >= minimumStart.getTime();
+    const minimumStart = Date.now() + (MIN_BOOKING_NOTICE_HOURS * 60 * 60 * 1000);
+    return slotStart.getTime() >= minimumStart;
+  }
+  private isPast(date: string, slot: string): boolean {
+    if (date !== this.today()) return date < this.today();
+    const [hour, minute] = this.normalizeSlot(slot).split('-')[0].split(':').map(Number);
+    const start = this.parseDate(date); start.setHours(hour, minute, 0, 0);
+    return start.getTime() < Date.now();
   }
   private slotsForDate(providerId: string, date: string): string[] { return this.scheduleOrThrow(providerId).days.find((day) => day.dayOfWeek === this.weekdayForDate(date))?.slots ?? []; }
   private scheduleOrThrow(providerId: string): StoredWeeklySchedule { this.validateProviderId(providerId); const schedule = this.repository.findSchedule(providerId); if (!schedule) throw new NotFoundException(`Weekly schedule for provider "${providerId}" was not found.`); return schedule; }
@@ -117,7 +139,11 @@ export class AvailabilityService {
     };
   }
   private weekdayKey(day: Weekday): keyof WeeklyScheduleSlotsDto { return day.toLowerCase() as keyof WeeklyScheduleSlotsDto; }
-  private assertNoBookedSlots(providerId: string, affects: (booking: Booking) => boolean): void { if (this.bookings.findByProvider(providerId).some(affects)) throw new BadRequestException('A slot with an existing booking cannot be modified or disabled.'); }
+  private assertNoBookedSlots(providerId: string, affects: (booking: Booking) => boolean): void {
+    if (this.bookings.findByProvider(providerId).some((booking) => this.isBookingBlockingAvailability(booking) && affects(booking))) {
+      throw new BadRequestException('A slot with an existing booking cannot be modified or disabled.');
+    }
+  }
   private normalizeSlots(slots: string[]): string[] { return Array.from(new Set(slots.map((slot) => this.normalizeSlot(slot)))).sort(); }
   private normalizeSlot(value: string): string {
     const compact = value.trim().replace(/\s+/g, ' ');

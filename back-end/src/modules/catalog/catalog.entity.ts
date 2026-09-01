@@ -75,6 +75,11 @@ export class CatalogProvider {
   @ApiProperty({ example: 'fresh@example.com', required: false })
   ownerProviderEmail?: string;
 
+  accountStatus?: string;
+  approvalStatus?: string;
+  verificationStatus?: string;
+  profilePhoto?: string;
+
   @ApiProperty({ example: { 'Kitchen Cleaning': 799, 'Bathroom Cleaning': 599 }, required: false })
   servicePricing?: Record<string, number>;
 

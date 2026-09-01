@@ -6,5 +6,6 @@ import { StateService } from './state.service';
 @Module({
   controllers: [StateController],
   providers: [StateService, StateRepository],
+  exports: [StateRepository],
 })
 export class StateModule {}

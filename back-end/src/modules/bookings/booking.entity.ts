@@ -4,6 +4,9 @@ export class Booking {
   @ApiProperty({ example: 'BOOK-20260805-1435-0001' })
   id: string;
 
+  @ApiProperty({ example: 'CUS002', required: false })
+  customerId?: string;
+
   @ApiProperty({ example: 'Kitchen Cleaning' })
   service: string;
 

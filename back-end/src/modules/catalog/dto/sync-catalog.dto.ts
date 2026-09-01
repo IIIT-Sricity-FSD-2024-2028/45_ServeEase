@@ -140,6 +140,30 @@ export class CatalogProviderDto {
   @MaxLength(160)
   ownerProviderEmail?: string;
 
+  @ApiProperty({ required: false, example: 'Active' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  accountStatus?: string;
+
+  @ApiProperty({ required: false, example: 'Active' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  approvalStatus?: string;
+
+  @ApiProperty({ required: false, example: 'Verified' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  verificationStatus?: string;
+
+  @ApiProperty({ required: false, example: '/uploads/profiles/provider.jpeg' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  profilePhoto?: string;
+
   @ApiProperty({ required: false, example: { 'Kitchen Cleaning': 799, 'Bathroom Cleaning': 599 } })
   @IsOptional()
   @IsObject()

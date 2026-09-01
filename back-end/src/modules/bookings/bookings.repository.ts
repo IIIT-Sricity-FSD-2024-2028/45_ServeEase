@@ -35,8 +35,8 @@ export class BookingsRepository {
       id: this.nextBookingReference(createdAt),
       createdAt,
       status,
-      category: status,
-      paymentStatus: this.paymentStatusFor(status),
+      category: data.category ?? data.service,
+      paymentStatus: data.paymentStatus ?? 'Pending',
       paymentDate: data.paymentDate ?? this.paymentDateFor(data.date),
       receivedDate: status === 'Completed' ? (data.receivedDate ?? this.receivedDateFor(data.date)) : undefined,
     };
@@ -49,20 +49,12 @@ export class BookingsRepository {
     if (!booking) return undefined;
     Object.assign(booking, data);
     if (data.status) {
-      booking.category = data.status;
-      booking.paymentStatus = this.paymentStatusFor(data.status);
       if (!booking.paymentDate) booking.paymentDate = this.paymentDateFor(booking.date);
       booking.receivedDate = data.status === 'Completed'
         ? (data.receivedDate ?? booking.receivedDate ?? this.receivedDateFor(booking.date))
         : undefined;
     }
     return booking;
-  }
-
-  private paymentStatusFor(status: string): string {
-    if (status === 'Completed') return 'Successful';
-    if (status === 'Cancelled') return 'Refunded';
-    return 'Pending';
   }
 
   private paymentDateFor(serviceDate: string): string {

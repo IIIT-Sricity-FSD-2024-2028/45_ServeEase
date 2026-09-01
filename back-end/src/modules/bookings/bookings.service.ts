@@ -39,6 +39,9 @@ export class BookingsService {
     if (!existing) {
       throw new NotFoundException(`Booking with id "${id}" was not found.`);
     }
+    if (data.status && ['Cancelled', 'Rejected', 'Completed'].includes(data.status)) {
+      // Lifecycle transitions release availability by status; booking history is retained.
+    }
     if (data.providerId !== undefined || data.date !== undefined || data.time !== undefined) {
       this.availabilityService.assertBookable(data.providerId ?? existing.providerId, data.date ?? existing.date, data.time ?? existing.time, id);
     }

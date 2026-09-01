@@ -2,6 +2,12 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsIn, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateBookingDto {
+  @ApiProperty({ example: 'CUS002', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  customerId?: string;
+
   @ApiProperty({ example: 'Kitchen Cleaning' })
   @IsString()
   @IsNotEmpty()
@@ -106,8 +112,19 @@ export class CreateBookingDto {
   @ApiProperty({ example: 'Pending', required: false, enum: ['Pending', 'Accepted', 'Completed', 'Cancelled'] })
   @IsOptional()
   @IsString()
-  @IsIn(['Pending', 'Accepted', 'Completed', 'Cancelled'])
+  @IsIn(['Pending', 'Accepted', 'Completed', 'Cancelled', 'Rejected'])
   status?: string;
+
+  @ApiProperty({ example: 'Home Cleaning', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  category?: string;
+
+  @ApiProperty({ example: 'Pending', required: false, enum: ['Pending', 'Successful', 'Refunded', 'Failed'] })
+  @IsOptional()
+  @IsIn(['Pending', 'Successful', 'Refunded', 'Failed'])
+  paymentStatus?: string;
 
   @ApiProperty({ example: 'UPI - Google Pay', required: false })
   @IsOptional()

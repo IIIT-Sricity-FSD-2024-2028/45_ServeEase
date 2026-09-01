@@ -918,6 +918,303 @@
         ]
       }
     },
+    "/api/state": {
+      "get": {
+        "operationId": "StateController_findAll",
+        "summary": "Get all frontend state entries mirrored in backend memory",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "State entries returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StateEntry"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      },
+      "post": {
+        "operationId": "StateController_create",
+        "summary": "Create or replace a frontend state entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStateEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "State entry saved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      }
+    },
+    "/api/state/{id}": {
+      "get": {
+        "operationId": "StateController_findById",
+        "summary": "Get one frontend state entry by key",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "State entry returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      },
+      "put": {
+        "operationId": "StateController_updateWithPut",
+        "summary": "Replace a frontend state entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStateEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "State entry updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      },
+      "patch": {
+        "operationId": "StateController_updateWithPatch",
+        "summary": "Partially update a frontend state entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStateEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "State entry updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      },
+      "delete": {
+        "operationId": "StateController_delete",
+        "summary": "Delete a frontend state entry",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "State entry deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StateEntry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "state"
+        ]
+      }
+    },
     "/api/catalog": {
       "get": {
         "operationId": "CatalogController_findAll",
@@ -1396,303 +1693,6 @@
         },
         "tags": [
           "activities"
-        ]
-      }
-    },
-    "/api/state": {
-      "get": {
-        "operationId": "StateController_findAll",
-        "summary": "Get all frontend state entries mirrored in backend memory",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "State entries returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/StateEntry"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "state"
-        ]
-      },
-      "post": {
-        "operationId": "StateController_create",
-        "summary": "Create or replace a frontend state entry",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateStateEntryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "State entry saved successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/StateEntry"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "state"
-        ]
-      }
-    },
-    "/api/state/{id}": {
-      "get": {
-        "operationId": "StateController_findById",
-        "summary": "Get one frontend state entry by key",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "State entry returned successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/StateEntry"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "state"
-        ]
-      },
-      "put": {
-        "operationId": "StateController_updateWithPut",
-        "summary": "Replace a frontend state entry",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateStateEntryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "State entry updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/StateEntry"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "state"
-        ]
-      },
-      "patch": {
-        "operationId": "StateController_updateWithPatch",
-        "summary": "Partially update a frontend state entry",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateStateEntryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "State entry updated successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/StateEntry"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "state"
-        ]
-      },
-      "delete": {
-        "operationId": "StateController_delete",
-        "summary": "Delete a frontend state entry",
-        "parameters": [
-          {
-            "name": "role",
-            "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "State entry deleted successfully.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/StateEntry"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "state"
         ]
       }
     },
@@ -3132,6 +3132,10 @@
             "type": "string",
             "example": "BOOK-20260805-1435-0001"
           },
+          "customerId": {
+            "type": "string",
+            "example": "CUS002"
+          },
           "service": {
             "type": "string",
             "example": "Kitchen Cleaning"
@@ -3269,6 +3273,10 @@
       "CreateBookingDto": {
         "type": "object",
         "properties": {
+          "customerId": {
+            "type": "string",
+            "example": "CUS002"
+          },
           "service": {
             "type": "string",
             "example": "Kitchen Cleaning"
@@ -3351,6 +3359,20 @@
               "Cancelled"
             ]
           },
+          "category": {
+            "type": "string",
+            "example": "Home Cleaning"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "example": "Pending",
+            "enum": [
+              "Pending",
+              "Successful",
+              "Refunded",
+              "Failed"
+            ]
+          },
           "paymentMethod": {
             "type": "string",
             "example": "UPI - Google Pay"
@@ -3392,6 +3414,10 @@
       "UpdateBookingDto": {
         "type": "object",
         "properties": {
+          "customerId": {
+            "type": "string",
+            "example": "CUS002"
+          },
           "service": {
             "type": "string",
             "example": "Kitchen Cleaning"
@@ -3472,6 +3498,20 @@
               "Accepted",
               "Completed",
               "Cancelled"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "example": "Home Cleaning"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "example": "Pending",
+            "enum": [
+              "Pending",
+              "Successful",
+              "Refunded",
+              "Failed"
             ]
           },
           "paymentMethod": {
@@ -3753,6 +3793,70 @@
         "required": [
           "success"
         ]
+      },
+      "StateEntry": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "serveEaseCustomerModuleData"
+          },
+          "value": {
+            "type": "object",
+            "example": {
+              "bookings": [],
+              "payments": [],
+              "tickets": []
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-05-05T05:20:00.000Z"
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "updatedAt"
+        ]
+      },
+      "CreateStateEntryDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "serveEaseCustomerModuleData:CUS002"
+          },
+          "value": {
+            "type": "object",
+            "example": {
+              "bookings": [],
+              "payments": [],
+              "tickets": []
+            }
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ]
+      },
+      "UpdateStateEntryDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "serveEaseCustomerModuleData:CUS002"
+          },
+          "value": {
+            "type": "object",
+            "example": {
+              "bookings": [],
+              "payments": [],
+              "tickets": []
+            }
+          }
+        }
       },
       "CatalogCategory": {
         "type": "object",
@@ -4096,6 +4200,22 @@
             "type": "string",
             "example": "fresh@example.com"
           },
+          "accountStatus": {
+            "type": "string",
+            "example": "Active"
+          },
+          "approvalStatus": {
+            "type": "string",
+            "example": "Active"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "example": "Verified"
+          },
+          "profilePhoto": {
+            "type": "string",
+            "example": "/uploads/profiles/provider.jpeg"
+          },
           "servicePricing": {
             "type": "object",
             "example": {
@@ -4272,6 +4392,22 @@
             "type": "string",
             "example": "fresh@example.com"
           },
+          "accountStatus": {
+            "type": "string",
+            "example": "Active"
+          },
+          "approvalStatus": {
+            "type": "string",
+            "example": "Active"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "example": "Verified"
+          },
+          "profilePhoto": {
+            "type": "string",
+            "example": "/uploads/profiles/provider.jpeg"
+          },
           "servicePricing": {
             "type": "object",
             "example": {
@@ -4354,70 +4490,6 @@
           "details": {
             "type": "string",
             "example": "customer user@serveease.com"
-          }
-        }
-      },
-      "StateEntry": {
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": "string",
-            "example": "serveEaseCustomerModuleData"
-          },
-          "value": {
-            "type": "object",
-            "example": {
-              "bookings": [],
-              "payments": [],
-              "tickets": []
-            }
-          },
-          "updatedAt": {
-            "type": "string",
-            "example": "2026-05-05T05:20:00.000Z"
-          }
-        },
-        "required": [
-          "key",
-          "value",
-          "updatedAt"
-        ]
-      },
-      "CreateStateEntryDto": {
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": "string",
-            "example": "serveEaseCustomerModuleData:CUS002"
-          },
-          "value": {
-            "type": "object",
-            "example": {
-              "bookings": [],
-              "payments": [],
-              "tickets": []
-            }
-          }
-        },
-        "required": [
-          "key",
-          "value"
-        ]
-      },
-      "UpdateStateEntryDto": {
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": "string",
-            "example": "serveEaseCustomerModuleData:CUS002"
-          },
-          "value": {
-            "type": "object",
-            "example": {
-              "bookings": [],
-              "payments": [],
-              "tickets": []
-            }
           }
         }
       },
