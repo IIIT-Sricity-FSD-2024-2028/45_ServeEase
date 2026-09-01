@@ -157,6 +157,9 @@
                 <th>Provider</th>
                 <th>Original Amount</th>
                 <th>Refunded Amount</th>
+                <th>Tax Refunded</th>
+                <th>Refund Date</th>
+                <th>Refund Policy</th>
                 <th>Date</th>
                 <th>Status</th>
               </tr>
@@ -165,6 +168,11 @@
           </table>
         </div>
         <p class="finance-empty-state hidden" id="financeRefundsEmpty">No matching records found.</p>
+      </section>
+
+      <section class="panel-card finance-tax-panel" aria-labelledby="financeTaxRecordTitle">
+        <div class="panel-head"><h2 id="financeTaxRecordTitle">Tax Record</h2></div>
+        <div class="finance-tax-grid" id="financeTaxSummary"></div>
       </section>
     </div>
   </main>

@@ -73,6 +73,12 @@ export class Booking {
   @ApiProperty({ example: 719.1, required: false })
   providerPayout?: number;
 
+  @ApiProperty({ example: 719.1, required: false })
+  providerPayoutAmount?: number;
+
+  @ApiProperty({ example: 119.85, required: false })
+  platformRevenueAmount?: number;
+
   @ApiProperty({ example: '2026-05-12', required: false })
   payoutDate?: string;
 
@@ -93,4 +99,46 @@ export class Booking {
 
   @ApiProperty({ required: false })
   cancellationReason?: string;
+
+  @ApiProperty({ required: false })
+  cancelledAt?: string;
+
+  @ApiProperty({ required: false })
+  cancellationActor?: string;
+
+  @ApiProperty({ required: false })
+  cancellationPolicy?: string;
+
+  @ApiProperty({ required: false })
+  refundAmount?: number;
+
+  @ApiProperty({ required: false })
+  refundServiceFee?: number;
+
+  @ApiProperty({ required: false })
+  refundPlatformFee?: number;
+
+  @ApiProperty({ required: false })
+  refundTax?: number;
+
+  @ApiProperty({ required: false })
+  refundStatus?: string;
+
+  @ApiProperty({ required: false })
+  taxRefundAmount?: number;
+
+  @ApiProperty({ required: false })
+  refundDate?: string;
+
+  @ApiProperty({ required: false })
+  paymentId?: string;
+
+  @ApiProperty({ required: false })
+  statusUpdatedAt?: string;
+
+  @ApiProperty({ required: false })
+  stateVersion?: number;
+
+  @ApiProperty({ example: 50, required: false })
+  customerPlatformFeeAmount?: number;
 }

@@ -969,6 +969,20 @@
   gap: 10px;
 }
 
+.cancellation-policy-copy {
+  display: grid;
+  gap: 5px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #edf1f6;
+  color: #667a97;
+  font-size: 13px;
+}
+
+.cancellation-policy-copy strong {
+  color: #12284a;
+}
+
 .checkout-note-card {
   padding: 18px;
   background: linear-gradient(90deg, #f2f8ff, #f9f2ff);

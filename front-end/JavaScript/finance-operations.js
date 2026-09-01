@@ -69,6 +69,25 @@
     return String(status || "").toLowerCase() === "refunded";
   }
 
+  function formatRefundDate(value) {
+    const text = String(value || "").trim();
+    const isoDate = text.match(/^\d{4}-\d{2}-\d{2}/);
+    if (isoDate) return isoDate[0];
+    const date = new Date(text);
+    return Number.isNaN(date.getTime()) ? text : date.toISOString().slice(0, 10);
+  }
+
+  function refundPolicyLabel(policy) {
+    const labels = {
+      CUSTOMER_CANCEL_GT_24H: "Customer >24h",
+      CUSTOMER_CANCEL_24H_TO_3H: "Customer 24–3h",
+      CUSTOMER_CANCEL_LT_3H: "Customer <3h",
+      PROVIDER_CANCEL_FULL_REFUND: "Provider cancellation",
+      LEGACY_CANCELLATION_UNKNOWN: "Cancellation"
+    };
+    return labels[String(policy || "")] || display(policy, "—");
+  }
+
   function getFinanceConfig() {
     const financeEngine = window.ServeEaseFinance;
     if (financeEngine && typeof financeEngine.getConfig === "function") {
@@ -177,6 +196,15 @@
           provider: display(payment.provider || payment.providerName),
           method: display(payment.method || payment.paymentMethod),
           amount: Number(payment.amount) || 0,
+          serviceFee: Number(payment.serviceFee) || 0,
+          taxAmount: Number(payment.taxAmount) || 0,
+          platformFeeAmount: Number(payment.platformFeeAmount) || 0,
+          customerTotal: Number(payment.customerTotal || payment.amount) || 0,
+          refundAmount: Number(payment.refundAmount) || 0,
+          taxRefundAmount: Number(payment.taxRefundAmount) || 0,
+          refundStatus: display(payment.refundStatus),
+          refundDate: display(payment.refundDate || payment.refundedAt),
+          cancellationPolicy: display(payment.cancellationPolicy),
           date: display(payment.date || payment.paymentDate || payment.createdAtIso),
           status: display(payment.status || payment.paymentStatus, "Pending")
         };
@@ -196,6 +224,24 @@
           provider: display(booking.provider),
           method: display(booking.paymentMethod),
           amount: Number(booking.amount) || 0,
+          serviceFee: Number(booking.serviceFee) || 0,
+          taxAmount: Number(booking.taxAmount) || 0,
+          platformFeeAmount: Number(booking.platformFeeAmount) || 0,
+          customerTotal: Number(booking.customerTotal || booking.amount) || 0,
+          refundAmount: Number(booking.refundAmount) || 0,
+          taxRefundAmount: Number(booking.taxRefundAmount) || 0,
+          refundStatus: display(booking.refundStatus),
+          refundDate: display(booking.refundDate || booking.cancelledAt),
+          cancellationPolicy: display(booking.cancellationPolicy),
+          serviceFee: Number(booking.serviceFee) || 0,
+          taxAmount: Number(booking.taxAmount) || 0,
+          platformFeeAmount: Number(booking.platformFeeAmount) || 0,
+          customerTotal: Number(booking.customerTotal || booking.amount) || 0,
+          refundAmount: Number(booking.refundAmount) || 0,
+          taxRefundAmount: Number(booking.taxRefundAmount) || 0,
+          refundStatus: display(booking.refundStatus),
+          refundDate: display(booking.refundDate || booking.cancelledAt),
+          cancellationPolicy: display(booking.cancellationPolicy),
           date: display(booking.paymentDate || booking.createdAt),
           status: status,
           searchText: [bookingId, booking.customerName, booking.customerEmail, booking.provider, status].join(" ").toLowerCase()
@@ -229,6 +275,17 @@
       customer: display(booking.customer || booking.customerName || owner.customer),
       provider: display(booking.provider || booking.providerName || owner.provider),
       providerId: display(booking.providerId),
+      bookingStatus: display(booking.status),
+      statusUpdatedAt: display(booking.statusUpdatedAt || booking.cancelledAt),
+      stateVersion: Number(booking.stateVersion) || 0,
+      cancellationPolicy: display(booking.cancellationPolicy),
+      cancellationActor: display(booking.cancellationActor),
+      cancelledAt: display(booking.cancelledAt),
+      refundAmount: Number(booking.refundAmount) || 0,
+      refundStatus: display(booking.refundStatus),
+      refundDate: display(booking.refundDate),
+      taxRefundAmount: Number(booking.taxRefundAmount) || 0,
+      customerPlatformFeeAmount: Number(booking.customerPlatformFeeAmount != null ? booking.customerPlatformFeeAmount : booking.platformFeeAmount) || 0,
       service: display(booking.service || booking.serviceType || booking.category),
       amount: Number(booking.amount) || 0,
       method: display(booking.paymentMethod || booking.method),
@@ -271,7 +328,7 @@
       });
     });
 
-    return dedupeRows(rows, function (row) { return row.id; });
+    return dedupeBookingRows(rows);
   }
 
   function dedupeRows(rows, keyBuilder) {
@@ -286,39 +343,98 @@
 
   function collectRefunds(payments, bookings) {
     const rows = [];
+    const bookingById = {};
+    bookings.forEach(function (booking) {
+      bookingById[String(booking.id || "").toLowerCase()] = booking;
+    });
+    function bookingFor(refund) {
+      return bookingById[String(refund && (refund.bookingId || refund.bookingRef || refund.booking) || "").toLowerCase()] || null;
+    }
+    function actualProvider(refund, fallback) {
+      const booking = bookingFor(refund);
+      const provider = display(booking && booking.provider, "");
+      return provider && provider !== "N/A" && provider !== "ServeEase Provider"
+        ? provider
+        : display(fallback, "ServeEase Provider");
+    }
+    storageKeys(customerPrefix).forEach(function (key) {
+      const data = readJson(key, {}) || {};
+      (Array.isArray(data.refunds) ? data.refunds : []).forEach(function (refund) {
+        const sourceDate = refund.refundedAt || refund.refundDate || "";
+        rows.push({
+          id: refund.refundId || refund.id,
+          booking: refund.bookingId || refund.bookingRef,
+          customer: customerOwner(data, key),
+          provider: actualProvider(refund, refund.provider),
+          amount: Number(refund.refundAmount) || 0,
+          originalAmount: Number(refund.originalAmount) || 0,
+          taxRefundAmount: Number(refund.taxRefundAmount) || 0,
+          refundDate: formatRefundDate(sourceDate),
+          cancellationPolicy: refund.cancellationPolicy || "",
+          date: formatRefundDate(sourceDate),
+          status: refund.refundStatus || "Refunded",
+          searchText: [refund.refundId, refund.bookingId, refund.cancellationPolicy].join(" ").toLowerCase()
+        });
+      });
+    });
     payments.filter(function (payment) { return isRefundStatus(payment.status); }).forEach(function (payment) {
+      const sourceDate = payment.refundDate || payment.date;
       rows.push({
         id: payment.id,
         booking: payment.booking,
         customer: payment.customer,
-        provider: payment.provider,
-        amount: payment.amount,
-        date: payment.date,
+        provider: actualProvider(payment, payment.provider),
+        amount: Number(payment.refundAmount) || Number(payment.amount) || 0,
+        originalAmount: Number(payment.customerTotal || payment.amount) || 0,
+        taxRefundAmount: payment.taxRefundAmount,
+        refundDate: formatRefundDate(sourceDate),
+        cancellationPolicy: payment.cancellationPolicy,
+        date: formatRefundDate(sourceDate),
         status: payment.status,
         searchText: payment.searchText
       });
     });
 
-    bookings.filter(function (booking) { return isRefundStatus(booking.status); }).forEach(function (booking) {
+    bookings.filter(function (booking) {
+      return isRefundStatus(booking.status) || String(booking.bookingStatus || "").toLowerCase() === "cancelled" || Number(booking.refundAmount) > 0 || Boolean(booking.cancellationPolicy);
+    }).forEach(function (booking) {
+      const sourceDate = booking.refundDate || booking.cancelledAt || booking.date;
       rows.push({
         id: booking.id,
         booking: booking.id,
         customer: booking.customer,
         provider: booking.provider,
-        amount: booking.amount,
-        date: booking.date,
-        status: booking.status,
+        amount: Number(booking.refundAmount) || Number(booking.amount) || 0,
+        originalAmount: Number(booking.customerTotal || booking.amount) || 0,
+        taxRefundAmount: Number(booking.taxRefundAmount) || 0,
+        refundDate: formatRefundDate(sourceDate),
+        cancellationPolicy: booking.cancellationPolicy || "",
+        date: formatRefundDate(sourceDate),
+        status: booking.refundStatus || booking.status,
         searchText: booking.searchText
       });
     });
 
-    return dedupeRows(rows, function (row) { return row.id + "|" + row.booking; });
+    return dedupeRows(rows, function (row) { return row.booking || row.id; });
   }
 
   function getPaymentRowBreakdown(row) {
     const financeEngine = window.ServeEaseFinance;
+    if (row && financeEngine && Number(row.serviceFee) > 0 && (row.taxAmount != null || row.platformFeeAmount != null || row.customerTotal != null)) {
+      const canonical = financeEngine.calculateBreakdown(Number(row.serviceFee));
+      canonical.taxAmount = Number(row.taxAmount) || canonical.taxAmount;
+      canonical.platformFeeAmount = Number(row.platformFeeAmount) || canonical.platformFeeAmount;
+      canonical.customerTotal = Number(row.customerTotal) || canonical.customerTotal;
+      if (row.cancellationPolicy) {
+        canonical.providerCommissionAmount = Number(row.providerCommission) || 0;
+        canonical.providerPayout = Number(row.providerPayout) || 0;
+        canonical.platformRevenue = Number(row.platformRevenue) || 0;
+      }
+      return canonical;
+    }
+    let breakdown;
     if (row && Number.isFinite(Number(row.serviceFee)) && Number(row.serviceFee) > 0) {
-      return financeEngine
+      breakdown = financeEngine
         ? financeEngine.calculateBreakdown(Number(row.serviceFee))
         : {
             serviceFee: Number(row.serviceFee),
@@ -330,7 +446,7 @@
             platformRevenue: Math.round(Number(row.serviceFee) * 0.15 * 100) / 100
           };
     }
-    return financeEngine && financeEngine.normalizeFinancialRecord
+    else breakdown = financeEngine && financeEngine.normalizeFinancialRecord
       ? financeEngine.normalizeFinancialRecord(row)
       : {
           serviceFee: Number(row.amount || row.gross) || 0,
@@ -341,6 +457,31 @@
           providerPayout: Math.round((Number(row.amount || row.gross) || 0) * 0.90 * 100) / 100,
           platformRevenue: Math.round((Number(row.amount || row.gross) || 0) * 0.15 * 100) / 100
         };
+    if (row && row.cancellationPolicy) {
+      breakdown.taxAmount = Number(row.taxAmount) || breakdown.taxAmount;
+      breakdown.platformFeeAmount = Number(row.platformFeeAmount) || breakdown.platformFeeAmount;
+      breakdown.customerTotal = Number(row.customerTotal) || breakdown.customerTotal;
+      breakdown.providerCommissionAmount = Number(row.providerCommission) || Number(row.providerCommissionAmount) || 0;
+      breakdown.providerPayout = Number(row.providerPayout) || 0;
+      breakdown.platformRevenue = Number(row.platformRevenue) || 0;
+    }
+    return breakdown;
+  }
+
+  function dedupeBookingRows(rows) {
+    const byId = {};
+    rows.forEach(function (row) {
+      const key = String(row.id || "").toLowerCase();
+      if (!key) return;
+      const current = byId[key];
+      if (!current) { byId[key] = row; return; }
+      const currentCancelled = String(current.bookingStatus || "").toLowerCase() === "cancelled";
+      const nextCancelled = String(row.bookingStatus || "").toLowerCase() === "cancelled";
+      const currentTime = Date.parse(current.statusUpdatedAt || "") || 0;
+      const nextTime = Date.parse(row.statusUpdatedAt || "") || 0;
+      if (row.stateVersion > current.stateVersion || nextTime > currentTime || (nextCancelled && !currentCancelled)) byId[key] = row;
+    });
+    return Object.keys(byId).map(function (key) { return byId[key]; });
   }
 
   function reconcileFinancialPayments(payments, bookings, providerTransactions, customRates) {
@@ -439,10 +580,45 @@
   }
 
   function renderStats(payments, financialRows, refunds, financeConfig) {
-    const grossCustomerPayments = financialRows.reduce(function (sum, row) { return sum + (Number(row.customerTotal) || Number(row.gross) || 0); }, 0);
-    const providerEarnings = financialRows.reduce(function (sum, row) { return sum + (Number(row.providerPayout) || Number(row.earnings) || 0); }, 0);
-    const platformRevenue = financialRows.reduce(function (sum, row) { return sum + (Number(row.platformRevenue) || Number(row.commission) || 0); }, 0);
-    const pendingPayout = financialRows.filter(function (row) { return String(row.payoutStatus).toLowerCase() === "pending"; }).reduce(function (sum, row) {
+    function outcomeScore(row) {
+      if (!row) return 0;
+      const status = String(row.status || "").toLowerCase();
+      return (row.cancellationPolicy ? 4 : 0) +
+        (status === "refunded" ? 2 : 0) +
+        (Number(row.customerTotal || row.amount || row.gross) > 0 ? 1 : 0);
+    }
+
+    const rowsByBooking = {};
+    financialRows.forEach(function (row) {
+      const key = String(row.booking || row.id || "").toLowerCase();
+      if (!key) return;
+      const current = rowsByBooking[key];
+      if (!current || outcomeScore(row) > outcomeScore(current)) rowsByBooking[key] = row;
+    });
+    const canonicalRows = Object.keys(rowsByBooking).map(function (key) { return rowsByBooking[key]; });
+
+    // Gross is the money actually charged to the customer.  It comes from the
+    // payment ledger, not the provider projection (which can be absent after a
+    // cancellation).  Keep one authoritative payment per booking.
+    const paymentByBooking = {};
+    payments.filter(function (payment) {
+      const status = String(payment.status || "").toLowerCase();
+      return ["successful", "success", "paid", "refunded"].indexOf(status) !== -1 ||
+        Boolean(payment.cancellationPolicy) || Number(payment.refundAmount) > 0;
+    }).forEach(function (payment) {
+      const key = String(payment.booking || payment.id || "").toLowerCase();
+      if (!key || !paymentByBooking[key] || outcomeScore(payment) > outcomeScore(paymentByBooking[key])) {
+        paymentByBooking[key] = payment;
+      }
+    });
+    const canonicalPayments = Object.keys(paymentByBooking).map(function (key) { return paymentByBooking[key]; });
+    const grossCustomerPayments = canonicalPayments.reduce(function (sum, payment) {
+      return sum + (Number(payment.customerTotal) || Number(payment.amount) || 0);
+    }, 0);
+    const providerEarnings = canonicalRows.reduce(function (sum, row) { return sum + (Number(row.providerPayout) || Number(row.earnings) || 0); }, 0);
+    const platformRevenue = canonicalRows.reduce(function (sum, row) { return sum + (Number(row.platformRevenue) || Number(row.commission) || 0); }, 0);
+    const refundTotal = refunds.reduce(function (sum, refund) { return sum + (Number(refund.amount) || 0); }, 0);
+    const pendingPayout = canonicalRows.filter(function (row) { return String(row.payoutStatus).toLowerCase() === "pending"; }).reduce(function (sum, row) {
       const payout = Number(row.payoutAmount != null ? row.payoutAmount : row.providerPayout);
       return sum + (Number.isFinite(payout) ? payout : 0);
     }, 0);
@@ -450,15 +626,15 @@
     byId("financeStatsGrid").innerHTML = [
       statCard("green", "₹", formatCurrency(grossCustomerPayments), "Gross Customer Payments"),
       statCard("blue", "↗", formatPreciseCurrency(providerEarnings), "Provider Earnings"),
-      statCard("purple", "◆", formatPreciseCurrency(platformRevenue), "Total Platform Revenue (15%)"),
+      statCard("purple", "◆", formatPreciseCurrency(platformRevenue), "Total Platform Revenue"),
       statCard("orange", "◔", formatCurrency(pendingPayout), "Pending Payouts"),
-      statCard("blue", "↺", String(refunds.length), "Refund Records")
+      statCard("blue", "↺", formatPreciseCurrency(refundTotal), "Refunds Processed")
     ].join("");
 
     byId("financeSummaryGrid").innerHTML = [
-      summaryItem("Customer Payment Transactions", payments.length),
-      summaryItem("Provider Earnings", financialRows.length),
-      summaryItem("Financial Source", "Payment + Booking records"),
+      summaryItem("Customer Payment Transactions", canonicalPayments.length),
+      summaryItem("Provider Earnings", canonicalRows.length),
+      summaryItem("Financial Source", "Reconciled booking outcomes"),
       summaryItem("Last updated", new Date().toLocaleString("en-IN"))
     ].join("");
   }
@@ -474,12 +650,43 @@
   function renderCommission(financeConfig) {
     const config = typeof financeConfig === "object" ? financeConfig : { providerCommissionRate: Number(financeConfig) || 10, customerPlatformFeeRate: 5, customerTaxRate: 10 };
     const totalPlatformRate = (Number(config.customerPlatformFeeRate) || 5) + (Number(config.providerCommissionRate) || 10);
+    const policySummary = window.ServeEaseFinance && typeof window.ServeEaseFinance.getCancellationPolicySummary === "function"
+      ? window.ServeEaseFinance.getCancellationPolicySummary() : [];
     byId("financeCommissionPanel").innerHTML = [
       '<div class="finance-revenue-streams">' +
       '<div class="finance-revenue-stream"><span>Customer Platform Fee</span><strong>' + escapeHtml((config.customerPlatformFeeRate || 5) + "%") + '</strong><small>of Service Fee</small></div>' +
       '<div class="finance-revenue-stream"><span>Provider-Side Commission</span><strong>' + escapeHtml((config.providerCommissionRate || 10) + "%") + '</strong><small>of Service Fee</small></div>' +
       '</div>',
       '<div class="finance-total-revenue"><span>Total Platform Revenue</span><strong>' + escapeHtml(totalPlatformRate + "% of Service Fee") + '</strong></div>'
+      ,'<div class="finance-cancellation-policy"><strong>Cancellation Policy</strong>' + policySummary.map(function (line) { return '<span>' + escapeHtml(line) + '</span>'; }).join('') + '</div>'
+    ].join("");
+  }
+
+  function renderTaxSummary(payments, refunds) {
+    const paymentSeen = {};
+    const taxPayments = payments.filter(function (payment) {
+      const key = String(payment.id || "") + "|" + String(payment.booking || "");
+      if (paymentSeen[key] || !(Number(payment.taxAmount) > 0)) return false;
+      paymentSeen[key] = true;
+      return true;
+    });
+    const refundSeen = {};
+    const taxRefunds = refunds.filter(function (refund) {
+      const key = String(refund.id || "") + "|" + String(refund.booking || "");
+      if (refundSeen[key] || !(Number(refund.taxRefundAmount) > 0)) return false;
+      refundSeen[key] = true;
+      return true;
+    });
+    const taxCharged = taxPayments.reduce(function (sum, payment) { return sum + (Number(payment.taxAmount) || 0); }, 0);
+    const taxRefunded = taxRefunds.reduce(function (sum, refund) { return sum + (Number(refund.taxRefundAmount) || 0); }, 0);
+    const node = byId("financeTaxSummary");
+    if (!node) return;
+    node.innerHTML = [
+      summaryItem("Tax Charged", formatPreciseCurrency(taxCharged)),
+      summaryItem("Tax Refunded", formatPreciseCurrency(taxRefunded)),
+      summaryItem("Net Tax Recorded", formatPreciseCurrency(taxCharged - taxRefunded)),
+      summaryItem("Tax Transactions", taxPayments.length),
+      summaryItem("Refunded Tax Transactions", taxRefunds.length)
     ].join("");
   }
 
@@ -509,7 +716,7 @@
   }
 
   function refundRow(row) {
-    return '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(formatCurrency(row.amount)) + '</td><td>' + escapeHtml(formatCurrency(row.amount)) + '</td><td>' + escapeHtml(row.date) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td></tr>';
+    return '<tr><td>' + escapeHtml(row.id) + '</td><td>' + escapeHtml(row.booking) + '</td><td>' + escapeHtml(row.customer) + '</td><td>' + escapeHtml(row.provider) + '</td><td>' + escapeHtml(formatCurrency(row.originalAmount || row.amount)) + '</td><td>' + escapeHtml(formatCurrency(row.amount)) + '</td><td>' + escapeHtml(formatCurrency(row.taxRefundAmount)) + '</td><td>' + escapeHtml(row.refundDate || row.date) + '</td><td>' + escapeHtml(refundPolicyLabel(row.cancellationPolicy)) + '</td><td>' + escapeHtml(row.date) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td></tr>';
   }
 
   function render() {
@@ -528,6 +735,7 @@
 
     renderStats(payments, financialRows, refunds, financeConfig);
     renderCommission(financeConfig);
+    renderTaxSummary(payments, refunds);
     populateStatusFilter(payments, "financePaymentStatusFilter");
     populateStatusFilter(financialRows, "financeEarningsStatusFilter");
 

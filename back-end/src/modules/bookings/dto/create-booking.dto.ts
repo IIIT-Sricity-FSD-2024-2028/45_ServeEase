@@ -97,6 +97,16 @@ export class CreateBookingDto {
   @IsNumber()
   providerPayout?: number;
 
+  @ApiProperty({ example: 719.1, required: false })
+  @IsOptional()
+  @IsNumber()
+  providerPayoutAmount?: number;
+
+  @ApiProperty({ example: 119.85, required: false })
+  @IsOptional()
+  @IsNumber()
+  platformRevenueAmount?: number;
+
   @ApiProperty({ example: '2026-05-12', required: false })
   @IsOptional()
   @IsString()
@@ -160,4 +170,81 @@ export class CreateBookingDto {
   @ApiProperty({ example: 'customer@example.com' })
   @IsEmail()
   customerEmail: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  cancelledAt?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  cancellationActor?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  cancellationPolicy?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  refundAmount?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  refundServiceFee?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  refundPlatformFee?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  refundTax?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  refundStatus?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  taxRefundAmount?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  refundDate?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  paymentId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  statusUpdatedAt?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  stateVersion?: number;
+
+  @ApiProperty({ example: 50, required: false })
+  @IsOptional()
+  @IsNumber()
+  customerPlatformFeeAmount?: number;
 }

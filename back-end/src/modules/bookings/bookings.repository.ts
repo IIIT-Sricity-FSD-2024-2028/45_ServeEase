@@ -2,10 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { Booking } from './booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { StateRepository } from '../state/state.repository';
 
 @Injectable()
 export class BookingsRepository {
   private readonly bookings: Booking[] = [];
+  private readonly stateKey = 'serveEaseCanonicalBookings';
+
+  constructor(private readonly state: StateRepository) {
+    const stored = state.findById(this.stateKey);
+    if (stored?.value && Array.isArray((stored.value as { bookings?: Booking[] }).bookings)) {
+      this.bookings.push(...((stored.value as { bookings: Booking[] }).bookings));
+    }
+  }
 
   findAll(): Booking[] {
     this.autoCancelExpiredPending();
@@ -38,22 +47,36 @@ export class BookingsRepository {
       category: data.category ?? data.service,
       paymentStatus: data.paymentStatus ?? 'Pending',
       paymentDate: data.paymentDate ?? this.paymentDateFor(data.date),
+      statusUpdatedAt: data.statusUpdatedAt ?? createdAt,
+      stateVersion: data.stateVersion ?? 1,
       receivedDate: status === 'Completed' ? (data.receivedDate ?? this.receivedDateFor(data.date)) : undefined,
     };
     this.bookings.unshift(booking);
+    this.persist();
     return booking;
   }
 
   update(id: string, data: UpdateBookingDto): Booking | undefined {
     const booking = this.findById(id);
     if (!booking) return undefined;
+    if (booking.status === 'Cancelled' && data.status && data.status !== 'Cancelled') {
+      return booking;
+    }
+    if (data.stateVersion !== undefined && booking.stateVersion !== undefined && data.stateVersion < booking.stateVersion) {
+      return booking;
+    }
+    const priorStatus = booking.status;
+    const nextStateVersion = Math.max(Number(booking.stateVersion) || 0, Number(data.stateVersion) || 0) + 1;
     Object.assign(booking, data);
+    booking.stateVersion = nextStateVersion;
+    if (data.status && data.status !== priorStatus) booking.statusUpdatedAt = data.statusUpdatedAt ?? new Date().toISOString();
     if (data.status) {
       if (!booking.paymentDate) booking.paymentDate = this.paymentDateFor(booking.date);
       booking.receivedDate = data.status === 'Completed'
         ? (data.receivedDate ?? booking.receivedDate ?? this.receivedDateFor(booking.date))
         : undefined;
     }
+    this.persist();
     return booking;
   }
 
@@ -80,7 +103,12 @@ export class BookingsRepository {
     const index = this.bookings.findIndex((booking) => booking.id === id);
     if (index === -1) return undefined;
     const [deletedBooking] = this.bookings.splice(index, 1);
+    this.persist();
     return deletedBooking;
+  }
+
+  private persist(): void {
+    this.state.create({ key: this.stateKey, value: { bookings: this.bookings as unknown as Record<string, unknown>[] } });
   }
 
   private nextBookingReference(createdAt: string): string {

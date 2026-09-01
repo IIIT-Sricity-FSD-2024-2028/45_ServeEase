@@ -1102,6 +1102,7 @@ async function submitBookingCheckout() {
           customerEmail: apiBooking.customerEmail || email,
           category: apiBooking.category || apiBooking.status,
           paymentStatus: apiBooking.paymentStatus || "Pending",
+          paymentId: apiBooking.paymentId || "",
           createdAt: apiBooking.createdAt || createdAt
         };
       }
@@ -1121,6 +1122,10 @@ async function submitBookingCheckout() {
 
   const paymentEntry = {
     id: paymentRef,
+    transactionId: paymentRef,
+    bookingId: bookingEntry.id,
+    customerId: bookingEntry.customerId || checkoutSession.userId || "",
+    providerId: bookingEntry.providerId || provider.id,
     bookingRef: bookingEntry.id,
     service: service,
     provider: provider.name,
@@ -1136,13 +1141,22 @@ async function submitBookingCheckout() {
     providerCommissionAmount: breakdown.providerCommissionAmount,
     providerPayout: breakdown.providerPayout,
     date: formatDisplayDate(new Date()),
-    status: "Pending"
+    status: "Successful"
   };
+  bookingEntry.paymentStatus = "Successful";
+  bookingEntry.paymentDate = paymentEntry.date;
 
   if (workflow) workflow.normalizeData(customerModuleData);
   customerModuleData.bookings.unshift(bookingEntry);
   customerModuleData.payments.unshift(paymentEntry);
   localStorage.setItem(customerModuleKey, JSON.stringify(customerModuleData));
+  if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(bookingEntry.id)) {
+    window.ServeEaseApi.updateBooking(bookingEntry.id, {
+      paymentStatus: "Successful",
+      paymentDate: bookingEntry.paymentDate,
+      paymentId: paymentRef
+    }).catch(function (error) { console.warn("ServeEase payment status sync failed.", error); });
+  }
 
   if (window.ServeEaseBookingDraft) window.ServeEaseBookingDraft.clear();
 
@@ -1389,6 +1403,11 @@ function initBookingCheckoutPage() {
   });
 
   const pricingBreakdownCard = document.getElementById("pricingBreakdownCard");
+  const cancellationPolicyNode = document.getElementById("checkoutCancellationPolicy");
+  if (cancellationPolicyNode && window.ServeEaseFinance && window.ServeEaseFinance.CANCELLATION_POLICY) {
+    const policySummary = window.ServeEaseFinance.getCancellationPolicySummary();
+    cancellationPolicyNode.innerHTML = '<strong>Cancellation Policy</strong>' + policySummary.map(function (line) { return '<span>' + line + '</span>'; }).join('');
+  }
   if (pricingBreakdownCard) {
     pricingBreakdownCard.innerHTML = `
       <h2>Pricing Breakdown</h2>

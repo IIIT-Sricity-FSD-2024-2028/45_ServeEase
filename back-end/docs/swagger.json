@@ -3224,6 +3224,14 @@
             "type": "number",
             "example": 719.1
           },
+          "providerPayoutAmount": {
+            "type": "number",
+            "example": 719.1
+          },
+          "platformRevenueAmount": {
+            "type": "number",
+            "example": 119.85
+          },
           "payoutDate": {
             "type": "string",
             "example": "2026-05-12"
@@ -3250,6 +3258,49 @@
           },
           "cancellationReason": {
             "type": "string"
+          },
+          "cancelledAt": {
+            "type": "string"
+          },
+          "cancellationActor": {
+            "type": "string"
+          },
+          "cancellationPolicy": {
+            "type": "string"
+          },
+          "refundAmount": {
+            "type": "number"
+          },
+          "refundServiceFee": {
+            "type": "number"
+          },
+          "refundPlatformFee": {
+            "type": "number"
+          },
+          "refundTax": {
+            "type": "number"
+          },
+          "refundStatus": {
+            "type": "string"
+          },
+          "taxRefundAmount": {
+            "type": "number"
+          },
+          "refundDate": {
+            "type": "string"
+          },
+          "paymentId": {
+            "type": "string"
+          },
+          "statusUpdatedAt": {
+            "type": "string"
+          },
+          "stateVersion": {
+            "type": "number"
+          },
+          "customerPlatformFeeAmount": {
+            "type": "number",
+            "example": 50
           }
         },
         "required": [
@@ -3341,6 +3392,14 @@
             "type": "number",
             "example": 719.1
           },
+          "providerPayoutAmount": {
+            "type": "number",
+            "example": 719.1
+          },
+          "platformRevenueAmount": {
+            "type": "number",
+            "example": 119.85
+          },
           "payoutDate": {
             "type": "string",
             "example": "2026-05-12"
@@ -3396,6 +3455,49 @@
           "customerEmail": {
             "type": "string",
             "example": "customer@example.com"
+          },
+          "cancelledAt": {
+            "type": "string"
+          },
+          "cancellationActor": {
+            "type": "string"
+          },
+          "cancellationPolicy": {
+            "type": "string"
+          },
+          "refundAmount": {
+            "type": "number"
+          },
+          "refundServiceFee": {
+            "type": "number"
+          },
+          "refundPlatformFee": {
+            "type": "number"
+          },
+          "refundTax": {
+            "type": "number"
+          },
+          "refundStatus": {
+            "type": "string"
+          },
+          "taxRefundAmount": {
+            "type": "number"
+          },
+          "refundDate": {
+            "type": "string"
+          },
+          "paymentId": {
+            "type": "string"
+          },
+          "statusUpdatedAt": {
+            "type": "string"
+          },
+          "stateVersion": {
+            "type": "number"
+          },
+          "customerPlatformFeeAmount": {
+            "type": "number",
+            "example": 50
           }
         },
         "required": [
@@ -3482,6 +3584,14 @@
             "type": "number",
             "example": 719.1
           },
+          "providerPayoutAmount": {
+            "type": "number",
+            "example": 719.1
+          },
+          "platformRevenueAmount": {
+            "type": "number",
+            "example": 119.85
+          },
           "payoutDate": {
             "type": "string",
             "example": "2026-05-12"
@@ -3537,6 +3647,49 @@
           "customerEmail": {
             "type": "string",
             "example": "customer@example.com"
+          },
+          "cancelledAt": {
+            "type": "string"
+          },
+          "cancellationActor": {
+            "type": "string"
+          },
+          "cancellationPolicy": {
+            "type": "string"
+          },
+          "refundAmount": {
+            "type": "number"
+          },
+          "refundServiceFee": {
+            "type": "number"
+          },
+          "refundPlatformFee": {
+            "type": "number"
+          },
+          "refundTax": {
+            "type": "number"
+          },
+          "refundStatus": {
+            "type": "string"
+          },
+          "taxRefundAmount": {
+            "type": "number"
+          },
+          "refundDate": {
+            "type": "string"
+          },
+          "paymentId": {
+            "type": "string"
+          },
+          "statusUpdatedAt": {
+            "type": "string"
+          },
+          "stateVersion": {
+            "type": "number"
+          },
+          "customerPlatformFeeAmount": {
+            "type": "number",
+            "example": 50
           }
         }
       },

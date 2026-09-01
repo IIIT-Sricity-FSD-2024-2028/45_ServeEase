@@ -73,6 +73,22 @@
           providerId: display(payment.providerId), category: display(payment.category || payment.serviceCategory),
           serviceType: display(payment.serviceType || payment.service), service: display(payment.service),
           serviceId: display(payment.serviceId),
+          serviceFee: Number(payment.serviceFee) || 0, taxAmount: Number(payment.taxAmount) || 0,
+          platformFeeAmount: Number(payment.platformFeeAmount) || 0, customerTotal: Number(payment.customerTotal || payment.amount) || 0,
+          refundAmount: Number(payment.refundAmount) || 0, refundStatus: display(payment.refundStatus, ""),
+          taxRefundAmount: Number(payment.taxRefundAmount) || 0, cancellationPolicy: display(payment.cancellationPolicy, ""),
+          cancellationActor: display(payment.cancellationActor, ""),
+          refundServiceFee: Number(payment.refundServiceFee) || 0, refundPlatformFee: Number(payment.refundPlatformFee) || 0,
+          refundTax: Number(payment.refundTax) || 0, providerCommissionAmount: Number(payment.providerCommissionAmount) || 0,
+          providerPayout: Number(payment.providerPayoutAmount != null ? payment.providerPayoutAmount : payment.providerPayout) || 0,
+          providerPayoutAmount: Number(payment.providerPayoutAmount != null ? payment.providerPayoutAmount : payment.providerPayout) || 0,
+          platformRevenue: Number(payment.platformRevenueAmount != null ? payment.platformRevenueAmount : payment.platformRevenue) || 0,
+          platformRevenueAmount: Number(payment.platformRevenueAmount != null ? payment.platformRevenueAmount : payment.platformRevenue) || 0,
+          customerPlatformFeeAmount: Number(payment.customerPlatformFeeAmount != null ? payment.customerPlatformFeeAmount : payment.platformFeeAmount) || 0,
+          hasStoredCancellationOutcome: Boolean(payment.cancellationPolicy) &&
+            payment.refundAmount != null && payment.providerCommissionAmount != null &&
+            (payment.providerPayoutAmount != null || payment.providerPayout != null) &&
+            (payment.platformRevenueAmount != null || payment.platformRevenue != null),
           date: display(payment.date || payment.paymentDate || payment.createdAtIso),
           status: display(payment.status || payment.paymentStatus, "Pending")
         });
@@ -88,7 +104,10 @@
       rows.push({
         id: 'PAY-' + normalized.id, booking: normalized.id, customer: normalized.customer,
         provider: normalized.provider, amount: Number(normalized.customerTotal || normalized.amount) || 0,
-        serviceFee: Number(normalized.serviceFee) || 0, date: normalized.date, status: normalized.status
+        serviceFee: Number(normalized.serviceFee) || 0, taxAmount: Number(normalized.taxAmount) || 0,
+        platformFeeAmount: Number(normalized.platformFeeAmount) || 0, customerTotal: Number(normalized.customerTotal || normalized.amount) || 0,
+        category: normalized.category, serviceType: normalized.serviceType, service: normalized.service,
+        date: normalized.date, status: normalized.status
       });
     });
     return dedupeRows(rows, function (row) { return row.id + "|" + row.booking; });
@@ -115,10 +134,27 @@
       category: display(booking.category || booking.serviceCategory),
       serviceType: display(booking.serviceType || booking.service),
       serviceId: display(booking.serviceId),
+      cancelledAt: display(booking.cancelledAt, ""), cancellationActor: display(booking.cancellationActor, ""),
+      cancellationPolicy: display(booking.cancellationPolicy, ""), refundAmount: Number(booking.refundAmount) || 0,
+      refundServiceFee: Number(booking.refundServiceFee) || 0, refundPlatformFee: Number(booking.refundPlatformFee) || 0,
+      refundTax: Number(booking.refundTax) || 0, taxRefundAmount: Number(booking.taxRefundAmount) || 0,
+      refundStatus: display(booking.refundStatus, ""), providerCommissionAmount: Number(booking.providerCommissionAmount) || 0,
+      providerPayout: Number(booking.providerPayout != null ? booking.providerPayout : booking.providerPayoutAmount) || 0,
+      providerPayoutAmount: Number(booking.providerPayoutAmount != null ? booking.providerPayoutAmount : booking.providerPayout) || 0,
+      platformRevenue: Number(booking.platformRevenue != null ? booking.platformRevenue : booking.platformRevenueAmount) || 0,
+      platformRevenueAmount: Number(booking.platformRevenueAmount != null ? booking.platformRevenueAmount : booking.platformRevenue) || 0,
+      customerPlatformFeeAmount: Number(booking.customerPlatformFeeAmount != null ? booking.customerPlatformFeeAmount : booking.platformFeeAmount) || 0,
       service: display(booking.service || booking.serviceType || booking.category),
       amount: Number(booking.amount) || 0,
       serviceFee: Number(booking.serviceFee) || 0,
       customerTotal: Number(booking.customerTotal || booking.totalAmount) || 0,
+      bookingStatus: display(booking.status),
+      hasStoredCancellationOutcome: Boolean(booking.cancellationPolicy) &&
+        booking.refundAmount != null && booking.providerCommissionAmount != null &&
+        (booking.providerPayoutAmount != null || booking.providerPayout != null) &&
+        (booking.platformRevenueAmount != null || booking.platformRevenue != null),
+      statusUpdatedAt: display(booking.statusUpdatedAt || booking.cancelledAt),
+      stateVersion: Number(booking.stateVersion) || 0,
       date: display(booking.paymentDate || booking.paidAt || booking.serviceDate || booking.date),
       status: display(booking.paymentStatus || booking.payment || booking.paymentState, "Pending")
     };
@@ -149,7 +185,23 @@
         if (normalized) rows.push(normalized);
       });
     });
-    return dedupeRows(rows, function (row) { return row.id; });
+    return dedupeBookingRows(rows);
+  }
+
+  function dedupeBookingRows(rows) {
+    const byId = {};
+    rows.forEach(function (row) {
+      const key = String(row.id || "").toLowerCase();
+      if (!key) return;
+      const current = byId[key];
+      if (!current) { byId[key] = row; return; }
+      const currentCancelled = String(current.bookingStatus || "").toLowerCase() === "cancelled";
+      const nextCancelled = String(row.bookingStatus || "").toLowerCase() === "cancelled";
+      const currentTime = Date.parse(current.statusUpdatedAt || "") || 0;
+      const nextTime = Date.parse(row.statusUpdatedAt || "") || 0;
+      if (row.stateVersion > current.stateVersion || nextTime > currentTime || (nextCancelled && !currentCancelled)) byId[key] = row;
+    });
+    return Object.keys(byId).map(function (key) { return byId[key]; });
   }
 
   function parseFinanceDate(value) {
@@ -191,7 +243,10 @@
 
     return payments.filter(function (payment) {
       const status = String(payment.status || "").toLowerCase();
-      return ["successful", "success", "paid"].includes(status) && status !== "refunded";
+      const booking = bookingMap[String(payment.booking || "").toLowerCase()];
+      const isCancelled = String(booking && (booking.bookingStatus || booking.status) || "").toLowerCase() === "cancelled";
+      const hasStoredCancellationOutcome = Boolean(payment.cancellationPolicy) || Number(payment.refundAmount) > 0 || status === "refunded";
+      return ["successful", "success", "paid"].includes(status) || isCancelled || hasStoredCancellationOutcome;
     }).map(function (payment) {
       const booking = bookingMap[String(payment.booking || "").toLowerCase()];
       const bookingProviderName = booking && booking.provider !== "N/A" ? booking.provider : "";
@@ -233,11 +288,17 @@
         return String(transaction.booking || "").toLowerCase() === String(payment.booking || "").toLowerCase() || String(transaction.id).toLowerCase() === String(payment.id).toLowerCase();
       }) || null;
 
-      const isBookingCompleted = String(booking.status || "").toLowerCase() === "completed";
+      const isBookingCompleted = String(booking.bookingStatus || booking.status || "").toLowerCase() === "completed";
+      const baseBreakdown = isBookingCompleted ? breakdown : Object.assign({}, breakdown, {
+        providerCommissionAmount: 0,
+        providerPayout: 0,
+        platformRevenue: breakdown.platformFeeAmount
+      });
       const resolvedPayoutStatus = payout
         ? (payout.status || resolvePayoutStatus(payout))
         : (isBookingCompleted ? "Paid" : "Pending");
 
+      const actualCustomerTotal = Number(payment.customerTotal) || Number(booking.customerTotal) || breakdown.customerTotal;
       const row = {
         id: payment.id,
         booking: payment.booking,
@@ -246,21 +307,78 @@
         serviceFee: breakdown.serviceFee,
         taxAmount: breakdown.taxAmount,
         platformFeeAmount: breakdown.platformFeeAmount,
-        customerTotal: breakdown.customerTotal,
-        gross: breakdown.customerTotal,
-        commission: breakdown.providerCommissionAmount,
-        providerCommission: breakdown.providerCommissionAmount,
-        earnings: breakdown.providerPayout,
-        providerEarnings: breakdown.providerPayout,
-        providerPayout: breakdown.providerPayout,
+        // Payment records are the source for the amount actually collected.  Do
+        // not rebuild this from current rates after a cancellation.
+        customerTotal: actualCustomerTotal,
+        gross: actualCustomerTotal,
+        commission: baseBreakdown.providerCommissionAmount,
+        providerCommission: baseBreakdown.providerCommissionAmount,
+        earnings: baseBreakdown.providerPayout,
+        providerEarnings: baseBreakdown.providerPayout,
+        providerPayout: baseBreakdown.providerPayout,
         platformFee: breakdown.platformFeeAmount,
-        platformRevenue: breakdown.platformRevenue,
+        platformRevenue: baseBreakdown.platformRevenue,
         date: payment.date,
         status: payment.status,
         payoutStatus: resolvedPayoutStatus,
         payoutDate: payout ? payout.date : (isBookingCompleted ? (payment.date || "-") : "-"),
-        payoutAmount: breakdown.providerPayout
+        payoutAmount: baseBreakdown.providerPayout
       };
+      let cancellationOutcome = null;
+      const bookingIsCancelled = String(booking.bookingStatus || booking.status || "").toLowerCase() === "cancelled";
+      const cancellationRecord = booking.cancellationPolicy ? booking : payment;
+      const hasStoredCancellationOutcome = Boolean(cancellationRecord.hasStoredCancellationOutcome);
+      const hasCancellationPolicy = Boolean(cancellationRecord.cancellationPolicy);
+      if ((bookingIsCancelled || hasCancellationPolicy) && financeEngine && typeof financeEngine.calculateCancellationOutcome === "function") {
+        let storedOutcome = hasStoredCancellationOutcome
+          ? {
+              policyCode: cancellationRecord.cancellationPolicy,
+              cancellationActor: cancellationRecord.cancellationActor || booking.cancellationActor || "Customer",
+              refundAmount: Number(cancellationRecord.refundAmount) || 0,
+              refundServiceFee: Number(cancellationRecord.refundServiceFee) || 0,
+              refundPlatformFee: Number(cancellationRecord.refundPlatformFee) || 0,
+              refundTax: Number(cancellationRecord.refundTax || cancellationRecord.taxRefundAmount) || 0,
+              taxRefundAmount: Number(cancellationRecord.taxRefundAmount || cancellationRecord.refundTax) || 0,
+              providerCommissionAmount: Number(cancellationRecord.providerCommissionAmount) || 0,
+              providerPayoutAmount: Number(cancellationRecord.providerPayoutAmount != null ? cancellationRecord.providerPayoutAmount : cancellationRecord.providerPayout) || 0,
+              platformRevenueAmount: Number(cancellationRecord.platformRevenueAmount != null ? cancellationRecord.platformRevenueAmount : cancellationRecord.platformRevenue) || 0,
+              customerPlatformFeeAmount: Number(cancellationRecord.customerPlatformFeeAmount != null ? cancellationRecord.customerPlatformFeeAmount : cancellationRecord.platformFeeAmount) || 0,
+              refundStatus: cancellationRecord.refundStatus || "Unknown"
+            } : null;
+        // These policies never retain a provider payout or platform revenue.
+        // Some older projections retained their pre-cancellation values, so
+        // they must not be allowed to affect finance totals.
+        if (storedOutcome && ["PROVIDER_CANCEL_FULL_REFUND", "CUSTOMER_CANCEL_GT_24H"].indexOf(storedOutcome.policyCode) !== -1) {
+          storedOutcome.providerCommissionAmount = 0;
+          storedOutcome.providerPayoutAmount = 0;
+          storedOutcome.platformRevenueAmount = 0;
+        }
+        cancellationOutcome = storedOutcome || financeEngine.calculateCancellationOutcome({
+          serviceFee: serviceFee,
+          customerTotal: booking.customerTotal || payment.customerTotal || breakdown.customerTotal,
+          taxAmount: booking.taxAmount || payment.taxAmount || breakdown.taxAmount,
+          platformFeeAmount: booking.platformFeeAmount || payment.platformFeeAmount || breakdown.platformFeeAmount,
+          providerCommissionRate: config.providerCommissionRate,
+          cancellationActor: booking.cancellationActor || payment.cancellationActor || "Customer",
+          appointmentAt: booking.date,
+          appointmentTime: booking.time,
+          cancelledAt: booking.cancelledAt
+        });
+        row.providerCommission = cancellationOutcome.providerCommissionAmount;
+        row.commission = cancellationOutcome.providerCommissionAmount;
+        row.providerEarnings = cancellationOutcome.providerPayoutAmount;
+        row.earnings = cancellationOutcome.providerPayoutAmount;
+        row.providerPayout = cancellationOutcome.providerPayoutAmount;
+        row.platformRevenue = cancellationOutcome.platformRevenueAmount;
+        row.payoutAmount = cancellationOutcome.providerPayoutAmount;
+        row.payoutStatus = cancellationOutcome.providerPayoutAmount > 0
+          ? (payout ? resolvePayoutStatus(payout) : "Pending")
+          : "Not Paid";
+        row.refundAmount = cancellationOutcome.refundAmount;
+        row.refundStatus = cancellationOutcome.refundStatus;
+        row.taxRefundAmount = cancellationOutcome.taxRefundAmount;
+        row.cancellationPolicy = cancellationOutcome.policyCode;
+      }
       row.providerId = providerId || display((payout && payout.providerId) || payment.providerId);
       row.category = display(booking && (booking.category || booking.serviceCategory) || payment.category || (payout && (payout.category || payout.serviceCategory)));
       row.serviceType = display(booking && booking.serviceType || payment.serviceType || (payout && payout.serviceType));

@@ -173,6 +173,38 @@
   font-size: 16px;
 }
 
+.finance-cancellation-policy {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #edf1f6;
+  color: #667a97;
+  font-size: 13px;
+}
+
+.finance-cancellation-policy strong {
+  color: #12284a;
+}
+
+.finance-tax-panel {
+  margin-bottom: 0;
+}
+
+.finance-tax-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .finance-tax-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .finance-tax-grid { grid-template-columns: 1fr; }
+}
+
 .finance-breakdown {
   margin-top: 16px;
   padding: 16px;
