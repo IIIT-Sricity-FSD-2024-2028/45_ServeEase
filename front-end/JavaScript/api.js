@@ -204,8 +204,12 @@
 
   function canonicalProfilePhotoReference(value) {
     const reference = String(value || '').trim();
-    if (!reference || reference.length > 300) return undefined;
-    if (/^\/uploads\/profiles\/[^?#\s]+$/i.test(reference)) return reference;
+    // Data URLs keep the photo portable when provider state is synchronized
+    // between different browser/machine instances.
+    if (!reference || reference.length > 4 * 1024 * 1024) return undefined;
+    if (/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/]+=*$/i.test(reference)) return reference;
+    // Legacy local upload paths are not portable and may point to a deleted
+    // file. Do not propagate them back into the catalog.
     if (/^https?:\/\/[^/]+\/uploads\/profiles\/[^?#\s]+$/i.test(reference)) return reference;
     return undefined;
   }
@@ -307,6 +311,26 @@ async function upload(path, file, role, userId) {
     getCatalog: function () {
       return request("/catalog", { method: "GET", headers: { role: "user" } });
     },
+    getProviderServices: function (providerId) {
+      return request(`/catalog/providers/${encodeURIComponent(providerId)}/services`, {
+        method: "GET",
+        headers: { role: "provider" }
+      });
+    },
+    createProviderService: function (providerId, service) {
+      return request(`/catalog/providers/${encodeURIComponent(providerId)}/services`, {
+        method: "POST",
+        headers: { role: "provider" },
+        body: JSON.stringify(service)
+      });
+    },
+    updateProviderService: function (providerId, serviceId, service) {
+      return request(`/catalog/providers/${encodeURIComponent(providerId)}/services/${encodeURIComponent(serviceId)}`, {
+        method: "PATCH",
+        headers: { role: "provider" },
+        body: JSON.stringify(service)
+      });
+    },
     uploadVerificationDocument: function (file, userId) {
   return upload("/uploads/verification", file, "user", userId);
 },
@@ -329,7 +353,7 @@ async function upload(path, file, role, userId) {
       };
       const catalogProviders = (catalog.providers || []).map(function (provider) {
         const image = String(provider.image || "");
-        const catalogImage = image && !/^data:/i.test(image) && image.length <= 300
+        const catalogImage = image && !/^data:/i.test(image) && image.length <= 300 && !/^\/uploads\/profiles\//i.test(image)
           ? image
           : (catalogImages[provider.category] || catalogImages["home-cleaning"]);
 
@@ -657,6 +681,9 @@ async function upload(path, file, role, userId) {
 
     function providerKey(provider) {
       if (!provider) return "";
+      if (normalize(provider.name).indexOf("cleanpro") !== -1 || normalize(provider.id).indexOf("cleanpro") !== -1) {
+        return "cleanpro|" + (provider.category || "") + "|" + (Number(provider.cityId) || 0);
+      }
       const registrationId = provider.providerCatalogId || provider.catalogProviderId;
       return [
         normalize(registrationId || baseId(provider) || provider.providerId || provider.ownerProviderId),
@@ -697,15 +724,15 @@ async function upload(path, file, role, userId) {
         const value = provider[field];
         if (value !== undefined && value !== null && value !== "") merged[field] = value;
       });
+      // Service lists are snapshots, not additive metadata.  Concatenating the
+      // backend and local lists can resurrect a service that the provider has
+      // just switched off.  The higher-priority local snapshot is authoritative
+      // here because provider changes are written to it before catalog sync.
+      const preferred = sourcePriority >= existing.sourcePriority ? provider : existing.provider;
       ["subServices", "services"].forEach(function (field) {
-        if (Array.isArray(existing.provider[field]) || Array.isArray(provider[field])) {
-          merged[field] = (Array.isArray(existing.provider[field]) ? existing.provider[field] : [])
-            .concat(Array.isArray(provider[field]) ? provider[field] : [])
-            .filter(function (item, index, list) { return list.indexOf(item) === index; });
-        }
+        if (Array.isArray(preferred[field])) merged[field] = preferred[field];
       });
       if (existing.provider.servicePricing || provider.servicePricing) merged.servicePricing = Object.assign({}, existing.provider.servicePricing || {}, provider.servicePricing || {});
-      const preferred = providerScore(provider, sourcePriority) > providerScore(existing.provider, existing.sourcePriority) ? provider : existing.provider;
       merged.id = preferred.id || merged.id;
       merged.name = preferred.name || merged.name;
       bestByKey[key] = { provider: merged, sourcePriority: Math.max(sourcePriority, existing.sourcePriority) };

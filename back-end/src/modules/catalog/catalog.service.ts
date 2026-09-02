@@ -3,6 +3,7 @@ import { CatalogProvider, CatalogState } from './catalog.entity';
 import { CatalogRepository } from './catalog.repository';
 import { SyncCatalogDto } from './dto/sync-catalog.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
+import { ProviderServiceDto, UpdateProviderServiceDto } from './dto/provider-service.dto';
 
 @Injectable()
 export class CatalogService {
@@ -47,5 +48,27 @@ export class CatalogService {
       throw new NotFoundException(`Provider with id "${id}" was not found.`);
     }
     return provider;
+  }
+
+  findServices(providerId: string): any[] {
+    this.validateProviderId(providerId);
+    return this.catalogRepository.findServices(providerId);
+  }
+
+  createService(providerId: string, data: ProviderServiceDto): any {
+    this.validateProviderId(providerId);
+    return this.catalogRepository.createService(providerId, data);
+  }
+
+  updateService(providerId: string, serviceId: string, data: UpdateProviderServiceDto): any {
+    this.validateProviderId(providerId);
+    if (!serviceId.trim()) throw new BadRequestException('Service id is required.');
+    const service = this.catalogRepository.updateService(providerId, serviceId, data);
+    if (!service) throw new NotFoundException(`Service with id "${serviceId}" was not found.`);
+    return service;
+  }
+
+  private validateProviderId(providerId: string): void {
+    if (!providerId || !providerId.trim()) throw new BadRequestException('Provider id is required.');
   }
 }

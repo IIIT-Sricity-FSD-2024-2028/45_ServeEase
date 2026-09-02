@@ -44,7 +44,14 @@
   }
 
   function isDemoProviderAccount() {
-    return session && (session.email === "provider@serveease.com" || session.userId === "PRO001");
+    return session && (session.email === "provider@serveease.com" || canonicalProviderId(session.userId, session.email, session.fullName) === "PRO001");
+  }
+
+  function canonicalProviderId(providerId, email, name) {
+    const identity = [providerId, email, name].map(function (value) {
+      return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    }).join("|");
+    return identity.indexOf("cleanpro") !== -1 ? "PRO001" : String(providerId || "");
   }
 
   function getActualProviderBookings(data) {
@@ -54,8 +61,38 @@
     });
   }
 
+  function getProviderServiceSummary(data) {
+    const services = Array.isArray(data && data.services) ? data.services : [];
+    return {
+      services: services,
+      total: services.length,
+      active: services.filter(function (service) { return normalizeProviderStatus(service && service.status) === "active"; }).length,
+      inactive: services.filter(function (service) { return normalizeProviderStatus(service && service.status) === "inactive"; }).length
+    };
+  }
+
+  function getProviderBookingSummary(data) {
+    const bookings = getActualProviderBookings(data);
+    function count(status) {
+      return bookings.filter(function (booking) { return normalizeProviderStatus(booking && booking.status) === normalizeProviderStatus(status); }).length;
+    }
+    return {
+      bookings: bookings,
+      total: bookings.length,
+      pending: count("Pending"),
+      accepted: count("Accepted"),
+      completed: count("Completed"),
+      rejected: count("Rejected"),
+      cancelled: count("Cancelled")
+    };
+  }
+
+  function providerBookingHasStatus(booking, status) {
+    return normalizeProviderStatus(booking && booking.status) === normalizeProviderStatus(status);
+  }
+
   function getAccountStorageSuffix() {
-    return session && (session.userId || String(session.email || "provider").toLowerCase());
+    return session && canonicalProviderId(session.userId, session.email, session.fullName || session.organisationName) || String(session && session.email || "provider").toLowerCase();
   }
 
   const providerDataKey = isDemoProviderAccount()
@@ -527,8 +564,15 @@
             cancelledAt: booking.cancelledAt
           });
       }
+      if (cancellationOutcome && Number(cancellationOutcome.providerPayoutAmount) <= 0) {
+        if (transaction) {
+          data.transactions = data.transactions.filter(function (item) { return item !== transaction; });
+          changed = true;
+        }
+        return;
+      }
       const nextStatus = cancellationOutcome
-        ? (cancellationOutcome.providerPayoutAmount > 0 ? "Pending" : "Not Paid")
+        ? (Number(cancellationOutcome.providerPayoutAmount) < Number(breakdown.providerPayout) ? "Partially Paid" : "Paid")
         : (isCompleted ? "Paid" : "Pending");
       const nextPayout = cancellationOutcome ? cancellationOutcome.providerPayoutAmount : breakdown.providerPayout;
       const nextCommission = cancellationOutcome ? cancellationOutcome.providerCommissionAmount : breakdown.providerCommissionAmount;
@@ -647,7 +691,7 @@
 
   function getProviderProfilePhoto(profile) {
     const value = String(profile && profile.profilePhoto || "").trim();
-    return /^(https?:\/\/|\/)?uploads\/profiles\//i.test(value) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(value) ? value : "";
+    return /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/]+=*$/i.test(value) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(value) ? value : "";
   }
 
   function syncProviderTicketsFromSupport(data) {
@@ -1005,7 +1049,20 @@
     store.providers = store.providers.filter(function (provider) {
       if (!provider || isRemovedProviderRecord(provider)) return false;
       const providerBaseId = String(provider.id || "").replace(new RegExp("-" + provider.category + "-" + provider.cityId + "$"), "");
-      return provider.ownerProviderId !== data.profile.providerId && provider.id !== baseProviderId && providerBaseId !== baseProviderId;
+      const identityCandidates = [
+        data.profile.providerId,
+        data.profile.providerCatalogId,
+        data.profile.providerBaseId,
+        baseProviderId
+      ].filter(Boolean).map(function (value) { return String(value); });
+      const belongsToProvider = identityCandidates.some(function (identity) {
+        return provider.ownerProviderId === identity ||
+          provider.id === identity ||
+          provider.providerCatalogId === identity ||
+          providerBaseId === identity ||
+          provider.id.indexOf(identity + "-") === 0;
+      });
+      return !belongsToProvider;
     });
 
     const groupedServices = {};
@@ -1088,10 +1145,13 @@
     setProviderModuleData(data);
 
     if (window.ServeEaseApi && typeof window.ServeEaseApi.syncCatalog === "function") {
-      window.ServeEaseApi.syncCatalog(store).catch(function (error) {
+      return window.ServeEaseApi.syncCatalog(store).catch(function (error) {
         console.warn("ServeEase provider catalog sync skipped.", error);
+        return null;
       });
     }
+
+    return Promise.resolve(store);
   }
 
   function syncProviderBookingsFromBackend(done) {
@@ -1259,7 +1319,11 @@
     const cityId = Number((providerUser && providerUser.cityId) || (session && session.cityId) || profile.cityId || getCityIdFromLocation(profile.location || "Chennai"));
     const cityName = (providerUser && providerUser.cityName) || (session && session.cityName) || profile.cityName || getCityById(cityId).name;
     const location = cityName;
-    const providerId = (providerUser && providerUser.id) || (session && session.userId) || profile.providerId || "PRO001";
+    const providerId = canonicalProviderId(
+      (providerUser && providerUser.id) || (session && session.userId) || profile.providerId || "PRO001",
+      (providerUser && providerUser.email) || (session && session.email) || profile.email,
+      (providerUser && (providerUser.organisationName || providerUser.fullName)) || (session && (session.organisationName || session.fullName)) || profile.organisationName || profile.fullName
+    ) || "PRO001";
     const providerCatalogId = profile.providerCatalogId || (providerUser && providerUser.providerCatalogId) || (session && session.providerCatalogId) || "";
     const providerBaseId = profile.providerBaseId || (providerUser && providerUser.providerCatalogId) || (session && session.providerCatalogId) || providerCatalogId;
     const profilePhoto = profile.profilePhoto || getProviderProfilePhoto({ providerId: providerId });
@@ -1489,7 +1553,9 @@
             service.cityId = nextProfile.cityId;
             service.cityName = nextProfile.cityName;
             service.location = nextProfile.cityName;
-            service.status = "Active";
+             // Preserve a provider's saved activation state when demo defaults
+             // are refreshed on a later page load.
+             service.status = service.status || "Active";
           });
         } else if (!Array.isArray(data.services) || data.services.length === 0) {
           data.services = buildInitialServicesForProvider(nextProfile);
@@ -1579,6 +1645,7 @@
   function statusClass(status) {
     const value = String(status).toLowerCase();
     if (value === "active" || value === "accepted" || value === "completed" || value === "paid") return "status-accepted";
+    if (value === "partially paid") return "status-partially-paid";
     if (value === "pending" || value === "in progress") return "status-pending";
     if (value === "inactive" || value === "rejected" || value === "failed") return "status-cancelled";
     return "status-pending";
@@ -1719,40 +1786,23 @@
     document.getElementById("providerHeroId").textContent = data.profile.providerId;
 
     const statsGrid = document.getElementById("providerStatsGrid");
-    const totalServices = Array.isArray(data.services) ? data.services.length : 0;
-    const bookings = getActualProviderBookings(data);
-    const completedBookings = bookings.filter(function (booking) {
-      return String(booking.status || "").toLowerCase() === "completed";
-    }).length;
-    const paidTransactions = (Array.isArray(data.transactions) ? data.transactions : []).filter(function (transaction) {
-      return String(transaction.status || "").toLowerCase() === "paid";
-    });
-    const totalEarnings = paidTransactions.reduce(function (sum, transaction) {
-      return sum + (Number(transaction.amount) || 0);
-    }, 0);
-    const earningsThisMonth = paidTransactions.filter(function (transaction) {
-      return isInCurrentMonth(transaction.paymentDate || transaction.serviceDate);
-    }).reduce(function (sum, transaction) {
-      return sum + (Number(transaction.amount) || 0);
-    }, 0);
-    const pendingPayout = (Array.isArray(data.transactions) ? data.transactions : []).filter(function (transaction) {
-      return String(transaction.status || "").toLowerCase() === "pending";
-    }).reduce(function (sum, transaction) {
-      return sum + (Number(transaction.amount) || 0);
-    }, 0);
+    const serviceSummary = getProviderServiceSummary(data);
+    const bookingSummary = getProviderBookingSummary(data);
+    const bookings = bookingSummary.bookings;
+    const earnings = getProviderEarningsSummary(data);
     statsGrid.innerHTML = `
-      <div class="stat-card-dashboard"><div class="feature-icon orange">🧰</div><h3>${totalServices}</h3><p>Total Services</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon blue">📋</div><h3>${bookings.length}</h3><p>Total Bookings</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon green">✅</div><h3>${completedBookings}</h3><p>Completed Bookings</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon purple">💰</div><h3>${formatCurrency(totalEarnings)}</h3><p>Total Earnings</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon orange">🧰</div><h3>${serviceSummary.total}</h3><p>Total Services</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon blue">📋</div><h3>${bookingSummary.total}</h3><p>Total Bookings</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon green">✅</div><h3>${bookingSummary.completed}</h3><p>Completed Bookings</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon purple">💰</div><h3>${formatCurrency(earnings.totalEarnings)}</h3><p>Total Earnings</p></div>
     `;
 
     const earningsPreview = document.getElementById("providerEarningsPreview");
     const totalEarningsMini = document.getElementById("providerTotalEarningsMini");
     const pendingPayoutMini = document.getElementById("providerPendingPayoutMini");
-    if (earningsPreview) earningsPreview.textContent = formatCurrency(earningsThisMonth);
-    if (totalEarningsMini) totalEarningsMini.textContent = formatCurrency(totalEarnings);
-    if (pendingPayoutMini) pendingPayoutMini.textContent = formatCurrency(pendingPayout);
+    if (earningsPreview) earningsPreview.textContent = formatCurrency(earnings.earningsThisMonth);
+    if (totalEarningsMini) totalEarningsMini.textContent = formatCurrency(earnings.totalEarnings);
+    if (pendingPayoutMini) pendingPayoutMini.textContent = formatCurrency(earnings.pendingPayout);
 
     const perf = document.getElementById("providerPerformanceList");
     perf.innerHTML = bookings.slice(0, 4).map(function (booking) {
@@ -1781,7 +1831,6 @@
     const title = document.getElementById("providerServiceModalTitle");
     const editId = document.getElementById("providerServiceEditId");
     const name = document.getElementById("providerServiceName");
-    const category = document.getElementById("providerServiceCategory");
     const description = document.getElementById("providerServiceDescription");
     const price = document.getElementById("providerServicePrice");
     const location = document.getElementById("providerServiceLocation");
@@ -1790,15 +1839,6 @@
     if (!backdrop) return;
 
     const providerProfile = getProviderModuleData().profile || {};
-    const subcategoryOptions = getSubcategoriesForProviderCategory(providerProfile.category);
-    const currentName = service && service.name ? service.name : "";
-    const options = currentName && subcategoryOptions.indexOf(currentName) === -1
-      ? subcategoryOptions.concat([currentName])
-      : subcategoryOptions;
-    name.innerHTML = '<option value="">Select service sub category</option>' + options.map(function (subcategory) {
-      return '<option value="' + subcategory + '">' + subcategory + '</option>';
-    }).join("");
-
     if (location && location.tagName === "SELECT") {
       location.innerHTML = '<option value="">Select service city</option>' + getAllServeEaseCities().map(function (city) {
         return '<option value="' + city.name + '">' + city.name + '</option>';
@@ -1811,14 +1851,12 @@
     if (service) {
       editId.value = service.id;
       name.value = service.name;
-      category.value = (getProviderModuleData().profile || {}).category || service.category;
-      description.value = service.description;
+      description.value = service.description || "";
       price.value = service.price;
       location.value = service.cityName || getCityNameFromLocation(service.location || providerProfile.location);
     } else {
       editId.value = "";
       name.value = "";
-      category.value = (getProviderModuleData().profile || {}).category || "";
       description.value = "";
       price.value = "";
       location.value = providerProfile.cityName || providerProfile.location || "";
@@ -1830,7 +1868,9 @@
   function initProviderAvailabilityManagement(panel, data) {
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const profile = data.profile || {};
-    const providerId = resolveCanonicalProviderId(data);
+    // Availability belongs to the provider account, not a city/category
+    // catalog projection. Keep reads and writes on the same owner ID.
+    const providerId = data.profile.providerId || resolveCanonicalProviderId(data);
     let weekly = {};
     let overrides = [];
     let availability = { dates: [] };
@@ -2011,6 +2051,15 @@
       return item && Array.isArray(item.slots) ? item.slots : null;
     }
 
+    function calendarDateHasSchedule(date) {
+      const value = dateForIso(date);
+      const day = weekdays[(value.getDay() + 6) % 7];
+      // Calendar selection follows the recurring weekday toggle consistently
+      // for every week. Individual bookings lock slots inside the drawer but
+      // do not change whether the weekday itself can be selected.
+      return activeSlots(day).length > 0;
+    }
+
     function lockedSlotsFor(date, slots, disabledSlots) {
       const item = (availability.dates || []).find(function (entry) { return entry.date === date; });
       return item && item.slotStates ? slots.filter(function (slot) { return item.slotStates[slot] === 'booked' && !disabledSlots.includes(slot); }) : [];
@@ -2042,8 +2091,9 @@
         const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), index - leadingDays + 1);
         const dateValue = isoDate(date);
         const past = dateValue < today;
+        const unavailable = !calendarDateHasSchedule(dateValue);
         const hasOverride = Boolean(overrideFor(dateValue));
-        return `<button type="button" class="availability-calendar-day${dateValue === selectedDate ? ' is-selected' : ''}${hasOverride ? ' has-override' : ''}" data-override-date="${dateValue}" ${past ? 'disabled' : ''} aria-label="Manage availability for ${date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}">${date.getDate()}</button>`;
+        return `<button type="button" class="availability-calendar-day${dateValue === selectedDate ? ' is-selected' : ''}${hasOverride ? ' has-override' : ''}${unavailable ? ' is-unavailable' : ''}" data-override-date="${dateValue}" ${past || unavailable ? 'disabled' : ''} aria-label="Manage availability for ${date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}">${date.getDate()}</button>`;
       }).join('');
 
       return `
@@ -2060,7 +2110,10 @@
       const selected = dateForIso(selectedDate);
       const day = weekdays[(selected.getDay() + 6) % 7];
       const override = overrideDraft || overrideFor(selectedDate) || { fullDayOff: false, disabledSlots: [] };
-      const slots = activeSlots(day);
+      const dateAvailability = (availability.dates || []).find(function (entry) { return entry.date === selectedDate; });
+      const slots = dateAvailability && Array.isArray(dateAvailability.scheduledSlots)
+        ? dateAvailability.scheduledSlots
+        : activeSlots(day);
       const lockedSlots = lockedSlotsFor(selectedDate, slots, override.disabledSlots);
       const hasBookedSlots = lockedSlots.length > 0;
       const isPast = selectedDate < isoDate(new Date());
@@ -2180,7 +2233,18 @@
       try {
         const saved = await window.ServeEaseApi.saveProviderWeeklySchedule(providerId, buildWeeklyPayload());
         weekly = normaliseWeekly(saved.weeklySchedule); weeklyDirty = false; scheduleMessage = 'Availability updated successfully.'; await refreshAvailability(); render();
-      } catch (error) { scheduleError = error.message || 'Unable to save weekly schedule.'; render(); }
+      } catch (error) {
+        scheduleError = error.message || 'Unable to save weekly schedule.';
+        // The API keeps the last valid schedule when a change would affect a
+        // booked appointment. Restore that server state so the draft cannot
+        // appear to have been saved in the provider UI.
+        try {
+          const current = await window.ServeEaseApi.getProviderWeeklySchedule(providerId);
+          weekly = normaliseWeekly(current.weeklySchedule);
+          weeklyDirty = false;
+        } catch (_) { /* keep the original save error visible */ }
+        render();
+      }
       finally { weeklySaving = false; render(); }
     }
 
@@ -2233,6 +2297,8 @@
     if (!grid) return;
 
     const data = getProviderModuleData();
+    const persistentProviderId = data && data.profile && data.profile.providerId;
+    let serviceRequestInFlight = false;
 
     const getSearchTerm = setupProviderSearch(".dashboard-search input", function () {
       renderServices();
@@ -2251,6 +2317,7 @@
       }
 
       grid.innerHTML = visibleServices.map(function (service) {
+        const isActive = normalizeProviderStatus(service.status) === "active";
         return `
           <div class="provider-service-card">
             <div class="provider-service-top">
@@ -2258,7 +2325,9 @@
                 <div class="provider-service-title">${service.name}</div>
                 <div class="provider-service-subtitle">${service.category}</div>
               </div>
-              <span class="provider-service-status ${service.status.toLowerCase()}">${service.status}</span>
+              <button class="provider-service-toggle ${isActive ? "is-on" : "is-off"}" type="button" role="switch" aria-checked="${isActive}" aria-busy="${serviceRequestInFlight}" aria-label="${isActive ? "Turn off" : "Turn on"} ${service.name}" data-toggle-service="${service.id}" ${serviceRequestInFlight ? "disabled" : ""}>
+                <span class="provider-service-toggle-knob"></span>
+              </button>
             </div>
 
             <div class="provider-service-desc">${service.description}</div>
@@ -2266,10 +2335,7 @@
             <div class="provider-service-meta">📍 ${service.location}</div>
 
             <div class="provider-service-actions">
-              <button class="secondary-action" type="button" data-edit-service="${service.id}">Edit Service</button>
-              <button class="secondary-action" type="button" data-toggle-service="${service.id}">
-                ${service.status === "Active" ? "Deactivate" : "Activate"}
-              </button>
+              <button class="provider-service-edit" type="button" data-edit-service="${service.id}">Edit</button>
             </div>
           </div>
         `;
@@ -2289,15 +2355,35 @@
       });
 
       document.querySelectorAll("[data-toggle-service]").forEach(function (button) {
-        button.addEventListener("click", function () {
+        button.addEventListener("click", async function () {
+          if (serviceRequestInFlight) return;
           const service = data.services.find(function (item) {
             return item.id === button.dataset.toggleService;
           });
           if (!service) return;
-          service.status = service.status === "Active" ? "Inactive" : "Active";
-          setProviderModuleData(data);
-          syncProviderServicesToCatalog(data);
+          const previousStatus = service.status;
+          const nextStatus = normalizeProviderStatus(previousStatus) === "active" ? "Inactive" : "Active";
+          serviceRequestInFlight = true;
+          service.status = nextStatus;
           renderServices();
+          try {
+            if (persistentProviderId && window.ServeEaseApi && window.ServeEaseApi.updateProviderService) {
+              const saved = await window.ServeEaseApi.updateProviderService(persistentProviderId, service.id, {
+                status: nextStatus,
+                isActive: nextStatus === "Active"
+              });
+              Object.assign(service, saved || {});
+            }
+            setProviderModuleData(data);
+            await syncProviderServicesToCatalog(data);
+          } catch (error) {
+            service.status = previousStatus;
+            console.warn("Unable to save provider service status.", error);
+          } finally {
+            serviceRequestInFlight = false;
+            setProviderModuleData(data);
+            renderServices();
+          }
         });
       });
     }
@@ -2311,6 +2397,27 @@
     renderServices();
     renderAvailability();
     attachServiceActions();
+
+    async function loadPersistentServices() {
+      if (!persistentProviderId || !window.ServeEaseApi || !window.ServeEaseApi.getProviderServices) return;
+      try {
+        const remoteServices = await window.ServeEaseApi.getProviderServices(persistentProviderId);
+        if (Array.isArray(remoteServices) && remoteServices.length) {
+          data.services = remoteServices;
+          setProviderModuleData(data);
+          await syncProviderServicesToCatalog(data);
+          renderServices();
+        } else if (Array.isArray(data.services) && data.services.length && window.ServeEaseApi.createProviderService) {
+          await Promise.all(data.services.map(function (service) {
+            return window.ServeEaseApi.createProviderService(persistentProviderId, service);
+          }));
+        }
+      } catch (error) {
+        console.warn("Unable to load persistent provider services.", error);
+      }
+    }
+
+    loadPersistentServices();
 
     const addBtn = document.getElementById("openAddServiceModalBtn");
     const backdrop = document.getElementById("providerServiceModalBackdrop");
@@ -2333,7 +2440,7 @@
       if (e.target === backdrop) closeModal();
     });
 
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
       e.preventDefault();
       error.textContent = "";
 
@@ -2356,17 +2463,7 @@
         return;
       }
 
-      const allowedSubcategories = getSubcategoriesForProviderCategory(category);
-      if (allowedSubcategories.indexOf(name) === -1) {
-        error.textContent = "Choose a valid sub category for your registered main category.";
-        return;
-      }
-
-      if (hasDifferentMainCategoryName(name, category)) {
-        error.textContent = "Sub category must belong to your registered main category.";
-        return;
-      }
-
+      let savedService;
       if (id) {
         const service = data.services.find(function (item) {
           return item.id === id;
@@ -2380,9 +2477,21 @@
           service.cityName = cityName;
           service.location = cityName;
           service.status = service.status || "Active";
+          if (persistentProviderId && window.ServeEaseApi && window.ServeEaseApi.updateProviderService) {
+            savedService = await window.ServeEaseApi.updateProviderService(persistentProviderId, service.id, {
+              name: service.name,
+              category: service.category,
+              description: service.description,
+              price: service.price,
+              cityId: service.cityId,
+              cityName: service.cityName,
+              location: service.location
+            });
+            Object.assign(service, savedService || {});
+          }
         }
       } else {
-        data.services.unshift({
+        const newService = {
           id: `SVC${String(data.services.length + 1).padStart(3, "0")}`,
           name: name,
           category: category,
@@ -2392,13 +2501,18 @@
           cityName: cityName,
           location: cityName,
           status: "Active"
-        });
+        };
+        savedService = persistentProviderId && window.ServeEaseApi && window.ServeEaseApi.createProviderService
+          ? await window.ServeEaseApi.createProviderService(persistentProviderId, newService)
+          : newService;
+        data.services.unshift(savedService || newService);
       }
 
       setProviderModuleData(data);
-      syncProviderServicesToCatalog(data);
+      await syncProviderServicesToCatalog(data);
       renderServices();
       closeModal();
+
     });
   }
 
@@ -2422,7 +2536,7 @@
       tabs.innerHTML = labels.map(function (label) {
         const count = label === "All"
           ? bookings.length
-          : bookings.filter(function (item) { return item.status === label; }).length;
+          : bookings.filter(function (item) { return providerBookingHasStatus(item, label); }).length;
         return `<button class="tab-btn ${active === label ? "active" : ""}" data-provider-tab="${label}">${label} <span>${count}</span></button>`;
       }).join("");
 
@@ -2438,7 +2552,7 @@
     function renderBookings() {
       const searchTerm = getSearchTerm();
       const filtered = bookings.filter(function (booking) {
-        const statusMatch = active === "All" || booking.status === active;
+        const statusMatch = active === "All" || providerBookingHasStatus(booking, active);
         const searchMatch = !searchTerm || [booking.id, booking.customer, booking.service, booking.date, booking.time, booking.location, booking.status].join(" ").toLowerCase().indexOf(searchTerm) !== -1;
         return statusMatch && searchMatch;
       });
@@ -2465,10 +2579,10 @@
             <div class="provider-booking-progress"><span style="width:${booking.progress}%"></span></div>
 
             <div class="provider-booking-actions">
-              ${booking.status === "Pending" ? `<button class="btn btn-primary" type="button" data-accept-booking="${booking.id}">Accept</button>` : ""}
-              ${booking.status === "Pending" ? `<button class="danger-action" type="button" data-reject-booking="${booking.id}">Reject</button>` : ""}
-              ${booking.status === "Accepted" ? `<button class="secondary-action" type="button" data-complete-booking="${booking.id}" title="${completionTitle}" ${canComplete ? "" : "disabled"}>Mark Completed</button>` : ""}
-              ${booking.status === "Accepted" ? `<button class="danger-action" type="button" data-provider-cancel-booking="${booking.id}">Cancel Booking</button>` : ""}
+              ${providerBookingHasStatus(booking, "Pending") ? `<button class="btn btn-primary" type="button" data-accept-booking="${booking.id}">Accept</button>` : ""}
+              ${providerBookingHasStatus(booking, "Pending") ? `<button class="danger-action" type="button" data-reject-booking="${booking.id}">Reject</button>` : ""}
+              ${providerBookingHasStatus(booking, "Accepted") ? `<button class="secondary-action" type="button" data-complete-booking="${booking.id}" title="${completionTitle}" ${canComplete ? "" : "disabled"}>Mark Completed</button>` : ""}
+              ${providerBookingHasStatus(booking, "Accepted") ? `<button class="danger-action" type="button" data-provider-cancel-booking="${booking.id}">Cancel Booking</button>` : ""}
               <button class="secondary-action" type="button" data-view-booking="${booking.id}">View Details</button>
             </div>
           </div>
@@ -2597,7 +2711,7 @@
   function resolveProviderPayoutStatus(transaction) {
     const existing = String(transaction && transaction.status || "").trim();
     const lower = existing.toLowerCase();
-    if (["failed", "cancelled", "refunded"].indexOf(lower) !== -1) return existing;
+    if (["paid", "partially paid", "pending", "failed", "cancelled", "refunded", "not paid"].indexOf(lower) !== -1) return existing;
 
     const relevantDate = [transaction && transaction.receivedDate, transaction && transaction.paymentDate, transaction && transaction.date]
       .map(function (value) {
@@ -2612,55 +2726,89 @@
     return relevantDate.getTime() <= today.getTime() ? "Paid" : "Pending";
   }
 
+  function getProviderTransactionFinancials(transaction) {
+    const financeEngine = window.ServeEaseFinance;
+    if (transaction && Number.isFinite(Number(transaction.serviceFee)) && Number(transaction.serviceFee) > 0) {
+      const fullBreakdown = financeEngine
+        ? financeEngine.calculateBreakdown(Number(transaction.serviceFee))
+        : { serviceFee: Number(transaction.serviceFee), providerCommissionAmount: Math.round(Number(transaction.serviceFee) * 0.10 * 100) / 100, providerPayout: Math.round(Number(transaction.serviceFee) * 0.90 * 100) / 100 };
+      if (String(transaction.status || "").trim().toLowerCase() === "partially paid") {
+        const partialPayout = Number(transaction.providerPayout != null ? transaction.providerPayout : transaction.amount) || 0;
+        const partialCommission = Number.isFinite(Number(transaction.providerCommissionAmount))
+          ? Number(transaction.providerCommissionAmount)
+          : Math.max(0, fullBreakdown.serviceFee - partialPayout);
+        return { serviceFee: fullBreakdown.serviceFee, providerCommissionAmount: partialCommission, providerPayout: partialPayout };
+      }
+      return fullBreakdown;
+    }
+    const payout = Number(transaction && (transaction.providerPayout != null ? transaction.providerPayout : transaction.amount)) || 0;
+    return { serviceFee: Math.round((payout / 0.90) * 100) / 100, providerCommissionAmount: Math.round((payout / 0.90 * 0.10) * 100) / 100, providerPayout: payout };
+  }
+
+  function getProviderEarningsSummary(data) {
+    const transactions = (data && Array.isArray(data.transactions) ? data.transactions : []).map(function (transaction) {
+      const financials = getProviderTransactionFinancials(transaction);
+      return Object.assign({}, transaction, {
+        resolvedServiceFee: financials.serviceFee,
+        resolvedCommission: financials.providerCommissionAmount,
+        resolvedPayout: financials.providerPayout,
+        displayPayoutStatus: resolveProviderPayoutStatus(transaction)
+      });
+    });
+    const paid = transactions.filter(function (transaction) { return ["paid", "partially paid"].indexOf(String(transaction.displayPayoutStatus).toLowerCase()) !== -1; });
+    const pending = transactions.filter(function (transaction) { return String(transaction.displayPayoutStatus).toLowerCase() === "pending"; });
+    return {
+      transactions: transactions,
+      paid: paid,
+      pending: pending,
+      totalEarnings: paid.reduce(function (sum, transaction) { return sum + transaction.resolvedPayout; }, 0),
+      earningsThisMonth: paid.filter(function (transaction) { return isInCurrentMonth(transaction.paymentDate || transaction.serviceDate); }).reduce(function (sum, transaction) { return sum + transaction.resolvedPayout; }, 0),
+      pendingPayout: pending.reduce(function (sum, transaction) { return sum + transaction.resolvedPayout; }, 0)
+    };
+  }
+
   function initProviderEarningsPage() {
     const stats = document.getElementById("providerEarningStats");
     if (!stats) return;
 
     const data = getProviderModuleData();
     reconcileProviderPayouts(data);
-    const financeEngine = window.ServeEaseFinance;
-
-    function getTransactionFinancials(t) {
-      if (t && Number.isFinite(Number(t.serviceFee)) && Number(t.serviceFee) > 0) {
-        return financeEngine
-          ? financeEngine.calculateBreakdown(Number(t.serviceFee))
-          : {
-              serviceFee: Number(t.serviceFee),
-              providerCommissionAmount: Math.round(Number(t.serviceFee) * 10) / 100,
-              providerPayout: Math.round(Number(t.serviceFee) * 0.90 * 100) / 100
-            };
-      }
-      const raw = Number(t.providerPayout != null ? t.providerPayout : t.amount) || 0;
-      return {
-        serviceFee: Math.round((raw / 0.90) * 100) / 100,
-        providerCommissionAmount: Math.round((raw / 0.90 * 0.10) * 100) / 100,
-        providerPayout: raw
-      };
-    }
-
-    const displayTransactions = (Array.isArray(data.transactions) ? data.transactions : []).map(function (transaction) {
-      const fin = getTransactionFinancials(transaction);
-      return Object.assign({}, transaction, {
-        resolvedServiceFee: fin.serviceFee,
-        resolvedCommission: fin.providerCommissionAmount,
-        resolvedPayout: fin.providerPayout,
-        displayPayoutStatus: resolveProviderPayoutStatus(transaction)
-      });
-    });
-
-    const paid = displayTransactions.filter(function (item) { return item.displayPayoutStatus === "Paid"; });
-    const pending = displayTransactions.filter(function (item) { return item.displayPayoutStatus === "Pending"; });
-    const totalEarning = paid.reduce(function (sum, item) { return sum + item.resolvedPayout; }, 0);
-    const pendingAmount = pending.reduce(function (sum, item) { return sum + item.resolvedPayout; }, 0);
+    const earnings = getProviderEarningsSummary(data);
+    const displayTransactions = earnings.transactions;
+    const pending = earnings.pending;
 
     stats.innerHTML = `
-      <div class="stat-card-dashboard"><div class="feature-icon blue">💰</div><h3>${formatCurrency(totalEarning)}</h3><p>Total Earnings</p></div>
-      <div class="stat-card-dashboard"><div class="feature-icon green">✅</div><h3>${formatCurrency(pendingAmount)}</h3><p>Pending Payouts</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon blue">💰</div><h3>${formatCurrency(earnings.totalEarnings)}</h3><p>Total Earnings</p></div>
+      <div class="stat-card-dashboard"><div class="feature-icon green">✅</div><h3>${formatCurrency(earnings.pendingPayout)}</h3><p>Pending Payouts</p></div>
       <div class="stat-card-dashboard"><div class="feature-icon orange">📊</div><h3>${pending.length}</h3><p>Pending Payout Requests</p></div>
     `;
 
     const tbody = document.getElementById("providerTransactionsTableBody");
-    tbody.innerHTML = displayTransactions.length ? displayTransactions.map(function (transaction) {
+    const search = document.getElementById("providerTransactionSearch");
+    const statusFilter = document.getElementById("providerTransactionStatusFilter");
+    const sortSelect = document.getElementById("providerTransactionSort");
+
+    function dateValue(transaction) {
+      const parsed = parseBookingDate(transaction && transaction.serviceDate);
+      return parsed && !Number.isNaN(parsed.getTime()) ? parsed.getTime() : 0;
+    }
+
+    function renderTransactions() {
+      const query = String(search && search.value || "").trim().toLowerCase();
+      const selectedStatus = String(statusFilter && statusFilter.value || "all").toLowerCase();
+      const sortMode = String(sortSelect && sortSelect.value || "newest");
+      const filtered = displayTransactions.filter(function (transaction) {
+        const searchable = [transaction.id, transaction.bookingRef, transaction.service, transaction.customer, transaction.method, transaction.displayPayoutStatus].join(" ").toLowerCase();
+        return (!query || searchable.indexOf(query) !== -1) && (selectedStatus === "all" || String(transaction.displayPayoutStatus).toLowerCase() === selectedStatus);
+      });
+      filtered.sort(function (left, right) {
+        if (sortMode === "highest") return right.resolvedPayout - left.resolvedPayout;
+        if (sortMode === "lowest") return left.resolvedPayout - right.resolvedPayout;
+        if (sortMode === "status") return String(left.displayPayoutStatus).localeCompare(String(right.displayPayoutStatus));
+        const difference = dateValue(right) - dateValue(left);
+        return sortMode === "oldest" ? -difference : difference;
+      });
+      tbody.innerHTML = filtered.length ? filtered.map(function (transaction) {
       return `
         <tr>
           <td>${transaction.id}</td>
@@ -2676,7 +2824,14 @@
           <td><span class="status-pill ${statusClass(transaction.displayPayoutStatus)}">${transaction.displayPayoutStatus}</span></td>
         </tr>
       `;
-    }).join("") : '<tr><td colspan="11">No payout transactions found.</td></tr>';
+      }).join("") : '<tr><td colspan="11">No payout transactions found.</td></tr>';
+    }
+
+    [search, statusFilter, sortSelect].forEach(function (control) {
+      if (control) control.addEventListener("input", renderTransactions);
+      if (control && control.tagName === "SELECT") control.addEventListener("change", renderTransactions);
+    });
+    renderTransactions();
   }
 
   function initProviderSupportPage() {
@@ -3049,8 +3204,10 @@
     if (!personal) return;
 
     const data = getProviderModuleData();
-    const totalServices = Array.isArray(data.services) ? data.services.length : 0;
-    const totalBookings = getActualProviderBookings(data).length;
+    const serviceSummary = getProviderServiceSummary(data);
+    const bookingSummary = getProviderBookingSummary(data);
+    const totalServices = serviceSummary.total;
+    const totalBookings = bookingSummary.total;
     if (window.ServeEaseReviews) window.ServeEaseReviews.seedCompletedBookings(getActualProviderBookings(data), "CUS001");
     const reviewStats = providerReviewStats(data.profile);
     if (data.profile.totalServices !== totalServices || data.profile.totalBookings !== totalBookings) {
@@ -3174,8 +3331,10 @@
       }
 
       if (photoFile) {
-        const upload = await window.ServeEaseApi.uploadProviderProfilePhoto(photoFile);
-        updatedData.profile.profilePhoto = upload.fileUrl;
+        await window.ServeEaseApi.uploadProviderProfilePhoto(photoFile);
+        // Store the image content in synchronized state, not a path that only
+        // exists on the backend machine that received the upload.
+        updatedData.profile.profilePhoto = await readProviderFileAsDataUrl(photoFile);
       }
 
       setProviderModuleData(updatedData);
@@ -3221,6 +3380,7 @@
       syncProviderBookingsFromBackend(function () {
         initProviderDashboard();
         initProviderBookingsPage();
+        initProviderEarningsPage();
         initProviderAccountPage();
       });
     }, 750);
@@ -3229,6 +3389,7 @@
   syncProviderBookingsFromBackend(function () {
     initProviderDashboard();
     initProviderBookingsPage();
+    initProviderEarningsPage();
     initProviderAccountPage();
   });
 })();

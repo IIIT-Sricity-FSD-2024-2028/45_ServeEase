@@ -106,6 +106,52 @@
   margin-bottom: 10px;
 }
 
+.provider-service-toggle {
+  position: relative;
+  flex: 0 0 auto;
+  width: 68px;
+  height: 38px;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #d1d5db;
+  box-shadow: inset 0 2px 4px rgba(17, 24, 39, 0.2), 0 2px 4px rgba(17, 24, 39, 0.12);
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.provider-service-toggle.is-on {
+  background: linear-gradient(135deg, #16d916, #0cae2a);
+  border-color: #0bb52a;
+}
+
+.provider-service-toggle.is-off {
+  background: #9ca3af;
+  border-color: #6b7280;
+}
+
+.provider-service-toggle-knob {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f4f1eb;
+  border: 1px solid #d6d0c7;
+  box-shadow: 0 2px 4px rgba(17, 24, 39, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  transform: translateX(0);
+  transition: transform 160ms ease;
+}
+
+.provider-service-toggle.is-on .provider-service-toggle-knob {
+  transform: translateX(28px);
+}
+
+.provider-service-toggle:focus-visible,
+.provider-service-edit:focus-visible {
+  outline: 3px solid rgba(66, 84, 244, 0.28);
+  outline-offset: 2px;
+}
+
 .provider-service-title {
   font-size: 20px;
   color: #12284a;
@@ -126,10 +172,27 @@
 }
 
 .provider-service-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  justify-content: flex-end;
   margin-top: 16px;
+}
+
+.provider-service-edit {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 22px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 12px rgba(79, 70, 229, 0.2);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.provider-service-edit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(79, 70, 229, 0.28);
 }
 
 .provider-service-status {
@@ -316,12 +379,104 @@
   font-size: 40px;
 }
 
+.provider-payment-breakdown {
+  margin: 24px 0;
+  padding: 18px;
+  font-family: inherit;
+}
+
+.provider-payment-breakdown h2 {
+  color: #12284a;
+  margin: 0 0 14px;
+  font: inherit;
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 700;
+}
+
+.provider-payment-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.provider-payment-breakdown-grid div {
+  background: #f8faff;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.provider-payment-breakdown-grid strong,
+.provider-payment-breakdown-grid span {
+  display: block;
+}
+
+.provider-payment-breakdown-grid strong {
+  color: #12284a;
+  margin-bottom: 6px;
+  font-size: clamp(14px, 1.2vw, 16px);
+}
+
+.provider-payment-breakdown-grid span {
+  color: #667a97;
+  font-size: clamp(12px, 1vw, 14px);
+  line-height: 1.45;
+}
+
+.provider-transaction-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px 210px;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.provider-transaction-controls input,
+.provider-transaction-controls select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d8e2ef;
+  border-radius: 10px;
+  padding: 0 12px;
+  font: inherit;
+  color: #12284a;
+  background: #fff;
+}
+
+.provider-transaction-controls input:focus,
+.provider-transaction-controls select:focus {
+  outline: none;
+  border-color: #4254f4;
+  box-shadow: 0 0 0 3px rgba(66, 84, 244, 0.1);
+}
+
+.provider-transaction-table-card {
+  max-height: 460px;
+  overflow: auto;
+}
+
+.provider-transaction-table-card thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 @media (max-width: 1100px) {
   .provider-services-layout,
   .provider-profile-layout,
   .provider-hero-card {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .provider-payment-breakdown-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .provider-transaction-controls,
+  .provider-payment-breakdown-grid {
+    grid-template-columns: 1fr;
   }
 }
 .provider-topbar .dashboard-brand {

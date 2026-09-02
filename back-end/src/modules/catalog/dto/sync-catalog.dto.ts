@@ -161,7 +161,7 @@ export class CatalogProviderDto {
   @ApiProperty({ required: false, example: '/uploads/profiles/provider.jpeg' })
   @IsOptional()
   @IsString()
-  @MaxLength(300)
+  @MaxLength(4 * 1024 * 1024)
   profilePhoto?: string;
 
   @ApiProperty({ required: false, example: { 'Kitchen Cleaning': 799, 'Bathroom Cleaning': 599 } })

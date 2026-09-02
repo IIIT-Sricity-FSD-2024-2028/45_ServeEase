@@ -349,6 +349,11 @@
 
   function getProviderDedupeKey(provider) {
     if (!provider) return "";
+    // Cleanpro historically exists under two catalog IDs. Treat those legacy
+    // records as one provider so the incomplete record cannot return on reload.
+    if (isCleanproProviderRecord(provider)) {
+      return "cleanpro|" + (provider.category || "") + "|" + (Number(provider.cityId) || 0);
+    }
     const owner = provider.providerCatalogId || provider.catalogProviderId || getProviderBaseId(provider) || provider.providerId || provider.ownerProviderId;
     return [
       normalizeProviderText(owner),

@@ -7,6 +7,7 @@ import { CatalogProvider, CatalogState } from './catalog.entity';
 import { CatalogService } from './catalog.service';
 import { SyncCatalogDto } from './dto/sync-catalog.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
+import { ProviderServiceDto, UpdateProviderServiceDto } from './dto/provider-service.dto';
 
 @ApiTags('catalog')
 @ApiExtraModels(ApiSuccessResponse, CatalogState, CatalogProvider)
@@ -60,5 +61,28 @@ export class CatalogController {
   @ApiOkResponse({ description: 'Provider deleted successfully.', schema: successResponseSchema(CatalogProvider) })
   delete(@Param('id') id: string) {
     return successResponse(this.catalogService.delete(id));
+  }
+
+  @Get('providers/:providerId/services')
+  @Roles('admin', 'provider', 'user')
+  @ApiOperation({ summary: 'Get persistent services for a provider' })
+  findServices(@Param('providerId') providerId: string) {
+    return successResponse(this.catalogService.findServices(providerId));
+  }
+
+  @Post('providers/:providerId/services')
+  @Roles('admin', 'provider')
+  @ApiOperation({ summary: 'Create a provider service' })
+  @ApiBody({ type: ProviderServiceDto })
+  createService(@Param('providerId') providerId: string, @Body() data: ProviderServiceDto) {
+    return successResponse(this.catalogService.createService(providerId, data));
+  }
+
+  @Patch('providers/:providerId/services/:serviceId')
+  @Roles('admin', 'provider')
+  @ApiOperation({ summary: 'Update a provider service' })
+  @ApiBody({ type: UpdateProviderServiceDto })
+  updateService(@Param('providerId') providerId: string, @Param('serviceId') serviceId: string, @Body() data: UpdateProviderServiceDto) {
+    return successResponse(this.catalogService.updateService(providerId, serviceId, data));
   }
 }

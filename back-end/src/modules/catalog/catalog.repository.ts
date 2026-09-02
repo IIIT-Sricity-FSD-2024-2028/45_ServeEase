@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { CatalogProvider, CatalogState } from './catalog.entity';
 import { SyncCatalogDto } from './dto/sync-catalog.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
+import { ProviderServiceDto, UpdateProviderServiceDto } from './dto/provider-service.dto';
+import { StateRepository } from '../state/state.repository';
+import { canonicalProviderId } from '../../common/provider-identity';
 
 @Injectable()
 export class CatalogRepository {
@@ -10,6 +13,60 @@ export class CatalogRepository {
     providers: [],
     popularServices: [],
   };
+
+  constructor(private readonly stateRepository: StateRepository) {}
+
+  private servicesKey(providerId: string): string {
+    return `serveEaseProviderServices:${canonicalProviderId(providerId)}`;
+  }
+
+  findServices(providerId: string): any[] {
+    const entry = this.stateRepository.findById(this.servicesKey(providerId));
+    return entry && Array.isArray(entry.value.services) ? entry.value.services as any[] : [];
+  }
+
+  saveServices(providerId: string, services: any[]): any[] {
+    const value = { providerId, services, updatedAt: new Date().toISOString() };
+    const key = this.servicesKey(providerId);
+    const existing = this.stateRepository.findById(key);
+    if (existing) this.stateRepository.update(key, { value });
+    else this.stateRepository.create({ key, value });
+    return services;
+  }
+
+  createService(providerId: string, data: ProviderServiceDto): any {
+    const services = this.findServices(providerId);
+    const service = {
+      ...data,
+      id: data.id || `SVC-${Date.now()}`,
+      status: data.status || (data.isActive === false ? 'Inactive' : 'Active'),
+      isActive: data.isActive !== false && data.status !== 'Inactive',
+      updatedAt: new Date().toISOString(),
+    };
+    services.push(service);
+    this.saveServices(providerId, services);
+    return service;
+  }
+
+  updateService(providerId: string, serviceId: string, data: UpdateProviderServiceDto): any | undefined {
+    const services = this.findServices(providerId);
+    const service = services.find((item) => item && item.id === serviceId);
+    if (!service) return undefined;
+    Object.assign(service, data);
+    if (data.isActive !== undefined) service.status = data.isActive ? 'Active' : 'Inactive';
+    if (data.status !== undefined) service.isActive = data.status !== 'Inactive';
+    service.updatedAt = new Date().toISOString();
+    this.saveServices(providerId, services);
+    return service;
+  }
+
+  syncServices(providerId: string, services: any[]): any[] {
+    return this.saveServices(providerId, services.map((service) => ({
+      ...service,
+      isActive: service.status !== 'Inactive' && service.isActive !== false,
+      status: service.status === 'Inactive' || service.isActive === false ? 'Inactive' : 'Active',
+    })));
+  }
 
   findAll(): CatalogState {
     return this.catalog;
@@ -20,6 +77,15 @@ export class CatalogRepository {
   }
 
   create(data: SyncCatalogDto): CatalogState {
+    data.providers.forEach((provider) => {
+      if (provider.ownerProviderId && Array.isArray(provider.services)) {
+        provider.ownerProviderId = canonicalProviderId(provider.ownerProviderId);
+        const existing = this.findServices(provider.ownerProviderId);
+        const activeIds = new Set(provider.services.map((service: any) => service && service.id));
+        const inactive = existing.filter((service: any) => service && !activeIds.has(service.id));
+        this.syncServices(provider.ownerProviderId, provider.services.concat(inactive));
+      }
+    });
     this.catalog = {
       categories: data.categories,
       providers: this.normalizeProviders(data.providers),

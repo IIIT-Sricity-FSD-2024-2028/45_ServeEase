@@ -3,6 +3,7 @@ import { Booking } from './booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { StateRepository } from '../state/state.repository';
+import { canonicalProviderId } from '../../common/provider-identity';
 
 @Injectable()
 export class BookingsRepository {
@@ -28,15 +29,18 @@ export class BookingsRepository {
 
   findByProvider(providerId: string): Booking[] {
     this.autoCancelExpiredPending();
-    return this.bookings.filter((booking) => booking.providerId === providerId);
+    const canonicalId = canonicalProviderId(providerId);
+    return this.bookings.filter((booking) => canonicalProviderId(booking.providerId) === canonicalId);
   }
 
   findByProviderAndDate(providerId: string, date: string): Booking[] {
     this.autoCancelExpiredPending();
-    return this.bookings.filter((booking) => booking.providerId === providerId && booking.date === date);
+    const canonicalId = canonicalProviderId(providerId);
+    return this.bookings.filter((booking) => canonicalProviderId(booking.providerId) === canonicalId && booking.date === date);
   }
 
   create(data: CreateBookingDto): Booking {
+    data.providerId = canonicalProviderId(data.providerId);
     const status = data.status ?? 'Pending';
     const createdAt = new Date().toISOString();
     const booking = {

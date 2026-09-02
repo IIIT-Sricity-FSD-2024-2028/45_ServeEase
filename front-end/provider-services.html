@@ -69,16 +69,11 @@
       </div>
       <form id="providerServiceForm" class="provider-modal-form">
         <input type="hidden" id="providerServiceEditId" />
-        <label>Service Sub Category</label>
-        <select id="providerServiceName">
-          <option value="">Select service sub category</option>
-        </select>
-
-        <label>Registered Main Category</label>
-        <input type="text" id="providerServiceCategory" placeholder="Home Cleaning" readonly />
-
-        <label>Service Description</label>
-        <textarea id="providerServiceDescription" placeholder="Enter service description"></textarea>
+        <label for="providerServiceName">Service Name</label>
+        <input type="text" id="providerServiceName" placeholder="Enter service name" maxlength="120" required />
+
+        <label for="providerServiceDescription">Service Description</label>
+        <textarea id="providerServiceDescription" placeholder="Enter service description" maxlength="1000" required></textarea>
 
         <div class="two-col-form">
           <div>

@@ -48,7 +48,23 @@
         <div class="panel-head">
           <h2>Payment Transaction History</h2>
         </div>
-        <div class="table-card">
+        <div class="provider-transaction-controls">
+          <input type="search" id="providerTransactionSearch" placeholder="Search transactions..." aria-label="Search transactions" />
+          <select id="providerTransactionStatusFilter" aria-label="Filter transactions by status">
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="partially paid">Partially Paid</option>
+          </select>
+          <select id="providerTransactionSort" aria-label="Sort transactions">
+            <option value="newest">Newest service date</option>
+            <option value="oldest">Oldest service date</option>
+            <option value="highest">Highest payout</option>
+            <option value="lowest">Lowest payout</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+        <div class="table-card provider-transaction-table-card">
           <table class="data-table">
             <thead>
               <tr>
@@ -57,8 +73,8 @@
                 <th>Service Name</th>
                 <th>Customer</th>
                 <th>Service Fee</th>
-                <th>Commission (10%)</th>
-                <th>Net Payout (90%)</th>
+                <th>Commission Deducted</th>
+                <th>Net Payout</th>
                 <th>Payment Method</th>
                 <th>Service Date</th>
                 <th>Payout Date</th>
@@ -67,6 +83,16 @@
             </thead>
             <tbody id="providerTransactionsTableBody"></tbody>
           </table>
+        </div>
+      </section>
+
+      <section class="panel-card provider-payment-breakdown">
+        <h2>Payment Breakdown</h2>
+        <div class="provider-payment-breakdown-grid">
+          <div><strong>Pending</strong><span>Accepted bookings awaiting completion.</span></div>
+          <div><strong>Paid</strong><span>Completed services or full-payout cancellations. The provider receives 90% of the service fee.</span></div>
+          <div><strong>Partially Paid</strong><span>Cancellation between 24 and 3 hours before service. 30% of the service fee is retained; after 10% commission on that retained amount, the provider receives 27%.</span></div>
+          <div><strong>No record</strong><span>Cancellation more than 24 hours before service produces no provider payout.</span></div>
         </div>
       </section>
     </div>

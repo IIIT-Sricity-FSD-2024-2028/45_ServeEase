@@ -354,6 +354,11 @@
   color: #1f9d55;
 }
 
+.status-partially-paid {
+  background: #e8efff;
+  color: #2563eb;
+}
+
 .status-pending {
   background: #fff3e8;
   color: #ea580c;

@@ -1455,6 +1455,131 @@
         ]
       }
     },
+    "/api/catalog/providers/{providerId}/services": {
+      "get": {
+        "operationId": "CatalogController_findServices",
+        "summary": "Get persistent services for a provider",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      },
+      "post": {
+        "operationId": "CatalogController_createService",
+        "summary": "Create a provider service",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/providers/{providerId}/services/{serviceId}": {
+      "patch": {
+        "operationId": "CatalogController_updateService",
+        "summary": "Update a provider service",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "providerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "serviceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/activities": {
       "get": {
         "operationId": "ActivitiesController_findAll",
@@ -3716,6 +3841,10 @@
               "saturday": [],
               "sunday": []
             }
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "example": "2026-09-07"
           }
         },
         "required": [
@@ -3779,12 +3908,29 @@
             "items": {
               "type": "string"
             }
+          },
+          "scheduledSlots": {
+            "example": [
+              "09:00-12:00",
+              "13:00-17:00"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "slotStates": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "date",
           "dayOfWeek",
-          "slots"
+          "slots",
+          "scheduledSlots"
         ]
       },
       "ProviderAvailability": {
@@ -4575,6 +4721,14 @@
             }
           }
         }
+      },
+      "ProviderServiceDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateProviderServiceDto": {
+        "type": "object",
+        "properties": {}
       },
       "Activity": {
         "type": "object",

@@ -296,8 +296,12 @@ function getProviderReviewItems(provider) {
 function providerDisplayImage(provider) {
   if (!provider) return "";
   const profilePhoto = String(provider.profilePhoto || "").trim();
-  if (/^(https?:\/\/|\/)?uploads\/profiles\//i.test(profilePhoto) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(profilePhoto)) return profilePhoto;
-  return provider.image || "assets/images/home-cleaning/clean1.jpg";
+  if (/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/]+=*$/i.test(profilePhoto) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(profilePhoto)) return profilePhoto;
+  const image = String(provider.image || "").trim();
+  if (/^\/uploads\/profiles\//i.test(image) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(image)) {
+    return "assets/images/home-cleaning/clean1.jpg";
+  }
+  return image || "assets/images/home-cleaning/clean1.jpg";
 }
 
 function dedupeActiveProviderServices(services) {
@@ -326,6 +330,9 @@ function providerIsDiscoverable(provider) {
 
 function providerIdentityKey(provider) {
   const registrationId = String(provider && (provider.providerCatalogId || provider.catalogProviderId) || "").trim().toLowerCase();
+  if (String(provider && (provider.name || provider.id) || "").toLowerCase().indexOf("cleanpro") !== -1) {
+    return "cleanpro|" + String(provider && provider.category || "") + "|" + Number(provider && provider.cityId || 0);
+  }
   const rawSource = registrationId || String(provider && provider.id || "").trim().toLowerCase();
   const rawId = String(provider && (rawSource || provider.providerId || provider.ownerProviderId) || "").trim().toLowerCase();
   const base = provider && provider.category && provider.cityId
@@ -391,6 +398,8 @@ function setupFooterLinks() {
   const priceValue = document.getElementById("priceValue");
   const resultsCount = document.getElementById("resultsCount");
   const resetBtn = document.getElementById("resetFiltersBtn");
+  const todayAvailability = {};
+  let availabilityLoadToken = 0;
 
   title.textContent = "Available Service Providers";
   subtitle.textContent = `Choose from trusted ${category.name.toLowerCase()} professionals near your location.`;
@@ -421,6 +430,24 @@ function setupFooterLinks() {
 
     var categoryRows = cityProviders.filter(function (p) {
       return p.category === categoryId && providerIsDiscoverable(p);
+    }).map(function (provider) {
+      // Provider-managed services are authoritative. Derive the category
+      // listing from the same active records used by the profile and booking
+      // flow so disabled or renamed services cannot remain visible here.
+      if (!Array.isArray(provider.services)) return provider;
+      const activeServices = dedupeActiveProviderServices(provider.services);
+      return Object.assign({}, provider, {
+        subServices: activeServices.map(function (service) { return service.name; }),
+        servicePricing: activeServices.reduce(function (pricing, service) {
+          pricing[service.name] = Number(service.price);
+          return pricing;
+        }, {}),
+        startingPrice: activeServices.length
+          ? Math.min.apply(null, activeServices.map(function (service) { return Number(service.price) || 499; }))
+          : Number.POSITIVE_INFINITY
+      });
+    }).filter(function (provider) {
+      return provider.subServices && provider.subServices.length;
     });
     var providersByIdentity = {};
     categoryRows.forEach(function (provider) {
@@ -458,7 +485,7 @@ function setupFooterLinks() {
         <div class="provider-card">
           <div class="provider-image-wrap">
             <img src="${providerDisplayImage(provider)}" alt="${provider.name}" onerror="this.onerror=null;this.src='assets/images/home-cleaning/clean1.jpg';">
-            ${provider.availableToday ? `<span class="provider-status">Available Today</span>` : ""}
+            ${(todayAvailability[provider.id] !== undefined ? todayAvailability[provider.id] : provider.availableToday) ? `<span class="provider-status">Available Today</span>` : ""}
           </div>
           <div class="provider-card-body">
             <h3>${provider.name}</h3>
@@ -505,10 +532,48 @@ function setupFooterLinks() {
   if (window.ServeEaseLocation) {
     window.ServeEaseLocation.onCityChange(function () {
       renderProviders();
+      loadTodayAvailability();
     });
   }
 
   renderProviders();
+
+  async function loadTodayAvailability() {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getProviderAvailability !== "function") return;
+    const cityId = window.ServeEaseLocation && window.ServeEaseLocation.getSelectedCity()
+      ? window.ServeEaseLocation.getSelectedCity().id
+      : 1;
+    const providers = (window.ServeEaseLocation
+      ? window.ServeEaseLocation.getProvidersByCity(cityId)
+      : (data.providers || [])).filter(function (provider) {
+        return provider && provider.category === categoryId && provider.ownerProviderId;
+      });
+    const uniqueProviders = [];
+    const seen = new Set();
+    providers.forEach(function (provider) {
+      if (!seen.has(provider.id)) {
+        seen.add(provider.id);
+        uniqueProviders.push(provider);
+      }
+    });
+    const token = ++availabilityLoadToken;
+    await Promise.all(uniqueProviders.map(async function (provider) {
+      try {
+        const response = await window.ServeEaseApi.getProviderAvailability(provider.ownerProviderId);
+        const today = response && Array.isArray(response.dates)
+          ? response.dates.find(function (item) { return item.date === todayISO(); })
+          : null;
+        todayAvailability[provider.id] = Boolean(today && Array.isArray(today.slots) && today.slots.length);
+      } catch (error) {
+        // An owned provider must not be marked available when its live schedule
+        // cannot be verified. Static demo providers retain their fixture value.
+        todayAvailability[provider.id] = false;
+      }
+    }));
+    if (token === availabilityLoadToken) renderProviders();
+  }
+
+  loadTodayAvailability();
 }
 
 function formatAvailabilitySlot(slot) {
@@ -536,6 +601,7 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
   let selectedSlot = "";
   let selectedService = "";
   let availabilityDates = [];
+  const availabilityProviderId = provider.ownerProviderId || provider.id;
 
   function renderLoading() {
     bookingCard.innerHTML = `
@@ -603,7 +669,7 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
   const activeServices = Array.isArray(provider.services) && provider.services.length
     ? dedupeActiveProviderServices(provider.services)
     : [];
-  const displaySubServices = activeServices.length
+  const displaySubServices = Array.isArray(provider.services)
     ? activeServices.map(function (s) { return s.name; })
     : (Array.isArray(provider.subServices) && provider.subServices.length ? provider.subServices : [provider.name]);
 
@@ -722,7 +788,7 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
       if (!window.ServeEaseApi || typeof window.ServeEaseApi.getProviderAvailability !== "function") {
         throw new Error("Availability API is unavailable.");
       }
-      const response = await window.ServeEaseApi.getProviderAvailability(provider.id);
+      const response = await window.ServeEaseApi.getProviderAvailability(availabilityProviderId);
       availabilityDates = response && Array.isArray(response.dates) ? response.dates : [];
       if (!availabilityDates.some(function (item) { return Array.isArray(item.slots) && item.slots.length; })) {
         renderEmpty();
@@ -774,13 +840,13 @@ function initProviderProfilePage() {
   const activeServices = Array.isArray(provider.services) && provider.services.length
     ? dedupeActiveProviderServices(provider.services)
     : [];
-  const displaySubServices = activeServices.length
+  const displaySubServices = Array.isArray(provider.services)
     ? activeServices.map(function (s) { return s.name; })
     : (Array.isArray(provider.subServices) && provider.subServices.length ? provider.subServices : [provider.name]);
 
   summaryCard.innerHTML = `
     <div class="summary-top">
-      <img src="${providerDisplayImage(provider)}" alt="${provider.name}">
+      <img src="${providerDisplayImage(provider)}" alt="${provider.name}" onerror="this.onerror=null;this.src='assets/images/home-cleaning/clean1.jpg';">
       <div>
         <h1>${provider.name} <span class="verified-badge">Verified Professional</span></h1>
         <div class="summary-services">
@@ -834,7 +900,7 @@ function initProviderProfilePage() {
           <div class="review-card">
             <div class="review-stars" aria-label="${review.stars} out of 5 stars">${window.ServeEaseReviews.stars(review.stars)}</div>
             <p class="review-feedback">"${review.text}"</p>
-            <div class="review-meta"><strong>${review.name}</strong> - ${provider.subServices[0]} - ${review.when}</div>
+            <div class="review-meta"><strong>${review.name}</strong> - ${displaySubServices[0] || provider.name} - ${review.when}</div>
           </div>
         `;
       }).join("") : '<div class="empty-state-card">No customer reviews yet. This provider is newly verified.</div>'}
