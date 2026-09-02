@@ -278,7 +278,13 @@
         data.agent = data.agent || backendData.agent || { fullName: "Priya Sharma" };
         setSupportData(data);
       })
-      .catch(function () {
+      .catch(function (error) {
+        if (error && /^State entry ".+" was not found\.?$/i.test(String(error.message || ""))) {
+          const localData = getSupportData();
+          if (localData && Array.isArray(localData.tickets)) {
+            window.ServeEaseApi.saveState(supportStorageKey, localData).catch(function () { return null; });
+          }
+        }
         return null;
       })
       .finally(function () {
@@ -315,9 +321,6 @@
     setSupportData(data);
     updateTicketInUserModules(ticket);
     syncTicketToSuperuserModule(ticket);
-    if (window.ServeEaseApi && typeof window.ServeEaseApi.saveState === "function") {
-      window.ServeEaseApi.saveState(supportStorageKey, data).catch(function () { return null; });
-    }
   }
 
   function syncTicketToSuperuserModule(ticket) {
@@ -670,9 +673,11 @@ function setupHeader(agentName) {
     const notificationPanel = document.getElementById("supportNotificationPanel");
     trapNotificationScroll(notificationPanel);
     const agentNameNodes = document.querySelectorAll("#supportAgentName");
+    const session = getSession();
+    const displayedName = (session && session.name) || agentName;
 
     agentNameNodes.forEach(function (node) {
-      node.textContent = agentName;
+      node.textContent = displayedName;
     });
 
     if (profileBtn && dropdown && profileBtn.dataset.bound !== "true") {
@@ -734,6 +739,14 @@ function setupHeader(agentName) {
       logoutBtn.addEventListener("click", function () {
         sessionStorage.removeItem("serveEaseSession");
         window.location.href = "login.html";
+      });
+    }
+    const profileLink = document.getElementById("supportEmployeeProfileLink");
+    if (profileLink && profileLink.dataset.bound !== "true") {
+      profileLink.dataset.bound = "true";
+      profileLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        window.location.href = "employee-profile.html";
       });
     }
   }
@@ -940,7 +953,7 @@ function setupHeader(agentName) {
   function getTicketById(ticketId) {
     const data = getSupportData();
     return data.tickets.find(function (ticket) {
-      return ticket.id === ticketId;
+      return String(ticket.id) === String(ticketId);
     });
   }
 

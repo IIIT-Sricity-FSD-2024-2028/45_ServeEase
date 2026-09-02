@@ -34,12 +34,54 @@
       <div class="admin-directory-head">
         <p class="admin-kicker">Superuser Administration</p>
         <h2 id="employeeManagementTitle">Employee Management</h2>
+        <button class="btn btn-primary" type="button" id="openAddEmployeeBtn">+ Add New Employee</button>
       </div>
       <div>
         <p class="admin-description">Manage internal ServeEase employees and department access.</p>
-        <div class="admin-employee-table-wrap">
-          <table class="admin-employee-table">
-            <thead><tr><th>Employee ID</th><th>Name</th><th>Department</th><th>Permissions</th></tr></thead>
+        <section class="panel-card admin-employee-form-panel hidden" id="addEmployeePanel" aria-labelledby="addEmployeeTitle">
+          <div class="admin-form-head">
+            <h3 id="addEmployeeTitle">Add New Employee</h3>
+            <button class="admin-form-close" type="button" id="closeAddEmployeeBtn" aria-label="Close add employee form">&times;</button>
+          </div>
+          <form id="addEmployeeForm" novalidate>
+            <div class="admin-form-grid">
+              <label>Employee Role
+                <select id="newEmployeeRole">
+                  <option value="">Select employee role</option>
+                  <option value="customer-operations">Customer Operations</option>
+                  <option value="provider-operations">Provider Operations</option>
+                  <option value="customer-support">Customer Support</option>
+                </select>
+                <small class="error" id="newEmployeeRoleError"></small>
+              </label>
+              <label>Name
+                <input id="newEmployeeName" type="text" autocomplete="name" />
+                <small class="error" id="newEmployeeNameError"></small>
+              </label>
+              <label>Email ID
+                <input id="newEmployeeEmail" type="email" autocomplete="email" />
+                <small class="error" id="newEmployeeEmailError"></small>
+              </label>
+              <label>Phone Number
+                <input id="newEmployeePhone" type="tel" inputmode="numeric" autocomplete="tel" />
+                <small class="error" id="newEmployeePhoneError"></small>
+              </label>
+              <label>Employee ID
+                <input id="newEmployeeId" type="text" readonly aria-readonly="true" placeholder="Select a role to generate an ID" />
+              </label>
+            </div>
+            <small class="error" id="newEmployeeFormError"></small>
+            <div class="admin-form-actions">
+              <button class="btn btn-primary" type="submit">Create Employee</button>
+              <button class="btn btn-outline" type="button" id="cancelAddEmployeeBtn">Cancel</button>
+            </div>
+          </form>
+        </section>
+          <section class="panel-card admin-employee-success hidden" id="addEmployeeSuccess" aria-live="polite"></section>
+          <div class="tabs-row" id="adminEmployeeTabs"></div>
+          <div class="admin-employee-table-wrap">
+            <table class="admin-employee-table">
+            <thead><tr><th>Employee ID</th><th>Name</th><th>Department</th><th>Permissions</th><th>Actions</th></tr></thead>
             <tbody id="adminEmployeeTableBody"></tbody>
           </table>
         </div>
@@ -82,7 +124,25 @@
     </section>
   </main>
 
+  <div class="superuser-modal-backdrop hidden" id="removeEmployeeModalBackdrop">
+    <div class="superuser-modal" role="dialog" aria-modal="true" aria-labelledby="removeEmployeeModalTitle">
+      <div class="superuser-modal-header gradient-header">
+        <div><h3 id="removeEmployeeModalTitle">Remove Employee</h3><p id="removeEmployeeModalEmployee"></p></div>
+        <button class="superuser-modal-close" type="button" id="closeRemoveEmployeeModalBtn" aria-label="Close remove employee dialog">&times;</button>
+      </div>
+      <div class="superuser-modal-body">
+        <p id="removeEmployeeModalMessage">Are you sure you want to remove this employee?</p>
+      </div>
+      <div class="superuser-modal-footer">
+        <button class="btn btn-outline" type="button" id="cancelRemoveEmployeeBtn">Cancel</button>
+        <button class="btn btn-primary" type="button" id="confirmRemoveEmployeeBtn">Confirm Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="JavaScript/api.js"></script>
   <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/auth.js"></script>
   <script src="JavaScript/administration.js"></script>
 </body>
 </html>

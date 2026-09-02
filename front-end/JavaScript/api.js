@@ -257,7 +257,7 @@
 
     const result = payload ? payload.data : null;
     const method = String(options && options.method || 'GET').toUpperCase();
-    if (method !== 'GET' && /\/(bookings|state|availability)(\/|$)/.test(path)) {
+    if (method !== 'GET' && /\/(bookings|availability)(\/|$)/.test(path)) {
       window.dispatchEvent(new CustomEvent('serveease:business-state-changed', { detail: { path: path, method: method } }));
     }
     return result;

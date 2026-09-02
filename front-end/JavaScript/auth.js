@@ -598,6 +598,15 @@ function isStrongPassword(value) {
   return /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&*!]).{8,}$/.test(value);
 }
 
+// Shared by the administration employee-creation form so its validation stays
+// identical to the login/sign-up flow.
+window.ServeEaseAuthValidation = {
+  isValidEmail: isValidEmail,
+  isValidPhone: isValidPhone,
+  isStrongPassword: isStrongPassword,
+  logServeEaseActivity: logServeEaseActivity
+};
+
 function generateUserId(role, users) {
   const prefixMap = {
     customer: "CUS",

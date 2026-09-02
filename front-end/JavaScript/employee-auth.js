@@ -1,5 +1,6 @@
 (function () {
   const sessionKey = "serveEaseSession";
+  const employeeStorageKey = "serveEaseEmployeeModuleData";
   const demoPassword = "Password@123";
 
   const permissions = {
@@ -38,6 +39,64 @@
       password: demoPassword
     },
   ];
+
+  let employees = [];
+
+  function readStoredEmployees() {
+    try {
+      const data = JSON.parse(localStorage.getItem(employeeStorageKey) || "{}") || {};
+      return Array.isArray(data.employees) ? data.employees : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function mergeEmployees() {
+    const byId = {};
+    Array.prototype.slice.call(arguments).forEach(function (list) {
+      (Array.isArray(list) ? list : []).forEach(function (employee) {
+        if (!employee || !employee.employeeId) return;
+        const id = normalizeEmployeeId(employee.employeeId);
+        byId[id] = Object.assign({}, byId[id] || {}, employee, { employeeId: id });
+      });
+    });
+    return Object.keys(byId).map(function (id) { return byId[id]; });
+  }
+
+  function setEmployees(nextEmployees, persist) {
+    employees = mergeEmployees(demoEmployees, nextEmployees);
+    if (persist) {
+      localStorage.setItem(employeeStorageKey, JSON.stringify({ employees: employees }));
+    }
+    return employees;
+  }
+
+  function saveEmployees(nextEmployees) {
+    const saved = setEmployees(nextEmployees, true);
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.saveState !== "function") {
+      return Promise.resolve(saved);
+    }
+    return window.ServeEaseApi.saveState(employeeStorageKey, { employees: saved }).then(function () {
+      return saved;
+    });
+  }
+
+  function hydrateEmployeesFromBackend(done) {
+    if (!window.ServeEaseApi || typeof window.ServeEaseApi.getState !== "function") {
+      if (typeof done === "function") done(employees);
+      return;
+    }
+    window.ServeEaseApi.getState(employeeStorageKey)
+      .then(function (entry) {
+        const backendEmployees = entry && entry.value && Array.isArray(entry.value.employees) ? entry.value.employees : [];
+        // Local records overlay backend records, matching the client-first state pattern.
+        setEmployees(mergeEmployees(backendEmployees, readStoredEmployees()), true);
+      })
+      .catch(function () { return null; })
+      .finally(function () {
+        if (typeof done === "function") done(employees);
+      });
+  }
 
   const routeAccess = {
     "employee-department-placeholder.html": [],
@@ -80,7 +139,9 @@
       employeeId: employee.employeeId,
       name: employee.name,
       department: employee.department,
-      permissions: normalizePermissions(employee.permissions)
+      permissions: normalizePermissions(employee.permissions),
+      email: cleanText(employee.email),
+      phone: cleanText(employee.phone)
     };
   }
 
@@ -175,7 +236,7 @@
   function authenticate(employeeId, password) {
     const requestedId = normalizeEmployeeId(employeeId);
     const requestedPassword = cleanText(password);
-    const employee = demoEmployees.find(function (item) {
+    const employee = employees.find(function (item) {
       return item.employeeId === requestedId && item.password === requestedPassword;
     });
 
@@ -193,6 +254,8 @@
       name: safeEmployee.name,
       department: safeEmployee.department,
       permissions: safeEmployee.permissions,
+      email: safeEmployee.email,
+      phone: safeEmployee.phone,
       employee: true
     };
     saveSession(session);
@@ -217,6 +280,43 @@
 
   function getDepartments() {
     return departments.slice();
+  }
+
+  function getEmployees() {
+    return employees.map(function (employee) { return Object.assign({}, employee, { permissions: normalizePermissions(employee.permissions) }); });
+  }
+
+  function addEmployee(employee) {
+    return saveEmployees(employees.concat([employee]));
+  }
+
+  function removeEmployee(employeeId) {
+    const requestedId = normalizeEmployeeId(employeeId);
+    const isSeedEmployee = demoEmployees.some(function (employee) { return employee.employeeId === requestedId; });
+    if (isSeedEmployee) return Promise.reject(new Error("Default seed employees cannot be removed."));
+    if (!employees.some(function (employee) { return employee.employeeId === requestedId; })) {
+      return Promise.reject(new Error("Employee record was not found."));
+    }
+    return saveEmployees(employees.filter(function (employee) { return employee.employeeId !== requestedId; }));
+  }
+
+  function changeCurrentEmployeePassword(currentPassword, newPassword) {
+    const session = getSession();
+    if (!isEmployeeSession(session)) return { matched: false, save: Promise.reject(new Error("Employee session is required.")) };
+    const employeeId = normalizeEmployeeId(session.employeeId);
+    const employee = employees.find(function (item) { return item.employeeId === employeeId; });
+    if (!employee || employee.password !== currentPassword) return { matched: false, save: Promise.resolve(null) };
+    const updated = employees.map(function (item) {
+      return item.employeeId === employeeId ? Object.assign({}, item, { password: newPassword }) : item;
+    });
+    return { matched: true, save: saveEmployees(updated) };
+  }
+
+  function isCurrentEmployeePassword(currentPassword) {
+    const session = getSession();
+    if (!isEmployeeSession(session)) return false;
+    const employee = employees.find(function (item) { return item.employeeId === normalizeEmployeeId(session.employeeId); });
+    return Boolean(employee && employee.password === currentPassword);
   }
 
   function annotateBody(session) {
@@ -260,7 +360,15 @@
 
   window.ServeEaseEmployeeAuth = {
     permissions: permissions,
+    departments: departments.map(function (department) { return Object.assign({}, department); }),
     demoEmployees: demoEmployees.map(publicEmployee),
+    getEmployees: getEmployees,
+    addEmployee: addEmployee,
+    removeEmployee: removeEmployee,
+    saveEmployees: saveEmployees,
+    isCurrentEmployeePassword: isCurrentEmployeePassword,
+    changeCurrentEmployeePassword: changeCurrentEmployeePassword,
+    hydrateEmployeesFromBackend: hydrateEmployeesFromBackend,
     authenticate: authenticate,
     setEmployeeSession: setEmployeeSession,
     getSession: getSession,
@@ -279,4 +387,8 @@
     annotateBody: annotateBody,
     handleLegacyEmployeeRoute: handleLegacyEmployeeRoute
   };
+
+  // Seeds are always retained; stored employees immediately overlay them before login can run.
+  setEmployees(readStoredEmployees(), false);
+  hydrateEmployeesFromBackend();
 })();

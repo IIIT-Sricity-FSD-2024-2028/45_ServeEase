@@ -545,17 +545,22 @@
             grouped[id].subServices.push(service.name);
           }
           if (!grouped[id].services) grouped[id].services = [];
-          grouped[id].services.push({
-            id: service.id,
-            name: service.name,
-            category: service.category,
-            description: service.description,
-            price: Number(service.price),
-            duration: service.duration,
-            status: service.status
+          const existingService = grouped[id].services.find(function (item) {
+            return item && ((service.id && item.id === service.id) || item.name === service.name);
           });
+          if (!existingService) {
+            grouped[id].services.push({
+              id: service.id,
+              name: service.name,
+              category: service.category,
+              description: service.description,
+              price: Number(service.price),
+              duration: service.duration,
+              status: service.status
+            });
+          }
           if (!grouped[id].servicePricing) grouped[id].servicePricing = {};
-          grouped[id].servicePricing[service.name] = Number(service.price);
+          grouped[id].servicePricing[service.name] = existingService ? Number(existingService.price) : Number(service.price);
           grouped[id].startingPrice = Math.min(grouped[id].startingPrice, Number(service.price) || 499);
         });
 

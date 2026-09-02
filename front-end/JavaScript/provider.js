@@ -1061,17 +1061,22 @@
         groupedServices[groupKey].subServices.push(service.name);
       }
       if (!groupedServices[groupKey].services) groupedServices[groupKey].services = [];
-      groupedServices[groupKey].services.push({
-        id: service.id,
-        name: service.name,
-        category: service.category,
-        description: service.description,
-        price: Number(service.price),
-        duration: service.duration,
-        status: service.status
+      const existingService = groupedServices[groupKey].services.find(function (item) {
+        return item && ((service.id && item.id === service.id) || item.name === service.name);
       });
+      if (!existingService) {
+        groupedServices[groupKey].services.push({
+          id: service.id,
+          name: service.name,
+          category: service.category,
+          description: service.description,
+          price: Number(service.price),
+          duration: service.duration,
+          status: service.status
+        });
+      }
       if (!groupedServices[groupKey].servicePricing) groupedServices[groupKey].servicePricing = {};
-      groupedServices[groupKey].servicePricing[service.name] = Number(service.price);
+      groupedServices[groupKey].servicePricing[service.name] = existingService ? Number(existingService.price) : Number(service.price);
       groupedServices[groupKey].startingPrice = Math.min(groupedServices[groupKey].startingPrice, Number(service.price) || 499);
     });
 
@@ -1608,7 +1613,12 @@
   }
 
   function formatCurrency(amount) {
-    return `₹${amount}`;
+    if (window.ServeEaseFinance && typeof window.ServeEaseFinance.formatCurrency === "function") {
+      return window.ServeEaseFinance.formatCurrency(amount);
+    }
+    const num = Number(amount);
+    const safeAmount = Number.isFinite(num) ? num : 0;
+    return "₹" + safeAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
 

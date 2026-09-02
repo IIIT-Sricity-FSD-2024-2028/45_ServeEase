@@ -191,6 +191,68 @@ body.administration-page {
   font-size: 20px;
 }
 
+.administration-page .admin-directory-head .btn {
+  margin-top: 14px;
+}
+
+.administration-page .admin-employee-form-panel,
+.administration-page .admin-employee-success {
+  margin: 16px 0;
+  padding: 20px;
+  border: 1px solid #dfe7f4;
+  box-shadow: none;
+}
+
+.administration-page .admin-form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.administration-page .admin-form-head h3 { margin: 0; }
+
+.administration-page .admin-form-close {
+  border: 0;
+  background: transparent;
+  color: #667a97;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.administration-page .admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.administration-page .admin-form-grid label {
+  display: grid;
+  gap: 6px;
+  color: #1a2d4d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.administration-page .admin-form-grid input,
+.administration-page .admin-form-grid select {
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid #d8dfea;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.administration-page .admin-form-grid input[readonly] { background: #f5f7fb; }
+.administration-page .admin-form-actions { display: flex; gap: 10px; margin-top: 16px; }
+.administration-page .admin-employee-success { border-left: 4px solid #16a34a; }
+.administration-page .admin-employee-success h3 { margin-top: 0; color: #167a3e; }
+.administration-page .admin-employee-success dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 0; }
+.administration-page .admin-employee-success dt { font-weight: 700; }
+.administration-page .admin-copy-password { margin-top: 14px; }
+
 .administration-page .admin-directory-links {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -265,7 +327,8 @@ body.administration-page {
   }
 
   .administration-page .admin-grid,
-  .administration-page .admin-directory-links {
+  .administration-page .admin-directory-links,
+  .administration-page .admin-form-grid {
     grid-template-columns: 1fr;
   }
 }

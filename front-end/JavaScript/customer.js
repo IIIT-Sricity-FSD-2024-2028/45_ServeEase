@@ -599,7 +599,12 @@
   }
 
   function formatPrice(amount) {
-    return `₹${amount}`;
+    if (window.ServeEaseFinance && typeof window.ServeEaseFinance.formatCurrency === "function") {
+      return window.ServeEaseFinance.formatCurrency(amount);
+    }
+    const num = Number(amount);
+    const safeAmount = Number.isFinite(num) ? num : 0;
+    return "₹" + safeAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function formatDisplayDate(value) {

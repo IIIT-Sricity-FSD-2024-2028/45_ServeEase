@@ -947,6 +947,12 @@
     });
   }
 
+  function setupProfileNavigation() {
+    const profileBtn = byId("providerOperationsProfileBtn");
+    if (!profileBtn) return;
+    profileBtn.addEventListener("click", function () { window.location.href = "employee-profile.html"; });
+  }
+
   function initListPage() {
     if (!byId("providerOperationsRows")) return;
     setupActionModal();
@@ -988,5 +994,6 @@
   };
 
   setupLogout("providerOperationsLogoutBtn");
+  setupProfileNavigation();
   initListPage();
 })();

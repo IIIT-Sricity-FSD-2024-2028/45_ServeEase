@@ -300,6 +300,20 @@ function providerDisplayImage(provider) {
   return provider.image || "assets/images/home-cleaning/clean1.jpg";
 }
 
+function dedupeActiveProviderServices(services) {
+  const seenIds = new Set();
+  const seenNames = new Set();
+  return (Array.isArray(services) ? services : []).filter(function (service) {
+    if (!service || service.status === "Inactive") return false;
+    const id = String(service.id || "").trim();
+    const name = String(service.name || "").trim().toLowerCase();
+    if ((id && seenIds.has(id)) || (name && seenNames.has(name))) return false;
+    if (id) seenIds.add(id);
+    if (name) seenNames.add(name);
+    return true;
+  });
+}
+
 function providerAccountState(provider) {
   return String(provider && (provider.accountStatus || provider.status || provider.approvalStatus || provider.verificationStatus) || "Active")
     .trim().toLowerCase().replace(/[_-]+/g, " ");
@@ -587,7 +601,7 @@ async function initAvailabilityBookingFlow(bookingCard, provider, session) {
   }
 
   const activeServices = Array.isArray(provider.services) && provider.services.length
-    ? provider.services.filter(function (s) { return s && s.status !== "Inactive"; })
+    ? dedupeActiveProviderServices(provider.services)
     : [];
   const displaySubServices = activeServices.length
     ? activeServices.map(function (s) { return s.name; })
@@ -758,7 +772,7 @@ function initProviderProfilePage() {
 
   const ratingMetric = providerMetricRating(provider);
   const activeServices = Array.isArray(provider.services) && provider.services.length
-    ? provider.services.filter(function (s) { return s && s.status !== "Inactive"; })
+    ? dedupeActiveProviderServices(provider.services)
     : [];
   const displaySubServices = activeServices.length
     ? activeServices.map(function (s) { return s.name; })

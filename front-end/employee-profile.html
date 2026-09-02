@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ServeEase | Employee Profile</title>
+  <link rel="stylesheet" href="CSS/global.css" />
+  <link rel="stylesheet" href="CSS/dashboard.css" />
+  <link rel="stylesheet" href="CSS/auth.css" />
+  <link rel="stylesheet" href="CSS/employee-auth.css" />
+</head>
+<body class="employee-profile-page">
+  <header class="dashboard-topbar">
+    <a class="dashboard-brand" href="index.html"><span class="brand-icon">SE</span><span>ServeEase</span></a>
+    <div></div>
+    <nav class="dashboard-topbar-actions" aria-label="Employee profile navigation">
+      <a class="btn btn-outline" id="employeeProfileWorkspaceLink" href="employee-department-placeholder.html">Back to Workspace</a>
+      <button class="btn btn-outline" type="button" id="employeeProfileLogoutBtn">Logout</button>
+    </nav>
+  </header>
+  <main class="dashboard-page">
+    <div class="container">
+      <div class="breadcrumb-row"><a href="index.html">Home</a> &nbsp;&rsaquo;&nbsp; <span>Employee</span> &nbsp;&rsaquo;&nbsp; <strong>My Profile</strong></div>
+      <section class="page-title-block"><h1>My Profile</h1><p>View your employee account details and manage your password.</p></section>
+      <section class="dashboard-two-column">
+        <section class="panel-card"><h2 class="panel-title">Profile Information</h2><div class="info-grid" id="employeeProfileInfo"></div></section>
+        <section class="panel-card">
+          <h2 class="panel-title">Change Password</h2>
+          <form class="employee-password-form" id="employeePasswordForm" novalidate>
+            <label for="employeeCurrentPassword">Current Password</label>
+            <input id="employeeCurrentPassword" type="password" autocomplete="current-password" />
+            <small class="error" id="employeeCurrentPasswordError"></small>
+            <label for="employeeNewPassword">New Password</label>
+            <input id="employeeNewPassword" type="password" autocomplete="new-password" />
+            <small class="error" id="employeeNewPasswordError"></small>
+            <label for="employeeConfirmPassword">Confirm New Password</label>
+            <input id="employeeConfirmPassword" type="password" autocomplete="new-password" />
+            <small class="error" id="employeeConfirmPasswordError"></small>
+            <small class="error" id="employeePasswordFormError"></small>
+            <small class="success-message" id="employeePasswordSuccess"></small>
+            <button class="btn btn-primary" type="submit">Update Password</button>
+          </form>
+        </section>
+      </section>
+    </div>
+  </main>
+  <script src="JavaScript/api.js"></script>
+  <script src="JavaScript/employee-auth.js"></script>
+  <script src="JavaScript/auth.js"></script>
+  <script src="JavaScript/employee-profile.js"></script>
+</body>
+</html>

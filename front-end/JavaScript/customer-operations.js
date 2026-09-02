@@ -383,6 +383,10 @@
       if (auth.isEmployeeSession(session)) link.hidden = true;
     });
 
+    const profileBtn = byId("customerOperationsProfileBtn");
+    if (profileBtn) {
+      profileBtn.addEventListener("click", function () { window.location.href = "employee-profile.html"; });
+    }
     const logoutBtn = byId("customerOperationsLogoutBtn");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", function () {

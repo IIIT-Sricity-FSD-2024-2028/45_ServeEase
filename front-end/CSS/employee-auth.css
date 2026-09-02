@@ -73,3 +73,22 @@ body.employee-access-page {
   color: #667a97;
   font-size: 14px;
 }
+
+.employee-profile-page .employee-password-form {
+  display: grid;
+  gap: 7px;
+}
+
+.employee-profile-page .employee-password-form label {
+  margin-top: 7px;
+  color: #22395d;
+  font-weight: 700;
+}
+
+.employee-profile-page .employee-password-form input {
+  min-height: 42px;
+  border: 1px solid #d8dfea;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font: inherit;
+}
