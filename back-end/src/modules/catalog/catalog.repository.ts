@@ -22,16 +22,17 @@ export class CatalogRepository {
 
   findServices(providerId: string): any[] {
     const entry = this.stateRepository.findById(this.servicesKey(providerId));
-    return entry && Array.isArray(entry.value.services) ? entry.value.services as any[] : [];
+    return entry && Array.isArray(entry.value.services) ? this.dedupeServices(entry.value.services as any[]) : [];
   }
 
   saveServices(providerId: string, services: any[]): any[] {
-    const value = { providerId, services, updatedAt: new Date().toISOString() };
+    const cleanServices = this.dedupeServices(services);
+    const value = { providerId, services: cleanServices, updatedAt: new Date().toISOString() };
     const key = this.servicesKey(providerId);
     const existing = this.stateRepository.findById(key);
     if (existing) this.stateRepository.update(key, { value });
     else this.stateRepository.create({ key, value });
-    return services;
+    return cleanServices;
   }
 
   createService(providerId: string, data: ProviderServiceDto): any {
@@ -110,6 +111,16 @@ export class CatalogRepository {
 
   private normalizeText(value: unknown): string {
     return String(value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  private dedupeServices(services: any[]): any[] {
+    const byKey = new Map<string, any>();
+    services.forEach((service) => {
+      if (!service || (!service.id && !service.name)) return;
+      const key = service.id ? `id:${String(service.id)}` : `name:${this.normalizeText(service.name)}`;
+      byKey.set(key, service);
+    });
+    return Array.from(byKey.values());
   }
 
   private isRemovedProvider(provider: CatalogProvider): boolean {

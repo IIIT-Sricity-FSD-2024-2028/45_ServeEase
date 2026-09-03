@@ -56,8 +56,16 @@
 
   function getActualProviderBookings(data) {
     const bookings = Array.isArray(data && data.bookings) ? data.bookings : [];
+    const profile = data && data.profile || {};
+    const providerIds = [profile.providerId, profile.providerCatalogId, session && session.userId, session && session.providerCatalogId]
+      .filter(Boolean).map(function (value) { return canonicalProviderId(value, profile.organisationName, profile.fullName).toLowerCase(); });
+    const providerNames = [profile.fullName, profile.organisationName, session && session.fullName, session && session.organisationName]
+      .map(normalizeName).filter(Boolean);
     return bookings.filter(function (booking) {
-      return Boolean(booking && booking.customerEmail);
+      if (!booking || !booking.customerEmail) return false;
+      const bookingProviderId = canonicalProviderId(booking.providerId, booking.provider, booking.providerName).toLowerCase();
+      const bookingProviderName = normalizeName(booking.provider || booking.providerName);
+      return providerIds.indexOf(bookingProviderId) !== -1 || providerNames.indexOf(bookingProviderName) !== -1;
     });
   }
 
@@ -69,6 +77,16 @@
       active: services.filter(function (service) { return normalizeProviderStatus(service && service.status) === "active"; }).length,
       inactive: services.filter(function (service) { return normalizeProviderStatus(service && service.status) === "inactive"; }).length
     };
+  }
+
+  function dedupeProviderServices(services) {
+    const byKey = new Map();
+    (Array.isArray(services) ? services : []).forEach(function (service) {
+      if (!service || (!service.id && !service.name)) return;
+      const key = service.id ? "id:" + String(service.id) : "name:" + normalizeName(service.name);
+      byKey.set(key, service);
+    });
+    return Array.from(byKey.values());
   }
 
   function getProviderBookingSummary(data) {
@@ -1037,6 +1055,7 @@
 
   function syncProviderServicesToCatalog(data) {
     if (!data || !data.profile || !Array.isArray(data.services)) return;
+    data.services = dedupeProviderServices(data.services);
     if (isRemovedProviderRecord(data.profile)) {
       localStorage.removeItem(providerDataKey);
       return;
@@ -1181,14 +1200,26 @@
           session && session.userId
         ].concat(getProviderCatalogIds(data)).filter(Boolean);
 
-        const existingIds = new Set(data.bookings.map(function (booking) { return booking.id; }));
         let changed = false;
 
+        function matchesCurrentProvider(booking) {
+          const bookingId = canonicalProviderId(booking && booking.providerId, booking && booking.provider, booking && booking.providerName).toLowerCase();
+          const bookingName = normalizeName(booking && (booking.provider || booking.providerName));
+          return providerIds.some(function (id) { return canonicalProviderId(id).toLowerCase() === bookingId; }) ||
+            providerNames.indexOf(bookingName) !== -1;
+        }
+
+        const remoteProviderBookings = bookings.filter(matchesCurrentProvider);
+        const remoteIds = new Set(remoteProviderBookings.map(function (booking) { return String(booking.id || ""); }));
+        const beforeReconcileCount = data.bookings.length;
+        data.bookings = data.bookings.filter(function (booking) {
+          return !matchesCurrentProvider(booking) || remoteIds.has(String(booking.id || ""));
+        });
+        if (data.bookings.length !== beforeReconcileCount) changed = true;
+        const existingIds = new Set(data.bookings.map(function (booking) { return booking.id; }));
+
         bookings.forEach(function (booking) {
-          const providerMatches =
-            providerIds.indexOf(booking.providerId) !== -1 ||
-            providerNames.indexOf(normalizeName(booking.provider)) !== -1;
-          if (!providerMatches) return;
+          if (!matchesCurrentProvider(booking)) return;
 
           const existingBooking = data.bookings.find(function (item) {
             return item.id === booking.id;
@@ -2403,11 +2434,12 @@
       try {
         const remoteServices = await window.ServeEaseApi.getProviderServices(persistentProviderId);
         if (Array.isArray(remoteServices) && remoteServices.length) {
-          data.services = remoteServices;
+          data.services = dedupeProviderServices(remoteServices);
           setProviderModuleData(data);
           await syncProviderServicesToCatalog(data);
           renderServices();
         } else if (Array.isArray(data.services) && data.services.length && window.ServeEaseApi.createProviderService) {
+          data.services = dedupeProviderServices(data.services);
           await Promise.all(data.services.map(function (service) {
             return window.ServeEaseApi.createProviderService(persistentProviderId, service);
           }));

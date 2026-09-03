@@ -12,7 +12,12 @@ export class TicketsService {
   constructor(
     private readonly ticketsRepository: TicketsRepository,
     private readonly bookingsService: BookingsService,
-  ) {}
+  ) {
+    this.sequence = this.ticketsRepository.findAll().reduce((max, ticket) => {
+      const match = String(ticket.ticketId || '').match(/-(\d+)$/);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, this.sequence);
+  }
 
   createCustomerTicket(data: CreateCustomerTicketDto, request: Request): SupportTicket {
     const booking = this.findBookingOrCreateSnapshot(data);

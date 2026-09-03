@@ -120,6 +120,51 @@ function renderHomeCategories() {
     .join("");
 }
 
+function compactHomeCount(value) {
+  const count = Math.max(0, Number(value) || 0);
+  return count < 10 ? String(count) : `${Math.floor(count / 10) * 10}+`;
+}
+
+function homeProviderIdentity(provider) {
+  return String(
+    provider && (provider.ownerProviderId || provider.ownerProviderEmail || provider.id || provider.name) || ""
+  ).trim().toLowerCase();
+}
+
+function getHomeActualCounts(data) {
+  const providers = Array.isArray(data && data.providers) ? data.providers.filter(function (provider) {
+    return provider && homeProviderIdentity(provider);
+  }) : [];
+  const uniqueProviders = new Map();
+  providers.forEach(function (provider) {
+    const identity = homeProviderIdentity(provider);
+    if (!uniqueProviders.has(identity)) uniqueProviders.set(identity, provider);
+  });
+
+  const services = new Set();
+  providers.forEach(function (provider) {
+    const providerId = homeProviderIdentity(provider);
+    const listedServices = Array.isArray(provider.services) && provider.services.length
+      ? provider.services
+      : (Array.isArray(provider.subServices) ? provider.subServices : []);
+    listedServices.forEach(function (service) {
+      const name = typeof service === "string" ? service : service && (service.name || service.title);
+      const status = typeof service === "object" && service ? String(service.status || "Active").toLowerCase() : "active";
+      if (name && status !== "inactive") services.add(`${providerId}|${String(name).trim().toLowerCase()}`);
+    });
+  });
+
+  return { providers: uniqueProviders.size, services: services.size };
+}
+
+function renderHomeStats(data) {
+  const counts = getHomeActualCounts(data);
+  const providerCount = document.getElementById("homeProviderCount");
+  const serviceCount = document.getElementById("homeServiceCount");
+  if (providerCount) providerCount.textContent = compactHomeCount(counts.providers);
+  if (serviceCount) serviceCount.textContent = compactHomeCount(counts.services);
+}
+
 function renderPopularServices() {
   const serviceGrid = document.getElementById("serviceGrid");
   if (!serviceGrid) return;
@@ -162,11 +207,13 @@ if (window.ServeEaseApi && typeof window.ServeEaseApi.hydrateCatalog === "functi
       console.warn("ServeEase backend catalog unavailable, using local catalog.", error);
     })
     .finally(function () {
+      renderHomeStats(getServeEaseData());
       renderHomeCategories();
       renderPopularServices();
       scrollToFooterHashTarget();
     });
 } else {
+  renderHomeStats(getServeEaseData());
   renderHomeCategories();
   renderPopularServices();
   scrollToFooterHashTarget();

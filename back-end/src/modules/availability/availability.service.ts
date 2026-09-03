@@ -68,8 +68,11 @@ export class AvailabilityService {
       ])).sort();
       const slotStates: Record<string, string> = {};
       allSlots.forEach((slot) => {
-        if (booked.some((booking) => this.slotsOverlap(slot, booking.time))) slotStates[slot] = 'booked';
-        else if (this.isPast(date, slot)) slotStates[slot] = 'past';
+        // A slot that has already elapsed is past even if its historical
+        // booking is still Accepted. Historical bookings must not mask the
+        // actual time state of today's availability.
+        if (this.isPast(date, slot)) slotStates[slot] = 'past';
+        else if (booked.some((booking) => this.slotsOverlap(slot, booking.time))) slotStates[slot] = 'booked';
         else if (!this.meetsMinimumBookingNotice(date, slot)) slotStates[slot] = 'too-soon';
         else slotStates[slot] = 'available';
       });
@@ -96,7 +99,7 @@ export class AvailabilityService {
   }
 
   private isBookingBlockingAvailability(booking: Booking): boolean {
-    return ['Pending', 'Requested', 'Accepted'].includes(String(booking.status || ''));
+    return ['pending', 'requested', 'accepted'].includes(String(booking.status || '').trim().toLowerCase());
   }
 
   private applyOverride(slots: string[], override?: DateOverride): string[] {

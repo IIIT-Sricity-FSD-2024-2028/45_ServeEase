@@ -808,7 +808,7 @@ async function upload(path, file, role, userId) {
     }
 
     function mirror(key, value, action) {
-      if (!shouldMirror(key)) return;
+      if (!shouldMirror(key) || window.__serveEaseSkipStateMirror) return;
       try {
         Promise.resolve(window.ServeEaseApi.saveState(key, parseValue(value))).catch(function () {
           return null;

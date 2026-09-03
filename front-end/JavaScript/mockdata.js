@@ -607,7 +607,26 @@
     providers: mergedProviders
   };
 
+  window.__serveEaseSkipStateMirror = true;
   localStorage.setItem("serveEaseData", JSON.stringify(finalData));
+  window.__serveEaseSkipStateMirror = false;
+
+  // The backend state is the shared development source of truth. A fresh
+  // clone starts with empty browser storage, so hydrate the catalog/users
+  // snapshot before pages begin using their local projections.
+  if (window.ServeEaseApi && typeof window.ServeEaseApi.getState === "function") {
+    window.ServeEaseApi.getState("serveEaseData")
+      .then(function (entry) {
+        if (!entry || !entry.value || typeof entry.value !== "object") return;
+        window.__serveEaseSkipStateMirror = true;
+        localStorage.setItem("serveEaseData", JSON.stringify(entry.value));
+        window.__serveEaseSkipStateMirror = false;
+        window.dispatchEvent(new CustomEvent("serveease:shared-state-hydrated"));
+      })
+      .catch(function () {
+        // Local synthetic defaults remain available when the backend is down.
+      });
+  }
 
   if (window.ServeEaseApi && typeof window.ServeEaseApi.syncCatalog === "function") {
     window.ServeEaseApi.syncCatalog(finalData).catch(function (error) {
