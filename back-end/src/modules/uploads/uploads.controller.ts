@@ -4,7 +4,7 @@ import { ApiBody, ApiConsumes, ApiHeader, ApiOperation, ApiTags } from '@nestjs/
 import { Request } from 'express';
 import { Roles } from '../../guards/roles.decorator';
 import { RolesGuard } from '../../guards/roles.guard';
-import { uploadOptions } from './upload.config';
+import { uploadOptions } from '../../middleware/upload.config';
 import { UploadsService } from './uploads.service';
 
 @ApiTags('uploads')

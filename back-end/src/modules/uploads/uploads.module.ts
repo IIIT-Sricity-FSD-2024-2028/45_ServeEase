@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { UploadsController } from './uploads.controller';
 import { UploadsService } from './uploads.service';
-import { UploadOwnerContextMiddleware } from './upload-owner-context.middleware';
+import { UploadOwnerContextMiddleware } from '../../middleware/upload-owner-context.middleware';
 
 @Module({ controllers: [UploadsController], providers: [UploadsService] })
 export class UploadsModule implements NestModule {

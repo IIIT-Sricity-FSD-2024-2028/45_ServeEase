@@ -1,12 +1,12 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from '@nestjs/common';
 import { appendFileSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { Request, Response } from 'express';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger('ServeEaseError');
-  private readonly logFilePath = join(__dirname, '..', '..', 'logs', 'error.log');
+  private readonly logDirectory = join(__dirname, '..', '..', 'logs');
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const context = host.switchToHttp();
@@ -66,8 +66,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private writeToFile(line: string, stack?: string): void {
     try {
-      mkdirSync(dirname(this.logFilePath), { recursive: true });
-      appendFileSync(this.logFilePath, `${line}${stack ? `\n${stack}` : ''}\n`, 'utf8');
+      mkdirSync(this.logDirectory, { recursive: true });
+      const date = new Date().toISOString().slice(0, 10);
+      appendFileSync(join(this.logDirectory, `error-${date}.log`), `${line}${stack ? `\n${stack}` : ''}\n`, 'utf8');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Unable to prepare error log file: ${message}`);

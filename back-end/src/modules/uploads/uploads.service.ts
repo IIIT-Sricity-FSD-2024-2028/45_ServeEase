@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UploadKind } from './upload.config';
+import { UploadKind } from '../../middleware/upload.config';
 
 @Injectable()
 export class UploadsService {
