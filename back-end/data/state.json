@@ -3838,25 +3838,6 @@
           "ownerProviderEmail": "provider@serveease.com"
         },
         {
-          "id": "PRO015",
-          "fullName": "Manoj Singh",
-          "organisationName": "Singh Appliance Care",
-          "email": "manoj.singh@email.com",
-          "phone": "+91 9876543237",
-          "category": "Appliance Repair",
-          "serviceType": "Appliance Repair",
-          "experience": 5,
-          "cityId": "",
-          "cityName": "Delhi",
-          "location": "Delhi",
-          "address": "Rohini, Delhi, NCR",
-          "registrationDate": "2026-02-10T12:00:00.000Z",
-          "approvalStatus": "Active",
-          "status": "Active",
-          "verificationStatus": "Verified",
-          "providerCatalogId": "PRO015"
-        },
-        {
           "id": "urban-shine-cleaner-home-cleaning-1",
           "name": "Urban Shine Cleaner",
           "category": "home-cleaning",
@@ -13310,7 +13291,7 @@
         }
       ]
     },
-    "updatedAt": "2026-09-03T19:13:42.355Z"
+    "updatedAt": "2026-09-03T20:36:58.759Z"
   },
   {
     "key": "serveEaseSupportModuleData",
@@ -16776,7 +16757,8 @@
           "catalogProviderId": "cleanpro-service-home-cleaning-1",
           "cityId": 1,
           "cityName": "Chennai",
-          "location": "Chennai"
+          "location": "Chennai",
+          "updatedAt": "2026-09-03T20:36:58.635Z"
         },
         {
           "id": "SVC001",
@@ -18404,6 +18386,150 @@
       ],
       "transactions": [
         {
+          "id": "TXN-2026-4638",
+          "bookingRef": "BOOK-20260901-2248-0001",
+          "service": "Kitchen Cleaning",
+          "customer": "Raghava Kumar",
+          "method": "Net Banking - ICICI Bank",
+          "serviceFee": 799,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "amount": 719.1,
+          "serviceDate": "2026-09-02",
+          "paymentDate": "01-09-2026",
+          "receivedDate": "",
+          "payoutDate": "",
+          "status": "Pending",
+          "cancellationPolicy": ""
+        },
+        {
+          "id": "TXN-2026-4637",
+          "bookingRef": "BOOK-20260901-2349-0003",
+          "service": "Bathroom Cleaning",
+          "customer": "Raghava Kumar",
+          "method": "Net Banking - Federal Bank",
+          "serviceFee": 599,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 59.9,
+          "providerPayout": 539.1,
+          "amount": 539.1,
+          "serviceDate": "2026-09-03",
+          "paymentDate": "01-09-2026",
+          "receivedDate": "",
+          "payoutDate": "",
+          "status": "Pending",
+          "cancellationPolicy": ""
+        },
+        {
+          "id": "TXN-2026-4636",
+          "bookingRef": "BOOK-20260902-0005-0004",
+          "service": "Kitchen Cleaning",
+          "customer": "Raghava Kumar",
+          "method": "Net Banking - RBL Bank",
+          "serviceFee": 799,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "amount": 719.1,
+          "serviceDate": "2026-09-03",
+          "paymentDate": "02-09-2026",
+          "receivedDate": "",
+          "payoutDate": "",
+          "status": "Pending",
+          "cancellationPolicy": ""
+        },
+        {
+          "id": "TXN-2026-4635",
+          "bookingRef": "BOOK-20260902-0036-0006",
+          "service": "Kitchen Cleaning",
+          "customer": "Raghava Kumar",
+          "method": "Net Banking - RBL Bank",
+          "serviceFee": 799,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "amount": 719.1,
+          "serviceDate": "2026-09-03",
+          "paymentDate": "02-09-2026",
+          "receivedDate": "",
+          "payoutDate": "",
+          "status": "Pending",
+          "cancellationPolicy": ""
+        },
+        {
+          "id": "TXN-2026-4634",
+          "bookingRef": "BOOK-20260902-0033-0005",
+          "service": "Kitchen Cleaning",
+          "customer": "Raghava Kumar",
+          "method": "Net Banking - RBL Bank",
+          "serviceFee": 799,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "amount": 719.1,
+          "serviceDate": "2026-09-03",
+          "paymentDate": "02-09-2026",
+          "receivedDate": "",
+          "payoutDate": "",
+          "status": "Pending",
+          "cancellationPolicy": ""
+        },
+        {
+          "id": "TXN-2026-4633",
+          "bookingRef": "BOOK-20260902-0052-0007",
+          "service": "Bathroom Cleaning",
+          "customer": "Raghava Kumar",
+          "method": "Net Banking - AU Small Finance Bank",
+          "serviceFee": 599,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 59.9,
+          "providerPayout": 539.1,
+          "amount": 539.1,
+          "serviceDate": "2026-09-03",
+          "paymentDate": "02-09-2026",
+          "receivedDate": "",
+          "payoutDate": "",
+          "status": "Pending",
+          "cancellationPolicy": ""
+        },
+        {
+          "id": "TXN-2026-4632",
+          "bookingRef": "BOOK-20260902-0107-0008",
+          "service": "Bathroom Cleaning",
+          "customer": "Raghava Kumar",
+          "method": "Net Banking - RBL Bank",
+          "serviceFee": 599,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 59.9,
+          "providerPayout": 539.1,
+          "amount": 539.1,
+          "serviceDate": "2026-09-03",
+          "paymentDate": "02-09-2026",
+          "receivedDate": "",
+          "payoutDate": "",
+          "status": "Pending",
+          "cancellationPolicy": ""
+        },
+        {
+          "id": "TXN-2026-4631",
+          "bookingRef": "BOOK-20260901-2237-0002",
+          "service": "Kitchen Cleaning",
+          "customer": "Raghava Kumar",
+          "method": "Net Banking - RBL Bank",
+          "serviceFee": 799,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "amount": 719.1,
+          "serviceDate": "2026-09-02",
+          "paymentDate": "01-09-2026",
+          "receivedDate": "",
+          "payoutDate": "",
+          "status": "Pending",
+          "cancellationPolicy": ""
+        },
+        {
           "id": "TXN-2026-4630",
           "bookingRef": "BOOK-20260901-1316-0002",
           "service": "Kitchen Cleaning",
@@ -18419,7 +18545,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4629",
@@ -18473,7 +18599,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4626",
@@ -18491,7 +18617,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4625",
@@ -18509,7 +18635,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4624",
@@ -18527,7 +18653,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4623",
@@ -18545,7 +18671,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4622",
@@ -18563,25 +18689,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
-        },
-        {
-          "id": "TXN-2026-4621",
-          "bookingRef": "BOOK-20260901-2237-0002",
-          "service": "Kitchen Cleaning",
-          "customer": "Raghava Kumar",
-          "method": "Net Banking - RBL Bank",
-          "serviceFee": 799,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 79.9,
-          "providerPayout": 719.1,
-          "amount": 719.1,
-          "serviceDate": "2026-09-02",
-          "paymentDate": "01-09-2026",
-          "receivedDate": "",
-          "payoutDate": "",
-          "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4620",
@@ -18599,7 +18707,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_24H_TO_3H"
         },
         {
           "id": "TXN-2026-4619",
@@ -18617,7 +18725,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4618",
@@ -18635,7 +18743,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4617",
@@ -18653,7 +18761,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4616",
@@ -18671,7 +18779,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4615",
@@ -18689,7 +18797,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4614",
@@ -18725,7 +18833,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4612",
@@ -18743,7 +18851,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4611",
@@ -18815,7 +18923,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4607",
@@ -18869,7 +18977,7 @@
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
-          "cancellationPolicy": ""
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H"
         },
         {
           "id": "TXN-2026-4604",
@@ -18902,132 +19010,6 @@
           "amount": 809.1,
           "serviceDate": "2026-09-04",
           "paymentDate": "03-09-2026",
-          "receivedDate": "",
-          "payoutDate": "",
-          "status": "Pending",
-          "cancellationPolicy": ""
-        },
-        {
-          "id": "TXN-2026-4602",
-          "bookingRef": "BOOK-20260901-2248-0001",
-          "service": "Kitchen Cleaning",
-          "customer": "Raghava Kumar",
-          "method": "Net Banking - ICICI Bank",
-          "serviceFee": 799,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 79.9,
-          "providerPayout": 719.1,
-          "amount": 719.1,
-          "serviceDate": "2026-09-02",
-          "paymentDate": "01-09-2026",
-          "receivedDate": "",
-          "payoutDate": "",
-          "status": "Pending",
-          "cancellationPolicy": ""
-        },
-        {
-          "id": "TXN-2026-4601",
-          "bookingRef": "BOOK-20260901-2349-0003",
-          "service": "Bathroom Cleaning",
-          "customer": "Raghava Kumar",
-          "method": "Net Banking - Federal Bank",
-          "serviceFee": 599,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 59.9,
-          "providerPayout": 539.1,
-          "amount": 539.1,
-          "serviceDate": "2026-09-03",
-          "paymentDate": "01-09-2026",
-          "receivedDate": "",
-          "payoutDate": "",
-          "status": "Pending",
-          "cancellationPolicy": ""
-        },
-        {
-          "id": "TXN-2026-4600",
-          "bookingRef": "BOOK-20260902-0005-0004",
-          "service": "Kitchen Cleaning",
-          "customer": "Raghava Kumar",
-          "method": "Net Banking - RBL Bank",
-          "serviceFee": 799,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 79.9,
-          "providerPayout": 719.1,
-          "amount": 719.1,
-          "serviceDate": "2026-09-03",
-          "paymentDate": "02-09-2026",
-          "receivedDate": "",
-          "payoutDate": "",
-          "status": "Pending",
-          "cancellationPolicy": ""
-        },
-        {
-          "id": "TXN-2026-4599",
-          "bookingRef": "BOOK-20260902-0036-0006",
-          "service": "Kitchen Cleaning",
-          "customer": "Raghava Kumar",
-          "method": "Net Banking - RBL Bank",
-          "serviceFee": 799,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 79.9,
-          "providerPayout": 719.1,
-          "amount": 719.1,
-          "serviceDate": "2026-09-03",
-          "paymentDate": "02-09-2026",
-          "receivedDate": "",
-          "payoutDate": "",
-          "status": "Pending",
-          "cancellationPolicy": ""
-        },
-        {
-          "id": "TXN-2026-4598",
-          "bookingRef": "BOOK-20260902-0033-0005",
-          "service": "Kitchen Cleaning",
-          "customer": "Raghava Kumar",
-          "method": "Net Banking - RBL Bank",
-          "serviceFee": 799,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 79.9,
-          "providerPayout": 719.1,
-          "amount": 719.1,
-          "serviceDate": "2026-09-03",
-          "paymentDate": "02-09-2026",
-          "receivedDate": "",
-          "payoutDate": "",
-          "status": "Pending",
-          "cancellationPolicy": ""
-        },
-        {
-          "id": "TXN-2026-4597",
-          "bookingRef": "BOOK-20260902-0052-0007",
-          "service": "Bathroom Cleaning",
-          "customer": "Raghava Kumar",
-          "method": "Net Banking - AU Small Finance Bank",
-          "serviceFee": 599,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 59.9,
-          "providerPayout": 539.1,
-          "amount": 539.1,
-          "serviceDate": "2026-09-03",
-          "paymentDate": "02-09-2026",
-          "receivedDate": "",
-          "payoutDate": "",
-          "status": "Pending",
-          "cancellationPolicy": ""
-        },
-        {
-          "id": "TXN-2026-4596",
-          "bookingRef": "BOOK-20260902-0107-0008",
-          "service": "Bathroom Cleaning",
-          "customer": "Raghava Kumar",
-          "method": "Net Banking - RBL Bank",
-          "serviceFee": 599,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 59.9,
-          "providerPayout": 539.1,
-          "amount": 539.1,
-          "serviceDate": "2026-09-03",
-          "paymentDate": "02-09-2026",
           "receivedDate": "",
           "payoutDate": "",
           "status": "Pending",
@@ -19610,7 +19592,7 @@
         }
       ]
     },
-    "updatedAt": "2026-09-03T19:13:42.391Z"
+    "updatedAt": "2026-09-03T20:36:59.046Z"
   },
   {
     "key": "serveEaseAvailabilityWeekly:cleanpro-service-home-cleaning-1",
@@ -24009,9 +23991,9 @@
           "updatedAt": "2026-09-02T21:32:13.875Z"
         }
       ],
-      "updatedAt": "2026-09-03T19:09:58.229Z"
+      "updatedAt": "2026-09-03T20:36:58.883Z"
     },
-    "updatedAt": "2026-09-03T19:09:58.229Z"
+    "updatedAt": "2026-09-03T20:36:58.883Z"
   },
   {
     "key": "serveEaseProviderServices:PRO143",
@@ -24029,9 +24011,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-03T16:29:44.089Z"
+      "updatedAt": "2026-09-03T20:36:58.924Z"
     },
-    "updatedAt": "2026-09-03T16:29:44.090Z"
+    "updatedAt": "2026-09-03T20:36:58.924Z"
   },
   {
     "key": "serveEaseProviderServices:PRO144",
@@ -24049,9 +24031,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-03T16:29:44.120Z"
+      "updatedAt": "2026-09-03T20:36:58.940Z"
     },
-    "updatedAt": "2026-09-03T16:29:44.120Z"
+    "updatedAt": "2026-09-03T20:36:58.940Z"
   },
   {
     "key": "serveEaseProviderServices:PRO145",
@@ -24069,9 +24051,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-03T16:29:44.209Z"
+      "updatedAt": "2026-09-03T20:36:59.001Z"
     },
-    "updatedAt": "2026-09-03T16:29:44.209Z"
+    "updatedAt": "2026-09-03T20:36:59.001Z"
   },
   {
     "key": "serveEaseProviderServices:PRO-CAT-005",
@@ -24382,9 +24364,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-03T16:29:44.059Z"
+      "updatedAt": "2026-09-03T20:36:58.905Z"
     },
-    "updatedAt": "2026-09-03T16:29:44.059Z"
+    "updatedAt": "2026-09-03T20:36:58.905Z"
   },
   {
     "key": "serveEaseAvailabilityWeekly:PRO-CAT-019",
@@ -25816,9 +25798,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-03T16:29:44.150Z"
+      "updatedAt": "2026-09-03T20:36:58.962Z"
     },
-    "updatedAt": "2026-09-03T16:29:44.150Z"
+    "updatedAt": "2026-09-03T20:36:58.962Z"
   },
   {
     "key": "serveEaseProviderServices:PRO-CAT-042",
@@ -25836,9 +25818,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-03T16:29:44.179Z"
+      "updatedAt": "2026-09-03T20:36:58.984Z"
     },
-    "updatedAt": "2026-09-03T16:29:44.179Z"
+    "updatedAt": "2026-09-03T20:36:58.984Z"
   },
   {
     "key": "serveEaseCustomerModuleData:cus016",
