@@ -420,6 +420,9 @@ async function upload(path, file, role, userId) {
     getBookings: function () {
       return request("/bookings", { method: "GET", headers: { role: "user" } });
     },
+    getBooking: function (id) {
+      return request(`/bookings/${encodeURIComponent(id)}`, { method: "GET", headers: { role: "user" } });
+    },
     getCanonicalBookings: function () {
       return this.getBookings().then(function (items) { return (Array.isArray(items) ? items : []).map(normalizeBooking); });
     },

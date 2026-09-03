@@ -100,13 +100,24 @@
     canonical.forEach(function (booking) {
       const normalized = normalizeBooking(booking, {});
       const status = String(normalized && normalized.status || '').toLowerCase();
-      if (!normalized || !normalized.id || localBookingIds[normalized.id.toLowerCase()] || !['successful', 'success', 'paid'].includes(status)) return;
+      // A cancelled booking remains a financial record.  In particular, a
+      // partial-refund cancellation commonly has paymentStatus=Refunded, so
+      // excluding that status makes the whole booking vanish from finance.
+      if (!normalized || !normalized.id || localBookingIds[normalized.id.toLowerCase()] || !['successful', 'success', 'paid', 'refunded'].includes(status)) return;
       rows.push({
         id: 'PAY-' + normalized.id, booking: normalized.id, customer: normalized.customer,
         provider: normalized.provider, amount: Number(normalized.customerTotal || normalized.amount) || 0,
         serviceFee: Number(normalized.serviceFee) || 0, taxAmount: Number(normalized.taxAmount) || 0,
         platformFeeAmount: Number(normalized.platformFeeAmount) || 0, customerTotal: Number(normalized.customerTotal || normalized.amount) || 0,
         category: normalized.category, serviceType: normalized.serviceType, service: normalized.service,
+        refundAmount: normalized.refundAmount, refundServiceFee: normalized.refundServiceFee,
+        refundPlatformFee: normalized.refundPlatformFee, refundTax: normalized.refundTax,
+        taxRefundAmount: normalized.taxRefundAmount, refundStatus: normalized.refundStatus,
+        cancellationPolicy: normalized.cancellationPolicy, cancellationActor: normalized.cancellationActor,
+        providerCommissionAmount: normalized.providerCommissionAmount,
+        providerPayout: normalized.providerPayout, providerPayoutAmount: normalized.providerPayoutAmount,
+        platformRevenue: normalized.platformRevenue, platformRevenueAmount: normalized.platformRevenueAmount,
+        customerPlatformFeeAmount: normalized.customerPlatformFeeAmount,
         date: normalized.date, status: normalized.status
       });
     });
@@ -134,6 +145,8 @@
       category: display(booking.category || booking.serviceCategory),
       serviceType: display(booking.serviceType || booking.service),
       serviceId: display(booking.serviceId),
+      taxAmount: Number(booking.taxAmount) || 0,
+      platformFeeAmount: Number(booking.platformFeeAmount) || 0,
       cancelledAt: display(booking.cancelledAt, ""), cancellationActor: display(booking.cancellationActor, ""),
       cancellationPolicy: display(booking.cancellationPolicy, ""), refundAmount: Number(booking.refundAmount) || 0,
       refundServiceFee: Number(booking.refundServiceFee) || 0, refundPlatformFee: Number(booking.refundPlatformFee) || 0,
@@ -155,6 +168,8 @@
         (booking.platformRevenueAmount != null || booking.platformRevenue != null),
       statusUpdatedAt: display(booking.statusUpdatedAt || booking.cancelledAt),
       stateVersion: Number(booking.stateVersion) || 0,
+      appointmentDate: display(booking.serviceDate || booking.date),
+      appointmentTime: display(booking.serviceTime || booking.time),
       date: display(booking.paymentDate || booking.paidAt || booking.serviceDate || booking.date),
       status: display(booking.paymentStatus || booking.payment || booking.paymentState, "Pending")
     };
@@ -289,14 +304,21 @@
       }) || null;
 
       const isBookingCompleted = String(booking.bookingStatus || booking.status || "").toLowerCase() === "completed";
+      const isBookingRejected = String(booking.bookingStatus || booking.status || "").toLowerCase() === "rejected";
+      // Commission is part of platform revenue when the payment is accepted,
+      // but provider earnings are payable only after completion.  Keeping
+      // those concepts separate prevents pending bookings from changing
+      // provider earnings while still reporting the platform's full revenue.
       const baseBreakdown = isBookingCompleted ? breakdown : Object.assign({}, breakdown, {
         providerCommissionAmount: 0,
         providerPayout: 0,
-        platformRevenue: breakdown.platformFeeAmount
+        platformRevenue: isBookingRejected ? 0 : breakdown.platformFeeAmount + breakdown.providerCommissionAmount
       });
-      const resolvedPayoutStatus = payout
-        ? (payout.status || resolvePayoutStatus(payout))
-        : (isBookingCompleted ? "Paid" : "Pending");
+      // Lifecycle is authoritative. A stale provider transaction must not
+      // turn an accepted booking into Paid or hide its pending payout.
+      const resolvedPayoutStatus = isBookingCompleted
+        ? "Paid"
+        : (isBookingRejected ? "Not Paid" : "Pending");
 
       const actualCustomerTotal = Number(payment.customerTotal) || Number(booking.customerTotal) || breakdown.customerTotal;
       const row = {
@@ -319,11 +341,31 @@
         platformFee: breakdown.platformFeeAmount,
         platformRevenue: baseBreakdown.platformRevenue,
         date: payment.date,
-        status: payment.status,
+        status: isBookingRejected ? "Refunded" : payment.status,
         payoutStatus: resolvedPayoutStatus,
         payoutDate: payout ? payout.date : (isBookingCompleted ? (payment.date || "-") : "-"),
-        payoutAmount: baseBreakdown.providerPayout
+        // Pending payout is the amount expected to be paid later; it is not
+        // provider earnings until the booking becomes payable.
+        payoutAmount: isBookingRejected ? 0 : (isBookingCompleted ? baseBreakdown.providerPayout : breakdown.providerPayout)
       };
+      if (isBookingRejected) {
+        // A rejected booking with a captured payment is a refund-only record.
+        row.refundAmount = actualCustomerTotal;
+        row.refundStatus = "Refunded";
+        row.refundServiceFee = breakdown.serviceFee;
+        row.refundPlatformFee = breakdown.platformFeeAmount;
+        row.refundTax = breakdown.taxAmount;
+        row.taxRefundAmount = breakdown.taxAmount;
+        row.cancellationPolicy = "PROVIDER_REJECT_FULL_REFUND";
+        row.providerCommission = 0;
+        row.commission = 0;
+        row.providerEarnings = 0;
+        row.earnings = 0;
+        row.providerPayout = 0;
+        row.platformRevenue = 0;
+        row.payoutAmount = 0;
+        row.payoutStatus = "Not Paid";
+      }
       let cancellationOutcome = null;
       const bookingIsCancelled = String(booking.bookingStatus || booking.status || "").toLowerCase() === "cancelled";
       const cancellationRecord = booking.cancellationPolicy ? booking : payment;
@@ -353,15 +395,18 @@
           storedOutcome.providerPayoutAmount = 0;
           storedOutcome.platformRevenueAmount = 0;
         }
-        cancellationOutcome = storedOutcome || financeEngine.calculateCancellationOutcome({
+        // Recalculate from the booking's immutable charge and appointment
+        // time.  Stored projections from older localStorage versions may have
+        // zero/old values and must not override the policy result.
+        cancellationOutcome = financeEngine.calculateCancellationOutcome({
           serviceFee: serviceFee,
           customerTotal: booking.customerTotal || payment.customerTotal || breakdown.customerTotal,
           taxAmount: booking.taxAmount || payment.taxAmount || breakdown.taxAmount,
           platformFeeAmount: booking.platformFeeAmount || payment.platformFeeAmount || breakdown.platformFeeAmount,
           providerCommissionRate: config.providerCommissionRate,
           cancellationActor: booking.cancellationActor || payment.cancellationActor || "Customer",
-          appointmentAt: booking.date,
-          appointmentTime: booking.time,
+          appointmentAt: booking.appointmentDate || booking.date,
+          appointmentTime: booking.appointmentTime || booking.time,
           cancelledAt: booking.cancelledAt
         });
         row.providerCommission = cancellationOutcome.providerCommissionAmount;
@@ -372,7 +417,7 @@
         row.platformRevenue = cancellationOutcome.platformRevenueAmount;
         row.payoutAmount = cancellationOutcome.providerPayoutAmount;
         row.payoutStatus = cancellationOutcome.providerPayoutAmount > 0
-          ? (payout ? resolvePayoutStatus(payout) : "Pending")
+          ? (cancellationOutcome.policyCode === "CUSTOMER_CANCEL_24H_TO_3H" ? "Partially Paid" : "Paid")
           : "Not Paid";
         row.refundAmount = cancellationOutcome.refundAmount;
         row.refundStatus = cancellationOutcome.refundStatus;
@@ -406,6 +451,64 @@
       .reduce(function (sum, row) { return roundMoney(sum + row.platformRevenue); }, 0);
   }
 
+  function summarizeFinancials(payments, financialRows, refunds) {
+    function outcomeScore(row) {
+      if (!row) return 0;
+      const status = String(row.status || "").toLowerCase();
+      return (row.cancellationPolicy ? 4 : 0) +
+        (status === "refunded" ? 2 : 0) +
+        (Number(row.customerTotal || row.amount || row.gross) > 0 ? 1 : 0);
+    }
+    const rowsByBooking = {};
+    (financialRows || []).forEach(function (row) {
+      const key = String(row.booking || row.id || "").toLowerCase();
+      if (!key || !rowsByBooking[key] || outcomeScore(row) > outcomeScore(rowsByBooking[key])) rowsByBooking[key] = row;
+    });
+    const canonicalRows = Object.keys(rowsByBooking).map(function (key) { return rowsByBooking[key]; });
+    const paymentByBooking = {};
+    (payments || []).filter(function (payment) {
+      const status = String(payment.status || "").toLowerCase();
+      return ["successful", "success", "paid", "refunded"].indexOf(status) !== -1 ||
+        Boolean(payment.cancellationPolicy) || Number(payment.refundAmount) > 0;
+    }).forEach(function (payment) {
+      const key = String(payment.booking || payment.id || "").toLowerCase();
+      if (key && (!paymentByBooking[key] || outcomeScore(payment) > outcomeScore(paymentByBooking[key]))) paymentByBooking[key] = payment;
+    });
+    const canonicalPayments = Object.keys(paymentByBooking).map(function (key) { return paymentByBooking[key]; });
+    // Reconciled rows are the authoritative booking ledger. This keeps the
+    // summary working even when the finance/admin browser has no customer's
+    // localStorage payment module.
+    const gross = canonicalRows.reduce(function (sum, row) {
+      return sum + (Number(row.customerTotal) || Number(row.amount) || 0);
+    }, 0) || canonicalPayments.reduce(function (sum, payment) {
+      return sum + (Number(payment.customerTotal) || Number(payment.amount) || 0);
+    }, 0);
+    // Refunds must come from the same reconciled rows as collections. This
+    // excludes orphaned localStorage refund entries and prevents duplicate
+    // copies of one booking from driving net collections below zero.
+    const refundsTotal = canonicalRows.reduce(function (sum, row) {
+      return sum + (Number(row.refundAmount) || 0);
+    }, 0);
+    const netCollections = Math.max(0, gross - refundsTotal);
+    const providerEarnings = canonicalRows.reduce(function (sum, row) { return sum + (Number(row.providerPayout) || Number(row.earnings) || 0); }, 0);
+    const platformRevenue = canonicalRows.reduce(function (sum, row) { return sum + (Number(row.platformRevenue) || Number(row.commission) || 0); }, 0);
+    const pendingPayout = canonicalRows.filter(function (row) {
+      return String(row.payoutStatus || "").toLowerCase() === "pending" &&
+        String(row.status || "").toLowerCase() !== "refunded";
+    }).reduce(function (sum, row) {
+      const payout = Number(row.payoutAmount != null ? row.payoutAmount : row.providerPayout);
+      return sum + (Number.isFinite(payout) ? payout : 0);
+    }, 0);
+    return {
+      grossCustomerPayments: gross,
+      netCustomerCollections: netCollections,
+      providerEarnings: providerEarnings,
+      platformRevenue: platformRevenue,
+      pendingPayout: pendingPayout,
+      refundTotal: refundsTotal
+    };
+  }
+
   function calculatePlatformCommission(commissionRate) {
     return calculatePlatformRevenue(commissionRate);
   }
@@ -421,6 +524,7 @@
     reconcileFinancialPayments: reconcileFinancialPayments,
     calculatePlatformRevenue: calculatePlatformRevenue,
     calculatePlatformCommission: calculatePlatformCommission,
-    getProviderEarningsRows: getProviderEarningsRows
+    getProviderEarningsRows: getProviderEarningsRows,
+    summarizeFinancials: summarizeFinancials
   };
 })();

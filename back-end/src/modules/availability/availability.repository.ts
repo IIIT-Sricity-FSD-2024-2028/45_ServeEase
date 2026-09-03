@@ -31,7 +31,15 @@ export class AvailabilityRepository {
   }
   saveSchedule(schedule: StoredWeeklySchedule): StoredWeeklySchedule {
     const saved = { ...schedule, effectiveFrom: this.effectiveFrom(schedule) };
-    const schedules = this.schedules.get(schedule.providerId) ?? [];
+    const schedules = (this.schedules.get(schedule.providerId) ?? []).filter((item) => {
+      const itemEffectiveFrom = this.effectiveFrom(item);
+      if (itemEffectiveFrom <= saved.effectiveFrom) return true;
+      // An immediate schedule update supersedes any previously staged
+      // versions, otherwise next week's stale version would win again after
+      // the provider reloads the page.
+      this.state.delete(`serveEaseAvailabilityWeekly:${schedule.providerId}:${itemEffectiveFrom}`);
+      return false;
+    });
     const index = schedules.findIndex((item) => this.effectiveFrom(item) === saved.effectiveFrom);
     if (index >= 0) schedules[index] = saved; else schedules.push(saved);
     this.schedules.set(schedule.providerId, schedules);

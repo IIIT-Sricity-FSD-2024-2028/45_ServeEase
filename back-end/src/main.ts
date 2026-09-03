@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -57,6 +58,16 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'role', 'user-id', 'user-email'],
     exposedHeaders: ['X-Request-ID'],
   });
+
+  // Protect API routes from accidental or abusive request flooding. Static
+  // frontend assets are intentionally outside this limit.
+  app.use('/api', rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { statusCode: 429, message: 'Too many requests. Please try again later.' },
+  }));
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(

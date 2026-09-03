@@ -559,18 +559,10 @@
 
       let cancellationOutcome = null;
       if (String(booking.status || "").toLowerCase() === "cancelled" && financeEngine && typeof financeEngine.calculateCancellationOutcome === "function") {
-        const hasStoredOutcome = Boolean(booking.cancellationPolicy) && (
-          booking.refundAmount != null || booking.providerPayoutAmount != null || booking.providerPayout != null ||
-          booking.providerCommissionAmount != null || booking.platformRevenueAmount != null || booking.platformRevenue != null
-        );
-        cancellationOutcome = hasStoredOutcome ? {
-          policyCode: booking.cancellationPolicy,
-          cancellationActor: booking.cancellationActor || "Customer",
-          refundAmount: Number(booking.refundAmount) || 0,
-          providerCommissionAmount: Number(booking.providerCommissionAmount) || 0,
-          providerPayoutAmount: Number(booking.providerPayoutAmount != null ? booking.providerPayoutAmount : booking.providerPayout) || 0,
-          platformRevenueAmount: Number(booking.platformRevenueAmount != null ? booking.platformRevenueAmount : booking.platformRevenue) || 0
-        } : financeEngine.calculateCancellationOutcome({
+        // Recalculate from the appointment and cancellation timestamp. Older
+        // provider-local projections may contain zero payout values even when
+        // the policy requires a partial payout.
+        cancellationOutcome = financeEngine.calculateCancellationOutcome({
             serviceFee: serviceFee,
             customerTotal: rawTotal,
             taxAmount: booking.taxAmount || (customerPayment && customerPayment.taxAmount),

@@ -16,15 +16,20 @@ export class AvailabilityService {
 
   saveWeeklySchedule(providerId: string, data: UpsertWeeklyScheduleDto): WeeklySchedule {
     providerId = canonicalProviderId(providerId); this.validateProviderId(providerId);
+    const effectiveFrom = this.today();
     const next: StoredWeeklySchedule = {
       providerId,
-      effectiveFrom: this.nextWeekStart(this.today()),
+      // A provider's recurring schedule is editable from today onward. Date
+      // instances that already have bookings are protected below, so applying
+      // this version today does not invalidate an appointment.
+      effectiveFrom,
       days: WEEKDAYS.map((dayOfWeek) => ({
         dayOfWeek,
         slots: this.normalizeSlots(data.weeklySchedule[this.weekdayKey(dayOfWeek)] ?? []),
       })),
     };
     next.days.forEach((day) => this.assertNoOverlappingSlots(day.slots, day.dayOfWeek));
+    this.assertWeeklyChangeDoesNotAffectBookings(providerId, next, effectiveFrom);
     return this.toWeeklyScheduleResponse(this.repository.saveSchedule(next));
   }
 
@@ -110,7 +115,7 @@ export class AvailabilityService {
     return slots.filter((slot) => !disabled.has(slot) || enabled.has(slot));
   }
   private ensureScheduleForAvailability(providerId: string): StoredWeeklySchedule {
-    const existing = this.repository.findSchedule(providerId);
+    const existing = this.repository.findScheduleForDate(providerId, this.today());
     if (existing) return existing;
 
     return this.repository.saveSchedule({
@@ -137,7 +142,7 @@ export class AvailabilityService {
     return start.getTime() < Date.now();
   }
   private slotsForDate(providerId: string, date: string): string[] { return this.repository.findScheduleForDate(providerId, date)?.days.find((day) => day.dayOfWeek === this.weekdayForDate(date))?.slots ?? []; }
-  private scheduleOrThrow(providerId: string): StoredWeeklySchedule { this.validateProviderId(providerId); const schedule = this.repository.findSchedule(providerId); if (!schedule) throw new NotFoundException(`Weekly schedule for provider "${providerId}" was not found.`); return schedule; }
+  private scheduleOrThrow(providerId: string): StoredWeeklySchedule { this.validateProviderId(providerId); const schedule = this.repository.findScheduleForDate(providerId, this.today()); if (!schedule) throw new NotFoundException(`Weekly schedule for provider "${providerId}" was not found.`); return schedule; }
   private toWeeklyScheduleResponse(schedule: StoredWeeklySchedule): WeeklySchedule {
     return {
       providerId: schedule.providerId,
@@ -150,6 +155,26 @@ export class AvailabilityService {
     if (this.bookings.findByProvider(providerId).some((booking) => this.isBookingBlockingAvailability(booking) && affects(booking))) {
       throw new BadRequestException('A slot with an existing booking cannot be modified or disabled.');
     }
+  }
+  private assertWeeklyChangeDoesNotAffectBookings(providerId: string, next: StoredWeeklySchedule, effectiveFrom: string): void {
+    const nextSlotsByDay = new Map(next.days.map((day) => [day.dayOfWeek, day.slots]));
+    const affectedBooking = this.bookings.findByProvider(providerId).find((booking) => {
+      if (!this.isBookingBlockingAvailability(booking) || booking.date < effectiveFrom) return false;
+
+      const dayOfWeek = this.weekdayForDate(booking.date);
+      const previousSlots = this.repository.findScheduleForDate(providerId, booking.date)?.days
+        .find((day) => day.dayOfWeek === dayOfWeek)?.slots ?? [];
+      const nextSlots = nextSlotsByDay.get(dayOfWeek) ?? [];
+      const bookingSlot = this.normalizeSlot(booking.time);
+      const previousSlot = previousSlots.find((slot) => this.slotsOverlap(slot, bookingSlot));
+
+      // A booked recurring slot must remain unchanged. This still permits
+      // edits, deletions, and additions of other unbooked slots in the same
+      // weekday, including occurrences later this week.
+      return previousSlot ? !nextSlots.includes(previousSlot) : !nextSlots.some((slot) => this.slotsOverlap(slot, bookingSlot));
+    });
+
+    if (affectedBooking) throw new BadRequestException('A slot with an existing booking cannot be modified or disabled.');
   }
   private normalizeSlots(slots: string[]): string[] { return Array.from(new Set(slots.map((slot) => this.normalizeSlot(slot)))).sort(); }
   private assertNoOverlappingSlots(slots: string[], day: string): void {
@@ -186,11 +211,5 @@ export class AvailabilityService {
   private parseDate(date: string): Date { const [year, month, day] = date.split('-').map(Number); return new Date(year, month - 1, day); }
   private formatDate(date: Date): string { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
   private today(): string { return this.formatDate(new Date()); }
-  private nextWeekStart(date: string): string {
-    const value = this.parseDate(date);
-    const daysUntilMonday = (8 - value.getDay()) % 7 || 7;
-    value.setDate(value.getDate() + daysUntilMonday);
-    return this.formatDate(value);
-  }
   private validateProviderId(providerId: string): void { if (!providerId?.trim()) throw new BadRequestException('Provider id is required.'); }
 }

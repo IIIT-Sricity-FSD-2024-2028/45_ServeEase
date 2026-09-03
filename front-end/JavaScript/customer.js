@@ -912,35 +912,54 @@
     if (!window.ServeEaseApi || typeof window.ServeEaseApi.updateBooking !== "function") {
       return Promise.reject(new Error("Canonical booking API is unavailable."));
     }
-    const cancellationUpdate = {
-      status: booking.status,
-      paymentStatus: booking.paymentStatus,
-      payoutStatus: booking.payoutStatus,
-      cancelledAt: booking.cancelledAt,
-      statusUpdatedAt: booking.statusUpdatedAt,
-      stateVersion: booking.stateVersion,
-      cancellationActor: booking.cancellationActor,
-      cancellationPolicy: booking.cancellationPolicy,
-      refundAmount: booking.refundAmount,
-      refundServiceFee: booking.refundServiceFee,
-      refundPlatformFee: booking.refundPlatformFee,
-      refundTax: booking.refundTax,
-      refundStatus: booking.refundStatus,
-      taxRefundAmount: booking.taxRefundAmount,
-      refundDate: booking.refundDate,
-      providerCommissionAmount: booking.providerCommissionAmount,
-      providerPayout: booking.providerPayout,
-      providerPayoutAmount: booking.providerPayoutAmount,
-      customerPlatformFeeAmount: booking.customerPlatformFeeAmount,
-      platformRevenueAmount: booking.platformRevenueAmount
-    };
-    return window.ServeEaseApi.updateBooking(booking.id, cancellationUpdate).then(function (savedBooking) {
-      if (savedBooking && savedBooking.status && savedBooking.status !== "Cancelled") {
-        throw new Error("Backend did not confirm the booking cancellation.");
+    const applyAndPersist = function (latestBooking) {
+      if (latestBooking && latestBooking.status) {
+        if (["Cancelled", "Completed", "Rejected"].indexOf(latestBooking.status) !== -1) {
+          throw new Error("This booking is no longer cancellable.");
+        }
+        // Payment synchronization can advance the canonical version while
+        // the customer page still has an older local copy.
+        Object.assign(booking, latestBooking);
       }
-      setCustomerData(data);
-      return savedBooking || booking;
-    });
+      if (!applyCustomerCancellation(data, booking)) {
+        throw new Error("This booking is no longer cancellable.");
+      }
+      const cancellationUpdate = {
+        status: booking.status,
+        paymentStatus: booking.paymentStatus,
+        payoutStatus: booking.payoutStatus,
+        cancelledAt: booking.cancelledAt,
+        statusUpdatedAt: booking.statusUpdatedAt,
+        // Do not send the stale client version. The repository increments the
+        // current canonical version atomically when applying this transition.
+        cancellationActor: booking.cancellationActor,
+        cancellationPolicy: booking.cancellationPolicy,
+        refundAmount: booking.refundAmount,
+        refundServiceFee: booking.refundServiceFee,
+        refundPlatformFee: booking.refundPlatformFee,
+        refundTax: booking.refundTax,
+        refundStatus: booking.refundStatus,
+        taxRefundAmount: booking.taxRefundAmount,
+        refundDate: booking.refundDate,
+        providerCommissionAmount: booking.providerCommissionAmount,
+        providerPayout: booking.providerPayout,
+        providerPayoutAmount: booking.providerPayoutAmount,
+        customerPlatformFeeAmount: booking.customerPlatformFeeAmount,
+        platformRevenueAmount: booking.platformRevenueAmount
+      };
+      return window.ServeEaseApi.updateBooking(booking.id, cancellationUpdate).then(function (savedBooking) {
+        if (savedBooking && savedBooking.status && savedBooking.status !== "Cancelled") {
+          throw new Error("Backend did not confirm the booking cancellation.");
+        }
+        if (savedBooking) Object.assign(booking, savedBooking);
+        setCustomerData(data);
+        return savedBooking || booking;
+      });
+    };
+    const latest = window.ServeEaseApi.getBooking && typeof window.ServeEaseApi.getBooking === "function"
+      ? window.ServeEaseApi.getBooking(booking.id)
+      : Promise.resolve(null);
+    return latest.then(applyAndPersist);
   }
 
   function logoutCustomer() {
@@ -1592,7 +1611,6 @@
             cancelModal.classList.remove("hidden");
 
             const handleYes = function() {
-              if (!applyCustomerCancellation(data, booking)) return;
               yesBtn.disabled = true;
               persistCustomerCancellation(data, booking).then(function () {
                 renderTabs();
@@ -1620,7 +1638,6 @@
           } else {
             // Fallback just in case
             if (confirm(`Are you sure you want to cancel booking ${booking.id}?`)) {
-              if (!applyCustomerCancellation(data, booking)) return;
               persistCustomerCancellation(data, booking).then(function () {
                 renderTabs();
                 renderBookings();
