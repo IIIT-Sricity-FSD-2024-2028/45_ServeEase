@@ -1,41 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Superuser Management</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/home.css" />
-  <link rel="stylesheet" href="CSS/dashboard.css" />
-  <link rel="stylesheet" href="CSS/superuser.css" />
-</head>
-<body>
-  <header class="dashboard-topbar superuser-topbar">
-    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
-    <div class="dashboard-search"><input type="text" id="superuserManagementSearch" placeholder="Search customers or providers..." /></div>
-    <div class="dashboard-topbar-actions">
-      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
-      <div class="profile-menu-wrap">
-        <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>
-        <div class="profile-dropdown hidden" id="superuserProfileDropdown">
-          <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>
-          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
+<!DOCTYPE html><html lang="en"><head>  <meta charset="UTF-8" />  <meta name="viewport" content="width=device-width, initial-scale=1.0" />  <title>ServeEase | Superuser Management</title>  <link rel="stylesheet" href="CSS/global.css" />  <link rel="stylesheet" href="CSS/home.css" />  <link rel="stylesheet" href="CSS/dashboard.css" />  <link rel="stylesheet" href="CSS/superuser.css" /></head><body>  <header class="dashboard-topbar superuser-topbar">    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>    <div class="dashboard-search"><input type="text" id="superuserManagementSearch" placeholder="Search customers or providers..." /></div>
+    <div class="dashboard-topbar-actions">      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
+      <div class="profile-menu-wrap">        <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>        <div class="profile-dropdown hidden" id="superuserProfileDropdown">          <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
           <a href="superuser-provider-verification.html">Provider Verification</a>
-          <button type="button" id="superuserLogoutBtn">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="dashboard-page superuser-page">
-    <div class="container">
-      <div class="breadcrumb-row">
-        <a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp;
-        <strong>User Management</strong>
-      </div>
-
-      <section class="panel-card superuser-title-card left-accent-blue">
-        <h1>User Management</h1>
+          <button type="button" id="superuserLogoutBtn">Logout</button>        </div>      </div>    </div>  </header>  <main class="dashboard-page superuser-page">    <div class="container">      <div class="breadcrumb-row">        <a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp;        <strong>User Management</strong>
+      </div>      <section class="panel-card superuser-title-card left-accent-blue">        <h1>User Management</h1>
         <p>Manage registered customers and service providers across the platform.</p>
       </section>
 
@@ -43,131 +11,35 @@
         <button class="btn btn-primary" type="button" id="superuserCustomersTab" aria-controls="superuserCustomerManagementPanel" aria-selected="true">Customers</button>
         <button class="btn btn-outline" type="button" id="superuserProvidersTab" aria-controls="superuserProviderManagementPanel" aria-selected="false">Providers</button>
       </nav>
-
-      <section class="superuser-two-column-layout">
-        <div>
-          <section class="panel-card superuser-table-panel" id="superuserCustomerManagementPanel">
+      <section class="superuser-two-column-layout">        <div>          <section class="panel-card superuser-table-panel" id="superuserCustomerManagementPanel">
             <div class="panel-head"><h2>Customers (<span id="superuserCustomerCount">0</span>)</h2><div class="superuser-table-controls"><input class="superuser-table-search" id="superuserCustomerSearch" type="search" placeholder="Search customers" aria-label="Search customers by name, email, or phone" /><select class="superuser-status-filter" id="superuserCustomerStatusFilter"><option value="all">All Status</option><option value="Active">Active</option><option value="Blocked">Blocked</option></select></div></div>
-            <div class="superuser-table-wrap">
-              <table class="superuser-table compact-table">
-                <thead>
-                  <tr>
-                    <th>Customer Name</th>
-                    <th>Email</th>
-                    <th>Phone Number</th>
-                    <th>Registration Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="superuserCustomerTableBody"></tbody>
-              </table>
-            </div>
-            <div class="superuser-card-actions-row"><button class="btn btn-outline" type="button" id="superuserShowMoreCustomersBtn">Show More</button></div>
-          </section>
-
-          <section class="panel-card superuser-table-panel hidden" id="superuserProviderManagementPanel">
+            <div class="superuser-table-wrap">              <table class="superuser-table compact-table">                <thead>                  <tr>                    <th>Customer Name</th>                    <th>Email</th>                    <th>Phone Number</th>                    <th>Registration Date</th>                    <th>Status</th>                    <th>Action</th>                  </tr>                </thead>                <tbody id="superuserCustomerTableBody"></tbody>              </table>            </div>            <div class="superuser-card-actions-row"><button class="btn btn-outline" type="button" id="superuserShowMoreCustomersBtn">Show More</button></div>          </section>          <section class="panel-card superuser-table-panel hidden" id="superuserProviderManagementPanel">
             <div class="panel-head"><h2>Providers (<span id="superuserProviderCount">0</span>)</h2><div class="superuser-table-controls"><input class="superuser-table-search" id="superuserProviderSearch" type="search" placeholder="Search providers" aria-label="Search providers by ID, name, organisation, email, phone, or category" /><select class="superuser-status-filter" id="superuserProviderStatusFilter"><option value="all">All Verification States</option><option value="Active">Active</option><option value="Pending Approval">Pending Approval</option><option value="Blocked">Blocked</option><option value="Rejected">Rejected</option><option value="Suspended">Suspended</option></select></div></div>
-            <div class="superuser-table-wrap">
-              <table class="superuser-table compact-table">
-                <thead>
-                  <tr>
-                    <th>Provider ID</th>
+            <div class="superuser-table-wrap">              <table class="superuser-table compact-table">                <thead>                  <tr>                    <th>Provider ID</th>
                     <th>Name</th>
                     <th>Organisation</th>
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Category</th>
                     <th>Account Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="superuserProviderTableBody"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <div class="superuser-return-row" style="gap:12px;"><a class="btn btn-outline" href="superuser-dashboard.html">‹ Return to Dashboard</a></div>
-        </div>
-
-        <aside class="superuser-sidebar-stack">
-          <section class="panel-card superuser-notification-card">
-            <div class="panel-head"><h2>Notifications</h2><span class="support-notification-chip" id="superuserNewBadge">0 New</span></div>
-            <div id="superuserNotificationList"></div>
-            <button class="btn btn-outline btn-full" type="button" id="superuserViewAllNotificationsBtn">View All Notifications</button>
-          </section>
-        </aside>
-      </section>
-    </div>
-  </main>
-
-  <div class="superuser-modal-backdrop hidden" id="superuserUserModalBackdrop">
-    <div class="superuser-modal superuser-user-modal">
-      <div class="superuser-modal-header gradient-header">
-        <div><h3 id="superuserUserModalName">User Name</h3><p id="superuserUserModalRole">Customer Details</p></div>
-        <button class="superuser-modal-close" type="button" data-close-modal="superuserUserModalBackdrop">×</button>
-      </div>
-        <div class="superuser-modal-body">
+                    <th>Action</th>                  </tr>                </thead>                <tbody id="superuserProviderTableBody"></tbody>              </table>            </div>          </section>          <div class="superuser-return-row" style="gap:12px;"><a class="btn btn-outline" href="superuser-dashboard.html">‹ Return to Dashboard</a></div>        </div>        <aside class="superuser-sidebar-stack">          <section class="panel-card superuser-notification-card">            <div class="panel-head"><h2>Notifications</h2><span class="support-notification-chip" id="superuserNewBadge">0 New</span></div>            <div id="superuserNotificationList"></div>            <button class="btn btn-outline btn-full" type="button" id="superuserViewAllNotificationsBtn">View All Notifications</button>          </section>        </aside>      </section>    </div>  </main>  <div class="superuser-modal-backdrop hidden" id="superuserUserModalBackdrop">    <div class="superuser-modal superuser-user-modal">      <div class="superuser-modal-header gradient-header">        <div><h3 id="superuserUserModalName">User Name</h3><p id="superuserUserModalRole">Customer Details</p></div>        <button class="superuser-modal-close" type="button" data-close-modal="superuserUserModalBackdrop">×</button>      </div>        <div class="superuser-modal-body">
           <section class="hidden" id="superuserProviderUserDetails">
             <h4>Provider Information</h4>
             <div class="superuser-detail-grid" id="superuserProviderUserDetailsGrid"></div>
           </section>
           <section id="superuserUserRegistrationSection">
-          <h4>Registration Information</h4>
-          <div class="superuser-detail-card"><span>Registration Date</span><strong id="superuserUserRegistrationDate"></strong></div>
-        </section>
-          <section id="superuserUserStatusSection">
-          <h4>Account Status</h4>
-          <div class="superuser-detail-card superuser-detail-row"><span>Current Status:</span><strong id="superuserUserStatusBadge"></strong></div>
-        </section>
-          <section id="superuserUserActionsSection">
-          <h4>Actions</h4>
-          <div class="superuser-block-reason-wrap hidden" id="superuserBlockReasonWrap">
-
-            <div id="superuserBlockReasonInputSection">
+          <h4>Registration Information</h4>          <div class="superuser-detail-card"><span>Registration Date</span><strong id="superuserUserRegistrationDate"></strong></div>        </section>          <section id="superuserUserStatusSection">
+          <h4>Account Status</h4>          <div class="superuser-detail-card superuser-detail-row"><span>Current Status:</span><strong id="superuserUserStatusBadge"></strong></div>        </section>          <section id="superuserUserActionsSection">
+          <h4>Actions</h4>          <div class="superuser-block-reason-wrap hidden" id="superuserBlockReasonWrap">            <div id="superuserBlockReasonInputSection">
               <label class="superuser-block-reason-label" for="superuserBlockReasonInput">Reason <span class="superuser-block-reason-required">*</span></label>
               <textarea
                 id="superuserBlockReasonInput"
-                class="superuser-block-reason-textarea"
-                rows="3"
-                maxlength="200"
-                placeholder="Enter a reason (max 200 characters)..."
-              ></textarea>
+                class="superuser-block-reason-textarea"                rows="3"                maxlength="200"                placeholder="Enter a reason (max 200 characters)..."              ></textarea>
               <label class="superuser-block-reason-label" for="superuserAdminRemarksInput">Admin Remarks <span>(optional)</span></label>
               <textarea id="superuserAdminRemarksInput" maxlength="500" placeholder="Optional operational remarks"></textarea>
-              <div class="superuser-block-reason-meta">
-                <small class="error" id="superuserBlockReasonError"></small>
-                <span class="superuser-block-reason-counter" id="superuserBlockReasonCounter">0 / 200</span>
-              </div>
-            </div>
-
-          </div>
-          <button class="btn btn-full" type="button" id="superuserUserStatusToggleBtn"></button>
-        </section>
-      </div>
-      <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="superuserUserModalBackdrop">Close</button></div>
-    </div>
-  </div>
-
-  <div class="superuser-modal-backdrop hidden" id="superuserNotificationModalBackdrop">
-    <div class="superuser-modal superuser-notification-modal">
-      <div class="superuser-modal-header gradient-header">
-        <div>
-          <h3>Notifications</h3>
-          <p>Latest platform updates</p>
-        </div>
-        <button class="superuser-modal-close" type="button" id="superuserCloseNotificationModalBtn">×</button>
-      </div>
-      <div class="superuser-modal-body">
-        <div class="panel-head superuser-modal-panel-head">
-          <h4>Recent Notifications</h4>
-          <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
-        </div>
-        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+              <div class="superuser-block-reason-meta">                <small class="error" id="superuserBlockReasonError"></small>                <span class="superuser-block-reason-counter" id="superuserBlockReasonCounter">0 / 200</span>              </div>            </div>          </div>          <button class="btn btn-full" type="button" id="superuserUserStatusToggleBtn"></button>        </section>      </div>      <div class="superuser-modal-footer"><button class="btn btn-outline btn-full" type="button" data-close-modal="superuserUserModalBackdrop">Close</button></div>    </div>  </div>  <div class="superuser-modal-backdrop hidden" id="superuserNotificationModalBackdrop">    <div class="superuser-modal superuser-notification-modal">      <div class="superuser-modal-header gradient-header">        <div>          <h3>Notifications</h3>          <p>Latest platform updates</p>        </div>        <button class="superuser-modal-close" type="button" id="superuserCloseNotificationModalBtn">×</button>      </div>      <div class="superuser-modal-body">        <div class="panel-head superuser-modal-panel-head">          <h4>Recent Notifications</h4>          <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>        </div>        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
         <div class="superuser-modal-actions"><button class="btn btn-outline" type="button" id="superuserMarkAllNotificationsBtn">Mark All as Read</button><button class="btn btn-outline" type="button" id="superuserClearNotificationsBtn">Clear All</button></div>
-      </div>
-    </div>
-  </div>
+      </div>    </div>  </div>
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/location.js"></script>
   <script src="JavaScript/mockdata.js"></script>
@@ -176,9 +48,4 @@
   <script src="JavaScript/employee-auth.js"></script>
   <script src="JavaScript/provider-operations.js"></script>
   <script src="JavaScript/superuser.js"></script>
-<script src="JavaScript/search.js"></script>
-</body>
-</html>
-
-
-
+<script src="JavaScript/search.js"></script></body></html>

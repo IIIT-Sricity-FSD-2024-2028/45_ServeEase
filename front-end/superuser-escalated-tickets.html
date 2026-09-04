@@ -1,63 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ServeEase | Ticket Resolution Panel</title>
-  <link rel="stylesheet" href="CSS/global.css" />
-  <link rel="stylesheet" href="CSS/home.css" />
-  <link rel="stylesheet" href="CSS/dashboard.css" />
-  <link rel="stylesheet" href="CSS/superuser.css" />
+<!DOCTYPE html><html lang="en"><head>  <meta charset="UTF-8" />  <meta name="viewport" content="width=device-width, initial-scale=1.0" />  <title>ServeEase | Ticket Resolution Panel</title>
+  <link rel="stylesheet" href="CSS/global.css" />  <link rel="stylesheet" href="CSS/home.css" />  <link rel="stylesheet" href="CSS/dashboard.css" />  <link rel="stylesheet" href="CSS/superuser.css" />
   <link rel="stylesheet" href="CSS/attachments.css" />
-</head>
-<body>
-  <header class="dashboard-topbar superuser-topbar">
-    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>
-    <div class="dashboard-search"><input type="search" id="superuserTicketSearch" aria-label="Search tickets by ID, subject, requester, provider, booking, or category" placeholder="Search tickets by ID, subject, requester, provider, or category..." /></div>
-    <div class="dashboard-topbar-actions">
-      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
-      <div class="profile-menu-wrap">
-        <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>
-        <div class="profile-dropdown hidden" id="superuserProfileDropdown">
-          <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>
-          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>
-          <button type="button" id="superuserLogoutBtn">Logout</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="dashboard-page superuser-page">
-    <div class="container">
-      <div class="breadcrumb-row"><a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp; <strong>Escalated Tickets</strong></div>
-
-      <section class="dashboard-hero superuser-ticket-hero danger-hero">
-        <h1>Ticket Resolution Panel</h1>
+</head><body>  <header class="dashboard-topbar superuser-topbar">    <div class="dashboard-brand"><div class="brand-icon">SE</div><span>ServeEase</span></div>    <div class="dashboard-search"><input type="search" id="superuserTicketSearch" aria-label="Search tickets by ID, subject, requester, provider, booking, or category" placeholder="Search tickets by ID, subject, requester, provider, or category..." /></div>
+    <div class="dashboard-topbar-actions">      <button class="icon-btn superuser-bell-btn" id="superuserNotificationBtn" aria-label="Notifications"><span class="superuser-notification-symbol">!</span><span class="superuser-dot"></span></button>
+      <div class="profile-menu-wrap">        <button class="profile-btn" type="button" id="superuserProfileBtn">👤</button>        <div class="profile-dropdown hidden" id="superuserProfileDropdown">          <div class="support-profile-card superuser-profile-card"><strong id="superuserHeaderName">Superuser</strong><span>Superuser</span></div>          <a href="superuser-dashboard.html">⌂ Superuser Dashboard</a>          <button type="button" id="superuserLogoutBtn">Logout</button>        </div>      </div>    </div>  </header>  <main class="dashboard-page superuser-page">    <div class="container">      <div class="breadcrumb-row"><a href="superuser-dashboard.html">Superuser Dashboard</a> &nbsp;›&nbsp; <strong>Escalated Tickets</strong></div>
+      <section class="dashboard-hero superuser-ticket-hero danger-hero">        <h1>Ticket Resolution Panel</h1>
         <p>Review escalated tickets, provider tickets, refund requests, and critical support cases requiring admin decision.</p>
-      </section>
-
-      <section class="superuser-booking-stat-grid" id="superuserTicketStatsGrid"></section>
-      <section id="superuserTicketSections"></section>
-      <div class="superuser-return-row"><a class="btn btn-outline" href="superuser-dashboard.html">‹ Back to Dashboard</a></div>
-    </div>
-  </main>
-
-  <div class="superuser-modal-backdrop hidden" id="superuserTicketModalBackdrop">
-    <div class="superuser-modal superuser-ticket-modal">
-      <div class="superuser-ticket-modal-top">
-        <div>
-          <h3 id="superuserTicketModalTitle">TICKET-2026-2103</h3>
-          <div class="superuser-badge-row"><span id="superuserTicketModalStatusBadge"></span></div>
-        </div>
-        <button class="superuser-modal-close dark-close" type="button" data-close-modal="superuserTicketModalBackdrop">⊗</button>
-      </div>
-      <div class="superuser-modal-body">
-        <div class="superuser-detail-grid" id="superuserTicketInfoGrid"></div>
-        <section>
-          <h4>Contact Information</h4>
-          <div class="superuser-detail-grid" id="superuserTicketContactGrid"></div>
-        </section>
-        <section>
+      </section>      <section class="superuser-booking-stat-grid" id="superuserTicketStatsGrid"></section>      <section id="superuserTicketSections"></section>      <div class="superuser-return-row"><a class="btn btn-outline" href="superuser-dashboard.html">‹ Back to Dashboard</a></div>    </div>  </main>  <div class="superuser-modal-backdrop hidden" id="superuserTicketModalBackdrop">    <div class="superuser-modal superuser-ticket-modal">      <div class="superuser-ticket-modal-top">        <div>          <h3 id="superuserTicketModalTitle">TICKET-2026-2103</h3>          <div class="superuser-badge-row"><span id="superuserTicketModalStatusBadge"></span></div>        </div>        <button class="superuser-modal-close dark-close" type="button" data-close-modal="superuserTicketModalBackdrop">⊗</button>      </div>      <div class="superuser-modal-body">        <div class="superuser-detail-grid" id="superuserTicketInfoGrid"></div>        <section>          <h4>Contact Information</h4>          <div class="superuser-detail-grid" id="superuserTicketContactGrid"></div>        </section>        <section>
           <h4>Description</h4>
           <div class="superuser-detail-card" id="superuserTicketDescriptionBlock"></div>
         </section>
@@ -73,37 +22,13 @@
           </form>
         </section>
       </div>
-      <div class="superuser-modal-actions split-actions" id="superuserTicketActionRow"></div>
-    </div>
-  </div>
-
-  <div class="superuser-modal-backdrop hidden" id="superuserNotificationModalBackdrop">
-    <div class="superuser-modal superuser-notification-modal">
-      <div class="superuser-modal-header gradient-header">
-        <div>
-          <h3>Notifications</h3>
-          <p>Latest platform updates</p>
-        </div>
-        <button class="superuser-modal-close" type="button" id="superuserCloseNotificationModalBtn">×</button>
-      </div>
-      <div class="superuser-modal-body">
-        <div class="panel-head superuser-modal-panel-head">
-          <h4>Recent Notifications</h4>
-          <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>
-        </div>
-        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
+      <div class="superuser-modal-actions split-actions" id="superuserTicketActionRow"></div>    </div>  </div>  <div class="superuser-modal-backdrop hidden" id="superuserNotificationModalBackdrop">    <div class="superuser-modal superuser-notification-modal">      <div class="superuser-modal-header gradient-header">        <div>          <h3>Notifications</h3>          <p>Latest platform updates</p>        </div>        <button class="superuser-modal-close" type="button" id="superuserCloseNotificationModalBtn">×</button>      </div>      <div class="superuser-modal-body">        <div class="panel-head superuser-modal-panel-head">          <h4>Recent Notifications</h4>          <span class="support-notification-chip" id="superuserNotificationModalBadge">0 New</span>        </div>        <div id="superuserNotificationModalList" class="superuser-notification-modal-list"></div>
         <div class="superuser-modal-actions"><button class="btn btn-outline" type="button" id="superuserMarkAllNotificationsBtn">Mark All as Read</button><button class="btn btn-outline" type="button" id="superuserClearNotificationsBtn">Clear All</button></div>
-      </div>
-    </div>
-  </div>
+      </div>    </div>  </div>
   <script src="JavaScript/api.js"></script>
   <script src="JavaScript/attachments.js"></script>
   <script src="JavaScript/booking-workflow.js"></script>
   <script src="JavaScript/employee-auth.js"></script>
   <script src="JavaScript/data-completion.js"></script>
   <script src="JavaScript/superuser.js"></script>
-<script src="JavaScript/search.js"></script>
-</body>
-</html>
-
-
+<script src="JavaScript/search.js"></script></body></html>
