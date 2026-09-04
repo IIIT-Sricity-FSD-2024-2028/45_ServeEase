@@ -253,8 +253,24 @@
   margin-bottom: 24px;
 }
 
+.finance-table-panel .table-card {
+  /* Keep long transaction lists contained within the panel. */
+  height: 360px;
+  max-height: 55vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #edf1f6;
+  border-radius: 12px;
+}
+
 .finance-table {
   min-width: 980px;
+}
+
+.finance-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .finance-table td {
@@ -314,5 +330,16 @@
 
   .finance-status-filter {
     width: 100%;
+  }
+
+  .finance-table-panel .table-card {
+    height: 320px;
+    max-height: 60vh;
+    border-radius: 10px;
+  }
+
+  .finance-table th,
+  .finance-table td {
+    padding: 12px 14px;
   }
 }
