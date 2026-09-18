@@ -1,20 +1,13 @@
-import { Link, Outlet } from 'react-router-dom'
-import { useAuth } from '../context/useAuth'
+import { Outlet } from 'react-router-dom'
+import { Footer } from '../components/common/Footer'
+import { Navbar } from '../components/common/Navbar'
 
 export function AppShell({ area = 'ServeEase' }) {
-  const { isAuthenticated, role, logout } = useAuth()
-
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <Link className="brand" to="/">ServeEase</Link>
-        <span className="area-label">{area}</span>
-        <div className="session-summary">
-          {isAuthenticated ? <><span>{role}</span><button type="button" onClick={logout}>Log out</button></> : <span>Guest</span>}
-        </div>
-      </header>
+      <Navbar area={area} />
       <main className="app-main"><Outlet /></main>
-      <footer className="app-footer">ServeEase React foundation</footer>
+      <Footer />
     </div>
   )
 }
