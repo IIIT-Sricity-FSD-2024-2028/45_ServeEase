@@ -4,6 +4,7 @@ import { CustomerLayout } from '../layouts/CustomerLayout'
 import { EmployeeLayout } from '../layouts/EmployeeLayout'
 import { ProviderLayout } from '../layouts/ProviderLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
+import { ProviderServicesPage } from '../pages/provider/ProviderServicesPage'
 
 function FoundationHome() {
   return <section className="foundation-card">
@@ -24,7 +25,10 @@ export function AppRoutes() {
       <Route path="/not-found" element={<NotFound />} />
     </Route>
     <Route element={<CustomerLayout />}><Route path="/customer" element={<Navigate to="/not-found" replace />} /></Route>
-    <Route element={<ProviderLayout />}><Route path="/provider" element={<Navigate to="/not-found" replace />} /></Route>
+    <Route element={<ProviderLayout />}>
+      <Route path="/provider" element={<Navigate to="/provider/services" replace />} />
+      <Route path="/provider/services" element={<ProviderServicesPage />} />
+    </Route>
     <Route element={<EmployeeLayout />}><Route path="/employee" element={<Navigate to="/not-found" replace />} /></Route>
     <Route path="*" element={<Navigate to="/not-found" replace />} />
   </Routes>

@@ -4,6 +4,15 @@ import { apiRequest } from './apiClient'
 export const catalogApi = {
   getCatalog: () => apiRequest('/catalog'),
   getProvider: (id) => apiRequest(`/catalog/providers/${encodeURIComponent(id)}`),
+  getProviderServices: (providerId) => apiRequest(`/catalog/providers/${encodeURIComponent(providerId)}/services`),
+  createProviderService: (providerId, service) => apiRequest(`/catalog/providers/${encodeURIComponent(providerId)}/services`, {
+    method: 'POST',
+    body: JSON.stringify(service),
+  }),
+  updateProviderService: (providerId, serviceId, service) => apiRequest(
+    `/catalog/providers/${encodeURIComponent(providerId)}/services/${encodeURIComponent(serviceId)}`,
+    { method: 'PATCH', body: JSON.stringify(service) },
+  ),
 }
 
 export const bookingsApi = {
