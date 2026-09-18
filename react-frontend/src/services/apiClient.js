@@ -22,7 +22,13 @@ export async function apiRequest(path, options = {}) {
   if (activeSession.userId) headers.set('user-id', activeSession.userId)
   if (activeSession.email) headers.set('user-email', activeSession.email)
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
+  const requestUrl = `${API_BASE_URL}${path}`
+  let response
+  try {
+    response = await fetch(requestUrl, { ...options, headers })
+  } catch (error) {
+    throw new Error(`Request to ${requestUrl} could not be completed: ${error.message}`, { cause: error })
+  }
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
     const message = Array.isArray(payload?.message) ? payload.message.join(' ') : payload?.message
@@ -32,4 +38,3 @@ export async function apiRequest(path, options = {}) {
 }
 
 export { API_BASE_URL, backendRole }
-

@@ -21,6 +21,37 @@ export function AuthProvider({ children }) {
     setCurrentUser(null)
   }, [])
 
+  const startDevelopmentDemoSession = useCallback(() => {
+    if (!import.meta.env.DEV || readSession()) return false
+
+    // Mirrors the legacy setSession() shape for the verified primary demo customer.
+    const demoSession = {
+      isLoggedIn: true,
+      userId: 'CUS001',
+      role: 'customer',
+      fullName: 'Raghava Kumar',
+      email: 'user@serveease.com',
+      phone: '9876543210',
+      organisationName: '',
+      serviceType: '',
+      experience: '',
+      cityId: '',
+      cityName: '',
+      location: '',
+      address: '',
+      providerCatalogId: '',
+      approvalStatus: '',
+      verificationStatus: '',
+      accountStatus: '',
+      rejectionReason: '',
+      suspensionReason: '',
+    }
+
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(demoSession))
+    setCurrentUser(demoSession)
+    return true
+  }, [])
+
   useEffect(() => {
     window.addEventListener('storage', refreshSession)
     return () => window.removeEventListener('storage', refreshSession)
@@ -32,7 +63,8 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(currentUser),
     refreshSession,
     logout,
-  }), [currentUser, logout, refreshSession])
+    startDevelopmentDemoSession,
+  }), [currentUser, logout, refreshSession, startDevelopmentDemoSession])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
