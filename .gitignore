@@ -8,3 +8,5 @@ package-lock.json
 # Runtime state persisted by the API (availability and frontend state bridge)
 /back-end/data/*
 !/back-end/data/state.json
+
+.freebuff

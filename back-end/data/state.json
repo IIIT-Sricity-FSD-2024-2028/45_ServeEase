@@ -3630,7 +3630,7 @@
         }
       ]
     },
-    "updatedAt": "2026-09-04T05:21:49.283Z"
+    "updatedAt": "2026-09-04T08:50:41.468Z"
   },
   {
     "key": "serveEaseData",
@@ -3802,6 +3802,7 @@
           ],
           "ownerProviderId": "PRO001",
           "ownerProviderEmail": "provider@serveease.com",
+          "accountStatus": "Active",
           "servicePricing": {
             "Full Home Cleaning": 899,
             "Kitchen Cleaning": 799,
@@ -3848,8 +3849,7 @@
           "providerCatalogId": "cleanpro-service",
           "phone": "+91 9286962625",
           "registrationDate": "2025-10-26",
-          "organisationName": "Cleanpro Services",
-          "accountStatus": "Active"
+          "organisationName": "Cleanpro Services"
         },
         {
           "id": "urban-shine-cleaner-home-cleaning-1",
@@ -13305,7 +13305,7 @@
         }
       ]
     },
-    "updatedAt": "2026-09-04T06:37:31.149Z"
+    "updatedAt": "2026-09-18T05:51:13.150Z"
   },
   {
     "key": "serveEaseSupportModuleData",
@@ -16728,7 +16728,7 @@
         }
       ]
     },
-    "updatedAt": "2026-09-04T05:21:49.210Z"
+    "updatedAt": "2026-09-18T05:51:42.569Z"
   },
   {
     "key": "serveEaseProviderModuleData",
@@ -18023,7 +18023,7 @@
           "date": "2026-09-04",
           "time": "01:00-02:00",
           "address": "741258",
-          "status": "Pending",
+          "status": "Accepted",
           "amount": 1033.85,
           "serviceFee": 899,
           "taxRate": 10,
@@ -18042,7 +18042,10 @@
           "paymentStatus": "Successful",
           "paymentId": "",
           "createdAt": "2026-09-03T16:27:47.860Z",
-          "paymentDate": "03-09-2026"
+          "paymentDate": "03-09-2026",
+          "statusUpdatedAt": "2026-09-03T16:28:01.944Z",
+          "stateVersion": 3,
+          "providerPayoutAmount": 809.1
         },
         {
           "id": "BOOK-20260903-2025-0010",
@@ -19255,7 +19258,8 @@
           "providerCommissionAmount": 89.9,
           "providerPayout": 809.1,
           "date": "03-09-2026",
-          "status": "Successful"
+          "status": "Successful",
+          "providerPayoutAmount": 809.1
         },
         {
           "id": "TXN-2026-4556",
@@ -21074,7 +21078,7 @@
         }
       ]
     },
-    "updatedAt": "2026-09-03T16:27:47.890Z"
+    "updatedAt": "2026-09-18T05:51:42.592Z"
   },
   {
     "key": "serveEaseProviderModuleData:PRO143",
@@ -22351,9 +22355,9 @@
           "updatedAt": "2026-09-03T19:09:58.229Z"
         }
       ],
-      "updatedAt": "2026-09-04T06:37:30.886Z"
+      "updatedAt": "2026-09-18T05:51:12.969Z"
     },
-    "updatedAt": "2026-09-04T06:37:30.886Z"
+    "updatedAt": "2026-09-18T05:51:12.969Z"
   },
   {
     "key": "serveEaseProviderServices:PRO143",
@@ -22371,9 +22375,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-04T06:37:30.917Z"
+      "updatedAt": "2026-09-18T05:51:13.005Z"
     },
-    "updatedAt": "2026-09-04T06:37:30.917Z"
+    "updatedAt": "2026-09-18T05:51:13.005Z"
   },
   {
     "key": "serveEaseProviderServices:PRO144",
@@ -22391,9 +22395,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-04T06:37:30.940Z"
+      "updatedAt": "2026-09-18T05:51:13.027Z"
     },
-    "updatedAt": "2026-09-04T06:37:30.940Z"
+    "updatedAt": "2026-09-18T05:51:13.027Z"
   },
   {
     "key": "serveEaseProviderServices:PRO145",
@@ -22411,9 +22415,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-04T06:37:31.005Z"
+      "updatedAt": "2026-09-18T05:51:13.074Z"
     },
-    "updatedAt": "2026-09-04T06:37:31.005Z"
+    "updatedAt": "2026-09-18T05:51:13.074Z"
   },
   {
     "key": "serveEaseProviderServices:PRO-CAT-005",
@@ -22724,9 +22728,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-04T06:37:30.901Z"
+      "updatedAt": "2026-09-18T05:51:12.987Z"
     },
-    "updatedAt": "2026-09-04T06:37:30.901Z"
+    "updatedAt": "2026-09-18T05:51:12.987Z"
   },
   {
     "key": "serveEaseAvailabilityWeekly:PRO-CAT-019",
@@ -24158,9 +24162,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-04T06:37:30.960Z"
+      "updatedAt": "2026-09-18T05:51:13.043Z"
     },
-    "updatedAt": "2026-09-04T06:37:30.960Z"
+    "updatedAt": "2026-09-18T05:51:13.043Z"
   },
   {
     "key": "serveEaseProviderServices:PRO-CAT-042",
@@ -24178,9 +24182,9 @@
           "isActive": true
         }
       ],
-      "updatedAt": "2026-09-04T06:37:30.978Z"
+      "updatedAt": "2026-09-18T05:51:13.062Z"
     },
-    "updatedAt": "2026-09-04T06:37:30.978Z"
+    "updatedAt": "2026-09-18T05:51:13.062Z"
   },
   {
     "key": "serveEaseCustomerModuleData:cus016",
