@@ -21,4 +21,3 @@ export const ticketsApi = {
   listMine: () => apiRequest('/tickets/my-tickets'),
   get: (id) => apiRequest(`/tickets/${encodeURIComponent(id)}`),
 }
-
