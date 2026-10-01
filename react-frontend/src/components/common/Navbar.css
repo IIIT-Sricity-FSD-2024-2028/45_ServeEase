@@ -1,0 +1,6 @@
+.profile-menu-wrap { position: relative; }
+.profile-dropdown { position: absolute; top: 52px; right: 0; z-index: 100; min-width: 210px; padding: 10px; background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; box-shadow: 0 14px 32px rgb(17 40 75 / 12%); }
+.profile-dropdown a, .profile-dropdown button { display: block; width: 100%; padding: 12px 14px; border: 0; border-radius: 10px; background: transparent; color: #12284a; text-align: left; text-decoration: none; font-size: 14px; cursor: pointer; }
+.profile-dropdown a:hover, .profile-dropdown button:hover { background: #f5f7fb; }
+.profile-dropdown__identity { display: flex; flex-direction: column; gap: 2px; padding: 8px 14px 10px; border-bottom: 1px solid #edf1f6; color: #12284a; }
+.profile-dropdown__identity span { overflow: hidden; color: #667a97; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }

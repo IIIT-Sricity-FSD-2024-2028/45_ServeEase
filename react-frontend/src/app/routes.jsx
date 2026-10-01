@@ -1,16 +1,26 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/useAuth'
 import { StatusBadge } from '../components/common/StatusBadge'
 import { CustomerLayout } from '../layouts/CustomerLayout'
 import { EmployeeLayout } from '../layouts/EmployeeLayout'
 import { ProviderLayout } from '../layouts/ProviderLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
 import { ProviderServicesPage } from '../pages/provider/ProviderServicesPage'
+import CustomerBookingsPage from '../features/customer/bookings/CustomerBookingsPage'
 
 function FoundationHome() {
+  const navigate = useNavigate()
+  const { isAuthenticated, startDevelopmentDemoSession } = useAuth()
+
+  function useDemoSession() {
+    if (startDevelopmentDemoSession()) navigate('/customer/bookings')
+  }
+
   return <section className="foundation-card">
     <StatusBadge tone="ready">Foundation ready</StatusBadge>
     <h1>ServeEase React frontend</h1>
     <p>The React migration foundation is in place. Feature pages will be added by their workstream owners.</p>
+    {import.meta.env.DEV && !isAuthenticated && <button className="foundation-dev-button" type="button" onClick={useDemoSession}>Use demo customer session</button>}
   </section>
 }
 
@@ -24,12 +34,21 @@ export function AppRoutes() {
       <Route path="/" element={<FoundationHome />} />
       <Route path="/not-found" element={<NotFound />} />
     </Route>
-    <Route element={<CustomerLayout />}><Route path="/customer" element={<Navigate to="/not-found" replace />} /></Route>
+
+    <Route element={<CustomerLayout />}>
+      <Route path="/customer" element={<Navigate to="/not-found" replace />} />
+      <Route path="/customer/bookings" element={<CustomerBookingsPage />} />
+    </Route>
+
     <Route element={<ProviderLayout />}>
       <Route path="/provider" element={<Navigate to="/provider/services" replace />} />
       <Route path="/provider/services" element={<ProviderServicesPage />} />
     </Route>
-    <Route element={<EmployeeLayout />}><Route path="/employee" element={<Navigate to="/not-found" replace />} /></Route>
+
+    <Route element={<EmployeeLayout />}>
+      <Route path="/employee" element={<Navigate to="/not-found" replace />} />
+    </Route>
+
     <Route path="*" element={<Navigate to="/not-found" replace />} />
   </Routes>
 }

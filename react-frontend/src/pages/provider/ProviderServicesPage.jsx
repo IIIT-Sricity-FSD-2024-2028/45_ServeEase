@@ -28,26 +28,27 @@ export function ProviderServicesPage() {
   const [form, setForm] = useState(emptyService)
   const [isSaving, setIsSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState(null)
+  const showLoading = Boolean(providerId) && role === 'provider' && isLoading
 
   useEffect(() => {
     if (!providerId || role !== 'provider') {
-      setIsLoading(false)
       return undefined
     }
 
     let active = true
-    setIsLoading(true)
-    setError('')
-    catalogApi.getProviderServices(providerId)
-      .then((result) => {
+    const loadServices = async () => {
+      setIsLoading(true)
+      setError('')
+      try {
+        const result = await catalogApi.getProviderServices(providerId)
         if (active) setServices(Array.isArray(result) ? result : [])
-      })
-      .catch((requestError) => {
+      } catch (requestError) {
         if (active) setError(requestError.message || 'Unable to load your services.')
-      })
-      .finally(() => {
+      } finally {
         if (active) setIsLoading(false)
-      })
+      }
+    }
+    loadServices()
 
     return () => { active = false }
   }, [providerId, role])
@@ -135,9 +136,9 @@ export function ProviderServicesPage() {
       {error && <div className="provider-feedback provider-feedback--error" role="alert">{error}</div>}
       <div className="provider-services-panel">
         <div className="provider-panel-head"><h2>Your Services</h2><label className="provider-search">Search services<input onChange={(event) => setQuery(event.target.value)} placeholder="Search services..." value={query} /></label></div>
-        {isLoading && <div className="provider-feedback">Loading your services…</div>}
-        {!isLoading && !error && visibleServices.length === 0 && <div className="provider-feedback">{services.length ? 'No services found for the current search.' : 'You have not added any services yet.'}</div>}
-        {!isLoading && visibleServices.length > 0 && <div className="provider-service-grid">
+        {showLoading && <div className="provider-feedback">Loading your services…</div>}
+        {!showLoading && !error && visibleServices.length === 0 && <div className="provider-feedback">{services.length ? 'No services found for the current search.' : 'You have not added any services yet.'}</div>}
+        {!showLoading && visibleServices.length > 0 && <div className="provider-service-grid">
           {visibleServices.map((service) => <ServiceCard key={service.id} isUpdating={updatingId === service.id} onEdit={openEdit} onToggle={toggleService} service={service} />)}
         </div>}
       </div>
