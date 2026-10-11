@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ServiceCard } from '../../components/provider/ServiceCard'
-import { useAuth } from '../../context/useAuth'
-import { catalogApi } from '../../services/api'
-import '../../styles/provider-services.css'
+import { ServiceCard } from './ServiceCard'
+import { useAuth } from '../../../context/useAuth'
+import { catalogApi } from '../../../services/api'
+import './providerServices.css'
 
 const emptyService = { name: '', description: '', price: '', location: '' }
 

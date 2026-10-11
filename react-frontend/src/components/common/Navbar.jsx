@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
-import { API_BASE_URL } from '../../services/apiClient'
 import './Navbar.css'
 
-const legacyFrontendOrigin = new URL(API_BASE_URL).origin
+const legacyFrontendOrigin = (import.meta.env.VITE_LEGACY_FRONTEND_URL || 'http://localhost:5500').replace(/\/+$/, '')
 
 export function Navbar({ area = 'ServeEase' }) {
   const { currentUser, isAuthenticated, logout } = useAuth()
