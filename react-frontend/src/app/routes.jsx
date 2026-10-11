@@ -5,7 +5,7 @@ import { CustomerLayout } from '../layouts/CustomerLayout'
 import { EmployeeLayout } from '../layouts/EmployeeLayout'
 import { ProviderLayout } from '../layouts/ProviderLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
-import { ProviderServicesPage } from '../pages/provider/ProviderServicesPage'
+import { ProviderServicesPage } from '../features/provider/services/ProviderServicesPage'
 import CustomerBookingsPage from '../features/customer/bookings/CustomerBookingsPage'
 
 function FoundationHome() {
