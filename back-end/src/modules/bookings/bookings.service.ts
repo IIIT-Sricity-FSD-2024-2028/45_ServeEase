@@ -1,12 +1,14 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Request } from 'express';
+import { canonicalProviderId } from '../../common/provider-identity';
 import { Booking } from './booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ProviderBookingStatusDto } from './dto/provider-booking-status.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { BookingsRepository } from './bookings.repository';
 import { AvailabilityService } from '../availability/availability.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { CreateCustomerBookingDto } from './dto/create-customer-booking.dto';
-import { canonicalProviderId } from '../../common/provider-identity';
 
 /** Identifiers supplied by the caller for compatibility with the header-RBAC assignment.
  * These values are not authenticated identity claims and must not be described as secure ownership.
@@ -30,6 +32,10 @@ export class BookingsService {
     if (caller.role === 'provider') return caller.userId ? this.bookingsRepository.findByProvider(caller.userId) : [];
     if (caller.role === 'user') return this.bookingsRepository.findByCustomerIdentity(caller.userId, caller.email);
     throw new ForbiddenException('This role cannot access bookings.');
+  }
+
+  findForProvider(request: Request): Booking[] {
+    return this.bookingsRepository.findByProvider(this.providerIdFromRequest(request));
   }
 
   findById(id: string, caller: BookingRequestContext): Booking {
@@ -107,6 +113,36 @@ export class BookingsService {
     return this.bookingsRepository.update(id, data)!;
   }
 
+  updateProviderStatus(id: string, data: ProviderBookingStatusDto, request: Request): Booking {
+    const providerId = this.providerIdFromRequest(request);
+    const existing = this.findByIdForSystem(id);
+    if (canonicalProviderId(existing.providerId) !== providerId) {
+      throw new ForbiddenException('You can update only bookings belonging to your provider account.');
+    }
+    if (data.stateVersion !== undefined && existing.stateVersion !== undefined && data.stateVersion !== existing.stateVersion) {
+      throw new ConflictException('This booking has changed. Refresh it before updating its status.');
+    }
+
+    const allowedNextStatuses: Record<string, string[]> = {
+      Pending: ['Accepted', 'Rejected'],
+      Accepted: ['Completed', 'Cancelled'],
+    };
+    if (!allowedNextStatuses[existing.status]?.includes(data.status)) {
+      throw new BadRequestException(`Cannot change booking status from ${existing.status} to ${data.status}.`);
+    }
+
+    const update: UpdateBookingDto = {
+      status: data.status,
+      ...(data.stateVersion === undefined ? {} : { stateVersion: data.stateVersion }),
+    };
+    if (data.status === 'Rejected' || data.status === 'Cancelled') {
+      update.cancellationActor = 'Provider';
+      update.cancelledAt = new Date().toISOString();
+    }
+    if (data.status === 'Completed') update.receivedDate = new Date().toISOString().slice(0, 10);
+    return this.bookingsRepository.update(id, update)!;
+  }
+
   updateForCaller(id: string, data: UpdateBookingDto, caller: BookingRequestContext): Booking {
     if (caller.role === 'admin') return this.update(id, data);
     if (Object.keys(data).length !== 1 || typeof data.status !== 'string') {
@@ -115,9 +151,7 @@ export class BookingsService {
     const booking = this.findById(id, caller);
     const transitions: Record<string, Record<string, string[]>> = {
       user: { Cancelled: ['Pending', 'Accepted'] },
-      provider: {
-        Accepted: ['Pending'], Rejected: ['Pending'], Completed: ['Accepted'], Cancelled: ['Pending', 'Accepted'],
-      },
+      provider: { Accepted: ['Pending'], Rejected: ['Pending'], Completed: ['Accepted'], Cancelled: ['Accepted'] },
     };
     if (!transitions[caller.role]?.[data.status]?.includes(booking.status)) {
       throw new BadRequestException('This booking status transition is not allowed.');
@@ -153,5 +187,14 @@ export class BookingsService {
   private validateId(id: string): void {
     const referencePattern = /^BOOK-\d{8}-\d{4}-\d{4}$/;
     if (!id || !referencePattern.test(id)) throw new BadRequestException('Invalid booking id. Expected a booking reference.');
+  }
+
+  private providerIdFromRequest(request: Request): string {
+    const header = request.headers['user-id'];
+    const providerId = String(Array.isArray(header) ? header[0] : header || '').trim();
+    if (!providerId) throw new BadRequestException('A provider identity header is required.');
+    const canonicalId = canonicalProviderId(providerId);
+    if (!canonicalId) throw new BadRequestException('A valid provider identity is required.');
+    return canonicalId;
   }
 }

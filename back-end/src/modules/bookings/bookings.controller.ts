@@ -7,6 +7,7 @@ import { RolesGuard } from '../../guards/roles.guard';
 import { Booking } from './booking.entity';
 import { BookingsService, BookingRequestContext } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ProviderBookingStatusDto } from './dto/provider-booking-status.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { CreateCustomerBookingDto } from './dto/create-customer-booking.dto';
 
@@ -41,6 +42,22 @@ export class BookingsController {
   } } })
   findAll(@Req() request: Request) {
     return successResponse(this.bookingsService.findAll(callerFrom(request)));
+  }
+
+  @Get('provider')
+  @Roles('provider')
+  @ApiOperation({ summary: 'Get bookings belonging to the authenticated provider' })
+  @ApiOkResponse({
+    description: 'Provider bookings returned successfully.',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: { type: 'array', items: { $ref: getSchemaPath(Booking) } },
+      },
+    },
+  })
+  findProviderBookings(@Req() request: Request) {
+    return successResponse(this.bookingsService.findForProvider(request));
   }
 
   @Get(':id')
@@ -92,6 +109,23 @@ export class BookingsController {
   } } })
   updateWithPatch(@Param('id') id: string, @Body() data: UpdateBookingDto, @Req() request: Request) {
     return successResponse(this.bookingsService.updateForCaller(id, data, callerFrom(request)));
+  }
+
+  @Patch(':id/provider-status')
+  @Roles('provider')
+  @ApiOperation({ summary: 'Update an owned booking through the provider workflow' })
+  @ApiBody({ type: ProviderBookingStatusDto })
+  @ApiOkResponse({
+    description: 'Provider booking status updated successfully.',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: { $ref: getSchemaPath(Booking) },
+      },
+    },
+  })
+  updateProviderStatus(@Param('id') id: string, @Body() data: ProviderBookingStatusDto, @Req() request: Request) {
+    return successResponse(this.bookingsService.updateProviderStatus(id, data, request));
   }
 
   @Delete(':id')
