@@ -18,6 +18,10 @@ export const catalogApi = {
 export const bookingsApi = {
   list: () => apiRequest('/bookings'),
   get: (id) => apiRequest(`/bookings/${encodeURIComponent(id)}`),
+  createForCustomer: (booking) => apiRequest('/bookings/customer', {
+    method: 'POST',
+    body: JSON.stringify(booking),
+  }),
 }
 
 export const availabilityApi = {

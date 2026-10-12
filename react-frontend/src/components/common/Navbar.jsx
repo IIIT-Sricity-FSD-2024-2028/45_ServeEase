@@ -1,12 +1,11 @@
-import { Link } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
 import './Navbar.css'
 
-const legacyFrontendOrigin = (import.meta.env.VITE_LEGACY_FRONTEND_URL || 'http://localhost:5500').replace(/\/+$/, '')
-
 export function Navbar({ area = 'ServeEase' }) {
   const { currentUser, isAuthenticated, logout } = useAuth()
+  const navigate = useNavigate()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profileMenuRef = useRef(null)
 
@@ -30,11 +29,13 @@ export function Navbar({ area = 'ServeEase' }) {
   function handleLogout() {
     logout()
     setIsProfileOpen(false)
+    navigate('/')
   }
 
   return <header className="app-header">
     <Link className="brand" to="/"><span className="brand-icon">SE</span><span>ServeEase</span></Link>
-    <div className="dashboard-search"><input type="search" placeholder="Search for services..." aria-label="Search for services" /></div>
+    <nav className="primary-nav" aria-label="Primary navigation"><NavLink to="/">Home</NavLink><NavLink to="/services">Services</NavLink>{isAuthenticated && currentUser?.role === 'customer' && <><NavLink to="/customer/dashboard">Dashboard</NavLink><NavLink to="/customer/bookings">My Bookings</NavLink></>}</nav>
+    <div className="dashboard-search"><input type="search" placeholder="Search for services..." aria-label="Search for services" onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} /></div>
     <div className="dashboard-topbar-actions">
       <button className="icon-btn" type="button" aria-label="Notifications">🔔</button>
       <div className="profile-menu-wrap" ref={profileMenuRef}>
@@ -50,8 +51,7 @@ export function Navbar({ area = 'ServeEase' }) {
             </>}
             <button type="button" role="menuitem" onClick={handleLogout}>Logout</button>
           </> : <>
-            <a href={`${legacyFrontendOrigin}/login.html`} role="menuitem" onClick={() => setIsProfileOpen(false)}>Login</a>
-            <a href={`${legacyFrontendOrigin}/signup.html`} role="menuitem" onClick={() => setIsProfileOpen(false)}>Register</a>
+            <Link to="/login" role="menuitem" onClick={() => setIsProfileOpen(false)}>Login</Link>
           </>}
         </div>}
       </div>
