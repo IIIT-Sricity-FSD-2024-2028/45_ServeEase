@@ -18,6 +18,10 @@ export const catalogApi = {
 export const bookingsApi = {
   list: () => apiRequest('/bookings'),
   get: (id) => apiRequest(`/bookings/${encodeURIComponent(id)}`),
+  createForCustomer: (booking) => apiRequest('/bookings/customer', {
+    method: 'POST',
+    body: JSON.stringify(booking),
+  }),
   listForProvider: () => apiRequest('/bookings/provider'),
   updateProviderStatus: (id, status, stateVersion) => apiRequest(`/bookings/${encodeURIComponent(id)}/provider-status`, {
     method: 'PATCH',

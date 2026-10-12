@@ -1,12 +1,11 @@
-import { Link } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
 import './Navbar.css'
 
-const legacyFrontendOrigin = (import.meta.env.VITE_LEGACY_FRONTEND_URL || 'http://localhost:5500').replace(/\/+$/, '')
-
 export function Navbar({ area = 'ServeEase' }) {
   const { currentUser, isAuthenticated, logout } = useAuth()
+  const navigate = useNavigate()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profileMenuRef = useRef(null)
 
@@ -30,11 +29,13 @@ export function Navbar({ area = 'ServeEase' }) {
   function handleLogout() {
     logout()
     setIsProfileOpen(false)
+    navigate('/')
   }
 
   return <header className="app-header">
     <Link className="brand" to="/"><span className="brand-icon">SE</span><span>ServeEase</span></Link>
-    <div className="dashboard-search"><input type="search" placeholder="Search for services..." aria-label="Search for services" /></div>
+    <nav className="primary-nav" aria-label="Primary navigation"><NavLink to="/">Home</NavLink><NavLink to="/services">Services</NavLink>{isAuthenticated && currentUser?.role === 'customer' && <><NavLink to="/customer/dashboard">Dashboard</NavLink><NavLink to="/customer/bookings">My Bookings</NavLink></>}{isAuthenticated && currentUser?.role === 'provider' && <><NavLink to="/provider/dashboard">Dashboard</NavLink><NavLink to="/provider/bookings">Bookings</NavLink><NavLink to="/provider/availability">Availability</NavLink><NavLink to="/provider/services">Services</NavLink></>}</nav>
+    <div className="dashboard-search"><input type="search" placeholder="Search for services..." aria-label="Search for services" onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} /></div>
     <div className="dashboard-topbar-actions">
       <button className="icon-btn" type="button" aria-label="Notifications">🔔</button>
       <div className="profile-menu-wrap" ref={profileMenuRef}>
@@ -42,16 +43,21 @@ export function Navbar({ area = 'ServeEase' }) {
         {isProfileOpen && <div className="profile-dropdown" role="menu">
           {isAuthenticated ? <>
             <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
-            {area === 'Customer' && <>
+            {currentUser?.role === 'customer' && <>
               <Link to="/customer/dashboard" role="menuitem" onClick={() => setIsProfileOpen(false)}>Dashboard</Link>
               <Link to="/customer/bookings" role="menuitem" onClick={() => setIsProfileOpen(false)}>My Bookings</Link>
               <Link to="/customer/profile" role="menuitem" onClick={() => setIsProfileOpen(false)}>My Profile</Link>
               <Link to="/customer/payments" role="menuitem" onClick={() => setIsProfileOpen(false)}>Payment History</Link>
             </>}
+            {currentUser?.role === 'provider' && <>
+              <Link to="/provider/dashboard" role="menuitem" onClick={() => setIsProfileOpen(false)}>Dashboard</Link>
+              <Link to="/provider/bookings" role="menuitem" onClick={() => setIsProfileOpen(false)}>Bookings</Link>
+              <Link to="/provider/availability" role="menuitem" onClick={() => setIsProfileOpen(false)}>Availability</Link>
+              <Link to="/provider/services" role="menuitem" onClick={() => setIsProfileOpen(false)}>Services</Link>
+            </>}
             <button type="button" role="menuitem" onClick={handleLogout}>Logout</button>
           </> : <>
-            <a href={`${legacyFrontendOrigin}/login.html`} role="menuitem" onClick={() => setIsProfileOpen(false)}>Login</a>
-            <a href={`${legacyFrontendOrigin}/signup.html`} role="menuitem" onClick={() => setIsProfileOpen(false)}>Register</a>
+            <Link to="/login" role="menuitem" onClick={() => setIsProfileOpen(false)}>Login</Link>
           </>}
         </div>}
       </div>
