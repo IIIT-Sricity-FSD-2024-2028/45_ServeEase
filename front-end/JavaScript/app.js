@@ -1126,33 +1126,16 @@ async function submitBookingCheckout() {
     createdAt: createdAt
   };
 
-  if (window.ServeEaseApi && typeof window.ServeEaseApi.createBooking === "function") {
+  if (window.ServeEaseApi && typeof window.ServeEaseApi.createCustomerBooking === "function") {
     try {
-      const apiBooking = await window.ServeEaseApi.createBooking({
+      const apiBooking = await window.ServeEaseApi.createCustomerBooking({
         service: service,
-        provider: provider.name,
         providerId: provider.id,
         date: date,
         time: time,
         address: address,
-        amount: total,
-        serviceFee: servicePrice,
-        taxRate: breakdown.taxRate,
-        taxAmount: tax,
-        platformFeeRate: breakdown.platformFeeRate,
-        platformFeeAmount: platformFee,
-        customerTotal: total,
-        providerCommissionRate: breakdown.providerCommissionRate,
-        providerCommissionAmount: breakdown.providerCommissionAmount,
-        providerPayout: breakdown.providerPayout,
-        status: "Pending",
-        paymentMethod: paymentMethod,
         customerName: name,
-        customerPhone: phone,
-        customerId: checkoutSession.userId || "",
-        customerEmail: normalizedCustomerEmail,
-        category: provider.category || "Home Service",
-        paymentStatus: "Pending"
+        customerPhone: phone
       });
 
       if (apiBooking && apiBooking.id) {

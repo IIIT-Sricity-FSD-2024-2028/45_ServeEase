@@ -418,10 +418,10 @@ async function upload(path, file, role, userId) {
       return next;
     },
     getBookings: function () {
-      return request("/bookings", { method: "GET", headers: { role: "user" } });
+      return request("/bookings", { method: "GET", headers: { role: getRole() } });
     },
     getBooking: function (id) {
-      return request(`/bookings/${encodeURIComponent(id)}`, { method: "GET", headers: { role: "user" } });
+      return request(`/bookings/${encodeURIComponent(id)}`, { method: "GET", headers: { role: getRole() } });
     },
     getCanonicalBookings: function () {
       return this.getBookings().then(function (items) { return (Array.isArray(items) ? items : []).map(normalizeBooking); });
@@ -471,10 +471,25 @@ async function upload(path, file, role, userId) {
         body: JSON.stringify(booking)
       });
     },
+    createCustomerBooking: function (booking) {
+      return request("/bookings/customer", {
+        method: "POST",
+        headers: { role: "user" },
+        body: JSON.stringify({
+          service: booking.service,
+          providerId: booking.providerId,
+          date: booking.date,
+          time: booking.time,
+          address: booking.address,
+          customerName: booking.customerName,
+          customerPhone: booking.customerPhone
+        })
+      });
+    },
     updateBooking: function (id, booking) {
       return request(`/bookings/${encodeURIComponent(id)}`, {
         method: "PATCH",
-        headers: { role: "admin" },
+        headers: { role: getRole() },
         body: JSON.stringify(booking)
       });
     },
