@@ -7,6 +7,9 @@ import { ProviderLayout } from '../layouts/ProviderLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
 import { ProviderServicesPage } from '../features/provider/services/ProviderServicesPage'
 import CustomerBookingsPage from '../features/customer/bookings/CustomerBookingsPage'
+import CustomerDashboardPage from '../features/customer/dashboard/CustomerDashboardPage'
+import CustomerPaymentHistoryPage from '../features/customer/payments/CustomerPaymentHistoryPage'
+import CustomerProfilePage from '../features/customer/profile/CustomerProfilePage'
 
 function FoundationHome() {
   const navigate = useNavigate()
@@ -36,8 +39,11 @@ export function AppRoutes() {
     </Route>
 
     <Route element={<CustomerLayout />}>
-      <Route path="/customer" element={<Navigate to="/not-found" replace />} />
+      <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
+      <Route path="/customer/dashboard" element={<CustomerDashboardPage />} />
       <Route path="/customer/bookings" element={<CustomerBookingsPage />} />
+      <Route path="/customer/profile" element={<CustomerProfilePage />} />
+      <Route path="/customer/payments" element={<CustomerPaymentHistoryPage />} />
     </Route>
 
     <Route element={<ProviderLayout />}>
