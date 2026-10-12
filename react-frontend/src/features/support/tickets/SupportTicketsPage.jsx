@@ -82,7 +82,10 @@ function TicketDetails({ ticket, disabled, onRemarksSubmit, onPriorityChange, on
         <select
           disabled={disabled || !isEditable}
           id="support-ticket-priority"
-          onChange={(event) => onPriorityChange(event.target.value)}
+          onChange={(event) => {
+            const nextPriority = event.target.value
+            if (!onPriorityChange(nextPriority)) event.target.value = ticket.priority || 'Medium'
+          }}
           value={ticket.priority || 'Medium'}
         >
           {priorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
@@ -142,6 +145,7 @@ export default function SupportTicketsPage() {
   const { isAuthenticated, role } = useAuth()
   const canAccess = Boolean(isAuthenticated && supportRoles.includes(role))
   const detailRequestRef = useRef(0)
+  const mutationInFlightRef = useRef(false)
   const [tickets, setTickets] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [selectedTicket, setSelectedTicket] = useState(null)
@@ -269,7 +273,8 @@ export default function SupportTicketsPage() {
   }
 
   async function runMutation(action, successMessage) {
-    if (!selectedTicket) return
+    if (!selectedTicket || mutationInFlightRef.current) return
+    mutationInFlightRef.current = true
     setIsMutating(true)
     setMutationError('')
     setNotice('')
@@ -286,6 +291,7 @@ export default function SupportTicketsPage() {
     } catch (requestError) {
       setMutationError(requestError.message || 'Unable to update this ticket.')
     } finally {
+      mutationInFlightRef.current = false
       setIsMutating(false)
     }
   }
@@ -299,10 +305,15 @@ export default function SupportTicketsPage() {
   }
 
   function changePriority(priority) {
+    if (isMutating || isRefreshing || mutationInFlightRef.current) return false
+    if (priority === 'Critical' && !window.confirm(
+      'Setting this ticket to Critical will automatically escalate it to the admin review queue. Continue?',
+    )) return false
     runMutation(
       () => supportApi.updatePriority(ticketIdentifier(selectedTicket), priority),
       priority === 'Critical' ? 'Priority updated. Critical priority is automatically escalated by the backend.' : 'Ticket priority updated.',
     )
+    return true
   }
 
   function startWork() {
