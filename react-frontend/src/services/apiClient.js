@@ -1,10 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+import { backendRole, requestContext } from './requestContext'
 
-const backendRole = (role) => {
-  if (role === 'admin' || role === 'superuser') return 'admin'
-  if (role === 'provider' || role === 'support') return role
-  return 'user'
-}
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 function session() {
   try {
@@ -18,9 +14,7 @@ export async function apiRequest(path, options = {}) {
   const activeSession = session()
   const headers = new Headers(options.headers)
   headers.set('Content-Type', 'application/json')
-  headers.set('role', backendRole(activeSession.role))
-  if (activeSession.userId) headers.set('user-id', activeSession.userId)
-  if (activeSession.email) headers.set('user-email', activeSession.email)
+  for (const [name, value] of Object.entries(requestContext(activeSession))) headers.set(name, value)
 
   const requestUrl = `${API_BASE_URL}${path}`
   let response
