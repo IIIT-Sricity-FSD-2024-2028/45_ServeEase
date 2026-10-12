@@ -1,11 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiExtraModels, ApiHeader, ApiOkResponse, ApiOperation, ApiTags, getSchemaPath } from '@nestjs/swagger';
+import { Request } from 'express';
 import { successResponse } from '../../common/api-response';
 import { Roles } from '../../guards/roles.decorator';
 import { RolesGuard } from '../../guards/roles.guard';
 import { Booking } from './booking.entity';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ProviderBookingStatusDto } from './dto/provider-booking-status.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 
 @ApiTags('bookings')
@@ -13,7 +15,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 @ApiHeader({
   name: 'role',
   required: true,
-  description: 'Use "admin" for full access or "user" for read-only GET access.',
+  description: 'Use "admin" for administrative access, "user" for customer read access, or "provider" for owned booking operations.',
 })
 @UseGuards(RolesGuard)
 @Controller('bookings')
@@ -34,6 +36,22 @@ export class BookingsController {
   })
   findAll() {
     return successResponse(this.bookingsService.findAll());
+  }
+
+  @Get('provider')
+  @Roles('provider')
+  @ApiOperation({ summary: 'Get bookings belonging to the authenticated provider' })
+  @ApiOkResponse({
+    description: 'Provider bookings returned successfully.',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: { type: 'array', items: { $ref: getSchemaPath(Booking) } },
+      },
+    },
+  })
+  findProviderBookings(@Req() request: Request) {
+    return successResponse(this.bookingsService.findForProvider(request));
   }
 
   @Get(':id')
@@ -101,6 +119,23 @@ export class BookingsController {
   })
   updateWithPatch(@Param('id') id: string, @Body() data: UpdateBookingDto) {
     return successResponse(this.bookingsService.update(id, data));
+  }
+
+  @Patch(':id/provider-status')
+  @Roles('provider')
+  @ApiOperation({ summary: 'Update an owned booking through the provider workflow' })
+  @ApiBody({ type: ProviderBookingStatusDto })
+  @ApiOkResponse({
+    description: 'Provider booking status updated successfully.',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: { $ref: getSchemaPath(Booking) },
+      },
+    },
+  })
+  updateProviderStatus(@Param('id') id: string, @Body() data: ProviderBookingStatusDto, @Req() request: Request) {
+    return successResponse(this.bookingsService.updateProviderStatus(id, data, request));
   }
 
   @Delete(':id')

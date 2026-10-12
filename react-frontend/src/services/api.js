@@ -18,6 +18,11 @@ export const catalogApi = {
 export const bookingsApi = {
   list: () => apiRequest('/bookings'),
   get: (id) => apiRequest(`/bookings/${encodeURIComponent(id)}`),
+  listForProvider: () => apiRequest('/bookings/provider'),
+  updateProviderStatus: (id, status, stateVersion) => apiRequest(`/bookings/${encodeURIComponent(id)}/provider-status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, ...(stateVersion === undefined ? {} : { stateVersion }) }),
+  }),
 }
 
 export const availabilityApi = {
