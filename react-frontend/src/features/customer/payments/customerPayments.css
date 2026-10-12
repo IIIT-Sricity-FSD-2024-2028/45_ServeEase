@@ -1,0 +1,238 @@
+.customer-payments-page {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+  color: #12284a;
+}
+
+.customer-payments-heading,
+.customer-payments-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.customer-payments-eyebrow {
+  margin: 0 0 6px;
+  color: #647995;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.customer-payments-heading h1 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.15;
+}
+
+.customer-payments-heading > div > p:last-child {
+  margin: 8px 0 0;
+  color: #667a97;
+}
+
+.customer-payments-bookings-link {
+  flex: 0 0 auto;
+  padding: 12px 17px;
+  border: 1px solid #cbd8ea;
+  border-radius: 10px;
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.customer-payments-bookings-link:hover,
+.customer-payments-bookings-link:focus-visible {
+  background: #eff6ff;
+}
+
+.customer-payments-integrity-note {
+  margin: 0;
+  padding: 13px 16px;
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px 10px 10px 4px;
+  background: #eff6ff;
+  color: #385577;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.customer-payments-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.customer-payments-summary-card {
+  min-width: 0;
+  padding: 19px;
+  border: 1px solid #e6ebf2;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgb(17 40 75 / 5%);
+}
+
+.customer-payments-summary-card h2 {
+  margin: 0;
+  color: #526680;
+  font-size: 14px;
+}
+
+.customer-payments-summary-count {
+  margin: 12px 0 6px;
+  color: #163b75;
+  font-size: 32px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.customer-payments-summary-card > p:last-child {
+  margin: 0;
+  color: #74849b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.customer-payments-history {
+  padding: 24px;
+  border: 1px solid #e6ebf2;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.customer-payments-section-heading {
+  align-items: end;
+  margin-bottom: 17px;
+}
+
+.customer-payments-section-heading h2 {
+  margin: 5px 0 0;
+  font-size: 23px;
+}
+
+.customer-payments-section-heading > span {
+  color: #667a97;
+  font-size: 14px;
+}
+
+.customer-payments-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e6ebf2;
+  border-radius: 13px;
+}
+
+.customer-payments-table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: collapse;
+}
+
+.customer-payments-table th,
+.customer-payments-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #edf1f6;
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.customer-payments-table th {
+  background: #fbfcfe;
+  color: #667a97;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.customer-payments-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.customer-payments-secondary {
+  display: block;
+  margin-top: 4px;
+  color: #74849b;
+  font-size: 13px;
+}
+
+.customer-payments-breakdown {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 0;
+  color: #74849b;
+  font-size: 12px;
+}
+
+.customer-payments-breakdown > div {
+  display: flex;
+  gap: 8px;
+}
+
+.customer-payments-breakdown dt,
+.customer-payments-breakdown dd {
+  margin: 0;
+}
+
+.customer-payments-status {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #526174;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.customer-payments-status--successful {
+  background: #e8f7ec;
+  color: #1f7a43;
+}
+
+.customer-payments-status--pending {
+  background: #fff3e8;
+  color: #b45309;
+}
+
+.customer-payments-status--refunded {
+  background: #eaf2ff;
+  color: #1d4ed8;
+}
+
+.customer-payments-status--failed {
+  background: #fdecec;
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .customer-payments-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .customer-payments-heading,
+  .customer-payments-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer-payments-bookings-link {
+    width: 100%;
+    text-align: center;
+  }
+
+  .customer-payments-summary {
+    gap: 11px;
+  }
+
+  .customer-payments-summary-card {
+    padding: 15px;
+  }
+
+  .customer-payments-history {
+    padding: 17px;
+  }
+}
