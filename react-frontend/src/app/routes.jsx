@@ -4,6 +4,9 @@ import { EmployeeLayout } from '../layouts/EmployeeLayout'
 import { ProviderLayout } from '../layouts/ProviderLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
 import { ProviderServicesPage } from '../features/provider/services/ProviderServicesPage'
+import { ProviderDashboardPage } from '../features/provider/dashboard/ProviderDashboardPage'
+import { ProviderBookingsPage } from '../features/provider/bookings/ProviderBookingsPage'
+import { ProviderAvailabilityPage } from '../features/provider/availability/ProviderAvailabilityPage'
 import CustomerBookingsPage from '../features/customer/bookings/CustomerBookingsPage'
 import CustomerDashboardPage from '../features/customer/dashboard/CustomerDashboardPage'
 import CustomerPaymentHistoryPage from '../features/customer/payments/CustomerPaymentHistoryPage'
@@ -39,8 +42,11 @@ export function AppRoutes() {
     </Route>
 
     <Route element={<ProviderLayout />}>
-      <Route path="/provider" element={<Navigate to="/provider/services" replace />} />
-      <Route path="/provider/services" element={<ProviderServicesPage />} />
+      <Route path="/provider" element={<Navigate to="/provider/dashboard" replace />} />
+      <Route path="/provider/dashboard" element={<ProtectedRoute role="provider"><ProviderDashboardPage /></ProtectedRoute>} />
+      <Route path="/provider/bookings" element={<ProtectedRoute role="provider"><ProviderBookingsPage /></ProtectedRoute>} />
+      <Route path="/provider/availability" element={<ProtectedRoute role="provider"><ProviderAvailabilityPage /></ProtectedRoute>} />
+      <Route path="/provider/services" element={<ProtectedRoute role="provider"><ProviderServicesPage /></ProtectedRoute>} />
     </Route>
 
     <Route element={<EmployeeLayout />}>
