@@ -306,7 +306,7 @@
           {
             "name": "role",
             "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "description": "Use \"admin\" for administrative access, \"user\" for customer read access, or \"provider\" for owned booking operations.",
             "required": true,
             "schema": {
               "type": "string"
@@ -347,7 +347,7 @@
           {
             "name": "role",
             "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "description": "Use \"admin\" for administrative access, \"user\" for customer read access, or \"provider\" for owned booking operations.",
             "required": true,
             "schema": {
               "type": "string"
@@ -389,6 +389,49 @@
         ]
       }
     },
+    "/api/bookings/provider": {
+      "get": {
+        "operationId": "BookingsController_findProviderBookings",
+        "summary": "Get bookings belonging to the authenticated provider",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for administrative access, \"user\" for customer read access, or \"provider\" for owned booking operations.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider bookings returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Booking"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
     "/api/bookings/{id}": {
       "get": {
         "operationId": "BookingsController_findById",
@@ -397,7 +440,7 @@
           {
             "name": "role",
             "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "description": "Use \"admin\" for administrative access, \"user\" for customer read access, or \"provider\" for owned booking operations.",
             "required": true,
             "schema": {
               "type": "string"
@@ -443,7 +486,7 @@
           {
             "name": "role",
             "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "description": "Use \"admin\" for administrative access, \"user\" for customer read access, or \"provider\" for owned booking operations.",
             "required": true,
             "schema": {
               "type": "string"
@@ -499,7 +542,7 @@
           {
             "name": "role",
             "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "description": "Use \"admin\" for administrative access, \"user\" for customer read access, or \"provider\" for owned booking operations.",
             "required": true,
             "schema": {
               "type": "string"
@@ -555,7 +598,7 @@
           {
             "name": "role",
             "in": "header",
-            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "description": "Use \"admin\" for administrative access, \"user\" for customer read access, or \"provider\" for owned booking operations.",
             "required": true,
             "schema": {
               "type": "string"
@@ -573,6 +616,64 @@
         "responses": {
           "200": {
             "description": "Booking deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Booking"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/api/bookings/{id}/provider-status": {
+      "patch": {
+        "operationId": "BookingsController_updateProviderStatus",
+        "summary": "Update an owned booking through the provider workflow",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for administrative access, \"user\" for customer read access, or \"provider\" for owned booking operations.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderBookingStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider booking status updated successfully.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3817,6 +3918,27 @@
             "example": 50
           }
         }
+      },
+      "ProviderBookingStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "Accepted",
+              "Rejected",
+              "Completed",
+              "Cancelled"
+            ]
+          },
+          "stateVersion": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "WeeklySchedule": {
         "type": "object",

@@ -240,7 +240,7 @@ export class TicketsService {
 
   private findBookingOrCreateSnapshot(data: CreateCustomerTicketDto) {
     try {
-      return this.bookingsService.findById(data.bookingId);
+      return this.bookingsService.findByIdForSystem(data.bookingId);
     } catch (error) {
       return {
         id: data.bookingId,

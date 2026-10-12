@@ -22,6 +22,11 @@ export const bookingsApi = {
     method: 'POST',
     body: JSON.stringify(booking),
   }),
+  listForProvider: () => apiRequest('/bookings/provider'),
+  updateProviderStatus: (id, status, stateVersion) => apiRequest(`/bookings/${encodeURIComponent(id)}/provider-status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, ...(stateVersion === undefined ? {} : { stateVersion }) }),
+  }),
 }
 
 export const availabilityApi = {
