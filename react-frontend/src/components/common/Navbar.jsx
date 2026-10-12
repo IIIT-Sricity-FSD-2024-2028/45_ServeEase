@@ -42,7 +42,12 @@ export function Navbar({ area = 'ServeEase' }) {
         {isProfileOpen && <div className="profile-dropdown" role="menu">
           {isAuthenticated ? <>
             <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
-            {area === 'Customer' && <Link to="/customer/bookings" role="menuitem" onClick={() => setIsProfileOpen(false)}>My Bookings</Link>}
+            {area === 'Customer' && <>
+              <Link to="/customer/dashboard" role="menuitem" onClick={() => setIsProfileOpen(false)}>Dashboard</Link>
+              <Link to="/customer/bookings" role="menuitem" onClick={() => setIsProfileOpen(false)}>My Bookings</Link>
+              <Link to="/customer/profile" role="menuitem" onClick={() => setIsProfileOpen(false)}>My Profile</Link>
+              <Link to="/customer/payments" role="menuitem" onClick={() => setIsProfileOpen(false)}>Payment History</Link>
+            </>}
             <button type="button" role="menuitem" onClick={handleLogout}>Logout</button>
           </> : <>
             <a href={`${legacyFrontendOrigin}/login.html`} role="menuitem" onClick={() => setIsProfileOpen(false)}>Login</a>

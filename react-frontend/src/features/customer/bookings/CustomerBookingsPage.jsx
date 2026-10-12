@@ -19,7 +19,7 @@ function belongsToCustomer(booking, user) {
 
 function filterForTab(bookings, tab) {
   if (tab === 'All') return bookings
-  if (tab === 'Cancelled') return bookings.filter((booking) => ['Cancelled', 'Rejected'].includes(booking.status))
+  if (tab === 'Cancelled') return bookings.filter((booking) => booking.status === 'Cancelled')
   return bookings.filter((booking) => booking.status === tab)
 }
 

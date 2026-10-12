@@ -787,7 +787,7 @@
         window.__serveEaseCancellationResync = window.__serveEaseCancellationResync || {};
         if (!window.__serveEaseCancellationResync[existingBooking.id] && window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function") {
           window.__serveEaseCancellationResync[existingBooking.id] = true;
-          window.ServeEaseApi.updateBooking(existingBooking.id, existingBooking).catch(function (error) {
+          window.ServeEaseApi.updateBooking(existingBooking.id, { status: "Cancelled" }).catch(function (error) {
             delete window.__serveEaseCancellationResync[existingBooking.id];
             console.warn("ServeEase cancellation resync skipped.", error);
           });
@@ -947,7 +947,7 @@
         customerPlatformFeeAmount: booking.customerPlatformFeeAmount,
         platformRevenueAmount: booking.platformRevenueAmount
       };
-      return window.ServeEaseApi.updateBooking(booking.id, cancellationUpdate).then(function (savedBooking) {
+      return window.ServeEaseApi.updateBooking(booking.id, { status: cancellationUpdate.status }).then(function (savedBooking) {
         if (savedBooking && savedBooking.status && savedBooking.status !== "Cancelled") {
           throw new Error("Backend did not confirm the booking cancellation.");
         }

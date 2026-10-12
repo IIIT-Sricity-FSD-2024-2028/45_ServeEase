@@ -22,6 +22,20 @@ export class BookingsRepository {
     return this.bookings;
   }
 
+  findByCustomer(customerId: string): Booking[] {
+    this.autoCancelExpiredPending();
+    return this.bookings.filter((booking) => String(booking.customerId || '') === customerId);
+  }
+
+  findByCustomerIdentity(customerId: string, email: string): Booking[] {
+    this.autoCancelExpiredPending();
+    const normalizedEmail = String(email || '').toLowerCase();
+    return this.bookings.filter((booking) =>
+      Boolean((customerId && String(booking.customerId || '') === customerId) ||
+        (normalizedEmail && String(booking.customerEmail || '').toLowerCase() === normalizedEmail)),
+    );
+  }
+
   findById(id: string): Booking | undefined {
     this.autoCancelExpiredPending();
     return this.bookings.find((booking) => booking.id === id);

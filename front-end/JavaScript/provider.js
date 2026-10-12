@@ -2649,7 +2649,7 @@
           booking.statusUpdatedAt = new Date().toISOString();
           reconcileProviderPayouts(data);
           if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
-            window.ServeEaseApi.updateBooking(booking.id, { status: "Rejected", paymentStatus: "Refunded" }).catch(function (error) {
+            window.ServeEaseApi.updateBooking(booking.id, { status: "Rejected" }).catch(function (error) {
               console.warn("ServeEase backend reject booking sync failed.", error);
             });
           }
@@ -2670,7 +2670,7 @@
             if (!applyProviderCancellation(data, booking)) return;
             reconcileProviderPayouts(data);
             if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
-              window.ServeEaseApi.updateBooking(booking.id, booking).catch(function (error) { console.warn("ServeEase backend provider cancellation sync failed.", error); });
+              window.ServeEaseApi.updateBooking(booking.id, { status: "Cancelled" }).catch(function (error) { console.warn("ServeEase backend provider cancellation sync failed.", error); });
             }
             setProviderModuleData(data);
             bookingModalBackdrop.classList.add("hidden");
@@ -2712,7 +2712,7 @@
           booking.receivedDate = formatDisplayDate(new Date());
           reconcileProviderPayouts(data);
           if (window.ServeEaseApi && typeof window.ServeEaseApi.updateBooking === "function" && /^(?:[0-9a-f-]{36}|BOOK-\d{8}-\d{4}-\d{4})$/i.test(booking.id)) {
-            window.ServeEaseApi.updateBooking(booking.id, { status: "Completed", paymentStatus: "Successful", payoutStatus: "Paid", payoutDate: booking.receivedDate, receivedDate: booking.receivedDate }).catch(function (error) {
+            window.ServeEaseApi.updateBooking(booking.id, { status: "Completed" }).catch(function (error) {
               console.warn("ServeEase backend complete booking sync failed.", error);
             });
           }
