@@ -1,0 +1,229 @@
+.customer-dashboard-page {
+  display: grid;
+  gap: 28px;
+  width: 100%;
+  color: #12284a;
+}
+
+.customer-dashboard-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: clamp(24px, 5vw, 48px);
+  border-radius: 22px;
+  background: linear-gradient(120deg, #163b75, #2563eb 68%, #7c3aed);
+  color: #fff;
+}
+
+.customer-dashboard-hero h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.15;
+}
+
+.customer-dashboard-hero p:last-child {
+  margin: 0;
+  color: rgb(255 255 255 / 84%);
+}
+
+.customer-dashboard-eyebrow {
+  margin: 0;
+  color: #dbeafe;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.customer-dashboard-primary-link {
+  flex: 0 0 auto;
+  padding: 13px 18px;
+  border-radius: 11px;
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.customer-dashboard-primary-link:hover,
+.customer-dashboard-primary-link:focus-visible {
+  background: #eff6ff;
+}
+
+.customer-dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.customer-dashboard-summary-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #e6ebf2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgb(17 40 75 / 5%);
+}
+
+.customer-dashboard-summary-card h2 {
+  margin: 0;
+  color: #526680;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.customer-dashboard-summary-value {
+  margin: 14px 0 4px;
+  color: #163b75;
+  font-size: 34px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.customer-dashboard-summary-detail {
+  margin: 0;
+  color: #74849b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.customer-dashboard-recent {
+  padding: 24px;
+  border: 1px solid #e6ebf2;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.customer-dashboard-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.customer-dashboard-section-heading .customer-dashboard-eyebrow {
+  color: #647995;
+}
+
+.customer-dashboard-section-heading h2 {
+  margin: 5px 0 0;
+  font-size: 24px;
+}
+
+.customer-dashboard-section-heading a {
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.customer-dashboard-section-heading a:hover,
+.customer-dashboard-section-heading a:focus-visible {
+  text-decoration: underline;
+}
+
+.customer-dashboard-booking-list {
+  display: grid;
+}
+
+.customer-dashboard-booking {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 0;
+  border-top: 1px solid #edf1f6;
+}
+
+.customer-dashboard-booking-main {
+  min-width: 0;
+}
+
+.customer-dashboard-booking h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 17px;
+}
+
+.customer-dashboard-booking-main p {
+  margin: 4px 0 0;
+  color: #647995;
+  font-size: 14px;
+}
+
+.customer-dashboard-booking-main .customer-dashboard-booking-meta {
+  color: #8795a9;
+  font-size: 13px;
+}
+
+.customer-dashboard-status {
+  flex: 0 0 auto;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #526174;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.customer-dashboard-status--accepted,
+.customer-dashboard-status--completed {
+  background: #e8f7ec;
+  color: #1f7a43;
+}
+
+.customer-dashboard-status--pending {
+  background: #fff3e8;
+  color: #b45309;
+}
+
+.customer-dashboard-status--cancelled,
+.customer-dashboard-status--rejected {
+  background: #fdecec;
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .customer-dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .customer-dashboard-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer-dashboard-primary-link {
+    width: 100%;
+    text-align: center;
+  }
+
+  .customer-dashboard-summary {
+    gap: 12px;
+  }
+
+  .customer-dashboard-summary-card {
+    padding: 16px;
+  }
+
+  .customer-dashboard-summary-value {
+    font-size: 29px;
+  }
+
+  .customer-dashboard-recent {
+    padding: 18px;
+  }
+
+  .customer-dashboard-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer-dashboard-booking {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
