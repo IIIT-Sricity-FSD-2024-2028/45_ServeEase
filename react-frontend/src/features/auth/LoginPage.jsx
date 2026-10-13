@@ -4,7 +4,7 @@ import { useAuth } from '../../context/useAuth'
 import { authApi } from '../../services/api'
 import './auth.css'
 
-const destinationFor = (role) => ({ customer: '/customer/dashboard', provider: '/provider/dashboard', support: '/employee/support-tickets', superuser: '/' }[role] || '/')
+const destinationFor = (role) => ({ customer: '/customer/dashboard', provider: '/provider/dashboard', support: '/employee/support-tickets', superuser: '/admin' }[role] || '/')
 export function LoginPage() {
   const { isAuthenticated, currentUser, establishSession } = useAuth(); const navigate = useNavigate(); const location = useLocation()
   const [role, setRole] = useState('customer'); const [values, setValues] = useState({ email: '', employeeId: '', department: 'Customer Operations', password: '' }); const [show, setShow] = useState(false); const [error, setError] = useState(''); const [loading, setLoading] = useState(false)

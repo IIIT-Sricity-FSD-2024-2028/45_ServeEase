@@ -34,7 +34,7 @@ export function Navbar({ area = 'ServeEase' }) {
 
   return <header className="app-header">
     <Link className="brand" to="/"><span className="brand-icon">SE</span><span>ServeEase</span></Link>
-    <nav className="primary-nav" aria-label="Primary navigation"><NavLink to="/">Home</NavLink><NavLink to="/services">Services</NavLink>{isAuthenticated && currentUser?.role === 'customer' && <><NavLink to="/customer/dashboard">Dashboard</NavLink><NavLink to="/customer/bookings">My Bookings</NavLink></>}{isAuthenticated && currentUser?.role === 'provider' && <><NavLink to="/provider/dashboard">Dashboard</NavLink><NavLink to="/provider/bookings">Bookings</NavLink><NavLink to="/provider/availability">Availability</NavLink><NavLink to="/provider/services">Services</NavLink><NavLink to="/provider/earnings">Earnings</NavLink><NavLink to="/provider/support">Support</NavLink></>}</nav>
+    <nav className="primary-nav" aria-label="Primary navigation"><NavLink to="/">Home</NavLink><NavLink to="/services">Services</NavLink>{isAuthenticated && currentUser?.role === 'customer' && <><NavLink to="/customer/dashboard">Dashboard</NavLink><NavLink to="/customer/bookings">My Bookings</NavLink></>}{isAuthenticated && currentUser?.role === 'provider' && <><NavLink to="/provider/dashboard">Dashboard</NavLink><NavLink to="/provider/bookings">Bookings</NavLink><NavLink to="/provider/availability">Availability</NavLink><NavLink to="/provider/services">Services</NavLink><NavLink to="/provider/earnings">Earnings</NavLink><NavLink to="/provider/support">Support</NavLink></>}{isAuthenticated && currentUser?.role === 'support' && <><NavLink to="/employee/support-tickets">Support tickets</NavLink><NavLink to="/employee/support-workspace">Workspace</NavLink></>}{isAuthenticated && currentUser?.role === 'superuser' && <NavLink to="/admin">Admin</NavLink>}</nav>
     <div className="dashboard-search"><input type="search" placeholder="Search for services..." aria-label="Search for services" onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} /></div>
     <div className="dashboard-topbar-actions">
       <button className="icon-btn" type="button" aria-label="Notifications">🔔</button>
@@ -58,6 +58,16 @@ export function Navbar({ area = 'ServeEase' }) {
               <Link to="/provider/support" role="menuitem" onClick={() => setIsProfileOpen(false)}>Support Center</Link>
               <Link to="/provider/account" role="menuitem" onClick={() => setIsProfileOpen(false)}>My Profile</Link>
               <Link to="/provider/earnings" role="menuitem" onClick={() => setIsProfileOpen(false)}>Earnings & Payments</Link>
+            </>}
+            {currentUser?.role === 'support' && <>
+              <Link to="/employee/support-tickets" role="menuitem" onClick={() => setIsProfileOpen(false)}>Support tickets</Link>
+              <Link to="/employee/support-workspace" role="menuitem" onClick={() => setIsProfileOpen(false)}>Support workspace</Link>
+            </>}
+            {currentUser?.role === 'superuser' && <>
+              <Link to="/admin" role="menuitem" onClick={() => setIsProfileOpen(false)}>Admin dashboard</Link>
+              <Link to="/admin/providers" role="menuitem" onClick={() => setIsProfileOpen(false)}>Providers</Link>
+              <Link to="/admin/verification" role="menuitem" onClick={() => setIsProfileOpen(false)}>Verification</Link>
+              <Link to="/admin/bookings" role="menuitem" onClick={() => setIsProfileOpen(false)}>Bookings</Link>
             </>}
             <button type="button" role="menuitem" onClick={handleLogout}>Logout</button>
           </> : <>

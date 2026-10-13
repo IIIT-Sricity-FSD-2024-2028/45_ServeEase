@@ -233,19 +233,21 @@
     return normalizeRole(getSession().role);
   }
 
+  function requireBearerSession(operation) {
+    if (getSession().token) return null;
+    return Promise.reject(new Error(`${operation || "This action"} requires you to sign in again.`));
+  }
+
   async function request(path, options) {
     const startedAt = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
     let response;
-    response = await fetch(`${API_BASE_URL}${path}`, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          role: getRole(),
-          "user-id": getSession().userId || "",
-          "user-email": getSession().email || "",
-          ...(options && options.headers ? options.headers : {})
-        }
-      });
+    const session = getSession();
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options && options.headers ? options.headers : {})
+    };
+    if (session.token) headers.Authorization = `Bearer ${session.token}`;
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers: headers });
     const finishedAt = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
     responseMetrics.count += 1;
     responseMetrics.totalMs += Math.max(0, finishedAt - startedAt);
@@ -267,7 +269,7 @@
     return result;
   }
 
-async function upload(path, file, role, userId) {
+  async function upload(path, file) {
   const formData = new FormData();
   formData.append("file", file);
 
@@ -275,11 +277,7 @@ async function upload(path, file, role, userId) {
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
-    headers: {
-      role: role || getRole(),
-      "user-id": userId || session.userId || "",
-      "user-email": session.email || ""
-    },
+    headers: session.token ? { Authorization: `Bearer ${session.token}` } : {},
     body: formData
   });
     const payload = await response.json().catch(function () { return null; });
@@ -291,6 +289,27 @@ async function upload(path, file, role, userId) {
   }
 
   window.ServeEaseApi = {
+    login: function (credentials) {
+      return request("/auth/login", { method: "POST", body: JSON.stringify(credentials) });
+    },
+    register: function (account) {
+      return request("/auth/register", { method: "POST", body: JSON.stringify(account) });
+    },
+    restoreSession: function () {
+      return request("/auth/session", { method: "GET" });
+    },
+    logout: function () {
+      return request("/auth/logout", { method: "POST" });
+    },
+    clearSession: function () {
+      const active = getSession();
+      const finish = function () { sessionStorage.removeItem("serveEaseSession"); };
+      if (!active.token) { finish(); return Promise.resolve(); }
+      return this.logout().catch(function () { return null; }).finally(finish);
+    },
+    canManageSystemState: function () {
+      return getSession().role === "superuser";
+    },
     getResponseMetrics: function () {
       return {
         count: responseMetrics.count,
@@ -299,6 +318,7 @@ async function upload(path, file, role, userId) {
       };
     },
     saveState: function (key, value) {
+      if (!this.canManageSystemState()) return Promise.resolve(null);
       return request("/state", {
         method: "POST",
         headers: { role: "admin" },
@@ -306,6 +326,8 @@ async function upload(path, file, role, userId) {
       });
     },
     getState: function (key) {
+      const session = getSession();
+      if (!session.token || !["customer", "superuser"].includes(session.role)) return Promise.resolve(null);
       return request(`/state/${encodeURIComponent(key)}`, { method: "GET", headers: { role: "user" } });
     },
     getCatalog: function () {
@@ -331,16 +353,17 @@ async function upload(path, file, role, userId) {
         body: JSON.stringify(service)
       });
     },
-    uploadVerificationDocument: function (file, userId) {
-  return upload("/uploads/verification", file, "user", userId);
+    uploadVerificationDocument: function (file) {
+  return upload("/uploads/verification", file);
 },
     uploadTicketAttachment: function (file) {
-      return upload("/uploads/tickets", file, getRole());
+      return upload("/uploads/tickets", file);
     },
     uploadProviderProfilePhoto: function (file) {
-      return upload("/uploads/profiles/photo", file, "provider", arguments[1]);
+      return upload("/uploads/profiles/photo", file);
     },
     syncCatalog: function (catalog) {
+      if (!this.canManageSystemState()) return Promise.resolve(null);
       const catalogImages = {
         "home-cleaning": "assets/images/home-cleaning/clean1.jpg",
         "carpentry": "assets/images/carpentry/carpentry1.jpg.jpeg",
@@ -418,9 +441,13 @@ async function upload(path, file, role, userId) {
       return next;
     },
     getBookings: function () {
+      const missingSession = requireBearerSession("Bookings");
+      if (missingSession) return missingSession;
       return request("/bookings", { method: "GET", headers: { role: getRole() } });
     },
     getBooking: function (id) {
+      const missingSession = requireBearerSession("Bookings");
+      if (missingSession) return missingSession;
       return request(`/bookings/${encodeURIComponent(id)}`, { method: "GET", headers: { role: getRole() } });
     },
     getCanonicalBookings: function () {
@@ -655,12 +682,15 @@ async function upload(path, file, role, userId) {
       });
     },
     getMyProviderTickets: function () {
+      const missingSession = requireBearerSession("Provider support tickets");
+      if (missingSession) return missingSession;
       return request("/tickets/my-provider-tickets", { method: "GET", headers: { role: "provider" } });
     },
     getActivities: function () {
       return request("/activities", { method: "GET", headers: { role: "admin" } });
     },
     logActivity: function (activity) {
+      if (!this.canManageSystemState()) return Promise.resolve(null);
       return request("/activities", {
         method: "POST",
         headers: { role: "admin" },
@@ -674,6 +704,43 @@ async function upload(path, file, role, userId) {
       });
     }
   };
+
+  function restoreBrowserSession() {
+    const existing = getSession();
+    if (!existing.token) return;
+    window.ServeEaseApi.restoreSession().then(function (user) {
+      const restored = Object.assign({}, existing, user, { token: existing.token, isLoggedIn: true, userId: user.id });
+      // Legacy employee pages use "employee" plus department/permissions for
+      // navigation; the server-side role remains support and is represented by
+      // the bearer token rather than a caller-controlled header.
+      if (existing.role === "employee") restored.role = "employee";
+      sessionStorage.setItem("serveEaseSession", JSON.stringify(restored));
+    }).catch(function () {
+      sessionStorage.removeItem("serveEaseSession");
+    });
+  }
+
+  window.addEventListener("DOMContentLoaded", restoreBrowserSession);
+
+  // Several legacy role pages still clear the shared session directly. Keep
+  // those established page handlers working while revoking the real server
+  // session as part of the same logout action.
+  (function bridgeLegacyLogout() {
+    const removeItem = sessionStorage.removeItem.bind(sessionStorage);
+    sessionStorage.removeItem = function (key) {
+      if (key === "serveEaseSession") {
+        const active = getSession();
+        if (active.token) {
+          fetch(`${API_BASE_URL}/auth/logout`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${active.token}` },
+            keepalive: true
+          }).catch(function () { return null; });
+        }
+      }
+      return removeItem(key);
+    };
+  })();
 
   function mergeLocalProviderCatalog(localProviders, backendProviders) {
     function normalize(value) {

@@ -66,7 +66,7 @@ export class ProviderVerificationController {
   @ApiOperation({ summary: 'Approve provider after required documents are approved' })
   @ApiBody({ type: ProviderActionDto })
   @ApiOkResponse({ description: 'Provider approved successfully.', schema: successResponseSchema(ProviderVerification) })
-  approveProvider(@Param('id') id: string, @Body() data: ProviderActionDto) {
+  approveProvider(@Param('id') id: string, @Body() data: ProviderActionDto = {}) {
     return successResponse(this.providerService.approveProvider(id, data));
   }
 

@@ -519,7 +519,8 @@ function setSession(user) {
     verificationStatus: user.verificationStatus || "",
     accountStatus: user.accountStatus || user.status || "",
     rejectionReason: user.rejectionReason || user.reason || "",
-    suspensionReason: user.suspensionReason || ""
+    suspensionReason: user.suspensionReason || "",
+    token: user.token || ""
   };
   sessionStorage.setItem("serveEaseSession", JSON.stringify(sessionData));
 }
@@ -793,36 +794,19 @@ function setupLoginForm() {
 
       if (!valid) return;
 
-      const employeeAuth = window.ServeEaseEmployeeAuth;
-      if (!employeeAuth || typeof employeeAuth.authenticate !== "function" || typeof employeeAuth.setEmployeeSession !== "function") {
-        showText("loginFormError", "Employee authentication is unavailable. Please try again.");
-        logServeEaseActivity("employee_login_unavailable", employeeId);
-        return;
-      }
-
-      const employee = employeeAuth.authenticate(employeeId, password);
-      if (!employee) {
-        showText("loginFormError", "Invalid employee ID or password.");
+      try {
+        const result = await window.ServeEaseApi.login({ role: "employee", employeeId: employeeId, department: selectedDepartment, password: password });
+        const employeeAuth = window.ServeEaseEmployeeAuth;
+        if (!employeeAuth || typeof employeeAuth.setEmployeeSession !== "function") throw new Error("Employee authentication is unavailable. Please try again.");
+        const employee = Object.assign({}, result.user, { employeeId: result.user.id, name: result.user.fullName, token: result.token });
+        employeeAuth.setEmployeeSession(employee);
+        showText("loginSuccess", "Login successful. Redirecting...");
+        setTimeout(function () { window.location.href = getEmployeeLoginDestination(employee); }, 900);
+      } catch (error) {
+        showText("loginFormError", error.message || "Invalid employee ID, password, or department.");
         setErrorState(employeeIdInput);
         setErrorState(passwordInput);
-        logServeEaseActivity("employee_login_failed", employeeId);
-        return;
       }
-
-      if (employee.department !== selectedDepartment) {
-        showText("loginFormError", "Selected department does not match this employee account.");
-        setErrorState(employeeDepartmentInput);
-        logServeEaseActivity("employee_department_mismatch", employee.employeeId + " " + selectedDepartment);
-        return;
-      }
-
-      employeeAuth.setEmployeeSession(employee);
-      logServeEaseActivity("employee_login_success", employee.employeeId + " " + employee.department);
-      showText("loginSuccess", "Login successful. Redirecting...");
-
-      setTimeout(function () {
-        window.location.href = getEmployeeLoginDestination(employee);
-      }, 900);
       return;
     }
 
@@ -847,6 +831,25 @@ function setupLoginForm() {
     }
 
     if (!valid) return;
+
+    try {
+      const result = await window.ServeEaseApi.login({ role: activeRole, email: email, password: password });
+      const authenticatedUser = Object.assign({}, result.user, { token: result.token });
+      setSession(authenticatedUser);
+      showText("loginSuccess", "Login successful. Redirecting...");
+      setTimeout(function () {
+        if (authenticatedUser.role === "customer") {
+          window.location.href = window.ServeEaseBookingDraft && window.ServeEaseBookingDraft.hasPendingBooking() ? "booking-checkout.html" : "customer-dashboard.html";
+        } else if (authenticatedUser.role === "provider") window.location.href = "provider-dashboard.html";
+        else if (authenticatedUser.role === "superuser") window.location.href = "superuser-dashboard.html";
+        else window.location.href = "index.html";
+      }, 900);
+    } catch (error) {
+      showText("loginFormError", error.message || "Invalid email, password, or account type.");
+      setErrorState(emailInput);
+      setErrorState(passwordInput);
+    }
+    return;
 
     const data = getData();
     const approvalRequests = getProviderApprovalRequests(data);
@@ -1321,7 +1324,33 @@ function setupSignupForm() {
       return;
     }
 
-    const newUser = resubmissionRecord ? Object.assign({}, resubmissionRecord, { id: resubmissionProviderId }) : {
+    let registeredUser = null;
+    if (!resubmissionRecord) {
+      try {
+        const result = await window.ServeEaseApi.register({
+          role: role,
+          fullName: fullName,
+          email: email,
+          phone: phone,
+          password: password,
+          ...(role === "provider" ? {
+            organisationName: organisationName,
+            serviceType: serviceType,
+            experience: Number(experience),
+            cityId: Number(providerCity.id),
+            address: address,
+            idProofType: idProofTypeInput.value,
+            documents: []
+          } : {})
+        });
+        registeredUser = Object.assign({}, result.user, { token: result.token });
+      } catch (error) {
+        showText("signupFormError", error.message || "Registration could not be completed.");
+        return;
+      }
+    }
+
+    const newUser = resubmissionRecord ? Object.assign({}, resubmissionRecord, { id: resubmissionProviderId }) : registeredUser || {
       id: generateUserId(role, data.users),
       role: role,
       fullName: fullName,
