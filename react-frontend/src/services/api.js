@@ -39,3 +39,28 @@ export const ticketsApi = {
   listMine: () => apiRequest('/tickets/my-tickets'),
   get: (id) => apiRequest(`/tickets/${encodeURIComponent(id)}`),
 }
+
+export const supportApi = {
+  list: () => apiRequest('/support/tickets'),
+  get: (id) => apiRequest(`/support/tickets/${encodeURIComponent(id)}`),
+  updateStatus: (id, status) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  }),
+  updateRemarks: (id, remarks) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/remarks`, {
+    method: 'PATCH',
+    body: JSON.stringify({ remarks }),
+  }),
+  resolve: (id, remarks) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/resolve`, {
+    method: 'PATCH',
+    body: JSON.stringify({ remarks }),
+  }),
+  escalate: (id, remarks) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/escalate`, {
+    method: 'PATCH',
+    body: JSON.stringify({ remarks }),
+  }),
+  updatePriority: (id, priority) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/priority`, {
+    method: 'PATCH',
+    body: JSON.stringify({ priority }),
+  }),
+}
