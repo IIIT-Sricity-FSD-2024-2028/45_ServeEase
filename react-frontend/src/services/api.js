@@ -1,5 +1,12 @@
 import { apiRequest } from './apiClient'
 
+export const authApi = {
+  login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  register: (account) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(account) }),
+  session: () => apiRequest('/auth/session'),
+  logout: () => apiRequest('/auth/logout', { method: 'POST' }),
+}
+
 // These wrappers correspond only to endpoints declared by the NestJS controllers.
 export const catalogApi = {
   getCatalog: () => apiRequest('/catalog'),
@@ -38,4 +45,19 @@ export const availabilityApi = {
 export const ticketsApi = {
   listMine: () => apiRequest('/tickets/my-tickets'),
   get: (id) => apiRequest(`/tickets/${encodeURIComponent(id)}`),
+  createCustomer: (ticket) => apiRequest('/tickets/customer', {
+    method: 'POST',
+    body: JSON.stringify(ticket),
+  }),
+  listProvider: () => apiRequest('/tickets/my-provider-tickets'),
+  createProvider: (ticket) => apiRequest('/tickets/provider', {
+    method: 'POST',
+    body: JSON.stringify(ticket),
+  }),
+  listForSupport: () => apiRequest('/support/tickets'),
+  getForSupport: (id) => apiRequest(`/support/tickets/${encodeURIComponent(id)}`),
+  updateSupportStatus: (id, status) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updateSupportRemarks: (id, remarks) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/remarks`, { method: 'PATCH', body: JSON.stringify({ remarks }) }),
+  resolveForSupport: (id, remarks) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/resolve`, { method: 'PATCH', body: JSON.stringify({ remarks }) }),
+  escalateForSupport: (id, remarks) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/escalate`, { method: 'PATCH', body: JSON.stringify({ remarks }) }),
 }

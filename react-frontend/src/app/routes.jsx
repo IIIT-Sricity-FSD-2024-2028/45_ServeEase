@@ -7,12 +7,17 @@ import { ProviderServicesPage } from '../features/provider/services/ProviderServ
 import { ProviderDashboardPage } from '../features/provider/dashboard/ProviderDashboardPage'
 import { ProviderBookingsPage } from '../features/provider/bookings/ProviderBookingsPage'
 import { ProviderAvailabilityPage } from '../features/provider/availability/ProviderAvailabilityPage'
+import { ProviderSupportPage } from '../features/provider/support/ProviderSupportPage'
+import { ProviderAccountPage, ProviderEarningsPage } from '../features/provider/account/ProviderAccountPages'
+import { SupportDashboardPage, SupportTicketDetailPage } from '../features/support/SupportPages'
 import CustomerBookingsPage from '../features/customer/bookings/CustomerBookingsPage'
 import CustomerDashboardPage from '../features/customer/dashboard/CustomerDashboardPage'
 import CustomerPaymentHistoryPage from '../features/customer/payments/CustomerPaymentHistoryPage'
 import CustomerProfilePage from '../features/customer/profile/CustomerProfilePage'
+import CustomerSupportPage from '../features/customer/support/CustomerSupportPage'
 import { ProtectedRoute } from '../components/common/ProtectedRoute'
 import { LoginPage } from '../features/auth/LoginPage'
+import { SignupPage } from '../features/auth/SignupPage'
 import { BookingFormPage, CheckoutPage, ConfirmationPage, HomePage, ProviderDetailsPage, ServicesPage } from '../features/discovery/DiscoveryPages'
 
 function NotFound() {
@@ -24,6 +29,7 @@ export function AppRoutes() {
     <Route element={<PublicLayout />}>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
       <Route path="/services" element={<ServicesPage />} />
       <Route path="/services/:serviceId" element={<ServicesPage />} />
       <Route path="/providers/:providerId" element={<ProviderDetailsPage />} />
@@ -36,6 +42,7 @@ export function AppRoutes() {
       <Route path="/customer/bookings" element={<ProtectedRoute role="customer"><CustomerBookingsPage /></ProtectedRoute>} />
       <Route path="/customer/profile" element={<ProtectedRoute role="customer"><CustomerProfilePage /></ProtectedRoute>} />
       <Route path="/customer/payments" element={<ProtectedRoute role="customer"><CustomerPaymentHistoryPage /></ProtectedRoute>} />
+      <Route path="/customer/support" element={<ProtectedRoute role="customer"><CustomerSupportPage /></ProtectedRoute>} />
       <Route path="/customer/bookings/new" element={<ProtectedRoute role="customer"><BookingFormPage /></ProtectedRoute>} />
       <Route path="/customer/checkout" element={<ProtectedRoute role="customer"><CheckoutPage /></ProtectedRoute>} />
       <Route path="/customer/booking-confirmation" element={<ProtectedRoute role="customer"><ConfirmationPage /></ProtectedRoute>} />
@@ -47,10 +54,15 @@ export function AppRoutes() {
       <Route path="/provider/bookings" element={<ProtectedRoute role="provider"><ProviderBookingsPage /></ProtectedRoute>} />
       <Route path="/provider/availability" element={<ProtectedRoute role="provider"><ProviderAvailabilityPage /></ProtectedRoute>} />
       <Route path="/provider/services" element={<ProtectedRoute role="provider"><ProviderServicesPage /></ProtectedRoute>} />
+      <Route path="/provider/support" element={<ProtectedRoute role="provider"><ProviderSupportPage /></ProtectedRoute>} />
+      <Route path="/provider/account" element={<ProtectedRoute role="provider"><ProviderAccountPage /></ProtectedRoute>} />
+      <Route path="/provider/earnings" element={<ProtectedRoute role="provider"><ProviderEarningsPage /></ProtectedRoute>} />
     </Route>
 
     <Route element={<EmployeeLayout />}>
       <Route path="/employee" element={<Navigate to="/not-found" replace />} />
+      <Route path="/employee/support-tickets" element={<ProtectedRoute role="support"><SupportDashboardPage /></ProtectedRoute>} />
+      <Route path="/employee/support-tickets/:ticketId" element={<ProtectedRoute role="support"><SupportTicketDetailPage /></ProtectedRoute>} />
     </Route>
 
     <Route path="*" element={<Navigate to="/not-found" replace />} />

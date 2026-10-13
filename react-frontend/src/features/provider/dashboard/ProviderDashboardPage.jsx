@@ -16,7 +16,7 @@ function scheduleEntries(schedule) {
 
 export function ProviderDashboardPage() {
   const { currentUser, isAuthenticated, role } = useAuth()
-  const providerId = currentUser?.providerId || currentUser?.providerCatalogId || currentUser?.userId
+  const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
   const [services, setServices] = useState([])
   const [schedule, setSchedule] = useState(null)
   const [isLoading, setIsLoading] = useState(Boolean(providerId && role === 'provider'))
