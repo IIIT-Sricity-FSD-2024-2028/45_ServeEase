@@ -53,7 +53,7 @@ function validateSchedule(schedule) {
 
 export function ProviderAvailabilityPage() {
   const { currentUser, isAuthenticated, role } = useAuth()
-  const providerId = currentUser?.providerId || currentUser?.providerCatalogId || currentUser?.userId
+  const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
   const [schedule, setSchedule] = useState(emptySchedule)
   const [isLoading, setIsLoading] = useState(Boolean(providerId && role === 'provider'))
   const [isSaving, setIsSaving] = useState(false)

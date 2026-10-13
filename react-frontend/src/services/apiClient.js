@@ -1,4 +1,4 @@
-import { backendRole, requestContext } from './requestContext'
+import { backendRole } from './requestContext'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
@@ -14,7 +14,7 @@ export async function apiRequest(path, options = {}) {
   const activeSession = session()
   const headers = new Headers(options.headers)
   headers.set('Content-Type', 'application/json')
-  for (const [name, value] of Object.entries(requestContext(activeSession))) headers.set(name, value)
+  if (activeSession.token) headers.set('Authorization', `Bearer ${activeSession.token}`)
 
   const requestUrl = `${API_BASE_URL}${path}`
   let response

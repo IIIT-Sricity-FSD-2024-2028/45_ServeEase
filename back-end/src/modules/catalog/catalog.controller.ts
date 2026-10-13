@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiBody, ApiExtraModels, ApiHeader, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiSuccessResponse, successResponse, successResponseSchema } from '../../common/api-response';
 import { Roles } from '../../guards/roles.decorator';
@@ -16,7 +17,6 @@ import { ProviderServiceDto, UpdateProviderServiceDto } from './dto/provider-ser
   required: true,
   description: 'Use "admin" for full access or "user" for read-only GET access.',
 })
-@UseGuards(RolesGuard)
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
@@ -38,6 +38,7 @@ export class CatalogController {
   }
 
   @Post('sync')
+  @UseGuards(RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Sync frontend catalog into backend memory' })
   @ApiBody({ type: SyncCatalogDto })
@@ -47,6 +48,7 @@ export class CatalogController {
   }
 
   @Patch('providers/:id')
+  @UseGuards(RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Update a provider in the catalog' })
   @ApiBody({ type: UpdateProviderDto })
@@ -56,6 +58,7 @@ export class CatalogController {
   }
 
   @Delete('providers/:id')
+  @UseGuards(RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Delete a provider from the catalog' })
   @ApiOkResponse({ description: 'Provider deleted successfully.', schema: successResponseSchema(CatalogProvider) })
@@ -71,18 +74,28 @@ export class CatalogController {
   }
 
   @Post('providers/:providerId/services')
+  @UseGuards(RolesGuard)
   @Roles('admin', 'provider')
   @ApiOperation({ summary: 'Create a provider service' })
   @ApiBody({ type: ProviderServiceDto })
-  createService(@Param('providerId') providerId: string, @Body() data: ProviderServiceDto) {
+  createService(@Param('providerId') providerId: string, @Body() data: ProviderServiceDto, @Req() request: Request) {
+    this.assertProviderOwnership(request, providerId);
     return successResponse(this.catalogService.createService(providerId, data));
   }
 
   @Patch('providers/:providerId/services/:serviceId')
+  @UseGuards(RolesGuard)
   @Roles('admin', 'provider')
   @ApiOperation({ summary: 'Update a provider service' })
   @ApiBody({ type: UpdateProviderServiceDto })
-  updateService(@Param('providerId') providerId: string, @Param('serviceId') serviceId: string, @Body() data: UpdateProviderServiceDto) {
+  updateService(@Param('providerId') providerId: string, @Param('serviceId') serviceId: string, @Body() data: UpdateProviderServiceDto, @Req() request: Request) {
+    this.assertProviderOwnership(request, providerId);
     return successResponse(this.catalogService.updateService(providerId, serviceId, data));
+  }
+
+  private assertProviderOwnership(request: Request, providerId: string) {
+    if (request.auth?.role !== 'provider') return;
+    const ownedIds = [request.auth.userId, request.auth.providerCatalogId].filter(Boolean).map((value) => String(value).toLowerCase());
+    if (!ownedIds.includes(String(providerId).toLowerCase())) throw new ForbiddenException('You can manage only your own provider resources.');
   }
 }

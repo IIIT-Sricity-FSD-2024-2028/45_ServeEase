@@ -1,17 +1,17 @@
 # Role authorization and identity limitations
 
-The project retains its faculty-required NestJS RBAC contract: `RolesGuard` checks the caller-provided `role` request header against each controller's `@Roles(...)` declaration. The backend uses the existing in-memory application architecture, DTO validation, and Swagger documentation. Browser login flows remain part of the academic demo; no backend account store, password system, session cookie, or identity provider is configured.
+The backend now provides server-validated bearer sessions at `/api/auth`. `RolesGuard` resolves the session token before evaluating each controller's `@Roles(...)` declaration and overwrites legacy `role` and `user-id` request headers with the trusted session identity. Caller-supplied headers alone cannot authorize an API request.
 
-## Caller identity is not verified
+Accounts are retained in the existing `serveEaseData` state record. New passwords are salted and hashed with Node's `scrypt`; legacy plaintext records remain compatible only for their next successful sign-in, when the password is upgraded in place and the plaintext value is removed. Sessions are in-memory, expire after eight hours, and are invalidated by logout or a server restart.
 
-The `role`, `user-id`, and `user-email` headers are caller supplied. A caller can change any of them. The `RolesGuard` demonstrates role-header RBAC as required by the assignment; it does not authenticate the caller. Booking list/detail filters and customer/provider update checks use `user-id` and `user-email` to preserve the existing interface behavior, but these are best-effort filters only. A caller can spoof another customer's or provider's identifiers and pass those checks.
+## Trusted request identity
 
-Do not describe header-based identity scoping as secure ownership enforcement. Genuine customer/provider ownership requires a trusted authentication mechanism and an authoritative identity source, neither of which is part of the current assignment contract.
+Protected routes require an `Authorization: Bearer <token>` header. `RolesGuard` loads the authenticated account for the in-memory session and replaces legacy `role`, `user-id`, and `user-email` compatibility headers with the server-derived role, ID, and email. Controllers must use those trusted values (or `request.auth`) rather than caller input.
 
 ## Booking behavior
 
-- The `admin` role header can list and manage all bookings.
-- `user` and `provider` role headers receive bookings filtered by their supplied identity headers. The identity limitation above applies.
-- Customer creation uses a restricted DTO. The server derives service price and initial payment status from the in-memory provider catalog; customer and provider identifiers still come from unverified headers.
+- Superuser sessions map to the existing `admin` API role; customer sessions map to the existing `user` API role for authorization only.
+- Customer and provider booking reads and updates are scoped to the server-derived account ID.
+- Customer creation uses a restricted DTO and derives customer identity, service price, and initial payment status on the server.
 - Customer/provider PATCH requests accept status changes only, with role-specific transitions. Admin management retains the existing DTO and validation pipeline.
 - Existing request/response shapes and local frontend login workflows are retained where possible.

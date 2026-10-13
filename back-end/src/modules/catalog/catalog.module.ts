@@ -8,5 +8,6 @@ import { StateModule } from '../state/state.module';
   imports: [StateModule],
   controllers: [CatalogController],
   providers: [CatalogService, CatalogRepository],
+  exports: [CatalogService],
 })
 export class CatalogModule {}

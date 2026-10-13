@@ -18,7 +18,7 @@ function serviceFormData(service, category) {
 
 export function ProviderServicesPage() {
   const { currentUser, isAuthenticated, role } = useAuth()
-  const providerId = currentUser?.providerId || currentUser?.providerCatalogId || currentUser?.userId
+  const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
   const category = currentUser?.category || currentUser?.serviceCategory
   const [services, setServices] = useState([])
   const [isLoading, setIsLoading] = useState(Boolean(providerId))

@@ -10,9 +10,6 @@ import { AvailabilityService } from '../availability/availability.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { CreateCustomerBookingDto } from './dto/create-customer-booking.dto';
 
-/** Identifiers supplied by the caller for compatibility with the header-RBAC assignment.
- * These values are not authenticated identity claims and must not be described as secure ownership.
- */
 export interface BookingRequestContext {
   role: string;
   userId: string;
@@ -30,7 +27,7 @@ export class BookingsService {
   findAll(caller: BookingRequestContext): Booking[] {
     if (caller.role === 'admin') return this.bookingsRepository.findAll();
     if (caller.role === 'provider') return caller.userId ? this.bookingsRepository.findByProvider(caller.userId) : [];
-    if (caller.role === 'user') return this.bookingsRepository.findByCustomerIdentity(caller.userId, caller.email);
+    if (caller.role === 'customer') return this.bookingsRepository.findByCustomer(caller.userId);
     throw new ForbiddenException('This role cannot access bookings.');
   }
 
@@ -61,8 +58,7 @@ export class BookingsService {
   }
 
   createForCustomer(data: CreateCustomerBookingDto, caller: BookingRequestContext): Booking {
-    if (caller.role !== 'user') throw new ForbiddenException('Only the user role can create customer bookings.');
-    if (!caller.userId && !caller.email) throw new BadRequestException('A user-id or user-email header is required for this workflow.');
+    if (caller.role !== 'customer') throw new ForbiddenException('Only customers can create customer bookings.');
 
     const requestedProviderId = canonicalProviderId(data.providerId);
     const provider = this.catalogService.findAll().providers.find((candidate) =>
@@ -150,7 +146,7 @@ export class BookingsService {
     }
     const booking = this.findById(id, caller);
     const transitions: Record<string, Record<string, string[]>> = {
-      user: { Cancelled: ['Pending', 'Accepted'] },
+      customer: { Cancelled: ['Pending', 'Accepted'] },
       provider: { Accepted: ['Pending'], Rejected: ['Pending'], Completed: ['Accepted'], Cancelled: ['Accepted'] },
     };
     if (!transitions[caller.role]?.[data.status]?.includes(booking.status)) {
@@ -158,7 +154,7 @@ export class BookingsService {
     }
     const update: UpdateBookingDto = { status: data.status };
     if (data.status === 'Cancelled' || data.status === 'Rejected') {
-      update.cancellationActor = caller.role === 'user' ? 'Customer' : 'Provider';
+      update.cancellationActor = caller.role === 'customer' ? 'Customer' : 'Provider';
       update.cancelledAt = new Date().toISOString();
     }
     if (data.status === 'Completed') update.receivedDate = new Date().toISOString().slice(0, 10);
@@ -174,9 +170,8 @@ export class BookingsService {
 
   private matchesCaller(booking: Booking, caller: BookingRequestContext): boolean {
     if (caller.role === 'admin') return true;
-    if (caller.role === 'user') {
-      return Boolean((caller.userId && booking.customerId === caller.userId) ||
-        (caller.email && booking.customerEmail?.toLowerCase() === caller.email.toLowerCase()));
+    if (caller.role === 'customer') {
+      return Boolean(caller.userId && booking.customerId === caller.userId);
     }
     if (caller.role === 'provider') {
       return Boolean(caller.userId && canonicalProviderId(booking.providerId) === canonicalProviderId(caller.userId));
