@@ -10,6 +10,8 @@ import { ProviderAvailabilityPage } from '../features/provider/availability/Prov
 import { ProviderSupportPage } from '../features/provider/support/ProviderSupportPage'
 import { ProviderAccountPage, ProviderEarningsPage } from '../features/provider/account/ProviderAccountPages'
 import { SupportDashboardPage, SupportTicketDetailPage } from '../features/support/SupportPages'
+import SupportTicketsPage from '../features/support/tickets/SupportTicketsPage'
+import { adminRoutes } from '../features/admin/adminRoutes'
 import CustomerBookingsPage from '../features/customer/bookings/CustomerBookingsPage'
 import CustomerDashboardPage from '../features/customer/dashboard/CustomerDashboardPage'
 import CustomerPaymentHistoryPage from '../features/customer/payments/CustomerPaymentHistoryPage'
@@ -62,9 +64,11 @@ export function AppRoutes() {
     </Route>
 
     <Route element={<EmployeeLayout />}>
-      <Route path="/employee" element={<Navigate to="/not-found" replace />} />
+      <Route path="/employee" element={<Navigate to="/employee/support-tickets" replace />} />
       <Route path="/employee/support-tickets" element={<ProtectedRoute role="support"><SupportDashboardPage /></ProtectedRoute>} />
       <Route path="/employee/support-tickets/:ticketId" element={<ProtectedRoute role="support"><SupportTicketDetailPage /></ProtectedRoute>} />
+      <Route path="/employee/support-workspace" element={<ProtectedRoute role="support"><SupportTicketsPage /></ProtectedRoute>} />
+      {adminRoutes.map(({ path, Component }) => <Route key={path} path={path} element={<ProtectedRoute role="superuser"><Component /></ProtectedRoute>} />)}
     </Route>
 
     <Route path="*" element={<Navigate to="/not-found" replace />} />

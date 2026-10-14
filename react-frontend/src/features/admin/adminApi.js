@@ -19,7 +19,7 @@ export function getVerificationRequest(id) {
 export function approveProvider(id, adminRemarks) {
   return apiRequest(`/admin/providers/${encodeURIComponent(id)}/approve`, {
     method: 'PATCH',
-    ...(adminRemarks === undefined ? {} : { body: JSON.stringify({ adminRemarks }) }),
+    body: JSON.stringify(adminRemarks === undefined ? {} : { adminRemarks }),
   })
 }
 

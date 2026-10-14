@@ -224,6 +224,11 @@ export function Navbar({ area = 'ServeEase' }) {
         <NavLink to="/provider/earnings">Earnings</NavLink>
         <NavLink to="/provider/support">Support</NavLink>
       </>}
+      {isAuthenticated && currentUser?.role === 'support' && <>
+        <NavLink to="/employee/support-tickets">Support tickets</NavLink>
+        <NavLink to="/employee/support-workspace">Workspace</NavLink>
+      </>}
+      {isAuthenticated && currentUser?.role === 'superuser' && <NavLink to="/admin">Admin</NavLink>}
     </nav>
     <div className="dashboard-search"><input type="search" placeholder="Search for services..." aria-label="Search for services" onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} /></div>
     <div className="dashboard-topbar-actions">
@@ -255,6 +260,7 @@ export function Navbar({ area = 'ServeEase' }) {
         {isProfileOpen && <div className={`profile-dropdown${currentUser?.role === 'customer' ? ' profile-dropdown--customer' : ''}`} role="menu">
           {isAuthenticated ? <>
             {currentUser?.role === 'customer' && <>
+              <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
               <Link role="menuitem" to="/customer/profile" onClick={() => setIsProfileOpen(false)}>My Profile</Link>
               <Link role="menuitem" to="/" onClick={() => setIsProfileOpen(false)}>Go to Home</Link>
               <button role="menuitem" type="button" onClick={handleLogout}>Logout</button>
@@ -269,10 +275,25 @@ export function Navbar({ area = 'ServeEase' }) {
               <Link role="menuitem" to="/provider/account" onClick={() => setIsProfileOpen(false)}>My Profile</Link>
               <Link role="menuitem" to="/provider/earnings" onClick={() => setIsProfileOpen(false)}>Earnings & Payments</Link>
             </>}
-            {!['customer', 'provider'].includes(currentUser?.role) && <>
+            {currentUser?.role === 'support' && <>
               <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
-              <button role="menuitem" type="button" onClick={handleLogout}>Logout</button>
+              <Link to="/employee/support-tickets" role="menuitem" onClick={() => setIsProfileOpen(false)}>Support tickets</Link>
+              <Link to="/employee/support-workspace" role="menuitem" onClick={() => setIsProfileOpen(false)}>Support workspace</Link>
             </>}
+            {currentUser?.role === 'superuser' && <>
+              <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
+              <Link to="/admin" role="menuitem" onClick={() => setIsProfileOpen(false)}>Admin dashboard</Link>
+              <Link to="/admin/providers" role="menuitem" onClick={() => setIsProfileOpen(false)}>Providers</Link>
+              <Link to="/admin/verification" role="menuitem" onClick={() => setIsProfileOpen(false)}>Verification</Link>
+              <Link to="/admin/bookings" role="menuitem" onClick={() => setIsProfileOpen(false)}>Bookings</Link>
+            </>}
+            {currentUser?.role === 'customer' && <>
+              <Link role="menuitem" to="/customer/dashboard" onClick={() => setIsProfileOpen(false)}>Dashboard</Link>
+              <Link role="menuitem" to="/customer/bookings" onClick={() => setIsProfileOpen(false)}>My Bookings</Link>
+              <Link role="menuitem" to="/customer/payments" onClick={() => setIsProfileOpen(false)}>Payment History</Link>
+              <Link role="menuitem" to="/customer/support" onClick={() => setIsProfileOpen(false)}>Support Center</Link>
+            </>}
+            {currentUser?.role !== 'customer' && <button type="button" role="menuitem" onClick={handleLogout}>Logout</button>}
           </> : <>
             <Link role="menuitem" to="/login" onClick={() => setIsProfileOpen(false)}>Login</Link>
           </>}

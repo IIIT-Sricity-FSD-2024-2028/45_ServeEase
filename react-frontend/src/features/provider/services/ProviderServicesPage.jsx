@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ServiceCard } from './ServiceCard'
 import { useAuth } from '../../../context/useAuth'
 import { catalogApi } from '../../../services/api'
+import { ProviderAvailabilityPanel } from '../availability/ProviderAvailabilityPanel'
 import './providerServices.css'
 
 const emptyService = { name: '', description: '', price: '', location: '' }
@@ -134,13 +135,16 @@ export function ProviderServicesPage() {
         <button className="provider-primary-button" onClick={openAdd} type="button">+ Add New Service</button>
       </div>
       {error && <div className="provider-feedback provider-feedback--error" role="alert">{error}</div>}
-      <div className="provider-services-panel">
+      <div className="provider-services-layout">
+        <div className="provider-services-panel">
         <div className="provider-panel-head"><h2>Your Services</h2><label className="provider-search">Search services<input onChange={(event) => setQuery(event.target.value)} placeholder="Search services..." value={query} /></label></div>
         {showLoading && <div className="provider-feedback">Loading your services…</div>}
         {!showLoading && !error && visibleServices.length === 0 && <div className="provider-feedback">{services.length ? 'No services found for the current search.' : 'You have not added any services yet.'}</div>}
         {!showLoading && visibleServices.length > 0 && <div className="provider-service-grid">
           {visibleServices.map((service) => <ServiceCard key={service.id} isUpdating={updatingId === service.id} onEdit={openEdit} onToggle={toggleService} service={service} />)}
         </div>}
+        </div>
+        <div className="provider-services-panel provider-availability-services-panel"><div className="provider-panel-head"><h2>Availability Management</h2></div><ProviderAvailabilityPanel embedded providerId={providerId} /></div>
       </div>
       {editingService && <div className="provider-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isSaving) closeModal() }}>
         <div aria-modal="true" className="provider-modal-card" role="dialog">

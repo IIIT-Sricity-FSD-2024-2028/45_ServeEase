@@ -212,8 +212,10 @@ function setupSharedHeaderSession() {
 
   if (logoutBtn) {
     logoutBtn.addEventListener("click", function () {
-      sessionStorage.removeItem("serveEaseSession");
-      window.location.href = "index.html";
+      const clear = window.ServeEaseApi && typeof window.ServeEaseApi.clearSession === "function"
+        ? window.ServeEaseApi.clearSession()
+        : Promise.resolve(sessionStorage.removeItem("serveEaseSession"));
+      Promise.resolve(clear).finally(function () { window.location.href = "index.html"; });
     });
   }
 }

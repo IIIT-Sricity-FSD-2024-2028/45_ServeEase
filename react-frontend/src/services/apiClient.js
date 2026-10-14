@@ -13,7 +13,7 @@ function session() {
 export async function apiRequest(path, options = {}) {
   const activeSession = session()
   const headers = new Headers(options.headers)
-  headers.set('Content-Type', 'application/json')
+  if (!(options.body instanceof FormData)) headers.set('Content-Type', 'application/json')
   headers.set('role', backendRole(activeSession.role))
   if (activeSession.userId) headers.set('user-id', activeSession.userId)
   if (activeSession.email) headers.set('user-email', activeSession.email)
@@ -32,6 +32,12 @@ export async function apiRequest(path, options = {}) {
     throw new Error(message || 'Backend request failed.')
   }
   return payload?.data ?? null
+}
+
+export async function uploadRequest(path, file) {
+  const body = new FormData()
+  body.append('file', file)
+  return apiRequest(path, { method: 'POST', body })
 }
 
 export { API_BASE_URL, backendRole }

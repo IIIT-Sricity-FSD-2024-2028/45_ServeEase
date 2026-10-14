@@ -256,6 +256,7 @@
       permissions: safeEmployee.permissions,
       email: safeEmployee.email,
       phone: safeEmployee.phone,
+      token: employee.token || "",
       employee: true
     };
     saveSession(session);

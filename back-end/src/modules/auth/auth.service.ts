@@ -49,7 +49,22 @@ export class AuthService {
   logout(token: string) { this.sessions.delete(token); }
   private issue(user: Account) { const token = randomBytes(32).toString('base64url'); this.sessions.set(token, { userId: user.id, role: user.role, expiresAt: Date.now() + 8 * 60 * 60 * 1000 }); return { token, user: this.publicUser(user) }; }
   private publicUser(user: Account) { const safe = { ...user }; delete safe.password; delete safe.passwordHash; return safe; }
-  private accountForSession(session: Session): Account { const user = (this.data().users || []).find((item: Account) => item.id === session.userId); if (!user) throw new UnauthorizedException('Account no longer exists.'); return user; }
+  private accountForSession(session: Session): Account {
+    if (session.role === 'support') {
+      const employeeState = this.state.findById('serveEaseEmployeeModuleData')?.value as { employees?: Account[] } | undefined;
+      const employee = employeeState?.employees?.find((item) => String(item.employeeId) === String(session.userId));
+      if (employee) return {
+        ...employee,
+        id: employee.employeeId,
+        role: 'support',
+        fullName: employee.name,
+        email: employee.email || `${String(employee.employeeId).toLowerCase()}@serveease.local`,
+      };
+    }
+    const user = (this.data().users || []).find((item: Account) => item.id === session.userId);
+    if (!user) throw new UnauthorizedException('Account no longer exists.');
+    return user;
+  }
   private data(): Record<string, any> { return (this.state.findById(STATE_KEY)?.value as Record<string, any>) || { users: [] }; }
   private save(value: Record<string, any>) { const entry = this.state.findById(STATE_KEY); if (entry) this.state.update(STATE_KEY, { value }); else this.state.create({ key: STATE_KEY, value }); }
   private nextId(role: string, users: Account[]) { const prefix = role === 'customer' ? 'CUS' : 'PRO'; const max = users.filter((u) => String(u.id).startsWith(prefix)).reduce((n, u) => Math.max(n, Number(String(u.id).slice(3)) || 0), 0); return `${prefix}${String(max + 1).padStart(3, '0')}`; }
