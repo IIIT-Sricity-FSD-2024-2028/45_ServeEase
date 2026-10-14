@@ -1,4 +1,4 @@
-import { apiRequest } from './apiClient'
+import { apiRequest, uploadRequest } from './apiClient'
 
 export const authApi = {
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
@@ -40,6 +40,11 @@ export const availabilityApi = {
   get: (providerId) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}`),
   getWeeklySchedule: (providerId) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}/weekly-schedule`),
   getDateOverrides: (providerId) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}/date-overrides`),
+  saveDateOverride: (providerId, date, override) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}/date-overrides/${encodeURIComponent(date)}`, {
+    method: 'PUT',
+    body: JSON.stringify(override),
+  }),
+  deleteDateOverride: (providerId, date) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}/date-overrides/${encodeURIComponent(date)}`, { method: 'DELETE' }),
 }
 
 export const ticketsApi = {
@@ -54,6 +59,7 @@ export const ticketsApi = {
     method: 'POST',
     body: JSON.stringify(ticket),
   }),
+  uploadAttachment: (file) => uploadRequest('/uploads/tickets', file),
   listForSupport: () => apiRequest('/support/tickets'),
   getForSupport: (id) => apiRequest(`/support/tickets/${encodeURIComponent(id)}`),
   updateSupportStatus: (id, status) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),

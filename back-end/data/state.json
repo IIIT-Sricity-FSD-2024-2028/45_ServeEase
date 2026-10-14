@@ -21578,7 +21578,7 @@
           "providerCommissionRate": 10,
           "providerCommissionAmount": 89.9,
           "providerPayout": 809.1,
-          "status": "Accepted",
+          "status": "Cancelled",
           "paymentMethod": "Net Banking - RBL Bank",
           "customerName": "Raghava Kumar",
           "customerPhone": "9876543210",
@@ -21589,9 +21589,11 @@
           "id": "BOOK-20260903-2157-0011",
           "createdAt": "2026-09-03T16:27:47.860Z",
           "paymentDate": "03-09-2026",
-          "statusUpdatedAt": "2026-09-03T16:28:01.944Z",
-          "stateVersion": 3,
-          "paymentId": "TXN-2026-4557"
+          "statusUpdatedAt": "2026-10-13T17:44:26.015Z",
+          "stateVersion": 4,
+          "paymentId": "TXN-2026-4557",
+          "cancellationActor": "Provider",
+          "cancelledAt": "2026-10-13T17:44:26.014Z"
         },
         {
           "service": "Full Home Cleaning",
@@ -22007,7 +22009,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-12T19:45:37.639Z"
+    "updatedAt": "2026-10-13T17:44:26.015Z"
   },
   {
     "key": "serveEaseEmployeeModuleData",
@@ -22579,11 +22581,22 @@
           "status": "Inactive",
           "isActive": false,
           "updatedAt": "2026-09-03T19:09:58.229Z"
+        },
+        {
+          "name": "car washing",
+          "category": "General",
+          "description": "car washing",
+          "price": 2000,
+          "location": "chennai",
+          "id": "SVC-1791913001856",
+          "status": "Inactive",
+          "isActive": false,
+          "updatedAt": "2026-10-13T17:37:13.659Z"
         }
       ],
-      "updatedAt": "2026-10-13T12:50:26.006Z"
+      "updatedAt": "2026-10-13T17:37:13.659Z"
     },
-    "updatedAt": "2026-10-13T12:50:26.006Z"
+    "updatedAt": "2026-10-13T17:37:13.659Z"
   },
   {
     "key": "serveEaseProviderServices:PRO143",
