@@ -14,6 +14,9 @@ export async function apiRequest(path, options = {}) {
   const activeSession = session()
   const headers = new Headers(options.headers)
   if (!(options.body instanceof FormData)) headers.set('Content-Type', 'application/json')
+  headers.set('role', backendRole(activeSession.role))
+  if (activeSession.userId) headers.set('user-id', activeSession.userId)
+  if (activeSession.email) headers.set('user-email', activeSession.email)
   if (activeSession.token) headers.set('Authorization', `Bearer ${activeSession.token}`)
 
   const requestUrl = `${API_BASE_URL}${path}`

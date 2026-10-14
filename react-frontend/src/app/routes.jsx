@@ -17,10 +17,11 @@ import CustomerDashboardPage from '../features/customer/dashboard/CustomerDashbo
 import CustomerPaymentHistoryPage from '../features/customer/payments/CustomerPaymentHistoryPage'
 import CustomerProfilePage from '../features/customer/profile/CustomerProfilePage'
 import CustomerSupportPage from '../features/customer/support/CustomerSupportPage'
+import HomePage from '../features/home/HomePage'
 import { ProtectedRoute } from '../components/common/ProtectedRoute'
 import { LoginPage } from '../features/auth/LoginPage'
 import { SignupPage } from '../features/auth/SignupPage'
-import { BookingFormPage, CheckoutPage, ConfirmationPage, HomePage, ProviderDetailsPage, ServicesPage } from '../features/discovery/DiscoveryPages'
+import { BookingFormPage, CheckoutPage, ConfirmationPage, ProviderDetailsPage, ServicesPage } from '../features/discovery/DiscoveryPages'
 
 function NotFound() {
   return <section className="foundation-card"><h1>Page not found</h1><p>This React route has not been defined yet.</p></section>
@@ -28,8 +29,9 @@ function NotFound() {
 
 export function AppRoutes() {
   return <Routes>
+    <Route path="/" element={<HomePage />} />
+
     <Route element={<PublicLayout />}>
-      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/services" element={<ServicesPage />} />

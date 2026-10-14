@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { ErrorState, EmptyState, LoadingState } from '../../../components/common/FeedbackStates'
 import { bookingsApi } from '../../../services/api'
@@ -58,7 +59,7 @@ export default function CustomerBookingsPage() {
   }
 
   return <div className="customer-bookings-page">
-    <div className="customer-bookings-breadcrumb">Home <span>›</span> Customer Dashboard <span>›</span> <strong>My Bookings</strong></div>
+    <nav aria-label="Breadcrumb" className="customer-bookings-breadcrumb"><Link to="/">Home</Link><span aria-hidden="true">›</span><Link to="/customer/dashboard">Customer Dashboard</Link><span aria-hidden="true">›</span><strong aria-current="page">My Bookings</strong></nav>
     <div className="customer-bookings-title"><h1>My Bookings</h1><p>View and manage all your service bookings.</p></div>
     <BookingTabs activeTab={activeTab} bookings={bookings} onChange={setActiveTab} />
     {notice && <ErrorState message={notice} />}
