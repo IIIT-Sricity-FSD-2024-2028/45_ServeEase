@@ -2,32 +2,55 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { authApi } from '../../services/api'
 import { useAuth } from '../../context/useAuth'
+import { AuthFooterLinks, AuthPromo, FieldError, PasswordInput } from './AuthParts'
 import './auth.css'
 
 const initial = { fullName: '', email: '', phone: '', password: '', confirmPassword: '', organisationName: '', serviceType: '', experience: '', cityId: '', address: '', idProofType: '' }
 const services = ['Home cleaning', 'Carpentry', 'Painting', 'Salon at Home', 'Plumbing', 'Electrician', 'Appliance Repair / Installation', 'Pest Control']
 const cities = [[1, 'Chennai'], [2, 'Bangalore'], [3, 'Hyderabad'], [4, 'Delhi'], [5, 'Mumbai']]
+const documentFields = [['idProof', 'ID Proof', 'Upload ID proof.'], ['addressProof', 'Address Proof', 'Upload address proof.'], ['skillCertificate', 'Skill Certificate'], ['experienceProof', 'Experience Proof'], ['profilePhoto', 'Profile Photo', 'Upload profile photo.']]
 const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/
+const sanitizers = { fullName: (value) => value.replace(/[^A-Za-z\s]/g, ''), phone: (value) => value.replace(/[^0-9]/g, '') }
+
+function validate(role, values, documents) {
+  const errors = {
+    fullName: !/^[A-Za-z\s]{3,}$/.test(values.fullName) && 'Enter a valid full name.',
+    email: !/^\S+@\S+\.\S+$/.test(values.email) && 'Enter a valid email address.',
+    phone: !/^\d{10}$/.test(values.phone) && 'Enter a valid 10-digit phone number.',
+    password: !strongPassword.test(values.password) && 'Password must include upper, lower, number and special character.',
+    confirmPassword: (!values.confirmPassword || values.password !== values.confirmPassword) && 'Passwords do not match.',
+  }
+  if (role === 'provider') {
+    Object.assign(errors, {
+      organisationName: !values.organisationName && 'Enter a valid organisation name.',
+      serviceType: !values.serviceType && 'Service category is required.',
+      experience: values.experience === '' && 'Enter valid experience.',
+      cityId: !values.cityId && 'City is required.',
+      address: values.address.length < 5 && 'Enter a valid address.',
+      idProofType: !values.idProofType && 'Select the ID proof type.',
+    })
+    documentFields.forEach(([name, , message]) => { if (message) errors[name] = !documents[name] && message })
+  }
+  return errors
+}
 
 export function SignupPage() {
   const [params] = useSearchParams(); const [role, setRole] = useState(params.get('role') === 'provider' ? 'provider' : 'customer')
-  const [values, setValues] = useState(initial); const [documents, setDocuments] = useState({}); const [show, setShow] = useState(false); const [error, setError] = useState(''); const [loading, setLoading] = useState(false)
+  const [values, setValues] = useState(initial); const [documents, setDocuments] = useState({}); const [errors, setErrors] = useState({}); const [submitted, setSubmitted] = useState(false); const [error, setError] = useState(''); const [loading, setLoading] = useState(false)
   const { isAuthenticated, currentUser, establishSession } = useAuth(); const navigate = useNavigate()
   if (isAuthenticated) return <Navigate to={currentUser.role === 'provider' ? '/provider/dashboard' : '/customer/dashboard'} replace />
-  const update = (event) => setValues({ ...values, [event.target.name]: event.target.value })
+  const update = (event) => { const { name, value } = event.target; setValues({ ...values, [name]: sanitizers[name] ? sanitizers[name](value) : value }) }
   const choose = (event) => setDocuments({ ...documents, [event.target.name]: event.target.files?.[0] })
-  const setAccountRole = (next) => { setRole(next); setError('') }
+  const setAccountRole = (next) => { setRole(next); setErrors({}); setSubmitted(false); setError('') }
+  const stateClass = (name) => (errors[name] ? 'error-field' : submitted && name in errors ? 'success-field' : undefined)
+  const field = (name, props = {}) => <div className="form-group"><input name={name} aria-label={props.placeholder} className={stateClass(name)} value={values[name]} onChange={update} {...props} /><FieldError error={errors[name]} /></div>
+  const select = (name, placeholder, options) => <div className="form-group"><select name={name} aria-label={placeholder} className={`service-category-select ${stateClass(name) || ''}`} value={values[name]} onChange={update}><option value="">{placeholder}</option>{options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><FieldError error={errors[name]} /></div>
+
   async function submit(event) {
     event.preventDefault(); setError('')
-    if (!/^[A-Za-z\s]{3,}$/.test(values.fullName)) return setError('Enter a valid full name.')
-    if (!/^\S+@\S+\.\S+$/.test(values.email)) return setError('Enter a valid email address.')
-    if (!/^\d{10}$/.test(values.phone)) return setError('Enter a valid 10-digit phone number.')
-    if (!strongPassword.test(values.password)) return setError('Password must include upper, lower, number and special character.')
-    if (values.password !== values.confirmPassword) return setError('Passwords do not match.')
-    if (role === 'provider') {
-      if (!values.organisationName || !values.serviceType || !values.cityId || values.address.length < 5 || values.experience === '' || !values.idProofType) return setError('Complete all provider fields, including ID proof type.')
-      if (!documents.idProof || !documents.addressProof || !documents.profilePhoto) return setError('Upload ID proof, address proof, and profile photo.')
-    }
+    const nextErrors = validate(role, values, documents)
+    setErrors(nextErrors); setSubmitted(true)
+    if (Object.values(nextErrors).some(Boolean)) return
     setLoading(true)
     try {
       const documentData = Object.entries(documents).filter(([, file]) => file).map(([documentType, file]) => ({ documentType, documentName: file.name, required: ['idProof', 'addressProof', 'profilePhoto'].includes(documentType), documentStatus: 'Pending selection' }))
@@ -35,5 +58,47 @@ export function SignupPage() {
       establishSession(result); navigate(role === 'provider' ? '/provider/dashboard' : '/customer/dashboard', { replace: true })
     } catch (requestError) { setError(requestError.message) } finally { setLoading(false) }
   }
-  return <section className={`auth-page signup-page ${role === 'provider' ? 'provider-signup-mode' : ''}`}><div className="auth-wrapper"><div className="auth-left"><Link className="brand auth-brand" to="/"><span className="brand-icon">SE</span><span>ServeEase</span></Link><div className="auth-card auth-card-large"><h1>Welcome to ServeEase</h1><p className="auth-subtitle">Create an account to continue</p><div className="role-tabs">{['customer', 'provider'].map((item) => <button key={item} type="button" className={`role-tab ${role === item ? 'active' : ''}`} onClick={() => setAccountRole(item)}>{item[0].toUpperCase() + item.slice(1)}</button>)}</div><form onSubmit={submit} noValidate><label className="form-group">Full Name<input name="fullName" value={values.fullName} onChange={update} /></label><label className="form-group">Email<input name="email" type="email" value={values.email} onChange={update} /></label><label className="form-group">Phone Number<input name="phone" inputMode="numeric" maxLength="10" value={values.phone} onChange={update} /></label>{role === 'provider' && <div className="provider-fields"><label className="form-group">Organisation Name<input name="organisationName" value={values.organisationName} onChange={update} /></label><label className="form-group">Service Category<select name="serviceType" value={values.serviceType} onChange={update}><option value="">Select Service Category</option>{services.map((value) => <option key={value}>{value}</option>)}</select></label><label className="form-group">Experience (years)<input name="experience" type="number" min="0" max="50" value={values.experience} onChange={update} /></label><label className="form-group">City<select name="cityId" value={values.cityId} onChange={update}><option value="">Select City</option>{cities.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label><label className="form-group provider-full">Address<input name="address" value={values.address} onChange={update} /></label><label className="form-group">ID Proof Type<select name="idProofType" value={values.idProofType} onChange={update}><option value="">Select ID Proof Type</option>{['Aadhaar', 'PAN', 'Driving License'].map((value) => <option key={value}>{value}</option>)}</select></label><div className="provider-document-upload-section provider-full"><h3>Valid Documents</h3><p>Files are selected for pending verification. Registration does not upload file content.</p>{[['idProof', 'ID Proof'], ['addressProof', 'Address Proof'], ['skillCertificate', 'Skill Certificate (optional)'], ['experienceProof', 'Experience Proof (optional)'], ['profilePhoto', 'Profile Photo']].map(([name, label]) => <label className="auth-file-label" key={name}>{label}<input name={name} type="file" accept={name === 'profilePhoto' ? '.jpg,.jpeg,.png' : '.pdf,.jpg,.jpeg,.png'} onChange={choose} /></label>)}</div></div>}<label className="form-group">Password<div className="password-control"><input name="password" type={show ? 'text' : 'password'} value={values.password} onChange={update} /><button type="button" onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button></div></label><label className="form-group">Confirm Password<input name="confirmPassword" type={show ? 'text' : 'password'} value={values.confirmPassword} onChange={update} /></label>{error && <p className="auth-error" role="alert">{error}</p>}<button className="btn btn-primary btn-full" disabled={loading}>{loading ? 'Creating account…' : 'Create an account'}</button></form><p className="auth-switch">Already have an account? <Link to={`/login?role=${role}`}>Sign In</Link></p></div></div><aside className="auth-right"><div className="promo-image"><img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=80" alt="ServeEase service" /></div><h2>Book Trusted Home Services Easily</h2><p>Connect with verified professionals for your home service needs.</p></aside></div></section>
+
+  return (
+    <section className={`auth-page signup-page ${role === 'provider' ? 'provider-signup-mode' : ''}`}>
+      <div className="auth-wrapper">
+        <div className="auth-left">
+          <Link className="brand auth-brand" to="/"><span className="brand-icon">SE</span><span>ServeEase</span></Link>
+          <div className="auth-card auth-card-large">
+            <h1>Welcome to ServeEase</h1>
+            <p className="auth-subtitle">Create an account to continue</p>
+            <div className="role-tabs signup-tabs">
+              {[['customer', 'Customer'], ['provider', 'Provider']].map(([key, label]) => <button key={key} type="button" className={`role-tab ${role === key ? 'active' : ''}`} aria-pressed={role === key} onClick={() => setAccountRole(key)}>{label}</button>)}
+            </div>
+            <form onSubmit={submit} noValidate>
+              {field('fullName', { placeholder: 'Full Name', autoComplete: 'name' })}
+              {field('email', { type: 'email', placeholder: 'Email', autoComplete: 'email' })}
+              {field('phone', { type: 'tel', placeholder: 'Phone Number', maxLength: 10, inputMode: 'numeric', autoComplete: 'tel' })}
+              {role === 'provider' && <div className="provider-fields">
+                {field('organisationName', { placeholder: 'Organisation Name' })}
+                {select('serviceType', 'Select Service Category', services.map((value) => [value, value]))}
+                {field('experience', { type: 'number', placeholder: 'Experience', min: 0, max: 50 })}
+                {select('cityId', 'Select City', cities)}
+                {field('address', { placeholder: 'Address', autoComplete: 'street-address' })}
+                <div className="provider-document-upload-section">
+                  <h3>Valid Documents</h3>
+                  <p>Upload the required proof documents for admin verification. Skill and experience documents are optional.</p>
+                  {select('idProofType', 'Select ID Proof Type', ['Aadhaar', 'PAN', 'Driving License'].map((value) => [value, value]))}
+                  {documentFields.map(([name, label]) => <div className="form-group" key={name}><label className="auth-file-label">{label}<input name={name} type="file" className={stateClass(name)} accept={name === 'profilePhoto' ? '.jpg,.jpeg,.png' : '.pdf,.jpg,.jpeg,.png'} onChange={choose} /></label><FieldError error={errors[name]} /></div>)}
+                </div>
+              </div>}
+              <div className="form-group"><PasswordInput name="password" aria-label="Password" placeholder="Password" className={stateClass('password')} value={values.password} onChange={update} autoComplete="new-password" /><FieldError error={errors.password} /></div>
+              <div className="form-group"><PasswordInput name="confirmPassword" aria-label="Confirm Password" placeholder="Confirm Password" className={stateClass('confirmPassword')} value={values.confirmPassword} onChange={update} autoComplete="new-password" /><FieldError error={errors.confirmPassword} /></div>
+              <small className="error form-error" role="alert">{error}</small>
+              <small className="success-message" />
+              <button className="btn btn-primary btn-full" type="submit" disabled={loading}>{loading ? 'Creating account…' : 'Create an account'}</button>
+            </form>
+            <p className="auth-switch">Already have an account? <Link to={`/login?role=${role}`}>Sign In</Link></p>
+          </div>
+          <AuthFooterLinks />
+        </div>
+        <AuthPromo />
+      </div>
+    </section>
+  )
 }

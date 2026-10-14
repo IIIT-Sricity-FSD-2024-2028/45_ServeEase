@@ -30,13 +30,15 @@ function NotFound() {
 export function AppRoutes() {
   return <Routes>
     <Route path="/" element={<HomePage />} />
+    {/* Discovery pages and the booking confirmation render the original page chrome themselves. */}
+    <Route path="/services" element={<ServicesPage />} />
+    <Route path="/services/:serviceId" element={<ServicesPage />} />
+    <Route path="/providers/:providerId" element={<ProviderDetailsPage />} />
+    <Route path="/customer/booking-confirmation" element={<ProtectedRoute role="customer"><ConfirmationPage /></ProtectedRoute>} />
 
     <Route element={<PublicLayout />}>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/services" element={<ServicesPage />} />
-      <Route path="/services/:serviceId" element={<ServicesPage />} />
-      <Route path="/providers/:providerId" element={<ProviderDetailsPage />} />
       <Route path="/not-found" element={<NotFound />} />
     </Route>
 
@@ -49,7 +51,6 @@ export function AppRoutes() {
       <Route path="/customer/support" element={<ProtectedRoute role="customer"><CustomerSupportPage /></ProtectedRoute>} />
       <Route path="/customer/bookings/new" element={<ProtectedRoute role="customer"><BookingFormPage /></ProtectedRoute>} />
       <Route path="/customer/checkout" element={<ProtectedRoute role="customer"><CheckoutPage /></ProtectedRoute>} />
-      <Route path="/customer/booking-confirmation" element={<ProtectedRoute role="customer"><ConfirmationPage /></ProtectedRoute>} />
     </Route>
 
     <Route element={<ProviderLayout />}>

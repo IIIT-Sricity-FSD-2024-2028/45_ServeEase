@@ -1,0 +1,1281 @@
+/* Customer discovery → profile → checkout → confirmation styles.
+   Generated from front-end/CSS/pages.css: every selector is prefixed with .se-journey so these
+   rules apply only inside the journey pages. The base block below ports the global.css rules
+   those pages depend on (reset, container, buttons, error text). */
+
+.se-journey {
+  color: #11284b;
+  line-height: 1.5;
+  font-family: Arial, sans-serif;
+}
+
+.se-journey *,
+.se-journey *::before,
+.se-journey *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.se-journey a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.se-journey img {
+  width: 100%;
+  display: block;
+}
+
+.se-journey .container {
+  width: min(1180px, 92%);
+  margin: 0 auto;
+}
+
+.se-journey .hidden {
+  display: none !important;
+}
+
+.se-journey .btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: normal;
+}
+
+.se-journey .btn-primary {
+  background: linear-gradient(90deg, #2f6df6, #8c35ff);
+  color: #fff;
+}
+
+.se-journey .btn-primary:hover {
+  opacity: 0.92;
+}
+
+.se-journey .btn-full {
+  width: 100%;
+}
+
+.se-journey .error {
+  display: block;
+  min-height: 16px;
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.se-journey button,
+.se-journey input,
+.se-journey select,
+.se-journey textarea {
+  font-family: inherit;
+}
+
+/* foundation.css makes buttons inherit 16px/1.5; the original pages used the browser default. */
+.se-journey button {
+  font-size: 13.333px;
+  line-height: normal;
+}
+
+.se-journey :focus-visible {
+  outline: 2px solid rgba(47, 109, 246, 0.45);
+  outline-offset: 2px;
+}
+
+/* ---- front-end/CSS/pages.css (scoped) ---- */
+
+.se-journey .listing-page,
+.se-journey .profile-page {
+  padding: 24px 0 0;
+}
+
+.se-journey .breadcrumbs {
+  font-size: 14px;
+  color: #637793;
+  margin-bottom: 14px;
+}
+
+.se-journey .listing-hero h1 {
+  font-size: 34px;
+  color: #12284a;
+  margin-bottom: 8px;
+}
+
+.se-journey .listing-hero p {
+  color: #60748f;
+  font-size: 16px;
+  margin-bottom: 28px;
+}
+
+.se-journey .listing-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.se-journey .filter-card,
+.se-journey .provider-summary-card,
+.se-journey .pricing-card,
+.se-journey .reviews-card,
+.se-journey .booking-card,
+.se-journey .benefit-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(17, 40, 75, 0.06);
+}
+
+.se-journey .filter-card {
+  padding: 20px;
+  position: sticky;
+  top: 94px;
+}
+
+.se-journey .filter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.se-journey .filter-head h3 {
+  font-size: 18px;
+  color: #12284a;
+}
+
+.se-journey .text-btn {
+  border: none;
+  background: transparent;
+  color: #394a63;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.se-journey .filter-block {
+  margin-bottom: 18px;
+}
+
+.se-journey .filter-block label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: #22395d;
+}
+
+.se-journey .filter-block select,
+.se-journey .filter-block input[type="date"] {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #f8faff;
+}
+
+.se-journey .range-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: #637793;
+  font-size: 14px;
+}
+
+.se-journey .results-count {
+  color: #5f7390;
+  margin-bottom: 14px;
+  font-size: 18px;
+}
+
+.se-journey .empty-state-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  padding: 28px;
+  color: #637793;
+}
+
+.se-journey .provider-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+}
+
+.se-journey .provider-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(17, 40, 75, 0.06);
+}
+
+.se-journey .provider-card img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+}
+
+.se-journey .provider-card-body {
+  padding: 16px;
+}
+
+.se-journey .provider-status {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #1fd46a;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}
+
+.se-journey .provider-image-wrap {
+  position: relative;
+}
+
+.se-journey .provider-card h3 {
+  font-size: 18px;
+  color: #12284a;
+  margin-bottom: 6px;
+}
+
+.se-journey .provider-muted {
+  color: #667a97;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.se-journey .provider-offered {
+  margin-bottom: 10px;
+}
+
+.se-journey .provider-offered strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #22395d;
+}
+
+.se-journey .tag-pill {
+  display: inline-block;
+  background: #eef3ff;
+  color: #4863ff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+.se-journey .rating-row {
+  color: #304867;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.se-journey .new-provider-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef8f1;
+  color: #16803f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.se-journey .provider-bottom {
+  border-top: 1px solid #e8edf5;
+  padding-top: 12px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  color: #627690;
+}
+
+.se-journey .provider-price {
+  text-align: right;
+}
+
+.se-journey .provider-price strong {
+  display: block;
+  color: #2563eb;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.se-journey .provider-cta {
+  margin-top: 14px;
+  width: 100%;
+}
+
+.se-journey .back-inline {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: #394a63;
+  font-size: 14px;
+}
+
+.se-journey .profile-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.se-journey .provider-summary-card,
+.se-journey .pricing-card,
+.se-journey .reviews-card {
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.se-journey .summary-top {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.se-journey .summary-top img {
+  width: 90px;
+  height: 90px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.se-journey .provider-summary-card h1 {
+  font-size: 30px;
+  color: #12284a;
+  margin-bottom: 10px;
+}
+
+.se-journey .verified-badge {
+  display: inline-block;
+  background: #eaf7ef;
+  color: #20965b;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.se-journey .summary-services {
+  margin-bottom: 12px;
+}
+
+.se-journey .metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid #e8edf5;
+}
+
+.se-journey .metric-item strong {
+  display: block;
+  color: #12284a;
+  margin-bottom: 3px;
+}
+
+.se-journey .metric-item span {
+  color: #627690;
+  font-size: 13px;
+}
+
+.se-journey .location-line {
+  margin-top: 14px;
+  color: #50627c;
+}
+
+.se-journey .pricing-card h2,
+.se-journey .reviews-card h2,
+.se-journey .benefits-section h2,
+.se-journey .similar-section h2 {
+  font-size: 18px;
+  color: #12284a;
+  margin-bottom: 16px;
+}
+
+.se-journey .price-table-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid #e8edf5;
+  color: #22395d;
+}
+
+.se-journey .info-note {
+  margin-top: 16px;
+  background: #f0f5ff;
+  color: #516984;
+  border: 1px solid #dbe6ff;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.se-journey .review-card {
+  padding: 18px 0;
+  border-top: 1px solid #e8edf5;
+}
+
+.se-journey .view-all-btn,
+.se-journey .secondary-btn {
+  width: 100%;
+  margin-top: 16px;
+  height: 42px;
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.se-journey .booking-card {
+  padding: 26px;
+  position: sticky;
+  top: 94px;
+}
+
+.se-journey .booking-card h2 {
+  font-size: 24px;
+  color: #12284a;
+  letter-spacing: -0.02em;
+  margin-bottom: 22px;
+}
+
+.se-journey .booking-card label {
+  display: block;
+  font-weight: 700;
+  color: #22395d;
+  font-size: 14px;
+  margin-bottom: 9px;
+  margin-top: 0;
+}
+
+.se-journey .booking-card select,
+.se-journey .booking-card input[type="date"] {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #f8faff;
+}
+
+.se-journey .booking-card .btn {
+  width: 100%;
+  margin-top: 30px;
+  min-height: 48px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.se-journey .booking-card .btn:not(:disabled):hover {
+  box-shadow: 0 10px 20px rgba(72, 99, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.se-journey .booking-card .btn:disabled {
+  background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.se-journey .availability-section {
+  margin-top: 28px;
+}
+
+.se-journey .availability-section h3 {
+  color: #22395d;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.se-journey .availability-date-list,
+.se-journey .availability-time-list {
+  display: grid;
+  gap: 12px;
+}
+
+.se-journey .availability-date-list {
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+}
+
+.se-journey .availability-date-card,
+.se-journey .time-slot-card {
+  border: 1px solid #dce5f0;
+  border-radius: 14px;
+  background: #fff;
+  color: #22395d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.se-journey .availability-date-card {
+  min-width: 0;
+  min-height: 70px;
+  padding: 11px 8px;
+  display: grid;
+  gap: 3px;
+  text-align: center;
+}
+
+.se-journey .availability-date-card span {
+  color: #697b94;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.se-journey .availability-date-card strong {
+  font-size: 13px;
+}
+
+.se-journey .time-slot-card {
+  min-height: 48px;
+  padding: 10px 12px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.se-journey .availability-time-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.se-journey .availability-date-card:hover:not(:disabled),
+.se-journey .time-slot-card:hover {
+  border-color: #4863ff;
+  transform: translateY(-1px);
+}
+
+.se-journey .availability-date-card.is-selected,
+.se-journey .time-slot-card.is-selected {
+  border-color: #4863ff;
+  background: #4863ff;
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(72, 99, 255, 0.22);
+}
+
+.se-journey .availability-date-card.is-selected span {
+  color: #e7ebff;
+}
+
+.se-journey .availability-empty-slots,
+.se-journey .availability-state {
+  color: #697b94;
+  font-size: 14px;
+  margin: 0;
+}
+
+.se-journey .availability-state {
+  border: 1px solid #e0e6ef;
+  border-radius: 16px;
+  background: #f8faff;
+  padding: 25px 20px;
+  text-align: center;
+}
+
+.se-journey .availability-state p {
+  line-height: 1.5;
+  margin: 6px 0 0;
+}
+
+.se-journey .availability-state h3 {
+  color: #22395d;
+  font-size: 16px;
+  margin: 12px 0 0;
+}
+
+.se-journey .availability-state-icon {
+  align-items: center;
+  background: #e9edff;
+  border-radius: 50%;
+  display: inline-flex;
+  font-size: 22px;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.se-journey .availability-error {
+  border-color: #f2d8bb;
+  background: #fffaf4;
+  color: #8a4b08;
+}
+
+.se-journey .availability-error .availability-state-icon {
+  background: #fff0d9;
+}
+
+.se-journey .availability-error .secondary-btn {
+  margin-top: 18px;
+  width: auto;
+  padding: 0 20px;
+}
+
+.se-journey .availability-loading {
+  color: #627690;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.se-journey .availability-skeleton-group {
+  display: grid;
+  gap: 12px;
+}
+
+.se-journey .availability-skeleton-label {
+  width: 112px;
+  height: 14px;
+  border-radius: 99px;
+  background: #eef2f7;
+}
+
+.se-journey .availability-skeleton-row {
+  display: grid;
+  gap: 12px;
+}
+
+.se-journey .availability-date-skeletons {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.se-journey .availability-slot-skeletons {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.se-journey .availability-date-skeletons span,
+.se-journey .availability-slot-skeletons span,
+.se-journey .availability-skeleton-label {
+  border-radius: 12px;
+  background: linear-gradient(90deg, #eef2f7 25%, #f8faff 50%, #eef2f7 75%);
+  background-size: 200% 100%;
+  animation: availability-shimmer 1.25s ease-in-out infinite;
+}
+
+.se-journey .availability-date-skeletons span {
+  min-height: 70px;
+}
+
+.se-journey .availability-slot-skeletons span {
+  min-height: 48px;
+}
+
+.se-journey .availability-date-card:focus-visible,
+.se-journey .time-slot-card:focus-visible,
+.se-journey .booking-card .btn:focus-visible,
+.se-journey .availability-error .secondary-btn:focus-visible {
+  outline: 3px solid rgba(72, 99, 255, 0.35);
+  outline-offset: 3px;
+}
+
+@keyframes availability-shimmer {
+  to { background-position: -200% 0; }
+}
+
+@media (max-width: 640px) {
+  .se-journey .booking-card {
+    padding: 22px 18px;
+  }
+
+  .se-journey .booking-card h2 {
+    font-size: 22px;
+  }
+
+  .se-journey .availability-date-list {
+    gap: 9px;
+    grid-template-columns: repeat(auto-fit, minmax(66px, 1fr));
+  }
+
+  .se-journey .availability-time-list {
+    gap: 10px;
+  }
+
+  .se-journey .availability-date-card {
+    min-height: 66px;
+    padding: 9px 5px;
+  }
+
+  .se-journey .availability-state {
+    padding: 22px 16px;
+  }
+
+}
+
+.se-journey .benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.se-journey .benefit-card {
+  padding: 24px 18px;
+  text-align: center;
+}
+
+.se-journey .benefit-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #eef3ff;
+  color: #4863ff;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 14px;
+  font-size: 22px;
+}
+
+.se-journey .benefit-card h3 {
+  font-size: 16px;
+  color: #12284a;
+  margin-bottom: 8px;
+}
+
+.se-journey .benefit-card p {
+  color: #677b98;
+  font-size: 14px;
+}
+
+.se-journey .similar-section {
+  margin: 30px 0 18px;
+}
+
+.se-journey .similar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.se-journey .similar-card {
+  background: #fff;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.se-journey .similar-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.se-journey .similar-card-body {
+  padding: 14px;
+}
+
+.se-journey .similar-card h3 {
+  font-size: 16px;
+  color: #12284a;
+  margin-bottom: 10px;
+}
+
+.se-journey .similar-card .rating-row {
+  margin-bottom: 10px;
+}
+
+.se-journey .similar-card .provider-price {
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1100px) {
+  .se-journey .listing-layout,
+  .se-journey .profile-layout,
+  .se-journey .provider-grid,
+  .se-journey .benefits-grid,
+  .se-journey .similar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .se-journey .filter-card,
+  .se-journey .booking-card {
+    position: static;
+  }
+
+  .se-journey .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+}
+
+.se-journey .brand {
+  text-decoration: none;
+}
+
+.se-journey .nav-actions .profile-menu-wrap {
+  position: relative;
+}
+
+.se-journey .nav-actions .profile-dropdown {
+  position: absolute;
+  top: 54px;
+  right: 0;
+  min-width: 190px;
+  background: #ffffff;
+  border: 1px solid #e6ebf2;
+  border-radius: 14px;
+  box-shadow: 0 14px 32px rgba(17, 40, 75, 0.12);
+  padding: 10px;
+  z-index: 100;
+}
+
+.se-journey .nav-actions .profile-dropdown a,
+.se-journey .nav-actions .profile-dropdown button {
+  width: 100%;
+  display: block;
+  padding: 12px 14px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: #12284a;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.se-journey .nav-actions .profile-dropdown a:hover,
+.se-journey .nav-actions .profile-dropdown button:hover {
+  background: #f5f7fb;
+}
+
+.se-journey .checkout-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+  padding: 24px 0 0;
+}
+
+.se-journey .booking-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e6ebf2;
+}
+
+.se-journey .booking-breadcrumbs {
+  font-size: 14px;
+  color: #6b7c95;
+  margin-bottom: 14px;
+}
+
+.se-journey .booking-breadcrumbs a {
+  color: #6b7c95;
+}
+
+.se-journey .checkout-title {
+  font-size: 46px;
+  color: #12284a;
+  margin-bottom: 24px;
+}
+
+.se-journey .checkout-layout {
+  display: grid;
+  grid-template-columns: 1.45fr 0.7fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.se-journey .checkout-main,
+.se-journey .checkout-sidebar {
+  display: grid;
+  gap: 18px;
+}
+
+.se-journey .checkout-card,
+.se-journey .checkout-side-card,
+.se-journey .checkout-note-card,
+.se-journey .success-info-card,
+.se-journey .awaiting-box,
+.se-journey .next-steps-box {
+  background: #fff;
+  border: 1px solid #e6ebf2;
+  border-radius: 18px;
+  box-shadow: 0 8px 20px rgba(17, 40, 75, 0.06);
+}
+
+.se-journey .checkout-card {
+  padding: 18px;
+}
+
+.se-journey .checkout-side-card {
+  padding: 18px;
+}
+
+.se-journey .checkout-card h2,
+.se-journey .checkout-side-card h2,
+.se-journey .checkout-note-card h3 {
+  color: #12284a;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.se-journey .checkout-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #edf1f6;
+  color: #50627c;
+}
+
+.se-journey .checkout-info-row strong {
+  color: #12284a;
+}
+
+.se-journey .checkout-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 18px;
+  margin-top: 16px;
+  border-top: 1px solid #edf1f6;
+  font-size: 18px;
+  color: #12284a;
+}
+
+.se-journey .checkout-total-row strong {
+  color: #2563eb;
+  font-size: 34px;
+}
+
+.se-journey .checkout-total-row.compact strong {
+  font-size: 24px;
+}
+
+.se-journey .checkout-card label,
+.se-journey .payment-form-box label,
+.se-journey .promo-box label {
+  display: block;
+  font-weight: 700;
+  color: #22395d;
+  margin: 14px 0 8px;
+}
+
+.se-journey .checkout-card input,
+.se-journey .checkout-card textarea,
+.se-journey .checkout-card select,
+.se-journey .payment-form-box input,
+.se-journey .payment-form-box select,
+.se-journey .promo-row input {
+  width: 100%;
+  border: 1px solid #dfe6ef;
+  border-radius: 10px;
+  background: #f8faff;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+}
+
+.se-journey .checkout-card select,
+.se-journey .payment-form-box select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 42px;
+  background-image: linear-gradient(45deg, transparent 50%, #526b8d 50%), linear-gradient(135deg, #526b8d 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.se-journey .checkout-card select:focus,
+.se-journey .payment-form-box select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.se-journey .checkout-card textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.se-journey .payment-option {
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #fff;
+  font-weight: 600;
+  color: #12284a;
+}
+
+.se-journey .active-option {
+  background: #eef5ff;
+  border-color: #99b9ff;
+}
+
+.se-journey .payment-form-box {
+  background: #f8faff;
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 16px;
+}
+
+.se-journey .two-col-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.se-journey .promo-box {
+  margin-top: 16px;
+}
+
+.se-journey .promo-row {
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  gap: 10px;
+  margin: 10px 0 8px;
+}
+
+.se-journey .promo-row button {
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.se-journey .full-width-btn {
+  width: 100%;
+}
+
+.se-journey .trust-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #1f9d55;
+  display: grid;
+  gap: 10px;
+}
+
+.se-journey .cancellation-policy-copy {
+  display: grid;
+  gap: 5px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #edf1f6;
+  color: #667a97;
+  font-size: 13px;
+}
+
+.se-journey .cancellation-policy-copy strong {
+  color: #12284a;
+}
+
+.se-journey .checkout-note-card {
+  padding: 18px;
+  background: linear-gradient(90deg, #f2f8ff, #f9f2ff);
+}
+
+.se-journey .checkout-note-card p {
+  color: #667a97;
+  margin-bottom: 6px;
+}
+
+.se-journey .checkout-note-card small {
+  color: #7d8da4;
+}
+
+.se-journey .booking-success-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 16px;
+}
+
+.se-journey .booking-success-card {
+  width: min(680px, 100%);
+  background: #fff;
+  border: 1px solid #e6ebf2;
+  border-radius: 20px;
+  box-shadow: 0 18px 40px rgba(17, 40, 75, 0.14);
+  padding: 30px 26px;
+  text-align: center;
+}
+
+.se-journey .success-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fdf1df;
+  color: #d97706;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  font-size: 34px;
+}
+
+.se-journey .booking-success-card h1 {
+  color: #12284a;
+  font-size: 28px;
+  margin-bottom: 16px;
+}
+
+.se-journey .success-subtext {
+  color: #667a97;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.se-journey .success-subtext strong {
+  color: #d97706;
+}
+
+.se-journey .awaiting-box {
+  padding: 18px;
+  background: #fff8eb;
+  border-color: #f4d8a6;
+  margin-bottom: 18px;
+  display: grid;
+  gap: 8px;
+  color: #b45309;
+}
+
+.se-journey .awaiting-box span {
+  color: #667a97;
+}
+
+.se-journey .success-info-card {
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.se-journey .highlight-text {
+  color: #2563eb;
+}
+
+.se-journey .pending-pill {
+  color: #d97706;
+}
+
+.se-journey .next-steps-box {
+  text-align: left;
+  padding: 18px;
+  background: #eef5ff;
+  border-color: #bfd6ff;
+  margin-bottom: 20px;
+}
+
+.se-journey .next-steps-box h3 {
+  color: #1d4ed8;
+  margin-bottom: 10px;
+}
+
+.se-journey .next-steps-box ul {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  color: #1e40af;
+}
+
+.se-journey .success-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.se-journey .success-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+@media (max-width: 1100px) {
+  .se-journey .checkout-layout,
+  .se-journey .success-actions,
+  .se-journey .two-col-form {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+.se-journey .payment-option {
+  cursor: pointer;
+}
+
+
+/* ---- React additions (not in pages.css): styled to match the original controls ---- */
+
+.se-journey .filter-block input[type="search"] {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #e0e6ef;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #f8faff;
+}
+
+.se-journey .journey-retry-btn {
+  margin-top: 14px;
+}
+
+.se-journey .journey-notice {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid #f4d48a;
+  border-radius: 12px;
+  background: #fff8e6;
+  color: #6b4f12;
+  font-size: 14px;
+}
+
+.se-journey .journey-notice a {
+  color: #3158d4;
+  font-weight: 700;
+}
+
+.se-journey .checkout-card input[readonly] {
+  background: #eef2f7;
+  color: #5f7390;
+}
+
+/* Checkout and confirmation render inside the customer app shell, which already provides the
+   page width, top padding and background. */
+.se-journey.journey-in-shell .checkout-page {
+  min-height: 0;
+  padding-top: 0;
+  background: transparent;
+}
+
+.se-journey .checkout-fee-note {
+  margin-top: 10px;
+  color: #667892;
+  font-size: 13px;
+}
+
+.se-journey .link-inline {
+  color: #3158d4;
+  font-weight: 700;
+}
+
+.se-journey .btn:disabled,
+.se-journey .secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.se-journey .availability-time-list .availability-empty-slots {
+  grid-column: 1 / -1;
+}

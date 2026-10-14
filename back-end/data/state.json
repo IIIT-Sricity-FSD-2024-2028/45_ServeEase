@@ -21562,6 +21562,29 @@
     "value": {
       "bookings": [
         {
+          "service": "Bathroom Cleaning",
+          "provider": "Cleanpro Services",
+          "providerId": "PRO001",
+          "date": "2026-10-15",
+          "time": "09:00-12:00",
+          "address": "123456",
+          "amount": 599,
+          "serviceFee": 599,
+          "customerTotal": 599,
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "customerPhone": "9876543210",
+          "customerEmail": "user@serveease.com",
+          "status": "Accepted",
+          "category": "home-cleaning",
+          "paymentStatus": "Pending",
+          "id": "BOOK-20261015-0317-0012",
+          "createdAt": "2026-10-14T21:47:31.802Z",
+          "paymentDate": "2026-10-14",
+          "statusUpdatedAt": "2026-10-14T21:48:13.497Z",
+          "stateVersion": 2
+        },
+        {
           "service": "Full Home Cleaning",
           "provider": "Cleanpro Services",
           "providerId": "PRO001",
@@ -22009,7 +22032,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-13T17:44:26.015Z"
+    "updatedAt": "2026-10-14T21:48:13.497Z"
   },
   {
     "key": "serveEaseEmployeeModuleData",

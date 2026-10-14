@@ -41,10 +41,12 @@ export function configureSecurityMiddleware(app: NestExpressApplication): void {
     'http://127.0.0.1:5173',
     ...configuredCorsOrigins,
   ]);
+  // Local dev servers (e.g. Vite) move to the next free port when theirs is taken, so allow any loopback port.
+  const loopbackOrigin = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\]):\d+$/;
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedCorsOrigins.has(origin)) {
+      if (!origin || allowedCorsOrigins.has(origin) || loopbackOrigin.test(origin)) {
         callback(null, true);
         return;
       }

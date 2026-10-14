@@ -1,50 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { catalogApi } from '../../services/api'
+import { getCities, getInitialCity, locationStorageKey } from './cityState'
 import { homeFallbackCatalog } from './homeFallbackCatalog'
+import { PublicFooter, PublicHeader } from './PublicChrome'
 import './homePage.css'
-
-const defaultCities = [
-  { id: 1, name: 'Chennai' },
-  { id: 2, name: 'Bangalore' },
-  { id: 3, name: 'Hyderabad' },
-  { id: 4, name: 'Delhi' },
-  { id: 5, name: 'Mumbai' },
-]
-
-function locationStorageKey(user) {
-  if (user?.userId && !['user@serveease.com', 'provider@serveease.com'].includes(user.email)) {
-    return `serveEaseSelectedCity:${user.role}:${user.userId}`
-  }
-  return 'serveEaseSelectedCity'
-}
-
-function getCities() {
-  try {
-    const custom = JSON.parse(localStorage.getItem('serveEaseCustomCities') || '[]')
-    const cities = [...defaultCities, ...(Array.isArray(custom) ? custom : [])]
-    const known = new Set()
-    return cities.filter((city) => {
-      if (!city?.id || !city?.name) return false
-      const key = String(city.name).toLowerCase()
-      if (known.has(key)) return false
-      known.add(key)
-      return true
-    })
-  } catch {
-    return defaultCities
-  }
-}
-
-function getInitialCity(user, cities) {
-  try {
-    const stored = JSON.parse(localStorage.getItem(locationStorageKey(user)) || 'null')
-    return cities.find((city) => Number(city.id) === Number(stored?.id)) || cities[0]
-  } catch {
-    return cities[0]
-  }
-}
 
 function readLocalCatalog() {
   try {
@@ -89,72 +50,6 @@ function imageUrl(value) {
   return `/${value.replace(/^\.\//, '')}`
 }
 
-function HomeHeader({ city, cities, onCityChange }) {
-  const { currentUser, isAuthenticated, logout } = useAuth()
-  const navigate = useNavigate()
-  const [profileOpen, setProfileOpen] = useState(false)
-  const menuRef = useRef(null)
-  const profileButtonRef = useRef(null)
-  const isCustomer = currentUser?.role === 'customer'
-  const isProvider = currentUser?.role === 'provider'
-
-  useEffect(() => {
-    function closeOutside(event) {
-      if (!menuRef.current?.contains(event.target)) setProfileOpen(false)
-    }
-    function closeEscape(event) {
-      if (event.key === 'Escape' && profileOpen) {
-        setProfileOpen(false)
-        profileButtonRef.current?.focus()
-      }
-    }
-    document.addEventListener('click', closeOutside)
-    document.addEventListener('keydown', closeEscape)
-    return () => {
-      document.removeEventListener('click', closeOutside)
-      document.removeEventListener('keydown', closeEscape)
-    }
-  }, [profileOpen])
-
-  async function handleLogout() {
-    try {
-      await logout()
-    } finally {
-      setProfileOpen(false)
-      navigate('/')
-    }
-  }
-
-  return <header className="home-navbar">
-    <div className="home-container home-nav-content">
-      <Link className="home-brand" to="/">
-        <span className="home-brand-icon">SE</span>
-        <span>ServeEase</span>
-      </Link>
-      <nav aria-label="Home page sections" className="home-nav-links">
-        <a href="#services">Services</a>
-        <a href="#categories">Categories</a>
-      </nav>
-      <div className="home-city-selector-slot">
-        <span aria-hidden="true" className="home-city-pin">📍</span>
-        <select aria-label="Choose your city" className="home-city-selector" onChange={(event) => onCityChange(Number(event.target.value))} value={city.id}>
-          {cities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-        </select>
-      </div>
-      <div className="home-nav-actions">
-        {isAuthenticated && (isCustomer || isProvider) ? <div className="home-profile-menu-wrap" ref={menuRef}>
-          <button aria-expanded={profileOpen} aria-label="Open profile menu" className="home-profile-button" onClick={() => setProfileOpen((open) => !open)} ref={profileButtonRef} type="button">👤</button>
-          {profileOpen && <div className="home-profile-dropdown" role="menu">
-            <Link onClick={() => setProfileOpen(false)} role="menuitem" to={isProvider ? '/provider/account' : '/customer/profile'}>My Profile</Link>
-            <Link onClick={() => setProfileOpen(false)} role="menuitem" to={isProvider ? '/provider/dashboard' : '/customer/dashboard'}>Go to Dashboard</Link>
-            <button onClick={handleLogout} role="menuitem" type="button">Logout</button>
-          </div>}
-        </div> : <Link className="home-button home-button-primary" to="/login">Login / Register</Link>}
-      </div>
-    </div>
-  </header>
-}
-
 function HeroSection({ userRole, providerCount, serviceCount }) {
   const callTo = userRole === 'customer'
     ? '/customer/dashboard'
@@ -177,20 +72,20 @@ function HeroSection({ userRole, providerCount, serviceCount }) {
   </section>
 }
 
-function CategorySection({ categories }) {
+function CategorySection({ categories, cityId }) {
   return <section className="home-categories" id="categories">
     <div className="home-container">
       <div className="home-section-head"><h2>Browse by Category</h2><p>Explore the most requested service categories on ServeEase.</p></div>
       {categories.length === 0
         ? <p className="home-empty">No categories available right now.</p>
         : <div className="home-category-grid">{categories.map((category) => <article className="home-category-card" key={category.id} style={{ backgroundImage: `url("${imageUrl(category.bgImage)}")` }}>
-          <div className="home-category-overlay"><span className="home-category-icon">{category.icon || '🛎'}</span><h3>{category.name}</h3><Link className="home-button home-button-primary" to={`/services?category=${encodeURIComponent(category.id)}`}>Explore Services</Link></div>
+          <div className="home-category-overlay"><span className="home-category-icon">{category.icon || '🛎'}</span><h3>{category.name}</h3><Link className="home-button home-button-primary" to={`/services?category=${encodeURIComponent(category.id)}&city=${cityId}`}>Explore Services</Link></div>
         </article>)}</div>}
     </div>
   </section>
 }
 
-function PopularServicesSection({ services }) {
+function PopularServicesSection({ services, cityId }) {
   const popularServices = services.filter((service) => String(service.title || '').toLowerCase() !== 'pest control')
   return <section className="home-services" id="services">
     <div className="home-container">
@@ -203,7 +98,7 @@ function PopularServicesSection({ services }) {
             <h3>{service.title}</h3>
             <p>{service.description}</p>
             <div className="home-service-meta"><span>{service.price}</span><span>⭐ {service.rating}</span></div>
-            <Link className="home-button home-button-primary home-service-action" to={`/services?category=${encodeURIComponent(service.categoryId)}`}>Book Now</Link>
+            <Link className="home-button home-button-primary home-service-action" to={`/services?category=${encodeURIComponent(service.categoryId)}&city=${cityId}`}>Book Now</Link>
           </div>
         </article>)}</div>}
     </div>
@@ -219,17 +114,6 @@ function InformationSections() {
       <article className="home-info-content-card" id="cancellation-policy"><h2>Cancellation Policy</h2><p>Customers can cancel a booking before the service begins, subject to timing and provider allocation. Refund eligibility depends on the booking stage, payment status, and reason for cancellation. Any approved refund is processed back to the original payment method within the standard settlement period.</p></article>
     </div>
   </section>
-}
-
-function HomeFooter() {
-  return <footer className="home-footer" id="footer">
-    <div className="home-container home-footer-grid">
-      <div><h4>Company</h4><a href="#about-us">About Us</a></div>
-      <div><h4>Support</h4><Link to="/customer/support">Contact Support</Link><Link to="/customer/bookings">Track Booking</Link></div>
-      <div><h4>Legal</h4><a href="#terms-and-conditions">Terms &amp; Conditions</a><a href="#privacy-policy">Privacy Policy</a><a href="#cancellation-policy">Cancellation Policy</a></div>
-    </div>
-    <div className="home-container home-footer-bottom-row"><p>© 2026 ServeEase. All rights reserved.</p><div className="home-footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div></div>
-  </footer>
 }
 
 export default function HomePage() {
@@ -299,13 +183,13 @@ export default function HomePage() {
   const serviceCount = hasProviderData ? compactCount(counts.services) : compactCount(catalog.fallbackCounts?.services)
 
   return <div className="serveease-home">
-    <HomeHeader city={city} cities={cities} onCityChange={(cityId) => setCitySelection({ ownerKey: activeCityStorageKey, city: cities.find((item) => Number(item.id) === Number(cityId)) || cities[0] })} />
+    <PublicHeader city={city} cities={cities} onCityChange={(cityId) => setCitySelection({ ownerKey: activeCityStorageKey, city: cities.find((item) => Number(item.id) === Number(cityId)) || cities[0] })} />
     <main>
       <HeroSection providerCount={providerCount} serviceCount={serviceCount} userRole={currentUser?.role} />
-      <CategorySection categories={Array.isArray(catalog.categories) ? catalog.categories : []} />
-      <PopularServicesSection services={Array.isArray(catalog.popularServices) ? catalog.popularServices : []} />
+      <CategorySection cityId={city.id} categories={Array.isArray(catalog.categories) ? catalog.categories : []} />
+      <PopularServicesSection cityId={city.id} services={Array.isArray(catalog.popularServices) ? catalog.popularServices : []} />
       <InformationSections />
     </main>
-    <HomeFooter />
+    <PublicFooter />
   </div>
 }
