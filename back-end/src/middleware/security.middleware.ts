@@ -51,7 +51,7 @@ export function configureSecurityMiddleware(app: NestExpressApplication): void {
       callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'role', 'user-id', 'user-email'],
     exposedHeaders: ['X-Request-ID'],
   });
 

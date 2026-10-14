@@ -1,4 +1,37 @@
-import { apiRequest } from './apiClient'
+import { API_BASE_URL, apiRequest } from './apiClient'
+import { backendRole } from './requestContext'
+
+async function uploadTicketAttachment(file) {
+  let session
+  try {
+    session = JSON.parse(sessionStorage.getItem('serveEaseSession') || 'null') || {}
+  } catch {
+    session = {}
+  }
+
+  const headers = new Headers({
+    role: backendRole(session.role),
+    'user-id': session.userId || '',
+    'user-email': session.email || '',
+  })
+  if (session.token) headers.set('Authorization', `Bearer ${session.token}`)
+
+  const formData = new FormData()
+  formData.append('file', file)
+  let response
+  try {
+    response = await fetch(`${API_BASE_URL}/uploads/tickets`, { method: 'POST', headers, body: formData })
+  } catch (error) {
+    throw new Error(`Ticket attachment upload could not be completed: ${error.message}`, { cause: error })
+  }
+
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    const message = Array.isArray(payload?.message) ? payload.message.join(' ') : payload?.message
+    throw new Error(message || 'Ticket attachment upload failed.')
+  }
+  return payload?.data ?? null
+}
 
 export const authApi = {
   login: (credentials) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
@@ -45,6 +78,7 @@ export const availabilityApi = {
 export const ticketsApi = {
   listMine: () => apiRequest('/tickets/my-tickets'),
   get: (id) => apiRequest(`/tickets/${encodeURIComponent(id)}`),
+  uploadAttachment: uploadTicketAttachment,
   createCustomer: (ticket) => apiRequest('/tickets/customer', {
     method: 'POST',
     body: JSON.stringify(ticket),
