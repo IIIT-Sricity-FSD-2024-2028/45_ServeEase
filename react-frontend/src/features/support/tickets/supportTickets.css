@@ -1,8 +1,9 @@
 .support-tickets-page { color: #12284a; min-width: 0; }
-.support-page-header { align-items: flex-start; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 24px; }
-.support-page-header h1 { font-size: clamp(2rem, 4vw, 2.85rem); line-height: 1.12; margin: 0 0 8px; }
-.support-page-header p:not(.support-eyebrow) { color: #667a97; margin: 0; }
-.support-eyebrow { color: #2563eb; font-size: .76rem; font-weight: 800; letter-spacing: .09em; margin: 0 0 8px; text-transform: uppercase; }
+.support-page-header { align-items: center; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 22px; }
+.support-page-header h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+.support-page-header p:not(.support-eyebrow) { color: inherit; margin: 0; }
+.support-eyebrow { color: inherit; font-size: .76rem; font-weight: 800; letter-spacing: .09em; margin: 0 0 8px; text-transform: uppercase; }
+.support-tickets-page .support-hero-card { background: linear-gradient(90deg, #2563eb, #a21caf); border-radius: 18px; color: #fff; padding: 26px 28px; }
 .support-button { align-items: center; border: 1px solid transparent; border-radius: 9px; cursor: pointer; display: inline-flex; font: inherit; font-weight: 700; justify-content: center; min-height: 42px; padding: 9px 15px; }
 .support-button:disabled { cursor: not-allowed; opacity: .58; }
 .support-button--primary { background: #2563eb; color: #fff; }
@@ -10,11 +11,14 @@
 .support-button--danger { background: #fff; border-color: #efcaca; color: #b42318; }
 .support-success { background: #eaf8ef; border: 1px solid #b8e5c6; border-radius: 10px; color: #176536; margin: 0 0 14px; padding: 12px 15px; }
 .support-summary { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 18px; }
-.support-summary-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 12px; display: grid; gap: 8px; padding: 15px 18px; }
+.support-summary-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 12px; display: grid; gap: 8px; min-height: 126px; padding: 22px 20px; }
 .support-summary-card span { color: #667a97; font-size: .86rem; }
-.support-summary-card strong { color: #12284a; font-size: 1.7rem; line-height: 1; }
+.support-summary-card strong { color: #12284a; font-size: 1.8rem; line-height: 1; }
 .support-summary-sr-only { clip: rect(0, 0, 0, 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
 .support-filters { align-items: end; background: #fff; border: 1px solid #e6ebf2; border-radius: 14px; display: grid; gap: 13px; grid-template-columns: minmax(220px, 1.6fr) repeat(3, minmax(130px, 1fr)); margin-bottom: 20px; padding: 16px; }
+.support-filters .support-queue-tabs { display: flex; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; }
+.support-queue-tabs button { min-height: 38px; border: 1px solid #e6ebf2; border-radius: 10px; background: #fff; color: #4b5563; font: inherit; font-size: 14px; font-weight: 600; padding: 0 14px; cursor: pointer; }
+.support-queue-tabs button.active, .support-queue-tabs button:hover { border-color: #bfdbfe; background: #eef4ff; color: #2563eb; }
 .support-filters label, .support-form label { color: #42546d; display: grid; font-size: .86rem; font-weight: 700; gap: 6px; }
 .support-filters input, .support-filters select, .support-priority-row select, .support-form textarea { background: #fff; border: 1px solid #d8e0e9; border-radius: 8px; color: #12284a; font: inherit; min-height: 42px; padding: 9px 11px; }
 .support-filters input:focus, .support-filters select:focus, .support-priority-row select:focus, .support-form textarea:focus, .support-button:focus-visible, .support-ticket-option:focus-visible { outline: 3px solid rgb(37 99 235 / 28%); outline-offset: 2px; }
@@ -82,6 +86,7 @@
 @media (max-width: 680px) {
   .support-page-header { align-items: stretch; flex-direction: column; gap: 15px; }
   .support-page-header > .support-button { align-self: flex-start; }
+  .support-tickets-page .support-hero-card { align-items: flex-start; flex-direction: column; padding: 22px; }
   .support-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .support-workspace { grid-template-columns: minmax(0, 1fr); }
   .support-ticket-list { max-height: 44vh; }

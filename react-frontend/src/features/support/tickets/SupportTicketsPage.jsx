@@ -142,7 +142,7 @@ function TicketDetails({ ticket, disabled, onRemarksSubmit, onPriorityChange, on
 }
 
 export default function SupportTicketsPage() {
-  const { isAuthenticated, role } = useAuth()
+  const { currentUser, isAuthenticated, role } = useAuth()
   const canAccess = Boolean(isAuthenticated && supportRoles.includes(role))
   const detailRequestRef = useRef(0)
   const mutationInFlightRef = useRef(false)
@@ -161,6 +161,7 @@ export default function SupportTicketsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [raiserFilter, setRaiserFilter] = useState('')
+  const [queueFilter, setQueueFilter] = useState('all')
 
   useEffect(() => {
     if (!canAccess) return undefined
@@ -209,8 +210,10 @@ export default function SupportTicketsPage() {
         && (!statusFilter || ticket.status === statusFilter)
         && (!priorityFilter || ticket.priority === priorityFilter)
         && (!raiserFilter || ticket.raisedByType === raiserFilter)
+        && (queueFilter !== 'escalated' || ticket.status === 'Escalated' || Boolean(ticket.escalatedAt))
+        && (queueFilter === 'all' || queueFilter === 'escalated' || ticket.raisedByType === queueFilter)
     })
-  }, [priorityFilter, query, raiserFilter, statusFilter, tickets])
+  }, [priorityFilter, query, queueFilter, raiserFilter, statusFilter, tickets])
 
   async function loadQueueAndSelected(preferredId) {
     const result = await supportApi.list()
@@ -346,11 +349,11 @@ export default function SupportTicketsPage() {
   }
 
   return <main className="support-tickets-page">
-    <header className="support-page-header">
+    <header className="support-page-header support-hero-card">
       <div>
         <p className="support-eyebrow">ServeEase support</p>
-        <h1>Customer Support &amp; Tickets</h1>
-        <p>Review customer and provider requests, track progress, and document support actions.</p>
+        <h1>Welcome, Support Agent {currentUser?.fullName || 'Priya Sharma'}!</h1>
+        <p>Manage customer and provider requests, track progress, and document support actions.</p>
       </div>
       <button className="support-button support-button--secondary" disabled={isRefreshing || isMutating} onClick={refreshTickets} type="button">
         {isRefreshing ? 'Refreshing…' : 'Refresh tickets'}
@@ -362,11 +365,18 @@ export default function SupportTicketsPage() {
     {notice && <p className="support-success" role="status">{notice}</p>}
 
     <section aria-label="Ticket count summary" className="support-summary">
-      <div className="support-summary-card"><span>Total tickets</span><strong>{tickets.length}</strong></div>
-      {['Pending', 'In Progress', 'Escalated'].map((status) => <div className="support-summary-card" key={status}><span>{status}</span><strong>{tickets.filter((ticket) => ticket.status === status).length}</strong></div>)}
+      {[
+        ['Open Tickets', tickets.filter((ticket) => ['Open', 'Pending'].includes(ticket.status)).length],
+        ['Assigned Tickets', tickets.filter((ticket) => Boolean(ticket.assignedTo || ticket.assignedSupportName) && !['Resolved', 'Rejected'].includes(ticket.status)).length],
+        ['Pending Tickets', tickets.filter((ticket) => ['Open', 'Pending'].includes(ticket.status)).length],
+        ['Resolved Tickets', tickets.filter((ticket) => ['Resolved', 'Resolved by Support', 'Rejected'].includes(ticket.status)).length],
+      ].map(([label, count]) => <div className="support-summary-card" key={label}><span>{label}</span><strong>{count}</strong></div>)}
     </section>
 
     <section aria-label="Search and filter tickets" className="support-filters">
+      <div className="support-queue-tabs" role="group" aria-label="Support queues">
+        {['all', 'customer', 'provider', 'escalated'].map((queue) => <button aria-pressed={queueFilter === queue} className={queueFilter === queue ? 'active' : ''} key={queue} onClick={() => setQueueFilter(queue)} type="button">{queue[0].toUpperCase() + queue.slice(1)}</button>)}
+      </div>
       <label className="support-search" htmlFor="support-ticket-search">Search tickets
         <input id="support-ticket-search" onChange={(event) => setQuery(event.target.value)} placeholder="Ticket ID, subject, name, booking…" type="search" value={query} />
       </label>

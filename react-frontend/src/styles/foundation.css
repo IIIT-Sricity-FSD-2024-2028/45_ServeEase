@@ -41,4 +41,4 @@ a { color: inherit; }
 .footer-grid { width: min(1180px, 92%); margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
 .footer-grid h4 { margin: 0 0 10px; }.footer-grid a { display: block; margin-bottom: 8px; color: #dbe6ff; text-decoration: none; font-size: 14px; }
 .footer-bottom-row { width: min(1180px, 92%); margin: 26px auto 0; padding-top: 18px; border-top: 1px solid rgb(219 230 255 / 15%); display: flex; justify-content: space-between; gap: 16px; color: #aebddd; font-size: 13px; }
-@media (max-width: 720px) { .app-header { grid-template-columns: 1fr auto; min-height: 76px; }.primary-nav,.dashboard-search { display: none; }.app-main { width: 92%; }.footer-bottom-row { display: block; } }
+@media (max-width: 720px) { .app-header { grid-template-columns: 1fr auto; min-height: 76px; }.primary-nav,.dashboard-search { display: none; }.app-header--support .dashboard-search { display: block; }.app-main { width: 92%; }.footer-bottom-row { display: block; } }

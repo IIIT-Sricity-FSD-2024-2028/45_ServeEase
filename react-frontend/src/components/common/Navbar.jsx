@@ -1,4 +1,4 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { bookingsApi, ticketsApi } from '../../services/api'
@@ -83,7 +83,12 @@ function formatNotificationTime(value) {
 export function Navbar({ area = 'ServeEase' }) {
   const { currentUser, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isSupportPage = location.pathname.startsWith('/employee/support-tickets')
+  const isSupportDashboard = location.pathname === '/employee/support-tickets'
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [ticketSearch, setTicketSearch] = useState('')
+  const [hasNewNotifications, setHasNewNotifications] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [notificationOwnerKey, setNotificationOwnerKey] = useState('')
@@ -129,6 +134,21 @@ export function Navbar({ area = 'ServeEase' }) {
       document.removeEventListener('keydown', closeOnEscape)
     }
   }, [isNotificationsOpen, isProfileOpen])
+
+  useEffect(() => {
+    if (!isSupportPage) return undefined
+    const refreshCount = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('serveEaseSupportModuleData') || 'null')
+        setHasNewNotifications(Boolean(stored?.notifications?.some((item) => item.read !== true && item.isNew !== false)))
+      } catch { setHasNewNotifications(false) }
+    }
+    refreshCount()
+    if (!isSupportDashboard) return undefined
+    const updateCount = (event) => setHasNewNotifications(Number(event.detail || 0) > 0)
+    window.addEventListener('serveease-notifications-count', updateCount)
+    return () => window.removeEventListener('serveease-notifications-count', updateCount)
+  }, [isSupportDashboard, isSupportPage])
 
   async function loadNotifications() {
     if (!isAuthenticated || currentUser?.role !== 'customer') {
@@ -207,9 +227,9 @@ export function Navbar({ area = 'ServeEase' }) {
     }
   }
 
-  return <header className="app-header">
-    <Link className="brand" to="/"><span className="brand-icon">SE</span><span>ServeEase</span></Link>
-    <nav className="primary-nav" aria-label="Primary navigation">
+  return <header className={`app-header${isSupportPage ? ' app-header--support' : ''}`}>
+    <Link className="brand" to="/"><span className={`brand-icon${isSupportPage ? ' brand-icon--home' : ''}`}>{isSupportPage ? <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" /></svg> : 'SE'}</span><span>ServeEase</span></Link>
+    {!isSupportPage && <nav className="primary-nav" aria-label="Primary navigation">
       <NavLink end to="/">Home</NavLink>
       <NavLink to="/services">Services</NavLink>
       {isCustomerRole && <>
@@ -229,10 +249,12 @@ export function Navbar({ area = 'ServeEase' }) {
         <NavLink to="/employee/support-workspace">Workspace</NavLink>
       </>}
       {isAuthenticated && currentUser?.role === 'superuser' && <NavLink to="/admin">Admin</NavLink>}
-    </nav>
-    <div className="dashboard-search"><input type="search" placeholder="Search for services..." aria-label="Search for services" onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} /></div>
+    </nav>}
+    <div className="dashboard-search"><input type="search" placeholder={isSupportPage ? 'Search tickets or booking references...' : 'Search for services...'} aria-label={isSupportPage ? 'Search support tickets' : 'Search for services'} value={isSupportPage ? ticketSearch : undefined} onChange={isSupportPage ? (event) => { setTicketSearch(event.target.value); if (isSupportDashboard) window.dispatchEvent(new CustomEvent('serveease-ticket-search', { detail: event.target.value })) } : undefined} onKeyDown={isSupportPage ? (event) => { if (event.key === 'Enter' && !isSupportDashboard) navigate(`/employee/support-tickets?search=${encodeURIComponent(ticketSearch)}`) } : (event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} /></div>
     <div className="dashboard-topbar-actions">
-      <div className="notification-wrap" ref={notificationPanelRef}>
+      {isSupportPage
+        ? <button className="icon-btn support-header-bell" type="button" aria-label="Notifications" onClick={() => navigate('/employee/support-tickets#support-notifications')}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>{hasNewNotifications && <span className="support-dot" />}</button>
+        : <div className="notification-wrap" ref={notificationPanelRef}>
         <button aria-expanded={isNotificationsOpen} aria-label={notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'} className="icon-btn notification-trigger" onClick={toggleNotifications} ref={notificationButtonRef} type="button">
           🔔{notificationUnreadCount > 0 && <span className="notification-count">{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}</span>}
         </button>
@@ -254,9 +276,9 @@ export function Navbar({ area = 'ServeEase' }) {
             <p className="navbar-notification-local-note">Read state is stored in this browser for this customer.</p>
           </>}
         </section>}
-      </div>
+        </div>}
       <div className="profile-menu-wrap" ref={profileMenuRef}>
-        <button className="profile-btn" ref={profileButtonRef} type="button" aria-label={`${area} profile`} aria-expanded={isProfileOpen} onClick={() => setIsProfileOpen((open) => !open)}>👤</button>
+        <button className={`profile-btn${isSupportPage ? ' support-profile-btn' : ''}`} ref={profileButtonRef} type="button" aria-label={`${area} profile`} aria-expanded={isProfileOpen} onClick={() => setIsProfileOpen((open) => !open)}>{isSupportPage ? <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.6-3.6 3-5.5 7-5.5s6.4 1.9 7 5.5" /></svg> : '👤'}</button>
         {isProfileOpen && <div className={`profile-dropdown${currentUser?.role === 'customer' ? ' profile-dropdown--customer' : ''}`} role="menu">
           {isAuthenticated ? <>
             {currentUser?.role === 'customer' && <>

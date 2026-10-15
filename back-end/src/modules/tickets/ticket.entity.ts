@@ -83,6 +83,15 @@ export class SupportTicket {
   @ApiProperty({ example: 'late-proof.jpg', required: false })
   attachmentUrl?: string;
 
+  @ApiProperty({ example: 'Screenshot of error message', required: false })
+  attachmentName?: string;
+
+  @ApiProperty({ example: 'image/png', required: false })
+  attachmentType?: string;
+
+  @ApiProperty({ example: 0, required: false })
+  attachmentSize?: number;
+
   @ApiProperty({ example: 'High' })
   priority: TicketPriority;
 

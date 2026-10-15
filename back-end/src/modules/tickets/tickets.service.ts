@@ -201,7 +201,10 @@ export class TicketsService {
   }
 
   escalate(id: string, data: TicketRemarksDto): SupportTicket {
-    const ticket = this.ensureSupportEditable(this.findById(id));
+    const ticket = this.findById(id);
+    if (['Under Review', 'Rejected'].includes(ticket.status)) {
+      throw new BadRequestException('This ticket cannot be escalated from its current status.');
+    }
     ticket.supportRemarks = data.remarks;
     ticket.escalationReason = data.remarks;
     ticket.status = 'Escalated';

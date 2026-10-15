@@ -5686,6 +5686,18 @@
             "type": "string",
             "example": "late-proof.jpg"
           },
+          "attachmentName": {
+            "type": "string",
+            "example": "Screenshot of error message"
+          },
+          "attachmentType": {
+            "type": "string",
+            "example": "image/png"
+          },
+          "attachmentSize": {
+            "type": "number",
+            "example": 0
+          },
           "priority": {
             "type": "string",
             "example": "High"
