@@ -14,8 +14,8 @@ a { color: inherit; }
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 .app-header { min-height: 76px; padding: 0 22px; display: grid; grid-template-columns: 180px auto minmax(180px, 1fr) 80px; align-items: center; gap: 20px; background: #fff; border-bottom: 1px solid #e6ebf2; }
 .brand { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 700; text-decoration: none; color: #4254f4; }
-.brand-icon { width: 32px; height: 32px; min-width: 32px; display: inline-grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, #386bff, #8d34ff); color: #fff; font-size: 0; }
-.brand-icon::before { content: "⌂"; font-size: 16px; }
+.brand-icon { width: 32px; height: 32px; min-width: 32px; display: inline-grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, #386bff, #8d34ff); color: #fff; font-size: 12px; font-weight: 800; }
+.brand-icon::before { content: none; }
 .dashboard-search input { width: 100%; height: 44px; border: 1px solid #e3e8f1; border-radius: 10px; background: #f7f9fd; padding: 0 14px; font-size: 14px; }
 .dashboard-topbar-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
 .icon-btn,.profile-btn { width: 40px; height: 40px; border: 1px solid #e3e8f1; background: #fff; border-radius: 50%; cursor: pointer; }

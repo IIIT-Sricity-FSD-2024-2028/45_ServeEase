@@ -11,6 +11,22 @@ export class TicketsRepository {
     const stored = state.findById(this.stateKey);
     if (stored?.value && Array.isArray((stored.value as { tickets?: SupportTicket[] }).tickets)) {
       this.tickets.push(...((stored.value as { tickets: SupportTicket[] }).tickets));
+      // Canonical records created before attachment metadata was part of the API
+      // can still be hydrated from the legacy support ticket record.
+      const legacy = state.findById('serveEaseSupportModuleData');
+      const legacyTickets = legacy?.value && Array.isArray((legacy.value as { tickets?: Record<string, unknown>[] }).tickets)
+        ? (legacy.value as { tickets: Record<string, unknown>[] }).tickets
+        : [];
+      const legacyById = new Map(legacyTickets.map((ticket) => [String(ticket.ticketId || ticket.id || ''), ticket]));
+      let enriched = false;
+      for (const ticket of this.tickets) {
+        const source = legacyById.get(ticket.ticketId);
+        if (!source) continue;
+        if (!ticket.attachmentName && source.attachmentName) { ticket.attachmentName = String(source.attachmentName); enriched = true; }
+        if (!ticket.attachmentType && (source.attachmentType || source.fileType)) { ticket.attachmentType = String(source.attachmentType || source.fileType); enriched = true; }
+        if (!ticket.attachmentSize && (source.attachmentSize || source.fileSize)) { ticket.attachmentSize = Number(source.attachmentSize || source.fileSize); enriched = true; }
+      }
+      if (enriched) this.persist();
     } else {
       const legacy = state.findById('serveEaseSupportModuleData');
       const legacyTickets = legacy?.value && Array.isArray((legacy.value as { tickets?: unknown[] }).tickets)
@@ -67,6 +83,9 @@ export class TicketsRepository {
       subject: String(value.subject || value.ticketType || 'Support request'),
       description: String(value.description || ''),
       attachmentUrl: String(value.attachmentUrl || value.attachmentId || '') || undefined,
+      attachmentName: String(value.attachmentName || '') || undefined,
+      attachmentType: String(value.attachmentType || value.fileType || '') || undefined,
+      attachmentSize: Number(value.attachmentSize || value.fileSize || 0),
       priority: this.normalizePriority(value.priority),
       status,
       supportRemarks: String(value.supportRemarks || value.supportUpdate || '') || undefined,

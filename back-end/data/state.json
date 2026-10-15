@@ -23042,19 +23042,36 @@
           "subject": "Account Suspension Review",
           "description": "fkbfnbbf",
           "priority": "High",
-          "status": "In Progress",
+          "status": "Escalated",
           "supportRemarks": "Your ticket has been received and is currently being reviewed by the support team.",
           "assignedSupportName": "Support Employee",
           "createdAt": "2026-09-02T13:17:19.844Z",
-          "updatedAt": "2026-09-02T13:17:19.844Z",
+          "updatedAt": "2026-10-15T19:23:15.347Z",
           "statusHistory": [
+            {
+              "status": "Escalated",
+              "note": "Your ticket has been received and is currently being reviewed by the support team.",
+              "updatedBy": "Support",
+              "updatedAt": "2026-10-15T19:23:15.347Z"
+            },
+            {
+              "status": "Resolved by Support",
+              "note": "Your ticket has been received and is currently being reviewed by the support team.",
+              "updatedBy": "Support",
+              "updatedAt": "2026-10-14T19:34:45.174Z"
+            },
             {
               "status": "In Progress",
               "note": "Migrated from development state.",
               "updatedBy": "System",
               "updatedAt": "2026-09-02T13:17:19.844Z"
             }
-          ]
+          ],
+          "resolvedAt": "2026-10-14T19:34:45.171Z",
+          "resolvedBy": "Support",
+          "attachmentName": "No attachment",
+          "escalationReason": "Your ticket has been received and is currently being reviewed by the support team.",
+          "escalatedAt": "2026-10-15T19:23:15.347Z"
         },
         {
           "ticketId": "TICKET-2026-845279",
@@ -23084,7 +23101,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-31T20:07:25.279Z"
             }
-          ]
+          ],
+          "attachmentName": "WhatsApp Image 2026-08-15 at 12.45.46 AM.jpeg",
+          "attachmentType": "image/jpeg",
+          "attachmentSize": 23949
         },
         {
           "ticketId": "TICKET-2026-360835",
@@ -23114,7 +23134,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-25T16:29:20.835Z"
             }
-          ]
+          ],
+          "attachmentName": "IDHV_2026M_12.pptx (2).pdf",
+          "attachmentType": "application/pdf",
+          "attachmentSize": 1278124
         },
         {
           "ticketId": "TICKET-2026-213866",
@@ -23144,7 +23167,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-25T15:53:33.866Z"
             }
-          ]
+          ],
+          "attachmentName": "paper-1.pdf",
+          "attachmentType": "application/pdf",
+          "attachmentSize": 183612
         },
         {
           "ticketId": "PT-20260825-1001",
@@ -23174,7 +23200,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-25T15:19:41.832Z"
             }
-          ]
+          ],
+          "attachmentName": "ID card.jpg",
+          "attachmentType": "image/jpeg",
+          "attachmentSize": 50742
         },
         {
           "ticketId": "TICKET-2026-941767",
@@ -23204,7 +23233,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-25T15:15:41.767Z"
             }
-          ]
+          ],
+          "attachmentName": "S20240010015_Lab 1_ Existing Application Analysis & React Planning.pdf",
+          "attachmentType": "application/pdf",
+          "attachmentSize": 1685349
         },
         {
           "ticketId": "TICKET-2026-800455",
@@ -23234,7 +23266,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-25T15:13:20.455Z"
             }
-          ]
+          ],
+          "attachmentName": "ID card.jpg",
+          "attachmentType": "image/jpeg",
+          "attachmentSize": 50742
         },
         {
           "ticketId": "TICKET-2026-329804",
@@ -23264,7 +23299,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-04T21:18:49.804Z"
             }
-          ]
+          ],
+          "attachmentName": "bing_generated_qrcode.png",
+          "attachmentType": "image/png",
+          "attachmentSize": 2590
         },
         {
           "ticketId": "PT-20260804-1007",
@@ -23294,7 +23332,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-04T20:21:53.719Z"
             }
-          ]
+          ],
+          "attachmentName": "bing_generated_qrcode.png",
+          "attachmentType": "image/png",
+          "attachmentSize": 2590
         },
         {
           "ticketId": "PT-20260804-1006",
@@ -23324,7 +23365,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-04T16:44:40.993Z"
             }
-          ]
+          ],
+          "attachmentName": "Screenshot 2026-08-01 132109.png"
         },
         {
           "ticketId": "PT-20260804-1005",
@@ -23353,7 +23395,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-04T14:05:11.702Z"
             }
-          ]
+          ],
+          "attachmentName": "IMG_20241018_185730.jpg"
         },
         {
           "ticketId": "PT-20260624-1001",
@@ -23383,7 +23426,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-24T08:23:58.220Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "PT-20260521-1001",
@@ -23412,7 +23456,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-21T17:45:15.002Z"
             }
-          ]
+          ],
+          "attachmentName": "WhatsApp Image 2026-05-04 at 8.00.51 PM.jpeg"
         },
         {
           "ticketId": "TICKET-2026-870938",
@@ -23442,7 +23487,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-21T14:47:50.938Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-755329",
@@ -23471,7 +23517,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-21T14:45:55.329Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "PT-MOSZZ0IQ-855",
@@ -23499,7 +23546,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T19:04:19.298Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "PT-MOSZTC8Y-245",
@@ -23527,7 +23575,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T18:59:54.562Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-MOSZO7A4-188",
@@ -23555,7 +23604,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T18:55:54.845Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-MOSZBO8A-787",
@@ -23583,7 +23633,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T18:46:10.284Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "PT-MOSSAAT9-818",
@@ -23611,7 +23662,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T15:29:08.925Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "PT-MOSQWK1P-501",
@@ -23639,7 +23691,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T14:50:28.093Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-MOSPGNJK-894",
@@ -23667,7 +23720,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T14:10:06.512Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-MOSPGNJK-796",
@@ -23695,7 +23749,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T14:10:06.512Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-MOSPGNJJ-330",
@@ -23723,7 +23778,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-05T14:10:06.511Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "PT-1001",
@@ -23752,7 +23808,8 @@
               "updatedBy": "System",
               "updatedAt": "9 Mar 2026"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-2105",
@@ -23768,18 +23825,40 @@
           "subject": "Unable to reschedule my kitchen cleaning service booking",
           "description": "Unable to reschedule booking",
           "priority": "Medium",
-          "status": "Pending",
+          "status": "Escalated",
           "assignedSupportName": "Priya Sharma",
           "createdAt": "2026-03-08T10:15:00",
-          "updatedAt": "2026-03-08T10:15:00",
+          "updatedAt": "2026-10-15T19:19:52.474Z",
           "statusHistory": [
+            {
+              "status": "Escalated",
+              "note": "chbh gvvvv",
+              "updatedBy": "Support",
+              "updatedAt": "2026-10-15T19:19:52.474Z"
+            },
+            {
+              "status": "Escalated",
+              "note": "rfghjmgbhnj",
+              "updatedBy": "Support",
+              "updatedAt": "2026-10-15T18:34:42.267Z"
+            },
+            {
+              "status": "In Progress",
+              "note": "Support moved ticket to In Progress.",
+              "updatedBy": "Support",
+              "updatedAt": "2026-10-15T17:52:40.629Z"
+            },
             {
               "status": "Pending",
               "note": "Migrated from development state.",
               "updatedBy": "System",
               "updatedAt": "2026-03-08T10:15:00"
             }
-          ]
+          ],
+          "attachmentName": "Screenshot of error message",
+          "supportRemarks": "chbh gvvvv",
+          "escalationReason": "chbh gvvvv",
+          "escalatedAt": "2026-10-15T19:19:52.474Z"
         },
         {
           "ticketId": "TICKET-2026-2104",
@@ -23806,7 +23885,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-03-07T09:20:00"
             }
-          ]
+          ],
+          "attachmentName": "Payment screenshot"
         },
         {
           "ticketId": "TICKET-2026-2103",
@@ -23834,7 +23914,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-03-07T00:00:00.000Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-2102",
@@ -23861,7 +23942,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-03-06T11:15:00"
             }
-          ]
+          ],
+          "attachmentName": "Crash screenshot"
         },
         {
           "ticketId": "TICKET-2026-2101",
@@ -23888,7 +23970,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-03-06T08:10:00"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-2100",
@@ -23915,7 +23998,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-03-05T02:40:00"
             }
-          ]
+          ],
+          "attachmentName": "Refund timeline screenshot"
         },
         {
           "ticketId": "TICKET-2026-2106",
@@ -23943,7 +24027,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-03-08T06:45:00"
             }
-          ]
+          ],
+          "attachmentName": "Cancellation note"
         },
         {
           "ticketId": "TICKET-2026-840390",
@@ -23973,7 +24058,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-30T17:44:00.390Z"
             }
-          ]
+          ],
+          "attachmentName": "1Tutorial Questions.pdf",
+          "attachmentType": "application/pdf",
+          "attachmentSize": 98278
         },
         {
           "ticketId": "TICKET-MT7FTLLR-355",
@@ -24001,7 +24089,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-03-07T02:40:00.000Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-051147",
@@ -24031,7 +24120,10 @@
               "updatedBy": "System",
               "updatedAt": "2026-08-05T05:50:51.147Z"
             }
-          ]
+          ],
+          "attachmentName": "receipt (2).pdf",
+          "attachmentType": "application/pdf",
+          "attachmentSize": 177917
         },
         {
           "ticketId": "TICKET-2026-814140",
@@ -24060,7 +24152,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-07-04T15:26:54.140Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-493156",
@@ -24089,7 +24182,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-07-04T10:21:33.156Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-456221",
@@ -24119,7 +24213,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-28T14:20:56.221Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-003969",
@@ -24148,7 +24243,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-28T13:56:43.969Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-653471",
@@ -24176,7 +24272,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-28T12:27:33.471Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-080253",
@@ -24204,7 +24301,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-28T12:18:00.253Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-331318",
@@ -24233,7 +24331,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-26T05:55:31.318Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-264529",
@@ -24262,7 +24361,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-26T05:21:04.529Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-910162",
@@ -24291,7 +24391,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-26T05:15:10.162Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-2026-864380",
@@ -24320,7 +24421,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-06-26T05:14:24.380Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "PT-MPC7U2XE-997",
@@ -24350,7 +24452,8 @@
               "updatedBy": "System",
               "updatedAt": "2026-05-19T05:52:03.410Z"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         },
         {
           "ticketId": "TICKET-MPAU72OP-841",
@@ -24379,11 +24482,12 @@
               "updatedBy": "System",
               "updatedAt": "8 Mar 2026"
             }
-          ]
+          ],
+          "attachmentName": "No attachment"
         }
       ]
     },
-    "updatedAt": "2026-09-03T08:52:37.368Z"
+    "updatedAt": "2026-10-15T19:23:15.347Z"
   },
   {
     "key": "serveEaseProviderServices:PRO-CAT-037",
