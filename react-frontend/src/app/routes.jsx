@@ -17,10 +17,11 @@ import CustomerDashboardPage from '../features/customer/dashboard/CustomerDashbo
 import CustomerPaymentHistoryPage from '../features/customer/payments/CustomerPaymentHistoryPage'
 import CustomerProfilePage from '../features/customer/profile/CustomerProfilePage'
 import CustomerSupportPage from '../features/customer/support/CustomerSupportPage'
+import HomePage from '../features/home/HomePage'
 import { ProtectedRoute } from '../components/common/ProtectedRoute'
 import { LoginPage } from '../features/auth/LoginPage'
 import { SignupPage } from '../features/auth/SignupPage'
-import { BookingFormPage, CheckoutPage, ConfirmationPage, HomePage, ProviderDetailsPage, ServicesPage } from '../features/discovery/DiscoveryPages'
+import { BookingFormPage, CheckoutPage, ConfirmationPage, ProviderDetailsPage, ServicesPage } from '../features/discovery/DiscoveryPages'
 
 function NotFound() {
   return <section className="foundation-card"><h1>Page not found</h1><p>This React route has not been defined yet.</p></section>
@@ -28,13 +29,16 @@ function NotFound() {
 
 export function AppRoutes() {
   return <Routes>
+    <Route path="/" element={<HomePage />} />
+    {/* Discovery pages and the booking confirmation render the original page chrome themselves. */}
+    <Route path="/services" element={<ServicesPage />} />
+    <Route path="/services/:serviceId" element={<ServicesPage />} />
+    <Route path="/providers/:providerId" element={<ProviderDetailsPage />} />
+    <Route path="/customer/booking-confirmation" element={<ProtectedRoute role="customer"><ConfirmationPage /></ProtectedRoute>} />
+
     <Route element={<PublicLayout />}>
-      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/services" element={<ServicesPage />} />
-      <Route path="/services/:serviceId" element={<ServicesPage />} />
-      <Route path="/providers/:providerId" element={<ProviderDetailsPage />} />
       <Route path="/not-found" element={<NotFound />} />
     </Route>
 
@@ -47,7 +51,6 @@ export function AppRoutes() {
       <Route path="/customer/support" element={<ProtectedRoute role="customer"><CustomerSupportPage /></ProtectedRoute>} />
       <Route path="/customer/bookings/new" element={<ProtectedRoute role="customer"><BookingFormPage /></ProtectedRoute>} />
       <Route path="/customer/checkout" element={<ProtectedRoute role="customer"><CheckoutPage /></ProtectedRoute>} />
-      <Route path="/customer/booking-confirmation" element={<ProtectedRoute role="customer"><ConfirmationPage /></ProtectedRoute>} />
     </Route>
 
     <Route element={<ProviderLayout />}>

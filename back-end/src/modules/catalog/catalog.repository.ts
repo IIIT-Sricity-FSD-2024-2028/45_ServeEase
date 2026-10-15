@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { CATALOG_STATE_KEY, catalogSnapshotFromState } from './catalog-snapshot';
 import { CatalogProvider, CatalogState } from './catalog.entity';
 import { SyncCatalogDto } from './dto/sync-catalog.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
@@ -7,7 +8,8 @@ import { StateRepository } from '../state/state.repository';
 import { canonicalProviderId } from '../../common/provider-identity';
 
 @Injectable()
-export class CatalogRepository {
+export class CatalogRepository implements OnModuleInit {
+  private readonly logger = new Logger(CatalogRepository.name);
   private catalog: CatalogState = {
     categories: [],
     providers: [],
@@ -15,6 +17,35 @@ export class CatalogRepository {
   };
 
   constructor(private readonly stateRepository: StateRepository) {}
+
+  // Nest runs this before the HTTP server listens, so GET /catalog is populated from saved data
+  // without waiting for a superuser sync.
+  onModuleInit(): void {
+    this.initializeFromState();
+  }
+
+  /**
+   * Loads the catalog from the persisted serveEaseData snapshot through the same normalization as
+   * a superuser sync. It replaces (never appends to) the in-memory catalog, so repeated runs give
+   * the same result, and it writes nothing to the state file. Returns false and leaves the catalog
+   * unchanged when there is no usable snapshot.
+   */
+  initializeFromState(): boolean {
+    const entry = this.stateRepository.findById(CATALOG_STATE_KEY);
+    if (!entry) {
+      this.logger.warn(`Catalog not initialized: the state file has no "${CATALOG_STATE_KEY}" entry. GET /catalog stays empty until a superuser sync.`);
+      return false;
+    }
+    const { catalog, skipped, error } = catalogSnapshotFromState(entry.value);
+    if (skipped.length) this.logger.warn(`Catalog initialization skipped ${skipped.length} invalid record(s): ${skipped.join('; ')}`);
+    if (!catalog) {
+      this.logger.error(`Catalog not initialized: ${error} GET /catalog stays empty until a superuser sync.`);
+      return false;
+    }
+    this.catalog = this.buildCatalog(catalog);
+    this.logger.log(`Catalog initialized from "${CATALOG_STATE_KEY}": ${this.catalog.categories.length} categories, ${this.catalog.providers.length} providers, ${this.catalog.popularServices.length} popular services.`);
+    return true;
+  }
 
   private servicesKey(providerId: string): string {
     return `serveEaseProviderServices:${canonicalProviderId(providerId)}`;
@@ -87,12 +118,16 @@ export class CatalogRepository {
         this.syncServices(provider.ownerProviderId, provider.services.concat(inactive));
       }
     });
-    this.catalog = {
+    this.catalog = this.buildCatalog(data);
+    return this.catalog;
+  }
+
+  private buildCatalog(data: SyncCatalogDto): CatalogState {
+    return {
       categories: data.categories,
       providers: this.normalizeProviders(data.providers),
       popularServices: data.popularServices ?? [],
     };
-    return this.catalog;
   }
 
   update(id: string, data: UpdateProviderDto): CatalogProvider | undefined {

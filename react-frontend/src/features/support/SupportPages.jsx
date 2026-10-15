@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
+import { ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { ticketsApi } from '../../services/api'
 import { useAuth } from '../../context/useAuth'
 import './support.css'

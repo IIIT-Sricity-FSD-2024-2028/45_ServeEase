@@ -14,8 +14,8 @@ a { color: inherit; }
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 .app-header { min-height: 76px; padding: 0 22px; display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 18px; background: #fff; border-bottom: 1px solid #e6ebf2; }
 .brand { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 700; text-decoration: none; color: #4254f4; }
-.brand-icon { width: 32px; height: 32px; min-width: 32px; display: inline-grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, #386bff, #8d34ff); color: #fff; font-size: 12px; font-weight: 800; }
-.brand-icon::before { content: none; }
+.brand-icon { width: 32px; height: 32px; min-width: 32px; display: inline-grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, #386bff, #8d34ff); color: #fff; font-size: 0; }
+.brand-icon::before { content: "⌂"; font-size: 16px; }
 .primary-nav { display: flex; align-items: center; gap: 16px; min-width: 0; white-space: nowrap; }
 .primary-nav a { color: #536273; text-decoration: none; font-size: 14px; font-weight: 600; }
 .primary-nav a.active { color: #3158d4; }
