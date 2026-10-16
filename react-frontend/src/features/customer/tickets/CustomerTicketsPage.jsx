@@ -50,7 +50,7 @@ export default function CustomerTicketsPage() {
       <div><h3>{ticket.ticketId}</h3><p>{ticket.ticketType} • {ticket.providerName || 'Provider not recorded'}</p></div>
       <TicketStatus status={ticket.status} />
       <div className="ticket-meta"><span>Booking: {ticket.relatedBookingId || 'Not provided'}</span><span>Raised: {formatDisplayDate(ticket.createdAt)}</span></div>
-      <div className="ticket-meta"><span>Support: {ticket.supportRemarks ? 'Update available' : 'Pending review'}</span><span>Decision: {ticket.finalDecision || 'Awaiting decision'}</span></div>
+      <div className="ticket-meta"><span>Support: {ticket.supportUpdate ? 'Update available' : 'Pending review'}</span><span>Decision: {ticket.finalDecision || 'Awaiting decision'}</span></div>
       <button className="secondary-action" onClick={() => setParam('ticket', ticket.ticketId)} type="button">View Details</button>
     </article>)}</section> : <div className="empty-state-card">{query ? 'No tickets match your search.' : 'No tickets found.'}</div>)}
 

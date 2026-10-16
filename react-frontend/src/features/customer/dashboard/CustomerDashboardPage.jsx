@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { ErrorState, LoadingState } from '../../../components/common/FeedbackStates'
 import { bookingsApi, ticketsApi } from '../../../services/api'
-import { formatDisplayDate, formatPrice } from '../customerOperations'
+import { formatDisplayDate, formatPrice, paymentTag, transactionId } from '../customerOperations'
 import '../customerOperations.css'
 
 const upcomingStatuses = new Set(['Pending', 'Accepted', 'Requested'])
@@ -85,7 +85,7 @@ export default function CustomerDashboardPage() {
   const summary = useMemo(() => ({
     total: bookings.length,
     upcoming: bookings.filter((booking) => upcomingStatuses.has(booking.status)).length,
-    successful: bookings.filter((booking) => booking.paymentStatus === 'Successful').length,
+    successful: bookings.filter((booking) => booking.paymentStatus && paymentTag(booking.paymentStatus) === 'Paid').length,
     openTickets: tickets.filter((ticket) => openTicketStatuses.has(ticket.status)).length,
   }), [bookings, tickets])
 
@@ -118,7 +118,7 @@ export default function CustomerDashboardPage() {
       <section className="dashboard-stats-grid" aria-label="Summary cards">
         <StatCard icon="📘" tone="blue" value={summary.total} label="Total Bookings" />
         <StatCard icon="📅" tone="green" value={summary.upcoming} label="Upcoming Bookings" />
-        <StatCard icon="💳" tone="orange" value={summary.successful} label="Successful Payments" />
+        <StatCard icon="💳" tone="orange" value={summary.successful} label="Paid Payments" />
         <StatCard icon="🎫" tone="purple" value={summary.openTickets} label="Open Tickets" />
       </section>
 
@@ -132,7 +132,7 @@ export default function CustomerDashboardPage() {
         <div className="panel-card">
           <div className="panel-head"><h2>Recent Payments</h2><Link to="/customer/payments">View All</Link></div>
           {recentPayments.length
-            ? recentPayments.map((booking) => <PreviewItem key={booking.id || `payment-${booking.date}`} meta={preview(booking.paymentId || booking.transactionId, formatPrice(booking.customerTotal ?? booking.amount), booking.paymentStatus)} title={booking.service || 'Service booking'} />)
+            ? recentPayments.map((booking) => <PreviewItem key={booking.id || `payment-${booking.date}`} meta={preview(transactionId(booking), formatPrice(booking.customerTotal ?? booking.amount), paymentTag(booking.paymentStatus))} title={booking.service || 'Service booking'} />)
             : <div className="empty-state-card">No payments yet.</div>}
         </div>
       </section>

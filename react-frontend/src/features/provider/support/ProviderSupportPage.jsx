@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { bookingsApi, ticketsApi } from '../../../services/api'
 import { providerStatusPill } from '../providerStatus'
+import { TicketChatModal } from '../../support/TicketChatModal'
 import '../providerPortal.css'
 
 const ticketTypes = ['Payment Not Received', 'Verification Issue', 'Booking Assignment Issue', 'Customer Misbehavior', 'Technical Problem', 'Service Category Change', 'Availability Issue', 'Account Suspension Appeal', 'Other']
@@ -44,7 +45,7 @@ function TicketDetailsModal({ ticket, onClose }) {
         <div className="provider-ticket-detail-box"><strong>Ticket Information</strong><DetailRow label="Ticket ID">{ticketId(ticket)}</DetailRow><DetailRow label="Status"><span className={`status-pill ${providerStatusPill(ticket.status)}`}>{ticket.status || 'Pending'}</span></DetailRow><DetailRow label="Created On">{formatDate(ticket.createdAt)}</DetailRow></div>
         <div className="provider-ticket-detail-box"><strong>Issue Summary</strong><DetailRow label="Booking Ref">{ticket.relatedBookingId || 'General provider support'}</DetailRow><DetailRow label="Related Customer">{ticket.customerName || 'N/A'}</DetailRow><DetailRow label="Service">{ticket.service || 'N/A'}</DetailRow><DetailRow label="Priority">{ticket.priority || 'Medium'}</DetailRow><DetailRow label="Category">{ticket.ticketType || 'Other'}</DetailRow><DetailRow label="Subject">{ticket.subject || ticket.ticketType || 'Provider support request'}</DetailRow></div>
         <div className="provider-ticket-detail-box"><strong>Description</strong><p>{ticket.description || 'No description provided.'}</p>{ticket.attachmentUrl && <a className="attachment-link" href={ticket.attachmentUrl} rel="noreferrer" target="_blank">Preview attachment</a>}</div>
-        <div className="provider-ticket-detail-box"><strong>Support Update</strong><p>{ticket.supportUpdate || ticket.supportRemarks || 'Your ticket has been received and is currently being reviewed by the support team.'}</p></div>
+        <div className="provider-ticket-detail-box"><strong>Support Update</strong><p>{ticket.supportUpdate || 'Your ticket has been received and is currently being reviewed by the support team.'}</p></div>
       </div></div>
     </section>
   </div>
@@ -59,6 +60,7 @@ export function ProviderSupportPage() {
   const [attachmentInputKey, setAttachmentInputKey] = useState(0)
   const [faqOpen, setFaqOpen] = useState(null)
   const [selectedTicket, setSelectedTicket] = useState(null)
+  const [chatTicket, setChatTicket] = useState(null)
   const [loadState, setLoadState] = useState('loading')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
@@ -152,11 +154,12 @@ export function ProviderSupportPage() {
             {loadState === 'loading' && <div className="superuser-empty-state">Loading your provider tickets…</div>}
             {loadState === 'error' && <div className="superuser-empty-state">{error || 'Unable to load provider tickets.'}</div>}
             {loadState === 'ready' && tickets.length === 0 && <div className="superuser-empty-state">You have not raised any provider support tickets yet.</div>}
-            {loadState === 'ready' && tickets.map((ticket) => <div className="ticket-card" key={ticketId(ticket)}><div className="ticket-top"><h3>{ticket.subject || ticket.ticketType || 'Provider support request'}</h3><span className={`status-pill ${providerStatusPill(ticket.status)}`}>{ticket.status || 'Pending'}</span></div><div className="ticket-meta">Ticket ID: <strong>{ticketId(ticket)}</strong></div><div className="ticket-meta">{ticket.ticketType || 'Other'} - {ticket.priority || 'Medium'} - {formatDate(ticket.createdAt)}</div><div className="ticket-meta">Booking: {ticket.relatedBookingId || 'General'}{ticket.customerName ? ` - Customer: ${ticket.customerName}` : ''}</div><div className="ticket-actions"><button className="secondary-action provider-ticket-view-btn" onClick={() => openDetails(ticket)} type="button">View Details</button></div></div>)}
+            {loadState === 'ready' && tickets.map((ticket) => <div className="ticket-card" key={ticketId(ticket)}><div className="ticket-top"><h3>{ticket.subject || ticket.ticketType || 'Provider support request'}</h3><span className={`status-pill ${providerStatusPill(ticket.status)}`}>{ticket.status || 'Pending'}</span></div><div className="ticket-meta">Ticket ID: <strong>{ticketId(ticket)}</strong></div><div className="ticket-meta">{ticket.ticketType || 'Other'} - {ticket.priority || 'Medium'} - {formatDate(ticket.createdAt)}</div><div className="ticket-meta">Booking: {ticket.relatedBookingId || 'General'}{ticket.customerName ? ` - Customer: ${ticket.customerName}` : ''}</div><div className="ticket-actions"><button className="secondary-action provider-ticket-view-btn" onClick={() => openDetails(ticket)} type="button">View Details</button><button className="btn btn-primary provider-ticket-chat-btn" onClick={() => setChatTicket(ticket)} type="button">Chat with Support</button></div></div>)}
           </div>
         </div>
       </div>
     </section>
+    {chatTicket && <TicketChatModal audience="provider" key={chatTicket.ticketId} onClose={() => setChatTicket(null)} ticket={chatTicket} />}
     {selectedTicket && <TicketDetailsModal onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />}
   </section>
 }

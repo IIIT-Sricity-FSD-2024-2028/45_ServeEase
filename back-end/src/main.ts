@@ -28,7 +28,12 @@ async function bootstrap() {
   // development fixtures). Provider verification documents are private: they are served only through the
   // authenticated provider-document API from canonical storage.
   for (const folder of ['profiles', 'tickets', 'dev-fixtures/profiles', 'dev-fixtures/tickets']) {
-    app.useStaticAssets(join(process.cwd(), 'uploads', folder), { prefix: `/uploads/${folder}/` });
+    app.useStaticAssets(join(process.cwd(), 'uploads', folder), {
+      prefix: `/uploads/${folder}/`,
+      // These files are public by design and are shown inline (e.g. a ticket attachment preview on the support
+      // page, which runs on a different origin); nosniff keeps them from ever being treated as anything but images/PDF.
+      setHeaders: (response) => { response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'); response.setHeader('X-Content-Type-Options', 'nosniff'); },
+    });
   }
 
   const config = new DocumentBuilder()

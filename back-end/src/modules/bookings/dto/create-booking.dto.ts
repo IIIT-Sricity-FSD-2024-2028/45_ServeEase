@@ -131,9 +131,9 @@ export class CreateBookingDto {
   @MaxLength(120)
   category?: string;
 
-  @ApiProperty({ example: 'Pending', required: false, enum: ['Pending', 'Successful', 'Refunded', 'Failed'] })
+  @ApiProperty({ example: 'Pending', required: false, enum: ['Pending', 'Paid', 'Successful', 'Refunded', 'Failed'] })
   @IsOptional()
-  @IsIn(['Pending', 'Successful', 'Refunded', 'Failed'])
+  @IsIn(['Pending', 'Paid', 'Successful', 'Refunded', 'Failed'])
   paymentStatus?: string;
 
   @ApiProperty({ example: 'UPI - Google Pay', required: false })

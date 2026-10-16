@@ -57,14 +57,16 @@ export class BookingsRepository {
     data.providerId = canonicalProviderId(data.providerId);
     const status = data.status ?? 'Pending';
     const createdAt = new Date().toISOString();
+    const id = this.nextBookingReference(createdAt);
     const booking = {
       ...data,
-      id: this.nextBookingReference(createdAt),
+      id,
       createdAt,
       status,
       category: data.category ?? data.service,
       paymentStatus: data.paymentStatus ?? 'Pending',
       paymentDate: data.paymentDate ?? this.paymentDateFor(data.date),
+      paymentId: data.paymentId ?? (data.paymentStatus === 'Paid' ? `TXN-${id.replace(/^BOOK-/, '')}` : undefined),
       statusUpdatedAt: data.statusUpdatedAt ?? createdAt,
       stateVersion: data.stateVersion ?? 1,
       receivedDate: status === 'Completed' ? (data.receivedDate ?? this.receivedDateFor(data.date)) : undefined,

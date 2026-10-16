@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { bookingsApi } from '../../services/api'
 import { formatCurrency, formatDisplayDate } from './catalogModel'
+import { paymentTag } from '../customer/customerOperations'
 import { readJourney } from './journeyState'
 import './journey.css'
 
@@ -57,7 +58,7 @@ export function ConfirmationPage() {
         <div className="checkout-info-row"><span>Provider</span><strong>{booking.provider}</strong></div>
         <div className="checkout-info-row"><span>Date</span><strong>{formatDisplayDate(booking.date)}</strong></div>
         <div className="checkout-info-row"><span>Time</span><strong>{booking.time}</strong></div>
-        <div className="checkout-info-row"><span>Payment Status</span><strong>{booking.paymentStatus || 'Pending'}</strong></div>
+        <div className="checkout-info-row"><span>Payment Status</span><strong>{paymentTag(booking.paymentStatus)}</strong></div>
         <div className="checkout-total-row compact"><span>Total Amount</span><strong>{formatCurrency(booking.customerTotal ?? booking.amount)}</strong></div>
       </div>
 

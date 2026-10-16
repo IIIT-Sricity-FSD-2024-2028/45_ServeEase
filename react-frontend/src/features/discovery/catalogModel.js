@@ -163,7 +163,8 @@ export function filterProviders(rows, { query = '', service = 'all', maxPrice = 
 export function ratingSummary(provider) {
   const reviews = Number(provider?.reviews) || 0
   const rating = Number(provider?.rating) || 0
-  return reviews && rating ? { rating, reviews } : null
+  // The backend computes rating and reviews from stored customer reviews; shown with one decimal like the original site.
+  return reviews && rating ? { rating: rating.toFixed(1), reviews } : null
 }
 
 export const availabilityProviderId = (provider) => provider?.ownerProviderId || provider?.id

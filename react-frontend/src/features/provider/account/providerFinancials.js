@@ -69,7 +69,7 @@ export function projectTransaction(record) {
   if (payout == null && bookingStatus !== 'cancelled') payout = roundCurrency(serviceFee * (1 - commissionRate / 100))
   if (commission == null && payout != null) commission = roundCurrency(serviceFee - payout)
   if (!derivedStatus) derivedStatus = bookingStatus === 'completed' ? 'Paid' : 'Pending'
-  return { ...record, transactionId: record?.paymentId || null, bookingRef: record?.id, customer: record?.customerName, serviceFee, commission, payout, status: derivedStatus, payoutDate: record?.payoutDate || record?.receivedDate || record?.paymentDate }
+  return { ...record, transactionId: record?.paymentId || (record?.id ? `TXN-${String(record.id).replace(/^BOOK-/, '')}` : null), bookingRef: record?.id, customer: record?.customerName, serviceFee, commission, payout, status: derivedStatus, payoutDate: record?.payoutDate || record?.receivedDate || record?.paymentDate }
 }
 
 export function projectTransactions(records) {

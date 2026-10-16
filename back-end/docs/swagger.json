@@ -63,6 +63,36 @@
         }
       }
     },
+    "/api/auth/profile": {
+      "patch": {
+        "operationId": "AuthController_updateProfile",
+        "parameters": [
+          {
+            "name": "authorization",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/auth/logout": {
       "post": {
         "operationId": "AuthController_logout",
@@ -2110,6 +2140,50 @@
         ]
       }
     },
+    "/api/provider/profile-photo": {
+      "get": {
+        "operationId": "ProviderProfilePhotoController_photo",
+        "summary": "Stream your current profile photo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "provider-profile-photo"
+        ]
+      },
+      "put": {
+        "operationId": "ProviderProfilePhotoController_replace",
+        "summary": "Replace your profile photo (PNG or JPEG)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "provider-profile-photo"
+        ]
+      }
+    },
     "/api/admin/provider-documents/migrations": {
       "post": {
         "operationId": "ProviderDocumentMigrationController_migrate",
@@ -3124,6 +3198,135 @@
         ]
       }
     },
+    "/api/tickets/{id}/messages": {
+      "post": {
+        "operationId": "TicketsController_addOwnerMessage",
+        "summary": "Add a chat message to one of your own tickets",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets/{id}/messages": {
+      "post": {
+        "operationId": "TicketsController_addSupportMessage",
+        "summary": "Reply to the customer or provider on a ticket",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
+    "/api/support/tickets/{id}/solution": {
+      "patch": {
+        "operationId": "TicketsController_supportSolution",
+        "summary": "Save the solution shown to the customer or provider as the Support Update",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use customer/user, provider, support, admin, or superuser role.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketSolutionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ]
+      }
+    },
     "/api/support/tickets": {
       "get": {
         "operationId": "TicketsController_supportTickets",
@@ -4105,6 +4308,94 @@
           "employee-operations"
         ]
       }
+    },
+    "/api/reviews/mine": {
+      "get": {
+        "operationId": "ReviewsController_mine",
+        "summary": "List the reviews you wrote (customer)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/bookings/{bookingId}": {
+      "put": {
+        "operationId": "ReviewsController_save",
+        "summary": "Rate one of your completed bookings, or edit your review of it (customer)",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/provider": {
+      "get": {
+        "operationId": "ReviewsController_forProvider",
+        "summary": "Your average rating and the reviews customers left you (provider)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/reviews/listings/{listingId}": {
+      "get": {
+        "operationId": "ReviewsController_forListing",
+        "summary": "A provider listing's average rating and latest reviews",
+        "parameters": [
+          {
+            "name": "listingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "reviews"
+        ]
+      }
     }
   },
   "info": {
@@ -4130,6 +4421,10 @@
         "properties": {}
       },
       "RegisterDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateProviderProfileDto": {
         "type": "object",
         "properties": {}
       },
@@ -4587,6 +4882,7 @@
             "example": "Pending",
             "enum": [
               "Pending",
+              "Paid",
               "Successful",
               "Refunded",
               "Failed"
@@ -4705,6 +5001,11 @@
             "type": "string",
             "example": "9876543210",
             "description": "Display/contact value only; not verified identity."
+          },
+          "paymentMethod": {
+            "type": "string",
+            "example": "Net Banking - HDFC Bank",
+            "description": "How the customer chose to pay at checkout."
           }
         },
         "required": [
@@ -4821,6 +5122,7 @@
             "example": "Pending",
             "enum": [
               "Pending",
+              "Paid",
               "Successful",
               "Refunded",
               "Failed"
@@ -6190,6 +6492,43 @@
           "updatedAt"
         ]
       },
+      "TicketMessage": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "example": "MSG-1"
+          },
+          "senderType": {
+            "type": "string",
+            "enum": [
+              "customer",
+              "provider",
+              "agent",
+              "admin"
+            ]
+          },
+          "sender": {
+            "type": "string",
+            "example": "Priya Sharma"
+          },
+          "text": {
+            "type": "string",
+            "example": "Thanks, we are looking into it."
+          },
+          "sentAt": {
+            "type": "string",
+            "example": "2026-05-20T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "messageId",
+          "senderType",
+          "sender",
+          "text",
+          "sentAt"
+        ]
+      },
       "SupportTicket": {
         "type": "object",
         "properties": {
@@ -6329,6 +6668,16 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TicketStatusHistory"
+            }
+          },
+          "supportUpdate": {
+            "type": "string",
+            "description": "The solution support shared with the customer or provider (the \"Support Update\")."
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TicketMessage"
             }
           }
         },
@@ -6470,6 +6819,30 @@
           "ticketType",
           "subject",
           "description"
+        ]
+      },
+      "TicketMessageDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "example": "Thanks, I have uploaded the receipt."
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "TicketSolutionDto": {
+        "type": "object",
+        "properties": {
+          "solution": {
+            "type": "string",
+            "example": "Your refund has been initiated and will reach you in 3-5 working days."
+          }
+        },
+        "required": [
+          "solution"
         ]
       },
       "TicketStatusDto": {
@@ -6619,6 +6992,10 @@
           "status",
           "reason"
         ]
+      },
+      "SaveReviewDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }

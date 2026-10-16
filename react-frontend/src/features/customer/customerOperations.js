@@ -25,9 +25,15 @@ export function belongsToCustomer(record, user) {
 }
 
 // customer.js statusClass(): one colour family per state.
+// There is no payment gateway (pressing Pay is the payment), so a payment is either Paid or Refunded.
+export const paymentTag = (status) => (String(status || '').toLowerCase() === 'refunded' ? 'Refunded' : 'Paid')
+
+// Bookings paid before the backend stored a transaction ID get the same reference it now assigns at payment.
+export const transactionId = (booking) => booking?.paymentId || (booking?.id ? `TXN-${String(booking.id).replace(/^BOOK-/, '')}` : '')
+
 export function statusPillClass(status) {
   const value = String(status || '').toLowerCase()
-  if (['accepted', 'completed', 'successful'].includes(value)) return 'status-accepted'
+  if (['accepted', 'completed', 'successful', 'paid'].includes(value)) return 'status-accepted'
   if (value === 'refunded') return 'status-refunded'
   if (['failed', 'cancelled', 'rejected', 'incomplete'].includes(value)) return 'status-cancelled'
   return 'status-pending'
@@ -149,6 +155,26 @@ export function filterTickets(tickets, term) {
 }
 
 export const bookingTotal = (booking) => booking.customerTotal ?? booking.amount
+
+// Payment History statistics. Every payment is Paid or Refunded; money returned to the customer is subtracted,
+// so Total Payments Made + Refunded Amount adds back up to what was charged.
+export function summarizePayments(payments) {
+  const round = (value) => Math.round((value + Number.EPSILON) * 100) / 100
+  const number = (value) => (value === undefined || value === null || value === '' || !Number.isFinite(Number(value)) ? null : Number(value))
+  let charged = 0
+  let refunded = 0
+  let successful = 0
+  payments.forEach((payment) => {
+    const total = number(payment.customerTotal ?? payment.amount)
+    const refundedTag = paymentTag(payment.paymentStatus) === 'Refunded'
+    if (!refundedTag) successful += 1
+    if (total == null) return
+    const refund = Math.min(number(payment.refundAmount) ?? (refundedTag ? total : 0), total)
+    charged += total
+    refunded += refund
+  })
+  return { totalPaid: round(charged - refunded), successful, refunded: round(refunded) }
+}
 
 const maxAttachmentSize = 5000 * 1024
 const attachmentExtensions = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp'])

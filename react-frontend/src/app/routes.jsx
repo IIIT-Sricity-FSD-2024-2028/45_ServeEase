@@ -8,9 +8,9 @@ import { ProviderDashboardPage } from '../features/provider/dashboard/ProviderDa
 import { ProviderBookingsPage } from '../features/provider/bookings/ProviderBookingsPage'
 import { ProviderAvailabilityPage } from '../features/provider/availability/ProviderAvailabilityPage'
 import { ProviderSupportPage } from '../features/provider/support/ProviderSupportPage'
-import { ProviderAccountPage, ProviderEarningsPage } from '../features/provider/account/ProviderAccountPages'
+import { ProviderEarningsPage } from '../features/provider/account/ProviderAccountPages'
+import { ProviderAccountPage } from '../features/provider/account/ProviderProfilePage'
 import { SupportDashboardPage, SupportTicketDetailPage } from '../features/support/SupportPages'
-import SupportTicketsPage from '../features/support/tickets/SupportTicketsPage'
 import { adminRoutes } from '../features/admin/adminRoutes'
 import CustomerBookingsPage from '../features/customer/bookings/CustomerBookingsPage'
 import CustomerDashboardPage from '../features/customer/dashboard/CustomerDashboardPage'
@@ -86,7 +86,6 @@ export function AppRoutes() {
       <Route path="/employee" element={<ProtectedRoute role={['support', 'superuser']}><EmployeeHome /></ProtectedRoute>} />
       <Route path="/employee/support-tickets" element={<ProtectedRoute department="Support" role="support"><SupportDashboardPage /></ProtectedRoute>} />
       <Route path="/employee/support-tickets/:ticketId" element={<ProtectedRoute department="Support" role="support"><SupportTicketDetailPage /></ProtectedRoute>} />
-      <Route path="/employee/support-workspace" element={<ProtectedRoute department="Support" role="support"><SupportTicketsPage /></ProtectedRoute>} />
       <Route path="/employee/customer-operations" element={<ProtectedRoute department="Customer Operations" role={['support', 'superuser']}><EmployeeCustomerOperationsPage /></ProtectedRoute>} />
       <Route path="/employee/customer-operations/:customerId" element={<ProtectedRoute department="Customer Operations" role={['support', 'superuser']}><EmployeeCustomerDetailPage /></ProtectedRoute>} />
       <Route path="/employee/provider-operations" element={<ProtectedRoute department="Provider Operations" role={['support', 'superuser']}><EmployeeProviderOperationsPage /></ProtectedRoute>} />

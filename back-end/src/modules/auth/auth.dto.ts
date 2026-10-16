@@ -31,3 +31,17 @@ export class RegisterDto {
   @IsOptional() documents?: Array<Record<string, unknown>>;
   @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({ each: true }) @Type(() => RegisterServiceDto) services?: RegisterServiceDto[];
 }
+
+// Fields a signed-in provider may change on their own account. Email, account id, category and status stay
+// server-controlled: the email is the login and document-ownership key, the rest are set by registration/review.
+export class UpdateProviderProfileDto {
+  @IsOptional() @IsString() @Matches(/^[A-Za-z\s]{3,}$/) fullName?: string;
+  @IsOptional() @IsString() @MinLength(2) @MaxLength(120) organisationName?: string;
+  @IsOptional() @Matches(/^\d{10}$/) phone?: string;
+  @IsOptional() @IsInt() @Min(1) @Max(5) cityId?: number;
+  @IsOptional() @IsInt() @Min(0) @Max(50) experience?: number;
+  @IsOptional() @IsString() @MaxLength(80) bankName?: string;
+  @IsOptional() @IsString() @Matches(/^[A-Za-z\s.]{3,80}$/) accountHolder?: string;
+  @IsOptional() @Matches(/^[0-9Xx]{9,18}$/) accountNumber?: string;
+  @IsOptional() @Matches(/^[A-Za-z]{4}0[A-Za-z0-9]{6}$/) ifsc?: string;
+}

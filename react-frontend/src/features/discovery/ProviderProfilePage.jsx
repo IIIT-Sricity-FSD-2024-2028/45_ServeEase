@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { availabilityApi, catalogApi } from '../../services/api'
+import { availabilityApi, catalogApi, reviewsApi } from '../../services/api'
+import { reviewStars } from '../reviews/reviewFormat'
 import { availabilityProviderId, bookableServices, dateParts, formatCurrency, formatSlot, imageFallback, listingRow, providerDisplayImage, providerIsDiscoverable, ratingSummary } from './catalogModel'
 import { saveJourney } from './journeyState'
 import { PublicJourneyShell } from './PublicJourneyShell'
@@ -115,12 +116,19 @@ function BookingCard({ provider, services, cityParam }) {
   </aside>
 }
 
+function reviewAge(value) {
+  const days = Math.floor((Date.now() - new Date(value).getTime()) / 86400000)
+  if (!Number.isFinite(days) || days < 1) return 'Recently'
+  return days === 1 ? 'Yesterday' : `${days} days ago`
+}
+
 export function ProviderProfilePage() {
   const { providerId } = useParams()
   const [params] = useSearchParams()
   const cityParam = params.get('city') || ''
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState({ loading: true, provider: null, catalog: null, error: '' })
+  const [reviewState, setReviewState] = useState({ id: '', list: [] })
 
   useEffect(() => {
     let live = true
@@ -129,6 +137,14 @@ export function ProviderProfilePage() {
       .catch((error) => live && setState({ loading: false, provider: null, catalog: null, error: error.message }))
     return () => { live = false }
   }, [providerId, attempt])
+  // The latest customer reviews of this listing. If they cannot be loaded the card falls back to "no reviews yet".
+  useEffect(() => {
+    const id = state.provider?.id
+    let live = true
+    if (id) reviewsApi.forListing(id).then((result) => live && setReviewState({ id, list: Array.isArray(result?.reviews) ? result.reviews : [] })).catch(() => {})
+    return () => { live = false }
+  }, [state.provider?.id])
+  const reviews = reviewState.id === state.provider?.id ? reviewState.list : []
   const retry = useCallback(() => { setState({ loading: true, provider: null, catalog: null, error: '' }); setAttempt((value) => value + 1) }, [])
 
   const provider = state.provider
@@ -182,11 +198,12 @@ export function ProviderProfilePage() {
 
         <div className="reviews-card">
           <h2>Customer Reviews</h2>
-          {rating
-            ? <div className="review-card">
-              <div className="review-stars" aria-label={`${rating.rating} out of 5 stars`}>{'★'.repeat(Math.round(rating.rating))}{'☆'.repeat(5 - Math.round(rating.rating))}</div>
-              <p className="review-feedback">Rated {rating.rating} out of 5 from {rating.reviews} customer reviews.</p>
-            </div>
+          {reviews.length
+            ? reviews.map((review) => <div className="review-card" key={`${review.createdAt}-${review.rating}`}>
+              <div className="review-stars" aria-label={`${review.rating} out of 5 stars`}>{reviewStars(review.rating)}</div>
+              <p className="review-feedback">"{review.feedback || 'No feedback provided.'}"</p>
+              <div className="review-meta"><strong>Verified customer</strong> - {services[0]?.name || provider.name} - {reviewAge(review.createdAt)}</div>
+            </div>)
             : <div className="empty-state-card">No customer reviews yet. This provider is newly verified.</div>}
         </div>
 

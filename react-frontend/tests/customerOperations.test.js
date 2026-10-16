@@ -106,10 +106,13 @@ test('renders an upcoming card with Cancel only while the booking is cancellable
   assert.doesNotMatch(completed, />Cancel</)
 })
 
-test('renders the history table with the review action disabled because the backend has no review API', () => {
+test('renders the history table with a Rate Service action, or the saved rating with Edit Review', () => {
   const html = inRouter(createElement(BookingHistory, { bookings: [booking({ status: 'Completed' }), booking({ id: 'B2', status: 'Cancelled' })], emptyLabel: 'none', onRaiseTicket: noop, onViewDetails: noop }))
   assert.match(html, /Rating &amp; Feedback/)
-  assert.match(html, /<button[^>]*disabled=""[^>]*>⭐ Rate Service<\/button>/)
+  assert.match(html, /<button class="table-link-btn" type="button">⭐ Rate Service<\/button>/)
+  const rated = inRouter(createElement(BookingHistory, { bookings: [booking({ status: 'Completed' })], emptyLabel: 'none', reviews: { 'BOOK-1': { rating: 4, feedback: 'ok' } }, onRate: noop, onRaiseTicket: noop, onViewDetails: noop }))
+  assert.match(rated, /★★★★☆[\s\S]*4\.0[\s\S]*Edit Review/)
+  assert.doesNotMatch(rated, /Rate Service/)
   assert.match(html, /<td>—<\/td>/)
   const empty = inRouter(createElement(BookingHistory, { bookings: [], emptyLabel: 'No past bookings found.', onRaiseTicket: noop, onViewDetails: noop }))
   assert.match(empty, /colSpan="8"|colspan="8"/)
@@ -157,4 +160,15 @@ test('sends the supported customer mutations to the real endpoints with the sess
 
   globalThis.fetch = async () => new Response(JSON.stringify({ statusCode: 400, message: 'This booking status transition is not allowed.' }), { status: 400 })
   await assert.rejects(bookingsApi.updateStatus('BOOK-1', 'Cancelled'), /transition is not allowed/)
+})
+
+test('payment statistics count Paid and Refunded payments and subtract refunds', async () => {
+  const { summarizePayments } = await import('../src/features/customer/customerOperations.js')
+  const result = summarizePayments([
+    { paymentStatus: 'Paid', customerTotal: 688.85 },
+    { paymentStatus: 'Refunded', customerTotal: 1033.85, refundAmount: 629.3 },
+    { paymentStatus: 'Refunded', customerTotal: 918.85, refundAmount: 799 },
+    { paymentStatus: 'Successful', customerTotal: 100 },
+  ])
+  assert.deepEqual(result, { totalPaid: 1313.25, successful: 2, refunded: 1428.3 })
 })

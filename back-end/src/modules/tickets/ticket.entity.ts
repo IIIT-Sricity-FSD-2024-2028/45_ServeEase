@@ -20,6 +20,27 @@ export type TicketFinalDecision =
   | 'Ticket Rejected'
   | 'No Action Required';
 
+export type TicketMessageSender = 'customer' | 'provider' | 'agent' | 'admin';
+
+// One message in the conversation on a ticket: the customer or provider writing from "Chat with Support",
+// or a support agent / admin replying from the support side.
+export class TicketMessage {
+  @ApiProperty({ example: 'MSG-1' })
+  messageId: string;
+
+  @ApiProperty({ enum: ['customer', 'provider', 'agent', 'admin'] })
+  senderType: TicketMessageSender;
+
+  @ApiProperty({ example: 'Priya Sharma' })
+  sender: string;
+
+  @ApiProperty({ example: 'Thanks, we are looking into it.' })
+  text: string;
+
+  @ApiProperty({ example: '2026-05-20T10:30:00.000Z' })
+  sentAt: string;
+}
+
 export class TicketStatusHistory {
   @ApiProperty({ example: 'Pending' })
   status: TicketStatus;
@@ -133,4 +154,10 @@ export class SupportTicket {
 
   @ApiProperty({ type: [TicketStatusHistory] })
   statusHistory: TicketStatusHistory[];
+
+  @ApiProperty({ required: false, description: 'The solution support shared with the customer or provider (the "Support Update").' })
+  supportUpdate?: string;
+
+  @ApiProperty({ type: [TicketMessage], required: false })
+  messages?: TicketMessage[];
 }

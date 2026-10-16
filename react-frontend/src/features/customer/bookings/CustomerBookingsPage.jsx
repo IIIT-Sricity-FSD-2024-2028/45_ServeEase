@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi } from '../../../services/api'
+import { bookingsApi, reviewsApi } from '../../../services/api'
+import { ReviewModal } from '../../reviews/ReviewParts'
 import { CustomerPageHeader, LoadState, OpsModal } from '../CustomerOpsParts'
 import { belongsToCustomer, bookingTabs, bookingTabView, canCustomerCancel, sortNewestFirst } from '../customerOperations'
 import { BookingCard } from './BookingCard'
@@ -19,6 +20,8 @@ export default function CustomerBookingsPage() {
   const [load, setLoad] = useState({ state: 'loading', bookings: [], error: '' })
   const [notice, setNotice] = useState('')
   const [cancelState, setCancelState] = useState(null)
+  const [reviews, setReviews] = useState({})
+  const [reviewTarget, setReviewTarget] = useState(null)
   const tabParam = searchParams.get('tab')
   const activeTab = bookingTabs.includes(tabParam) ? tabParam : 'All'
   const selectedId = searchParams.get('booking') || ''
@@ -28,6 +31,12 @@ export default function CustomerBookingsPage() {
     if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
     return sortNewestFirst(records.filter((booking) => belongsToCustomer(booking, currentUser)))
   }, [currentUser])
+
+  // The customer's own reviews, keyed by booking. A failure only hides ratings; bookings still load.
+  const loadReviews = useCallback(() => reviewsApi.mine()
+    .then((records) => setReviews(Object.fromEntries((Array.isArray(records) ? records : []).map((review) => [review.bookingId, review]))))
+    .catch(() => setReviews({})), [])
+  useEffect(() => { loadReviews() }, [loadReviews])
 
   const refresh = useCallback(() => {
     setLoad((current) => ({ ...current, state: 'loading', error: '' }))
@@ -95,11 +104,13 @@ export default function CustomerBookingsPage() {
       </section>}
       {view.history && <section aria-labelledby="booking-history-heading" className="table-section">
         <h2 className="section-title-left" id="booking-history-heading">{view.historyHeading}</h2>
-        <BookingHistory bookings={view.history} emptyLabel={`No ${activeTab === 'All' ? 'past' : activeTab.toLowerCase()} bookings found.`} onRaiseTicket={raiseTicket} onViewDetails={openDetails} />
+        <BookingHistory bookings={view.history} onRate={setReviewTarget} reviews={reviews} emptyLabel={`No ${activeTab === 'All' ? 'past' : activeTab.toLowerCase()} bookings found.`} onRaiseTicket={raiseTicket} onViewDetails={openDetails} />
       </section>}
     </>}
 
-    {selectedId && <BookingDetailsModal bookingId={selectedId} fallback={selectedBooking} key={selectedId} onClose={closeDetails} />}
+    {selectedId && <BookingDetailsModal bookingId={selectedId} fallback={selectedBooking} key={selectedId} onClose={closeDetails} review={reviews[selectedId]} />}
+
+    {reviewTarget && <ReviewModal booking={reviewTarget} existing={reviews[reviewTarget.id]} onClose={() => setReviewTarget(null)} onSaved={(saved) => { setReviews((current) => ({ ...current, [saved.bookingId]: saved })); setNotice(`Your review of booking ${saved.bookingId} was saved.`); setReviewTarget(null) }} />}
 
     {cancelState && <OpsModal labelId="cancel-booking-title" onClose={() => { if (!cancelState.saving) setCancelState(null) }} title="Cancel Booking" variant="confirm">
       <h3 id="cancel-booking-title">Cancel Booking</h3>

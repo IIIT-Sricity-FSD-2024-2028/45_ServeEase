@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Post, Put, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { createReadStream } from 'node:fs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsOptional } from 'class-validator';
@@ -52,6 +53,39 @@ export class ProviderDocumentsController {
   importFromBrowser(@Param('documentId') documentId: string, @UploadedFile() file: Express.Multer.File, @Req() request: Request) {
     const account = this.documents.ownProviderAccount(request.auth!);
     return successResponse(this.documents.importFromBrowser(account, documentIdParam(documentId), file, { ...request.auth!, role: 'provider' }, originOf(request)));
+  }
+}
+
+// The provider's own profile photo: shown on the profile page and replaceable at any time.
+@ApiTags('provider-profile-photo')
+@UseGuards(RolesGuard)
+@Controller('provider/profile-photo')
+export class ProviderProfilePhotoController {
+  constructor(private readonly documents: ProviderDocumentsService) {}
+
+  @Get()
+  @Roles('provider')
+  @ApiOperation({ summary: 'Stream your current profile photo' })
+  photo(@Req() request: Request, @Res() response: Response) {
+    const file = this.documents.ownProviderPhoto(request.auth!);
+    if (!file) throw new NotFoundException('You have not added a profile photo yet.');
+    response.setHeader('Content-Type', file.mimeType);
+    response.setHeader('Content-Length', String(file.size));
+    response.setHeader('Cache-Control', 'no-store');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    if (file.bytes) response.end(file.bytes);
+    else createReadStream(file.path!).on('error', () => response.destroy()).pipe(response);
+  }
+
+  @Put()
+  @Roles('provider')
+  @ApiOperation({ summary: 'Replace your profile photo (PNG or JPEG)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody(fileBody)
+  @UseInterceptors(FileInterceptor('file', documentUploadOptions()))
+  replace(@UploadedFile() file: Express.Multer.File, @Req() request: Request) {
+    return successResponse(this.documents.replaceProfilePhoto(request.auth!, file));
   }
 }
 

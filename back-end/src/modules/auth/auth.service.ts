@@ -5,7 +5,7 @@ import { employeeDepartment } from '../../common/employee-departments';
 import { PROVIDER_SUSPENDED_CODE, SUSPENDED_PROVIDER_MESSAGE, isSuspendedProvider, providerSuspensionReason } from '../../common/provider-account-status';
 import { writeProviderServices } from '../catalog/provider-services-store';
 import { StateRepository } from '../state/state.repository';
-import { LoginDto, RegisterDto } from './auth.dto';
+import { LoginDto, RegisterDto, UpdateProviderProfileDto } from './auth.dto';
 
 type Account = Record<string, any>;
 type Session = { userId: string; role: string; expiresAt: number };
@@ -75,6 +75,30 @@ export class AuthService {
     });
   }
 
+  // A provider edits only their own account, resolved from the session; nothing from the caller picks the record.
+  updateProviderProfile(token: string, input: UpdateProviderProfileDto) {
+    const session = this.session(token);
+    if (session.role !== 'provider') throw new ForbiddenException('Only providers can update a provider profile.');
+    const data = this.data();
+    const user = (data.users || []).find((item: Account) => item.id === session.userId && item.role === 'provider');
+    if (!user) throw new UnauthorizedException('Account no longer exists.');
+    this.assertNotSuspended(user);
+    if (input.phone && (data.users || []).some((item: Account) => item.id !== user.id && String(item.phone || '') === input.phone)) throw new ConflictException('Phone number already exists.');
+    if (input.fullName !== undefined) user.fullName = input.fullName.trim();
+    if (input.organisationName !== undefined) user.organisationName = input.organisationName.trim();
+    if (input.phone !== undefined) user.phone = input.phone;
+    if (input.experience !== undefined) user.experience = input.experience;
+    if (input.cityId !== undefined) Object.assign(user, { cityId: input.cityId, cityName: cities[input.cityId], location: cities[input.cityId] });
+    for (const key of ['bankName', 'accountHolder', 'accountNumber', 'ifsc'] as const) if (input[key] !== undefined) user[key] = key === 'ifsc' ? input[key]!.toUpperCase() : input[key]!.trim();
+    // Customers see the provider through its catalog listing; keep the stored listing's name in step with the account.
+    for (const listing of (Array.isArray(data.providers) ? data.providers : []) as Account[]) {
+      if (String(listing.ownerProviderId) !== String(user.id)) continue;
+      if (input.organisationName !== undefined) listing.name = user.organisationName;
+    }
+    this.save(data);
+    return this.publicUser(user);
+  }
+
   session(token: string) { const entry = this.sessions.get(token); if (!entry || entry.expiresAt < Date.now()) { this.sessions.delete(token); throw new UnauthorizedException('Session is invalid or expired.'); } return entry; }
   sessionUser(token: string) { return this.publicUser(this.activeAccount(token)); }
   principal(token: string) { const user = this.activeAccount(token); return { userId: String(user.id), role: String(user.role), email: String(user.email || '').toLowerCase(), providerCatalogId: user.providerCatalogId ? String(user.providerCatalogId) : undefined, department: user.role === 'support' ? employeeDepartment(user.department) : undefined }; }
@@ -96,7 +120,18 @@ export class AuthService {
     if (isSuspendedProvider(user)) throw new ForbiddenException({ statusCode: 403, error: 'Forbidden', message: SUSPENDED_PROVIDER_MESSAGE, code: PROVIDER_SUSPENDED_CODE, reason: providerSuspensionReason(user) });
   }
   private issue(user: Account) { const token = randomBytes(32).toString('base64url'); this.sessions.set(token, { userId: user.id, role: user.role, expiresAt: Date.now() + 8 * 60 * 60 * 1000 }); return { token, user: this.publicUser(user) }; }
-  private publicUser(user: Account) { const safe = { ...user }; delete safe.password; delete safe.passwordHash; return safe; }
+  // Providers that never entered bank details show the original site's sample details (provider.js
+  // buildProviderProfile), with the account holder defaulting to the provider's own name. Saved values replace them.
+  private publicUser(user: Account) {
+    const safe = { ...user }; delete safe.password; delete safe.passwordHash;
+    if (safe.role === 'provider') {
+      safe.bankName = safe.bankName || 'HDFC Bank';
+      safe.accountHolder = safe.accountHolder || safe.organisationName || safe.fullName;
+      safe.accountNumber = safe.accountNumber || 'XXXXXX1129';
+      safe.ifsc = safe.ifsc || 'HDFC0001234';
+    }
+    return safe;
+  }
   private accountForSession(session: Session): Account {
     if (session.role === 'support') {
       const employeeState = this.state.findById('serveEaseEmployeeModuleData')?.value as { employees?: Account[] } | undefined;

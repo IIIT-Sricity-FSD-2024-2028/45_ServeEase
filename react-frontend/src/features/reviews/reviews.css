@@ -1,0 +1,20 @@
+/* Shared review presentation from front-end/CSS/global.css and dashboard.css (review stars, rating, star picker). */
+.review-stars { display: inline-flex; align-items: center; gap: 2px; color: #e3a008; font-size: 19px; line-height: 1; letter-spacing: .02em; white-space: nowrap; }
+.review-rating { display: inline-flex; align-items: center; gap: 7px; color: #12284a; font-size: 14px; line-height: 1; font-weight: 700; white-space: nowrap; }
+.review-rating .review-stars { font-size: 19px; }
+.review-feedback { color: #304867; font-size: 15px; line-height: 1.55; }
+.review-meta { margin-top: 10px; color: #667a97; font-size: 13px; line-height: 1.4; }
+.review-modal-card { width: min(500px, calc(100vw - 48px)); }
+.review-star-picker { display: flex; align-items: center; gap: 6px; margin: 4px 0 10px; }
+.review-star-picker button { padding: 2px; border: 0; background: transparent; color: #e3a008; font-size: 30px; line-height: 1; cursor: pointer; }
+.review-star-picker button:focus-visible { border-radius: 4px; outline: 3px solid rgba(56, 103, 246, .25); }
+.review-feedback-label { display: block; margin: 18px 0 8px; color: #12284a; font-weight: 700; }
+.review-feedback-label span { color: #667a97; font-weight: 400; }
+.review-modal-card textarea { width: 100%; padding: 12px; border: 1px solid #d8e1ee; border-radius: 10px; font: inherit; resize: vertical; }
+.review-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.review-validation { color: #d14343; font-size: 14px; }
+.booking-review-cell { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; white-space: nowrap; min-height: 24px; }
+.booking-rating-value { color: #12284a; }
+.edit-review-btn { flex: 0 0 auto; font-size: 12px; line-height: 1.2; white-space: nowrap; }
+.booking-review-section .review-rating { margin-bottom: 2px; }
+.booking-review-section .review-feedback { margin-top: 10px; }

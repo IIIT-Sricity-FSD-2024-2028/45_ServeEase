@@ -12,9 +12,10 @@ import { RequestLoggingMiddleware } from './middleware/request-logging.middlewar
 import { AuthModule } from './modules/auth/auth.module';
 import { EmployeeOperationsModule } from './modules/employee-operations/employee-operations.module';
 import { ProviderDocumentsModule } from './modules/provider-documents/provider-documents.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
-  imports: [AuthModule, TasksModule, BookingsModule, CatalogModule, ActivitiesModule, StateModule, ProviderVerificationModule, TicketsModule, AvailabilityModule, UploadsModule, EmployeeOperationsModule, ProviderDocumentsModule],
+  imports: [AuthModule, TasksModule, BookingsModule, CatalogModule, ActivitiesModule, StateModule, ProviderVerificationModule, TicketsModule, AvailabilityModule, UploadsModule, EmployeeOperationsModule, ProviderDocumentsModule, ReviewsModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

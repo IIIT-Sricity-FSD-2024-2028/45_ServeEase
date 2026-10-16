@@ -21,6 +21,8 @@ export interface DerivationInput {
   servicesFor: (providerId: string) => Account[];
   // True when the account has a stored profile-photo image that can be shown on its listing.
   hasPhoto?: (account: Account) => boolean;
+  // Average rating and review count computed from the stored customer reviews of a listing.
+  ratingFor?: (listing: CatalogProvider) => { average: number; total: number };
 }
 
 // The provider account that owns a listing. A few legacy ids are shared by two accounts; the listing's owner
@@ -99,6 +101,8 @@ function overlay(listing: CatalogProvider, account: Account): CatalogProvider {
   const live = status === 'Active' || status === 'Suspended';
   return {
     ...listing,
+    // The provider edits the organisation name on their account; customers see it on the listing.
+    name: String(account.organisationName || '').trim() || listing.name,
     accountStatus: status,
     approvalStatus: String(account.approvalStatus || status),
     verificationStatus: account.verificationStatus || providerVerificationStatus(status) || undefined,
@@ -179,8 +183,12 @@ export function catalogView(input: DerivationInput): CatalogProvider[] {
   // An active provider's own submitted profile photo is shown on their listing unless the listing already
   // carries one; it is served by the public photo route, never from the private document store directly.
   return synced.concat(derivedListings({ ...input, providers: synced })).map((listing) => {
-    if (listing.profilePhoto || !input.hasPhoto) return listing;
+    // A photo the provider has stored with us always wins over an older reference on the listing, so a
+    // replaced photo shows everywhere; the rating shown is the one computed from real customer reviews.
     const account = listingOwner(listing, accounts);
-    return account && providerAccountStatus(account) === 'Active' && input.hasPhoto(account) ? { ...listing, profilePhoto: profilePhotoPath(listing.id) } : listing;
+    const withPhoto = account && input.hasPhoto && providerAccountStatus(account) === 'Active' && input.hasPhoto(account) ? { ...listing, profilePhoto: profilePhotoPath(listing.id) } : listing;
+    if (!input.ratingFor) return withPhoto;
+    const { average, total } = input.ratingFor(withPhoto);
+    return { ...withPhoto, rating: total ? Math.round(average * 10) / 10 : 0, reviews: total };
   });
 }

@@ -3,14 +3,13 @@ import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { bookingsApi, ticketsApi } from '../../../services/api'
 import { CustomerPageHeader, LoadState, OpsModal, TicketDetails, TicketStatus } from '../CustomerOpsParts'
+import { TicketChatModal } from '../../support/TicketChatModal'
 import {
   attachmentValidationError, belongsToCustomer, canonicalBookingId, customerTicketTypes, formatDisplayDate, openTicketForBooking, sortNewestFirst, validateTicketForm,
 } from '../customerOperations'
 import '../customerOperations.css'
 
 const blankForm = { bookingId: '', ticketType: '', subject: '', description: '' }
-// There is no ticket messaging endpoint; the original chat only replayed canned agent greetings.
-const chatUnavailable = 'Live chat with support is not available yet. Support updates appear under View Ticket.'
 
 // Help Resources accordion, text from customer-support-center.html.
 const faqs = [
@@ -37,6 +36,7 @@ export default function CustomerSupportPage() {
   const [stage, setStage] = useState('')
   const [openFaq, setOpenFaq] = useState(-1)
   const [ticketsLoad, setTicketsLoad] = useState({ state: 'loading', tickets: [], error: '' })
+  const [chatTicket, setChatTicket] = useState(null)
   const [bookingsLoad, setBookingsLoad] = useState({ state: 'loading', bookings: [], error: '' })
 
   const fetchTickets = useCallback(async () => {
@@ -229,11 +229,13 @@ export default function CustomerSupportPage() {
         <p>{ticket.ticketType} • {formatDisplayDate(ticket.createdAt)}</p>
         <div className="ticket-actions">
           <button className="secondary-action" onClick={() => setParam('ticket', ticket.ticketId)} type="button">View Ticket</button>
-          <button className="btn btn-primary" disabled title={chatUnavailable} type="button">Chat with Support</button>
+          <button className="btn btn-primary" onClick={() => setChatTicket(ticket)} type="button">Chat with Support</button>
         </div>
-        <p className="ticket-note">{chatUnavailable}</p>
+        {ticket.supportUpdate && <p className="ticket-note">Support update: {ticket.supportUpdate}</p>}
       </article>)}</div> : <div className="empty-state-card">You have not raised any support tickets yet.</div>)}
     </section>
+
+    {chatTicket && <TicketChatModal audience="customer" key={chatTicket.ticketId} onClose={() => setChatTicket(null)} ticket={chatTicket} />}
 
     {viewTicketId && <OpsModal labelId="support-ticket-title" onClose={() => setParam('ticket', '')} title="Support Ticket Details">
       <TicketDetails fallback={selectedTicket} key={viewTicketId} ticketId={viewTicketId} />

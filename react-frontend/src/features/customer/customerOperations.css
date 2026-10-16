@@ -219,3 +219,12 @@
   .customer-ops .dashboard-stats-grid { grid-template-columns: 1fr; }
   .customer-ops .dashboard-hero h1 { font-size: 32px; }
 }
+
+/* Chat with Support (front-end/CSS/dashboard.css .chat-thread / .chat-bubble / .chat-form) */
+.customer-ops .support-chat-modal { width: min(620px, calc(100vw - 48px)); }
+.customer-ops .chat-thread { display: flex; max-height: 320px; flex-direction: column; gap: 10px; margin-bottom: 14px; padding-right: 4px; overflow-y: auto; }
+.customer-ops .chat-bubble { max-width: 85%; padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.customer-ops .chat-bubble.support { background: #f3f7ff; color: #12284a; }
+.customer-ops .chat-bubble.user { margin-left: auto; background: #5168ff; color: #fff; }
+.customer-ops .chat-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.customer-ops .chat-form input { padding: 12px 14px; border: 1px solid #d8e1ee; border-radius: 12px; font-size: 14px; }

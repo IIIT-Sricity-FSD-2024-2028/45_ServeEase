@@ -2,35 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { bookingsApi } from '../../../services/api'
-import { normalizeStatus, projectTransactions, summarizeTransactions } from './providerFinancials'
+import { projectTransactions, summarizeTransactions } from './providerFinancials'
 import { formatDisplayDate } from '../../customer/customerOperations'
 import { providerStatusPill } from '../providerStatus'
 import '../providerPortal.css'
 
 const money = (value) => value == null ? 'Unavailable' : `₹${Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const formatDate = (value) => (value ? formatDisplayDate(value) : 'Not provided')
-
-function Info({ label, value }) { return <div className="info-box"><strong>{label}</strong><div>{value === undefined || value === null || value === '' ? 'Not provided' : value}</div></div> }
-
-export function ProviderAccountPage() {
-  const { currentUser } = useAuth()
-  const [bookings, setBookings] = useState([])
-  const [error, setError] = useState('')
-  useEffect(() => { bookingsApi.listForProvider().then((data) => setBookings(Array.isArray(data) ? data : [])).catch((requestError) => setError(requestError.message || 'Account activity could not be loaded.')) }, [])
-  return <section className="provider-portal">
-    <div className="breadcrumb-row"><Link to="/provider/dashboard">Provider Dashboard</Link> &nbsp;›&nbsp; <strong>My Profile</strong></div>
-    <section className="page-title-block provider-page-title"><h1>My Profile</h1><p>View your personal, professional, bank, and service profile details.</p></section>
-    {error && <div className="panel-card ops-state ops-state--error" role="alert">{error}</div>}
-    <section className="provider-profile-layout">
-      <div className="panel-card"><h2 className="panel-title">Personal Information</h2><div className="info-grid" id="providerPersonalInfo"><Info label="Name" value={currentUser?.fullName || currentUser?.name} /><Info label="Email" value={currentUser?.email} /><Info label="Phone" value={currentUser?.phone} /><Info label="Location" value={currentUser?.address || currentUser?.location} /></div></div>
-      <div className="panel-card"><h2 className="panel-title">Account Activity</h2><div className="info-grid" id="providerAccountStats"><Info label="Account Status" value={currentUser?.accountStatus || currentUser?.approvalStatus || currentUser?.verificationStatus} /><Info label="Total Bookings" value={bookings.length} /><Info label="Completed Bookings" value={bookings.filter((b) => normalizeStatus(b.status) === 'completed').length} /></div></div>
-    </section>
-    <section className="provider-profile-layout">
-      <div className="panel-card"><h2 className="panel-title">Professional Information</h2><div className="info-grid" id="providerProfessionalInfo"><Info label="Organisation Name" value={currentUser?.organisationName} /><Info label="Service Category" value={currentUser?.serviceType || currentUser?.category} /><Info label="Experience" value={currentUser?.experience} /><Info label="Provider ID" value={currentUser?.providerId || currentUser?.providerCatalogId || currentUser?.userId} /><Info label="City" value={currentUser?.cityName} /></div></div>
-      <div className="panel-card"><h2 className="panel-title">Bank Information</h2><div className="info-grid" id="providerBankInfo"><div className="info-box"><strong>Bank details</strong><div className="info-note">Bank-account fields are not present in the current React session or supported by a provider profile API.</div></div></div></div>
-    </section>
-  </section>
-}
+const formatDate = (value) => (value ? formatDisplayDate(value) : '—')
 
 export function ProviderEarningsPage() {
   const { isAuthenticated, role } = useAuth(); const [state, setState] = useState({ loading: true, bookings: [], error: '' }); const [query, setQuery] = useState(''); const [statusFilter, setStatusFilter] = useState('all'); const [sort, setSort] = useState('newest')
@@ -48,7 +26,7 @@ export function ProviderEarningsPage() {
       <section className="panel-card">
         <div className="panel-head"><h2>Payment Transaction History</h2></div>
         <div className="provider-transaction-controls"><input aria-label="Search transactions" id="providerTransactionSearch" onChange={(event) => setQuery(event.target.value)} placeholder="Search transactions..." type="search" value={query} /><select aria-label="Filter transactions by status" id="providerTransactionStatusFilter" onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}><option value="all">All statuses</option><option value="pending">Pending</option><option value="paid">Paid</option><option value="partially paid">Partially Paid</option><option value="not paid">Not Paid</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option><option value="refunded">Refunded</option></select><select aria-label="Sort transactions" id="providerTransactionSort" onChange={(event) => setSort(event.target.value)} value={sort}><option value="newest">Newest service date</option><option value="oldest">Oldest service date</option><option value="highest">Highest payout</option><option value="lowest">Lowest payout</option><option value="status">Status</option></select></div>
-        <div className="table-card provider-transaction-table-card"><table className="data-table"><thead><tr><th>Transaction ID</th><th>Booking Reference</th><th>Service Name</th><th>Customer</th><th>Service Fee</th><th>Commission Deducted</th><th>Net Payout</th><th>Payment Method</th><th>Service Date</th><th>Payout Date</th><th>Status</th></tr></thead><tbody id="providerTransactionsTableBody">{visibleTransactions.length ? visibleTransactions.map((transaction) => <tr key={transaction.bookingRef}><td>{transaction.transactionId || 'Not provided'}</td><td>{transaction.bookingRef}</td><td>{transaction.service || 'Not provided'}</td><td>{transaction.customer || 'Not provided'}</td><td>{money(transaction.serviceFee)}</td><td>{money(transaction.commission)}</td><td><strong>{money(transaction.payout)}</strong></td><td>{transaction.paymentMethod || 'Not provided'}</td><td>{formatDate(transaction.date)}</td><td>{formatDate(transaction.payoutDate)}</td><td><span className={`status-pill ${providerStatusPill(transaction.status)}`}>{transaction.status}</span></td></tr>) : <tr><td colSpan="11">No payout transactions found.</td></tr>}</tbody></table></div>
+        <div className="table-card provider-transaction-table-card"><table className="data-table"><thead><tr><th>Transaction ID</th><th>Booking Reference</th><th>Service Name</th><th>Customer</th><th>Service Fee</th><th>Commission Deducted</th><th>Net Payout</th><th>Payment Method</th><th>Service Date</th><th>Payout Date</th><th>Status</th></tr></thead><tbody id="providerTransactionsTableBody">{visibleTransactions.length ? visibleTransactions.map((transaction) => <tr key={transaction.bookingRef}><td>{transaction.transactionId || '—'}</td><td>{transaction.bookingRef}</td><td>{transaction.service || '—'}</td><td>{transaction.customer || '—'}</td><td>{money(transaction.serviceFee)}</td><td>{money(transaction.commission)}</td><td><strong>{money(transaction.payout)}</strong></td><td>{transaction.paymentMethod || '—'}</td><td>{formatDate(transaction.date)}</td><td>{formatDate(transaction.payoutDate)}</td><td><span className={`status-pill ${providerStatusPill(transaction.status)}`}>{transaction.status}</span></td></tr>) : <tr><td colSpan="11">No payout transactions found.</td></tr>}</tbody></table></div>
       </section>
       <section className="panel-card provider-payment-breakdown"><h2>Payment Breakdown</h2><div className="provider-payment-breakdown-grid"><div><strong>Pending</strong><span>Accepted bookings awaiting completion.</span></div><div><strong>Paid</strong><span>Completed services or full-payout cancellations. The provider receives 90% of the service fee.</span></div><div><strong>Partially Paid</strong><span>Cancellation between 24 and 3 hours before service. 30% of the service fee is retained; after 10% commission on that retained amount, the provider receives 27%.</span></div><div><strong>No record</strong><span>Cancellation more than 24 hours before service produces no provider payout.</span></div></div></section>
     </>}

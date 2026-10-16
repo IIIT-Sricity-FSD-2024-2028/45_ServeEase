@@ -1338,3 +1338,22 @@
 }
 /* The service form's single price field spans the whole row in the original. */
 .provider-portal .provider-modal-form .two-col-form { grid-template-columns: 1fr; }
+
+/* ---- provider profile (dashboard.css .provider-profile-photo-box + editable info boxes) ---- */
+.provider-portal .provider-profile-photo-box { display: flex; align-items: center; gap: 16px; padding: 14px; border: 1px solid #dbe7f5; border-radius: 8px; background: #f8fbff; }
+.provider-portal .provider-profile-photo-box img { width: 96px; height: 96px; border: 1px solid #d8e2ef; border-radius: 8px; background: #fff; object-fit: cover; }
+.provider-portal .provider-profile-photo-box > div { min-width: 0; flex: 1; }
+.provider-portal .provider-profile-photo-box strong { display: block; margin-bottom: 4px; color: #12284a; }
+.provider-portal .provider-profile-photo-box .info-note { display: block; margin-top: 6px; }
+.provider-portal .provider-profile-photo-box .error { margin-top: 6px; }
+.provider-portal .provider-profile-photo-box .provider-edit-input { margin-top: 4px; padding: 6px 8px; }
+.provider-portal .info-box > strong > label { cursor: inherit; }
+.provider-portal .info-box .error { min-height: 0; }
+.provider-portal .info-box .error:empty { display: none; }
+.provider-portal .provider-edit-input:disabled { background: #f1f5f9; cursor: not-allowed; }
+.provider-portal .provider-profile-save-row { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin-top: 8px; }
+.provider-portal .provider-profile-save-row .btn.is-saved { background: #16a34a; }
+.provider-portal .provider-profile-layout .info-grid { align-content: start; }
+@media (max-width: 640px) {
+  .provider-portal .provider-profile-photo-box { align-items: flex-start; flex-direction: column; }
+}

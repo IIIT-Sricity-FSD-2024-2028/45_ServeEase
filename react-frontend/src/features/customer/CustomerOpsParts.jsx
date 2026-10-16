@@ -102,7 +102,7 @@ export function TicketDetails({ ticketId, fallback }) {
         {href ? <a className="attachment-link" href={href} rel="noreferrer" target="_blank">View attachment</a> : <div>No evidence uploaded</div>}
       </div>
       <div className="info-box"><strong>Ticket Description</strong><div>{ticket.description || 'Not provided'}</div></div>
-      <div className="info-box"><strong>Support Update</strong><div>{ticket.supportRemarks || 'Your ticket has been received and is currently being reviewed by the support team.'}</div></div>
+      <div className="info-box"><strong>Support Update</strong><div>{ticket.supportUpdate || 'Your ticket has been received and is currently being reviewed by the support team.'}</div></div>
       <div className="info-box"><strong>Final Decision</strong><div>{ticket.finalDecision || 'Awaiting admin decision.'}</div>{ticket.adminRemarks && <div>{ticket.adminRemarks}</div>}</div>
     </div>
     {Array.isArray(ticket.statusHistory) && ticket.statusHistory.length > 0 && <div className="ticket-history" aria-label="Ticket history">

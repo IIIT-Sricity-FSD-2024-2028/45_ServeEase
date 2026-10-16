@@ -8,8 +8,10 @@ import {
   CreateCustomerTicketDto,
   CreateProviderTicketDto,
   TicketFinalDecisionDto,
+  TicketMessageDto,
   TicketPriorityDto,
   TicketRemarksDto,
+  TicketSolutionDto,
   TicketStatusDto,
 } from './dto/ticket.dto';
 import { SupportTicket } from './ticket.entity';
@@ -57,6 +59,28 @@ export class TicketsController {
   @Roles('user', 'provider', 'support', 'admin', 'superuser')
   getTicket(@Param('id') id: string, @Req() request: Request) {
     return successResponse(this.ticketsService.findVisibleTicket(id, request));
+  }
+
+  // "Chat with Support": the customer or provider who raised the ticket adds a message to its conversation.
+  @Post('tickets/:id/messages')
+  @Roles('user', 'provider')
+  @ApiOperation({ summary: 'Add a chat message to one of your own tickets' })
+  addOwnerMessage(@Param('id') id: string, @Body() data: TicketMessageDto, @Req() request: Request) {
+    return successResponse(this.ticketsService.addMessage(id, data, request));
+  }
+
+  @Post('support/tickets/:id/messages')
+  @Roles('support', 'admin', 'superuser')
+  @ApiOperation({ summary: 'Reply to the customer or provider on a ticket' })
+  addSupportMessage(@Param('id') id: string, @Body() data: TicketMessageDto, @Req() request: Request) {
+    return successResponse(this.ticketsService.addMessage(id, data, request));
+  }
+
+  @Patch('support/tickets/:id/solution')
+  @Roles('support', 'admin', 'superuser')
+  @ApiOperation({ summary: 'Save the solution shown to the customer or provider as the Support Update' })
+  supportSolution(@Param('id') id: string, @Body() data: TicketSolutionDto) {
+    return successResponse(this.ticketsService.saveSolution(id, data));
   }
 
   @Get('support/tickets')

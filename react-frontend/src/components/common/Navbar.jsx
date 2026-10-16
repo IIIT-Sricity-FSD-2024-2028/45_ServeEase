@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { bookingsApi, ticketsApi } from '../../services/api'
+import { buildSupportNotifications, readSupportNotificationIds, saveSupportNotificationIds } from '../../features/support/supportNotifications'
 import { applyProviderSearch, providerSearchPlaceholders } from './providerSearch'
 import './Navbar.css'
 
@@ -44,7 +45,6 @@ const topbarVariants = {
     // React and is reachable from nowhere else, so it stays here alongside the dashboard link.
     profileLinks: () => [
       { label: 'Support Dashboard', to: '/employee/support-tickets' },
-      { label: 'Support Workspace', to: '/employee/support-workspace' },
     ],
   },
   superuser: {
@@ -156,7 +156,6 @@ export function Navbar({ area = 'ServeEase' }) {
   const isSupportPage = pathname.startsWith('/employee/support-tickets')
   const isSupportDashboard = pathname === '/employee/support-tickets'
   const [ticketSearch, setTicketSearch] = useState('')
-  const [hasNewNotifications, setHasNewNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [notificationOwnerKey, setNotificationOwnerKey] = useState('')
   const [notificationState, setNotificationState] = useState('idle')
@@ -179,7 +178,8 @@ export function Navbar({ area = 'ServeEase' }) {
   const variant = role ? topbarVariants[role] : null
   const isProfileOpen = openMenu === 'profile'
   const isNotificationsOpen = openMenu === 'notifications'
-  const customerNotificationIdentity = currentUser?.role === 'customer'
+  const isSupportAgent = variant?.notifications === 'support' && currentUser?.role === 'support'
+  const customerNotificationIdentity = currentUser?.role === 'customer' || isSupportAgent
     ? String(currentUser.userId || currentUser.email || '')
     : ''
   const customerNotifications = notificationOwnerKey === customerNotificationIdentity ? notifications : []
@@ -207,22 +207,24 @@ export function Navbar({ area = 'ServeEase' }) {
     }
   }, [openMenu])
 
-  useEffect(() => {
-    if (!isSupportPage) return undefined
-    const refreshCount = () => {
+  async function loadNotifications(silent = false) {
+    if (isSupportAgent) {
+      const requestId = ++notificationRequestRef.current
+      const ownerKey = String(currentUser.userId || currentUser.email || '')
+      if (!silent) { setNotificationOwnerKey(ownerKey); setNotificationState('loading'); setNotificationError('') }
       try {
-        const stored = JSON.parse(localStorage.getItem('serveEaseSupportModuleData') || 'null')
-        setHasNewNotifications(Boolean(stored?.notifications?.some((item) => item.read !== true && item.isNew !== false)))
-      } catch { setHasNewNotifications(false) }
+        const tickets = await ticketsApi.listForSupport()
+        if (requestId !== notificationRequestRef.current) return
+        setNotifications(buildSupportNotifications(Array.isArray(tickets) ? tickets : [], currentUser))
+        setNotificationOwnerKey(ownerKey)
+        setNotificationState('ready')
+      } catch (error) {
+        if (requestId !== notificationRequestRef.current || silent) return
+        setNotificationError(error.message || 'Notifications could not be loaded.')
+        setNotificationState('error')
+      }
+      return
     }
-    refreshCount()
-    if (!isSupportDashboard) return undefined
-    const updateCount = (event) => setHasNewNotifications(Number(event.detail || 0) > 0)
-    window.addEventListener('serveease-notifications-count', updateCount)
-    return () => window.removeEventListener('serveease-notifications-count', updateCount)
-  }, [isSupportDashboard, isSupportPage])
-
-  async function loadNotifications() {
     if (!isAuthenticated || currentUser?.role !== 'customer') {
       setNotificationOwnerKey('')
       setNotificationState(isAuthenticated ? 'unavailable' : 'signed-out')
@@ -261,15 +263,27 @@ export function Navbar({ area = 'ServeEase' }) {
     void loadNotifications()
   }
 
+  // The support bell shows a live unread count, so the queue is checked in the background while signed in.
+  useEffect(() => {
+    if (!isSupportAgent) return undefined
+    const first = window.setTimeout(() => void loadNotifications(true), 0)
+    const timer = window.setInterval(() => void loadNotifications(true), 30000)
+    return () => { window.clearTimeout(first); window.clearInterval(timer) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupportAgent, currentUser?.userId])
+
   function toggleProfile() {
     setOpenMenu(isProfileOpen ? null : 'profile')
   }
 
+  const readIdsFor = () => (isSupportAgent ? readSupportNotificationIds(currentUser) : readNotificationIds(currentUser))
+  const saveReadIds = (ids) => (isSupportAgent ? saveSupportNotificationIds(currentUser, ids) : localStorage.setItem(notificationReadKey(currentUser), JSON.stringify([...ids])))
+
   function markNotificationRead(notification) {
     try {
-      const readIds = readNotificationIds(currentUser)
+      const readIds = readIdsFor()
       readIds.add(notification.id)
-      localStorage.setItem(notificationReadKey(currentUser), JSON.stringify([...readIds]))
+      saveReadIds(readIds)
       setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, isUnread: false } : item))
       setOpenMenu(null)
       navigate(notification.to)
@@ -280,9 +294,9 @@ export function Navbar({ area = 'ServeEase' }) {
 
   function markAllNotificationsRead() {
     try {
-      const readIds = readNotificationIds(currentUser)
+      const readIds = readIdsFor()
       notifications.forEach((notification) => readIds.add(notification.id))
-      localStorage.setItem(notificationReadKey(currentUser), JSON.stringify([...readIds]))
+      saveReadIds(readIds)
       setNotifications((current) => current.map((notification) => ({ ...notification, isUnread: false })))
     } catch {
       setNotificationError('Read state could not be saved in this browser.')
@@ -318,13 +332,7 @@ export function Navbar({ area = 'ServeEase' }) {
     </div>
 
     <div className="se-topbar__actions" ref={actionsRef}>
-      {isSupportPage && variant?.notifications === 'support'
-        ? <div className="se-topbar__notifications">
-          <button aria-label="Notifications" className="se-topbar__icon-btn" onClick={() => navigate('/employee/support-tickets#support-notifications')} type="button">
-            <span aria-hidden="true">🔔</span>{hasNewNotifications && <span className="se-topbar__count se-topbar__count--dot" />}
-          </button>
-        </div>
-        : variant?.notifications && <div className="se-topbar__notifications">
+      {variant?.notifications && <div className="se-topbar__notifications">
         <button
           aria-controls="se-topbar-notification-panel"
           aria-expanded={isNotificationsOpen}
@@ -354,7 +362,7 @@ export function Navbar({ area = 'ServeEase' }) {
           {customerNotificationState === 'unavailable' && <p className="se-notification-panel__state">Notifications are not available for this role in the React app yet.</p>}
           {customerNotificationState === 'ready' && <>
             {customerNotifications.length === 0
-              ? <div className="se-notification-panel__empty"><strong>No notifications yet</strong><span>New booking, payment, and support updates will appear here.</span></div>
+              ? <div className="se-notification-panel__empty"><strong>No notifications yet</strong><span>{isSupportAgent ? 'New tickets and customer or provider messages will appear here.' : 'New booking, payment, and support updates will appear here.'}</span></div>
               : <div className="se-notification-panel__list">{visibleNotifications.map((notification) => <button className={`se-notification-item${notification.isUnread ? ' is-unread' : ''}`} key={notification.id} onClick={() => markNotificationRead(notification)} type="button">
                 <p>{notification.text}</p>
                 <time dateTime={notification.createdAt || undefined}>{formatNotificationTime(notification.createdAt)}</time>

@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { bookingsApi, catalogApi, ticketsApi } from '../../../services/api'
 import { formatDisplayDate } from '../../customer/customerOperations'
+import { projectTransactions, summarizeTransactions } from '../account/providerFinancials'
 import '../providerPortal.css'
 
 const currency = (value) => value == null ? 'Unavailable' : `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
 const isCompleted = (booking) => String(booking?.status || '').toLowerCase() === 'completed'
-const payoutFor = (booking) => isCompleted(booking) ? Number(booking.providerPayout ?? booking.providerPayoutAmount ?? Number(booking.amount || 0) * 0.9) : 0
 const dateValue = (value) => { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? null : parsed }
 
 function FeatureCard({ icon, tone, title, description, to }) {
@@ -44,9 +44,12 @@ export function ProviderDashboardPage() {
 
   const bookings = useMemo(() => data.bookings || [], [data.bookings])
   const completed = bookings.filter(isCompleted)
-  const totalEarnings = data.bookings ? completed.reduce((sum, booking) => sum + payoutFor(booking), 0) : null
-  const pendingPayout = data.bookings ? bookings.filter((booking) => ['pending', 'accepted'].includes(String(booking.status || '').toLowerCase())).reduce((sum, booking) => sum + Number(booking.providerPayout ?? booking.providerPayoutAmount ?? booking.amount ?? 0), 0) : null
-  const monthEarnings = data.bookings ? completed.filter((booking) => { const date = dateValue(booking.date); const now = new Date(); return date && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear() }).reduce((sum, booking) => sum + payoutFor(booking), 0) : null
+  // The same projection the Earnings & Payments page uses, so both pages always show identical figures.
+  const summary = useMemo(() => summarizeTransactions(projectTransactions(bookings)), [bookings])
+  const { totalEarnings: allEarnings, pendingPayout: allPending, earningsThisMonth } = summary
+  const totalEarnings = data.bookings ? allEarnings : null
+  const pendingPayout = data.bookings ? allPending : null
+  const monthEarnings = data.bookings ? earningsThisMonth : null
   const recentBookings = useMemo(() => bookings.slice().sort((a, b) => (dateValue(b.date)?.getTime() || 0) - (dateValue(a.date)?.getTime() || 0)).slice(0, 4), [bookings])
   const providerName = currentUser?.fullName || currentUser?.organisationName || 'Provider'
   const providerStatus = currentUser?.accountStatus || currentUser?.status || currentUser?.approvalStatus || currentUser?.verificationStatus

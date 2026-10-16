@@ -5,6 +5,7 @@ export const authApi = {
   register: (account) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(account) }),
   session: () => apiRequest('/auth/session'),
   logout: () => apiRequest('/auth/logout', { method: 'POST' }),
+  updateProviderProfile: (profile) => apiRequest('/auth/profile', { method: 'PATCH', body: JSON.stringify(profile) }),
 }
 
 // These wrappers correspond only to endpoints declared by the NestJS controllers.
@@ -65,6 +66,11 @@ export const ticketsApi = {
     body: JSON.stringify(ticket),
   }),
   uploadAttachment: (file) => uploadRequest('/uploads/tickets', file),
+  // "Chat with Support": the owner of a ticket (customer or provider) adds a message to its conversation.
+  sendMessage: (id, text) => apiRequest(`/tickets/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
+  // Support side: reply in the conversation and share a solution as the ticket's Support Update.
+  sendSupportMessage: (id, text) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
+  saveSupportSolution: (id, solution) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/solution`, { method: 'PATCH', body: JSON.stringify({ solution }) }),
   listForSupport: () => apiRequest('/support/tickets'),
   getForSupport: (id) => apiRequest(`/support/tickets/${encodeURIComponent(id)}`),
   updateSupportStatus: (id, status) => apiRequest(`/support/tickets/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
@@ -124,7 +130,23 @@ export const employeeOperationsApi = {
   }),
 }
 
+// Customer ratings of completed bookings (customer.js review modal + reviews.js), stored by the backend.
+export const reviewsApi = {
+  mine: () => apiRequest('/reviews/mine'),
+  save: (bookingId, review) => apiRequest(`/reviews/bookings/${encodeURIComponent(bookingId)}`, { method: 'PUT', body: JSON.stringify(review) }),
+  forProvider: () => apiRequest('/reviews/provider'),
+  forListing: (listingId) => apiRequest(`/reviews/listings/${encodeURIComponent(listingId)}`),
+}
+
+// The signed-in provider's own profile photo: readable and replaceable at any time.
+export const providerPhotoApi = {
+  get: () => blobRequest('/provider/profile-photo'),
+  replace: (file) => { const body = new FormData(); body.append('file', file); return apiRequest('/provider/profile-photo', { method: 'PUT', body }) },
+}
+
 // Provider-side upload of the file behind one of the provider's own verification documents.
 export const providerDocumentsApi = {
+  list: () => apiRequest('/provider/verification-documents'),
+  file: (documentId) => blobRequest(`/provider/verification-documents/${encodeURIComponent(documentId)}/file`),
   upload: (documentId, file, options) => uploadRequest(`/provider/verification-documents/${encodeURIComponent(documentId)}/file`, file, options),
 }

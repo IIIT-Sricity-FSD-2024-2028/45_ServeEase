@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { bookingsApi } from '../../../services/api'
 import { InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
-import { bookingTotal, formatDisplayDate, formatDisplayDateTime, formatPrice, hasValue, statusPillClass } from '../customerOperations'
+import { ReviewRating } from '../../reviews/ReviewParts'
+import { bookingTotal, formatDisplayDate, formatDisplayDateTime, formatPrice, hasValue, paymentTag, statusPillClass, transactionId } from '../customerOperations'
 
 // openBookingModal() from customer.js. The booking is re-read with GET /bookings/:id so a deep link or
 // refresh shows the server copy (the API answers 404 for bookings that are not the caller's). The
 // original's hard-coded provider phone number is not reproduced; payment status is shown on its own.
-export function BookingDetailsModal({ bookingId, fallback, onClose }) {
+export function BookingDetailsModal({ bookingId, fallback, review, onClose }) {
   const [result, setResult] = useState({ id: '', booking: null, error: '' })
   const [attempt, setAttempt] = useState(0)
 
@@ -44,12 +45,14 @@ export function BookingDetailsModal({ bookingId, fallback, onClose }) {
       <div className="info-box"><strong>Service Address</strong><div>{booking.address || 'Not provided'}</div></div>
       <div className="info-box"><strong>Payment</strong>
         <InfoRow label="Total Amount:">{formatPrice(bookingTotal(booking))}</InfoRow>
-        <InfoRow label="Payment Status:">{hasValue(booking.paymentStatus) ? <span className={`status-pill ${statusPillClass(booking.paymentStatus)}`}>{booking.paymentStatus}</span> : 'Not provided'}</InfoRow>
+        <InfoRow label="Payment Status:"><span className={`status-pill ${statusPillClass(paymentTag(booking.paymentStatus))}`}>{paymentTag(booking.paymentStatus)}</span></InfoRow>
         {hasValue(booking.paymentMethod) && <InfoRow label="Payment Method:">{booking.paymentMethod}</InfoRow>}
-        {hasValue(booking.paymentId) && <InfoRow label="Transaction ID:">{booking.paymentId}</InfoRow>}
+        <InfoRow label="Transaction ID:">{transactionId(booking)}</InfoRow>
         {hasValue(booking.paymentDate) && <InfoRow label="Payment Date:">{formatDisplayDate(booking.paymentDate)}</InfoRow>}
       </div>
-      {booking.status === 'Completed' && <div className="info-box"><strong>Customer Review</strong><div>Ratings and reviews are not supported by the ServeEase backend yet.</div></div>}
+      {booking.status === 'Completed' && <div className="info-box booking-review-section"><strong>Customer Review</strong>{review
+        ? <><ReviewRating rating={review.rating} /><div className="review-feedback"><strong>Feedback</strong><div>{review.feedback || 'No feedback provided.'}</div></div></>
+        : <div>No review yet. Use Rate Service to share your experience.</div>}</div>}
     </div>}
   </OpsModal>
 }

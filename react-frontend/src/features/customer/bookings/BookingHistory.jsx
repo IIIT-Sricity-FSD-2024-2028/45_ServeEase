@@ -1,10 +1,9 @@
 import { bookingTotal, formatDisplayDate, formatPrice, statusPillClass } from '../customerOperations'
+import { ReviewRating } from '../../reviews/ReviewParts'
 
-// The backend has no review endpoint, so the original "Rate Service" action is shown but disabled.
-const reviewsUnavailable = 'Ratings and reviews are not supported by the ServeEase backend yet.'
 
 // "Past Booking History" table (.table-card / .data-table) from my-bookings.html.
-export function BookingHistory({ bookings, emptyLabel, onViewDetails, onRaiseTicket }) {
+export function BookingHistory({ bookings, emptyLabel, reviews = {}, onRate, onViewDetails, onRaiseTicket }) {
   return <div className="table-card">
     <table className="data-table">
       <thead><tr>
@@ -19,7 +18,9 @@ export function BookingHistory({ bookings, emptyLabel, onViewDetails, onRaiseTic
         <td>{booking.id}</td>
         <td><span className={`status-pill ${statusPillClass(booking.status)}`}>{booking.status}</span></td>
         <td>{booking.status === 'Completed'
-          ? <button aria-label={`Rate service: ${reviewsUnavailable}`} className="table-link-btn" disabled title={reviewsUnavailable} type="button">⭐ Rate Service</button>
+          ? reviews[booking.id]
+            ? <div className="booking-review-cell"><ReviewRating rating={reviews[booking.id].rating} /><button className="table-link-btn edit-review-btn" onClick={() => onRate(booking)} type="button">Edit Review</button></div>
+            : <button className="table-link-btn" onClick={() => onRate(booking)} type="button">⭐ Rate Service</button>
           : '—'}</td>
         <td>
           <button className="table-link-btn" onClick={() => onViewDetails(booking)} type="button">View</button>

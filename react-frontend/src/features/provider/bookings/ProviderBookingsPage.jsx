@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi } from '../../../services/api'
+import { bookingsApi, reviewsApi } from '../../../services/api'
+import { ReviewRating } from '../../reviews/ReviewParts'
 import { formatDisplayDate } from '../../customer/customerOperations'
 import { providerStatusPill } from '../providerStatus'
 import '../providerPortal.css'
@@ -35,7 +36,7 @@ function Row({ label, value }) {
   return value === undefined || value === null || value === '' ? null : <div className="info-row"><span>{label}:</span><span>{value}</span></div>
 }
 
-function BookingDetails({ booking, onClose }) {
+function BookingDetails({ booking, review, onClose }) {
   if (!booking) return null
   return <div className="modal-backdrop" role="presentation" onClick={(event) => event.target === event.currentTarget && onClose()}><section aria-labelledby="provider-booking-details-title" aria-modal="true" className="modal-card booking-details-modal provider-booking-modal-card" role="dialog">
     <div className="modal-head"><h2 id="provider-booking-details-title">Booking Details</h2><button aria-label="Close booking details" className="close-modal-btn" onClick={onClose} type="button">×</button></div>
@@ -43,17 +44,21 @@ function BookingDetails({ booking, onClose }) {
       <div className="info-box"><strong>Booking Information</strong><Row label="Booking Reference" value={booking.id} /><div className="info-row"><span>Status:</span><span className={`status-pill ${providerStatusPill(booking.status)}`}>{statusLabel(booking.status)}</span></div><Row label="Cancellation Reason" value={booking.cancellationReason} /><Row label="Progress" value={`${statusProgress(booking.status)}%`} /></div>
       <div className="info-box"><strong>Customer Information</strong><Row label="Name" value={booking.customerName} /><Row label="Phone" value={booking.customerPhone} /><Row label="Location" value={booking.address || booking.location} /></div>
       <div className="info-box"><strong>Service Information</strong><Row label="Service" value={booking.service} /><Row label="Date" value={formatDate(booking.date)} /><Row label="Time" value={booking.time} /><Row label="Amount" value={formatMoney(booking.amount)} /><Row label="Payment Status" value={booking.paymentStatus} /></div>
+      <div className="info-box booking-review-section"><strong>Customer Review</strong>{review
+        ? <><ReviewRating rating={review.rating} /><div className="review-feedback"><strong>Feedback</strong><div>{review.feedback || 'No feedback provided.'}</div></div></>
+        : <div>No customer review yet.</div>}</div>
     </div></div>
   </section></div>
 }
 
 export function ProviderBookingsPage() {
   const { isAuthenticated, role } = useAuth()
-  const [bookings, setBookings] = useState([]); const [activeTab, setActiveTab] = useState('All'); const [selectedBooking, setSelectedBooking] = useState(null); const [pendingCancellation, setPendingCancellation] = useState(null); const [isLoading, setIsLoading] = useState(() => isAuthenticated && role === 'provider'); const [error, setError] = useState(''); const [actionError, setActionError] = useState(''); const [updatingId, setUpdatingId] = useState(null)
+  const [bookings, setBookings] = useState([]); const [reviews, setReviews] = useState({}); const [activeTab, setActiveTab] = useState('All'); const [selectedBooking, setSelectedBooking] = useState(null); const [pendingCancellation, setPendingCancellation] = useState(null); const [isLoading, setIsLoading] = useState(() => isAuthenticated && role === 'provider'); const [error, setError] = useState(''); const [actionError, setActionError] = useState(''); const [updatingId, setUpdatingId] = useState(null)
 
   useEffect(() => {
     if (!isAuthenticated || role !== 'provider') return undefined
     let active = true
+    reviewsApi.forProvider().then((result) => { if (active) setReviews(Object.fromEntries((Array.isArray(result?.reviews) ? result.reviews : []).map((review) => [review.bookingId, review]))) }).catch(() => {})
     bookingsApi.listForProvider().then((records) => { if (active) setBookings(Array.isArray(records) ? records : []) }).catch((requestError) => { if (active) setError(requestError.message || 'Unable to load incoming bookings.') }).finally(() => { if (active) setIsLoading(false) })
     return () => { active = false }
   }, [isAuthenticated, role])
@@ -97,7 +102,7 @@ export function ProviderBookingsPage() {
           </div></div> })}
       </div>
     </section>
-    <BookingDetails booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
+    <BookingDetails booking={selectedBooking} review={reviews[selectedBooking?.id]} onClose={() => setSelectedBooking(null)} />
     {pendingCancellation && <div className="modal-backdrop" role="presentation"><section aria-labelledby="provider-cancellation-title" aria-modal="true" className="modal-card booking-details-modal provider-booking-modal-card" role="dialog"><div className="modal-head"><h2 id="provider-cancellation-title">Booking Details</h2><button aria-label="Close cancellation dialog" className="close-modal-btn" onClick={() => setPendingCancellation(null)} type="button">×</button></div><div className="modal-body"><div className="info-box"><strong>Cancel Booking</strong><p>This will cancel the booking and issue the customer a full refund of the amount paid.</p><div className="provider-booking-actions"><button className="danger-action" disabled={Boolean(updatingId)} onClick={confirmCancellation} type="button">{updatingId ? 'Updating…' : 'Confirm Cancellation'}</button><button className="secondary-action" disabled={Boolean(updatingId)} onClick={() => setPendingCancellation(null)} type="button">Keep Booking</button></div></div></div></section></div>}
   </section>
 }

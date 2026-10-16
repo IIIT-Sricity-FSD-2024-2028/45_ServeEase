@@ -96,7 +96,9 @@ export class BookingsService {
       customerEmail: caller.email,
       status: 'Pending',
       category: provider.category || data.service.trim(),
-      paymentStatus: 'Pending',
+      // There is no payment gateway: pressing Pay at checkout is the payment, so the booking is Paid from the start.
+      paymentStatus: 'Paid',
+      paymentMethod: data.paymentMethod?.trim() || undefined,
     } as CreateBookingDto);
   }
 

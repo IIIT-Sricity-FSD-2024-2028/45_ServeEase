@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../context/useAuth'
 import { bookingsApi } from '../../../services/api'
 import { CustomerPageHeader, InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
-import { formatDisplayDate, formatPrice, statusPillClass } from '../customerOperations'
+import { formatDisplayDate, formatPrice, paymentTag, statusPillClass, summarizePayments, transactionId } from '../customerOperations'
 import '../customerOperations.css'
 
 const emptyPayments = []
@@ -18,7 +18,7 @@ function hasValue(value) {
   return value !== undefined && value !== null && value !== ''
 }
 
-const money = (value) => (hasValue(value) && Number.isFinite(Number(value)) ? formatPrice(Number(value)) : 'Not provided')
+const money = (value) => (hasValue(value) && Number.isFinite(Number(value)) ? formatPrice(Number(value)) : '—')
 
 function StatCard({ icon, tone, value, label }) {
   return <div className="stat-card-dashboard"><div className={`feature-icon ${tone}`}>{icon}</div><h3>{value}</h3><p>{label}</p></div>
@@ -26,43 +26,37 @@ function StatCard({ icon, tone, value, label }) {
 
 // openPaymentModal() in customer.js: Transaction, Service and Payment Breakdown boxes.
 function PaymentDetails({ payment, onClose }) {
-  const status = hasValue(payment.paymentStatus) ? String(payment.paymentStatus) : 'Not provided'
+  const status = paymentTag(payment.paymentStatus)
   return <OpsModal className="payment-details-modal" labelId="payment-details-title" onClose={onClose} title="Payment Details">
     <div className="info-grid">
       <div className="info-box"><strong>Transaction Information</strong>
-        <InfoRow label="Transaction ID:">{payment.paymentId || 'Not recorded'}</InfoRow>
+        <InfoRow label="Transaction ID:">{transactionId(payment) || '—'}</InfoRow>
         <InfoRow label="Booking Reference:">{payment.id}</InfoRow>
         <InfoRow label="Payment Status:"><span className={`status-pill ${statusPillClass(status)}`}>{status}</span></InfoRow>
       </div>
       <div className="info-box"><strong>Service Information</strong>
-        <InfoRow label="Service Name:">{payment.service || 'Not provided'}</InfoRow>
-        <InfoRow label="Provider Name:">{payment.provider || 'Not provided'}</InfoRow>
+        <InfoRow label="Service Name:">{payment.service || '—'}</InfoRow>
+        <InfoRow label="Provider Name:">{payment.provider || '—'}</InfoRow>
       </div>
       <div className="info-box"><strong>Payment Breakdown</strong>
-        <InfoRow label="Payment Method:">{payment.paymentMethod || 'Not provided'}</InfoRow>
-        <InfoRow label="Service Fee:">{money(payment.serviceFee)}</InfoRow>
-        <InfoRow label="Tax (10% GST):">{money(payment.taxAmount)}</InfoRow>
-        <InfoRow label="Platform Fee (5%):">{money(payment.platformFeeAmount)}</InfoRow>
-        <InfoRow label="Total Paid:"><strong>{money(payment.customerTotal)}</strong></InfoRow>
-        <InfoRow label="Payment Date:">{hasValue(payment.paymentDate) ? formatDisplayDate(payment.paymentDate) : 'Not provided'}</InfoRow>
+        <InfoRow label="Payment Method:">{payment.paymentMethod || '—'}</InfoRow>
+        <InfoRow label="Amount Paid:"><strong>{money(payment.customerTotal)}</strong></InfoRow>
+        <InfoRow label="Payment Date:">{hasValue(payment.paymentDate) ? formatDisplayDate(payment.paymentDate) : '—'}</InfoRow>
       </div>
     </div>
   </OpsModal>
 }
 
 function PaymentRow({ payment, onView }) {
-  const status = hasValue(payment.paymentStatus) ? String(payment.paymentStatus) : 'Not provided'
+  const status = paymentTag(payment.paymentStatus)
   return <tr>
-    <td>{payment.paymentId || 'Not recorded'}</td>
-    <td>{payment.id || 'Not provided'}</td>
-    <td>{payment.service || 'Not provided'}</td>
-    <td>{payment.provider || 'Not provided'}</td>
-    <td>{payment.paymentMethod || 'Not provided'}</td>
-    <td>{money(payment.serviceFee)}</td>
-    <td>{money(payment.taxAmount)}</td>
-    <td>{money(payment.platformFeeAmount)}</td>
+    <td>{transactionId(payment) || '—'}</td>
+    <td>{payment.id || '—'}</td>
+    <td>{payment.service || '—'}</td>
+    <td>{payment.provider || '—'}</td>
+    <td>{payment.paymentMethod || '—'}</td>
     <td>{money(payment.customerTotal)}</td>
-    <td>{hasValue(payment.paymentDate) ? formatDisplayDate(payment.paymentDate) : 'Not provided'}</td>
+    <td>{hasValue(payment.paymentDate) ? formatDisplayDate(payment.paymentDate) : '—'}</td>
     <td><span className={`status-pill ${statusPillClass(status)}`}>{status}</span></td>
     <td><button className="table-link-btn" onClick={() => onView(payment)} type="button">View Details</button></td>
   </tr>
@@ -85,9 +79,8 @@ export default function CustomerPaymentHistoryPage() {
         if (!active) return
         if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
         // Every booking records its payment on the booking itself (paymentStatus, paymentDate, totals);
-        // there is no separate payments endpoint. A missing paymentId stays "Not recorded".
-        const customerTransactions = records.filter((booking) => belongsToCustomer(booking, userId, email)
-          && hasValue(booking.paymentStatus))
+        // there is no separate payments endpoint.
+        const customerTransactions = records.filter((booking) => belongsToCustomer(booking, userId, email))
         setResult({ identityKey, status: 'ready', payments: customerTransactions, error: '' })
       })
       .catch((requestError) => {
@@ -101,23 +94,7 @@ export default function CustomerPaymentHistoryPage() {
   const loadState = !isAuthenticated ? 'error' : result.identityKey === identityKey ? result.status : 'loading'
   const error = !isAuthenticated ? 'Please sign in to view payment information.' : result.error
   const payments = result.identityKey === identityKey ? result.payments : emptyPayments
-  const summary = useMemo(() => {
-    const paidStatuses = new Set(['Successful', 'Refunded'])
-    const paidAmounts = payments.flatMap((payment) => {
-      if (!paidStatuses.has(payment.paymentStatus) || !hasValue(payment.customerTotal)) return []
-      const amount = Number(payment.customerTotal)
-      return Number.isFinite(amount) ? [amount] : []
-    })
-    const totalPaid = paidAmounts.length ? paidAmounts.reduce((total, amount) => total + amount, 0) : null
-    const successful = payments.filter((payment) => payment.paymentStatus === 'Successful').length
-    const refundAmounts = payments.flatMap((payment) => {
-      if (!hasValue(payment.refundAmount)) return []
-      const amount = Number(payment.refundAmount)
-      return Number.isFinite(amount) ? [amount] : []
-    })
-    const refunded = refundAmounts.length ? refundAmounts.reduce((total, amount) => total + amount, 0) : null
-    return { totalPaid, successful, refunded }
-  }, [payments])
+  const summary = useMemo(() => summarizePayments(payments), [payments])
 
   return <div className="customer-ops">
     <CustomerPageHeader crumbs={[['Home', '/'], ['Customer Dashboard', '/customer/dashboard'], ['Payment History']]} description="View all your service payment transactions." title="Payment History" />
@@ -126,9 +103,9 @@ export default function CustomerPaymentHistoryPage() {
 
     {loadState === 'ready' && <>
       <section aria-label="Payment summaries" className="dashboard-stats-grid">
-        <StatCard icon="✅" tone="green" label="Total Payments Made" value={money(summary.totalPaid ?? 0)} />
-        <StatCard icon="📄" tone="orange" label="Successful Transactions" value={String(summary.successful)} />
-        <StatCard icon="🔄" tone="blue" label="Refunded Amount" value={money(summary.refunded ?? 0)} />
+        <StatCard icon="✅" tone="green" label="Total Payments Made" value={money(summary.totalPaid)} />
+        <StatCard icon="📄" tone="orange" label="Paid Transactions" value={String(summary.successful)} />
+        <StatCard icon="🔄" tone="blue" label="Refunded Amount" value={money(summary.refunded)} />
       </section>
 
       <section className="table-section">
@@ -141,17 +118,14 @@ export default function CustomerPaymentHistoryPage() {
               <th scope="col">Service Name</th>
               <th scope="col">Service Provider</th>
               <th scope="col">Payment Method</th>
-              <th scope="col">Service Fee</th>
-              <th scope="col">Tax (10%)</th>
-              <th scope="col">Platform Fee (5%)</th>
-              <th scope="col">Total Paid</th>
+              <th scope="col">Amount Paid</th>
               <th scope="col">Transaction Date</th>
               <th scope="col">Payment Status</th>
               <th scope="col">Actions</th>
             </tr></thead>
             <tbody>{payments.length
-              ? payments.map((payment) => <PaymentRow key={payment.paymentId || payment.id} onView={setSelectedPayment} payment={payment} />)
-              : <tr><td colSpan="12">No payments found.</td></tr>}
+              ? payments.map((payment) => <PaymentRow key={payment.id} onView={setSelectedPayment} payment={payment} />)
+              : <tr><td colSpan="9">No payments found.</td></tr>}
             </tbody>
           </table>
         </div>

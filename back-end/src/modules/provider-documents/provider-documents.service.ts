@@ -176,7 +176,63 @@ export class ProviderDocumentsService {
     return existsSync(path) && statSync(path).isFile() ? { path, mimeType: record.mimeType, size: record.size } : undefined;
   }
 
+  // The signed-in provider's current profile photo, wherever it was recorded: the canonical stored image first,
+  // then the image the original site kept on the account or listing (a data URL) or in its profile uploads.
+  ownProviderPhoto(principal: { userId: string; email: string; providerCatalogId?: string }): { path?: string; bytes?: Buffer; mimeType: string; size: number } | undefined {
+    const account = this.ownAccount(principal);
+    const stored = this.publicProfilePhoto(account);
+    if (stored) return stored;
+    const listings = (this.state.findById(ACCOUNTS_KEY)?.value as { providers?: Account[] } | undefined)?.providers;
+    const references = [account.profilePhoto, ...(Array.isArray(listings) ? listings : []).filter((listing) => String(listing?.ownerProviderId) === String(account.id)).map((listing) => listing.profilePhoto)];
+    for (const reference of references) {
+      const value = String(reference ?? '').trim();
+      const data = value.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+=*)$/);
+      if (data) { const bytes = Buffer.from(data[2], 'base64'); return { bytes, mimeType: data[1], size: bytes.length }; }
+      const legacy = value.match(/\/uploads\/profiles\/(\d{13}-[0-9a-f-]{36}\.(?:jpe?g|png|webp))$/i);
+      if (legacy) {
+        const directory = resolve(uploadsDirectory(), 'profiles');
+        const path = resolve(directory, legacy[1]);
+        if (path.startsWith(directory + sep) && existsSync(path) && statSync(path).isFile()) {
+          const type = this.typeOf(readFileSync(path).subarray(0, 16));
+          if (type?.mimeType.startsWith('image/')) return { path, mimeType: type.mimeType, size: statSync(path).size };
+        }
+      }
+    }
+    return undefined;
+  }
+
   // ----- writes ---------------------------------------------------------------------------------------------
+
+  // A provider replaces their own profile photo at any time (not only during verification). The image is
+  // validated like every other document, stored canonically, and becomes the photo customers see on the
+  // provider's listing. The profile-photo document is created on the account if it never had one.
+  replaceProfilePhoto(principal: Actor & { email: string; providerCatalogId?: string }, file: Express.Multer.File | undefined) {
+    const type = this.validateUpload(file, true);
+    if (!type.mimeType.startsWith('image/')) throw new BadRequestException('Upload a JPG or PNG image.');
+    const account = this.ownAccount(principal);
+    const isPhoto = (entry: { document: Account }) => text(entry.document.documentType || entry.document.type || entry.document.label)?.replace(/[^a-z]/gi, '').toLowerCase() === 'profilephoto';
+    let item = this.discover(account).documents.find(isPhoto);
+    if (!item) {
+      const existing = this.discover(account).documents.map((entry) => entry.document);
+      const documentId = `DOC-${account.id}-PHOTO`;
+      account.documents = [...existing, { documentId, documentType: 'Profile Photo', documentName: safeName(file!.originalname), documentUrl: '', required: false, documentStatus: 'Uploaded', rejectionReason: '' }];
+      this.saveAccounts();
+      item = this.discover(account).documents.find(isPhoto);
+    }
+    if (!item) throw new ConflictException('Your profile photo could not be recorded.');
+    const stored = this.storeAndRegister(account, item, file!.buffer, type, {
+      source: 'secure-upload', sourceReference: null, originalFilename: safeName(file!.originalname),
+      event: { action: 'profile-photo-replaced', actor: actorLabel({ ...principal, role: 'provider' }) },
+    });
+    item.document.documentName = safeName(file!.originalname);
+    this.saveAccounts();
+    return this.view(account, item, this.registryDocuments(), stored);
+  }
+
+  private saveAccounts() {
+    const entry = this.state.findById(ACCOUNTS_KEY);
+    if (entry) this.state.update(ACCOUNTS_KEY, { value: entry.value as Record<string, unknown> });
+  }
 
   // A provider uploads the file for one of their own documents while their account is under verification.
   // Ownership comes from the session principal, never from the request.

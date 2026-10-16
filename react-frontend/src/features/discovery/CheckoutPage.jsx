@@ -107,6 +107,7 @@ export function CheckoutPage() {
         address: customer.address.trim(),
         customerName: customer.name.trim(),
         customerPhone: customer.phone.trim(),
+        paymentMethod: paymentMethodLabel(paymentType, payment),
       })
       if (!booking?.id) throw new Error('The booking service did not return a booking reference.')
       saveJourney({ booked: { key: selectionKey, booking, paymentMethod: paymentMethodLabel(paymentType, payment), categoryName: category?.name || '', location: provider.location || '' } })

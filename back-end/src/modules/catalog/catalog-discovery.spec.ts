@@ -133,7 +133,8 @@ describe('Verified provider discovery (HTTP)', () => {
     const listings = await catalog();
     expect(listings.find((item) => item.id === 'shared-a-plumbing-1')).toMatchObject({ accountStatus: 'Active', verified: true });
     expect(listings.find((item) => item.id === 'shared-b-plumbing-2')).toMatchObject({ accountStatus: 'Suspended' });
-    expect(listings.find((item) => item.id === 'base-plumbing-1')).toMatchObject({ accountStatus: 'Active', rating: 4.5, reviews: 3, availableToday: true, startingPrice: 300 });
+    // The saved 4.5 / 3 on the synced listing is seed data; the rating shown is computed from stored customer reviews (none here).
+    expect(listings.find((item) => item.id === 'base-plumbing-1')).toMatchObject({ accountStatus: 'Active', rating: 0, reviews: 0, availableToday: true, startingPrice: 300 });
   });
 
   it('never duplicates the synced listing of a provider who already has one', async () => {

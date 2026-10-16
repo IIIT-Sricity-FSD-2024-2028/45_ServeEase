@@ -45,4 +45,10 @@ export class CreateCustomerBookingDto {
   @IsString()
   @MaxLength(20)
   customerPhone?: string;
+
+  @ApiProperty({ example: 'Net Banking - HDFC Bank', required: false, description: 'How the customer chose to pay at checkout.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  paymentMethod?: string;
 }

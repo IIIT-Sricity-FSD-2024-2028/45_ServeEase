@@ -159,6 +159,22 @@ export class TicketStatusDto {
   status: TicketStatus;
 }
 
+export class TicketMessageDto {
+  @ApiProperty({ example: 'Thanks, I have uploaded the receipt.' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  text: string;
+}
+
+export class TicketSolutionDto {
+  @ApiProperty({ example: 'Your refund has been initiated and will reach you in 3-5 working days.' })
+  @IsString()
+  @MinLength(10)
+  @MaxLength(600)
+  solution: string;
+}
+
 export class TicketRemarksDto {
   @ApiProperty({ example: 'Checked booking and contacted both parties.' })
   @IsString()

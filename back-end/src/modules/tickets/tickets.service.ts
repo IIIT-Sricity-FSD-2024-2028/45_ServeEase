@@ -1,8 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
 import { BookingsService } from '../bookings/bookings.service';
-import { CreateCustomerTicketDto, CreateProviderTicketDto, TicketFinalDecisionDto, TicketRemarksDto } from './dto/ticket.dto';
-import { SupportTicket, TicketFinalDecision, TicketPriority, TicketStatus } from './ticket.entity';
+import { CreateCustomerTicketDto, CreateProviderTicketDto, TicketFinalDecisionDto, TicketMessageDto, TicketRemarksDto, TicketSolutionDto } from './dto/ticket.dto';
+import { SupportTicket, TicketFinalDecision, TicketMessage, TicketPriority, TicketStatus } from './ticket.entity';
 import { TicketsRepository } from './tickets.repository';
 
 @Injectable()
@@ -192,12 +192,46 @@ export class TicketsService {
     if (ticket.status !== 'In Progress') {
       throw new BadRequestException('Support can resolve only tickets that are In Progress.');
     }
-    ticket.supportRemarks = data.remarks;
+    // The text sent with a resolution is the solution the customer or provider sees; internal investigation
+    // remarks are saved separately and never shown to them.
+    ticket.supportUpdate = data.remarks;
+    this.pushMessage(ticket, 'agent', ticket.assignedSupportName || 'Support Agent', data.remarks);
     ticket.status = 'Resolved by Support';
     ticket.resolvedAt = new Date().toISOString();
     ticket.resolvedBy = 'Support';
     this.addHistory(ticket, 'Resolved by Support', data.remarks, 'Support');
     return this.ticketsRepository.update(ticket);
+  }
+
+  // Saves the solution shown to the customer or provider as the ticket's "Support Update" (and in the chat).
+  saveSolution(id: string, data: TicketSolutionDto): SupportTicket {
+    const ticket = this.ensureSupportEditable(this.findById(id));
+    ticket.supportUpdate = data.solution.trim();
+    this.pushMessage(ticket, 'agent', ticket.assignedSupportName || 'Support Agent', ticket.supportUpdate);
+    this.addHistory(ticket, ticket.status, 'Support update shared with the user.', 'Support');
+    return this.ticketsRepository.update(ticket);
+  }
+
+  // A chat message on a ticket. Support and admin reply on any ticket; a customer or provider writes only on a
+  // ticket they raised. Identity comes from the session headers set by the guard, never from the body.
+  addMessage(id: string, data: TicketMessageDto, request: Request): SupportTicket {
+    const ticket = this.findById(id);
+    const role = this.singleHeader(request.headers.role);
+    const text = data.text.trim();
+    if (!text) throw new BadRequestException('A message cannot be empty.');
+    if ((ticket.messages || []).length >= 500) throw new BadRequestException('This conversation has reached its message limit.');
+    if (['support', 'admin', 'superuser'].includes(role)) {
+      const admin = role !== 'support';
+      this.pushMessage(ticket, admin ? 'admin' : 'agent', admin ? 'Admin' : (ticket.assignedSupportName || 'Support Agent'), text);
+      this.addHistory(ticket, ticket.status, admin ? 'Admin replied on the ticket.' : 'Support replied on the ticket.', admin ? 'Admin' : 'Support');
+      return this.ticketsRepository.update(ticket);
+    }
+    const email = this.singleHeader(request.headers['user-email']);
+    const userId = this.singleHeader(request.headers['user-id']);
+    const owner = (userId && ticket.raisedById === userId) || (email && ticket.raisedByEmail.toLowerCase() === email.toLowerCase());
+    if (!owner || role !== ticket.raisedByType) throw new ForbiddenException('You can message only your own tickets.');
+    this.pushMessage(ticket, ticket.raisedByType, ticket.raisedByName || (ticket.raisedByType === 'provider' ? 'Provider' : 'Customer'), text);
+    return this.publicTicket(this.ticketsRepository.update(ticket));
   }
 
   escalate(id: string, data: TicketRemarksDto): SupportTicket {
@@ -279,6 +313,16 @@ export class TicketsService {
     return decision === 'Ticket Rejected' || decision === 'Refund Rejected' ? 'Rejected' : 'Resolved';
   }
 
+  private pushMessage(ticket: SupportTicket, senderType: TicketMessage['senderType'], sender: string, text: string) {
+    ticket.messages = ticket.messages || [];
+    const last = [...ticket.messages].reverse().find((message) => message.senderType === senderType);
+    // The same solution saved twice, or saved and then used to resolve, is one message.
+    if (senderType === 'agent' && last?.text === text && ticket.messages[ticket.messages.length - 1] === last) return;
+    const sentAt = new Date().toISOString();
+    ticket.messages.push({ messageId: `MSG-${ticket.messages.length + 1}`, senderType, sender, text, sentAt });
+    ticket.updatedAt = sentAt;
+  }
+
   private addHistory(ticket: SupportTicket, status: TicketStatus, note: string, updatedBy: string) {
     ticket.statusHistory.unshift({ status, note, updatedBy, updatedAt: new Date().toISOString() });
   }
@@ -287,6 +331,7 @@ export class TicketsService {
     const { supportRemarks, adminRemarks, escalationReason, assignedSupportId, assignedSupportName, ...visibleTicket } = ticket;
     return {
       ...visibleTicket,
+      messages: ticket.messages || [],
       statusHistory: (ticket.statusHistory || []).map((entry) => ({
         ...entry,
         note: ['Support', 'Admin', 'System'].includes(entry.updatedBy)
