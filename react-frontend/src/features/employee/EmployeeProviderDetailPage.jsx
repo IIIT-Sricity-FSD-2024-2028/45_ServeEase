@@ -28,7 +28,7 @@ function Card({ id, title, count, children }) {
 }
 
 function Table({ headings, rows, empty }) {
-  return <div className="provider-operations-table-wrap"><table className="provider-operations-table">
+  return <div className="provider-operations-table-wrap table-scroll"><table className="provider-operations-table">
     <thead><tr>{headings.map((heading) => <th key={heading} scope="col">{heading}</th>)}</tr></thead>
     <tbody>{rows.length ? rows : <tr><td colSpan={headings.length}><div className="provider-operations-empty-state">{empty}</div></td></tr>}</tbody>
   </table></div>
@@ -58,8 +58,9 @@ export function ProviderDetailSections({ data, onPreview }) {
 
     <section aria-label="Selected provider statistics" className="provider-operations-detail-stats">
       <StatCard description="All linked provider bookings" icon="📅" label="Total Bookings" value={stats.total} />
-      <StatCard description="Pending, requested, accepted or upcoming" icon="🟢" label="Active / Upcoming Bookings" value={stats.active} />
-      <StatCard description="Completed provider jobs" icon="✓" label="Completed Bookings" value={stats.completed} />
+      <StatCard description="Pending or accepted bookings" icon="🟢" label="Upcoming" value={stats.upcoming} />
+      <StatCard description="Completed provider jobs" icon="✓" label="Completed" value={stats.completed} />
+      <StatCard description="Cancelled or rejected bookings" icon="✕" label="Cancelled" value={stats.cancelled} />
       <StatCard description="Active provider service records" icon="🛠" label="Active Services" value={stats.activeServices} />
     </section>
 
@@ -89,7 +90,7 @@ export function ProviderDetailSections({ data, onPreview }) {
 
     <Card count={countLabel(bookings.length, 'booking')} id="provider-booking-activity-title" title="Provider Booking Activity">
       <Table empty="No bookings are linked to this provider." headings={['Booking ID', 'Customer', 'Service', 'Date / Time', 'Status', 'Payment Status']}
-        rows={bookings.map((booking) => <tr key={booking.id}><td>{booking.id}</td><td>{display(booking.customer)}</td><td>{display(booking.service)}</td><td>{formatDate(booking.date)}{booking.time ? ` ${booking.time}` : ''}</td><td><Chip value={booking.status} /></td><td>{display(booking.paymentStatus)}</td></tr>)} />
+        rows={bookings.map((booking) => <tr key={booking.id}><td>{booking.id}</td><td>{display(booking.customer)}</td><td>{display(booking.service)}</td><td className="provider-operations-cell-nowrap">{formatDate(booking.date)}{booking.time ? ` · ${booking.time}` : ''}</td><td><Chip value={booking.status} /></td><td><Chip value={booking.paymentStatus} /></td></tr>)} />
     </Card>
 
     <Card id="provider-availability-title" title="Availability Overview">

@@ -40,7 +40,7 @@ export function ProviderOperationsList({ data, status, query, onStatus, onQuery,
         </select>
       </div>
       <label className="provider-operations-search">Search providers<input onChange={(event) => onQuery(event.target.value)} placeholder="Name, email, phone, location, or service" type="search" value={query} /></label>
-      <div className="provider-operations-table-wrap"><table className="provider-operations-table">
+      <div className="provider-operations-table-wrap table-scroll"><table className="provider-operations-table">
         <thead><tr><th scope="col">Provider ID</th><th scope="col">Name</th><th scope="col">Organisation</th><th scope="col">Email</th><th scope="col">Phone</th><th scope="col">Service Category</th><th scope="col">Experience</th><th scope="col">Location</th><th scope="col">No. of Services</th><th scope="col">Account Status</th><th scope="col">Actions</th></tr></thead>
         <tbody>{providers.length ? providers.map((provider) => <tr key={`${provider.id}:${provider.providerCatalogId || ''}`}>
           <td>{provider.id}</td><td>{display(provider.fullName)}</td><td>{display(provider.organisationName)}</td><td>{display(provider.email)}</td><td>{display(provider.phone)}</td>
@@ -61,7 +61,7 @@ export function ProviderOperationsList({ data, status, query, onStatus, onQuery,
           <p className="provider-operations-muted">Providers awaiting document and eligibility review.</p>
         </div>
       </div>
-      <div className="provider-operations-table-wrap"><table className="provider-operations-table provider-operations-pending-table">
+      <div className="provider-operations-table-wrap table-scroll"><table className="provider-operations-table provider-operations-pending-table">
         <thead><tr><th scope="col">Provider ID</th><th scope="col">Provider Name</th><th scope="col">Email</th><th scope="col">Category</th><th scope="col">Location</th><th scope="col">Submitted</th><th scope="col">Documents</th><th scope="col">Action</th></tr></thead>
         <tbody>{pending.length ? pending.map((provider) => <tr key={`${provider.id}:${provider.providerCatalogId || ''}`}>
           <td>{provider.id}</td><td>{display(provider.fullName)}</td><td>{display(provider.email)}</td><td>{display(provider.serviceType)}</td><td>{display(provider.location)}</td>

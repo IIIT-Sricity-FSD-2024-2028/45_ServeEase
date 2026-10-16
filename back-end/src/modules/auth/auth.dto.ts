@@ -1,13 +1,12 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsEmail, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
-import { EMPLOYEE_DEPARTMENTS } from '../../common/employee-departments';
+import { ArrayMaxSize, IsArray, IsEmail, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
 
+// Two inputs only. The identifier is an email (a self-registered customer, or the superuser) or a
+// ServeEase-issued id (provider PRO147, employee EMP-CO-001): the account and its role are resolved
+// from it, never claimed by the client.
 export class LoginDto {
-  @IsOptional() @IsEmail() email?: string;
+  @IsString() @IsNotEmpty() identifier!: string;
   @IsString() password!: string;
-  @IsIn(['customer', 'provider', 'employee', 'superuser']) role!: string;
-  @IsOptional() @IsString() employeeId?: string;
-  @IsOptional() @IsIn(EMPLOYEE_DEPARTMENTS) department?: string;
 }
 
 // A service the provider offers from registration: a sub-service of the chosen category and the provider's own price.

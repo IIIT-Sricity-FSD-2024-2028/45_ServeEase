@@ -72,8 +72,8 @@ describe('Customer suspend / activate', () => {
       auth,
     );
     const controller = new EmployeeOperationsController(service, {} as never);
-    const employee = (employeeId: string, department: string) => auth.login({ role: 'employee', employeeId, department, password: PASSWORD }).token;
-    const login = (role: string, email: string) => auth.login({ role, email, password: PASSWORD }).token;
+    const employee = (employeeId: string) => auth.login({ identifier: employeeId, password: PASSWORD }).token;
+    const login = (identifier: string) => auth.login({ identifier, password: PASSWORD }).token;
 
     // Runs the guard for a route; returns the request (with the session principal) when it is allowed.
     const guarded = (target: { prototype: object }, method: string, token: string, headers: Record<string, string> = {}) => {
@@ -97,11 +97,11 @@ describe('Customer suspend / activate', () => {
 
   it('lets Customer Operations suspend and reactivate a customer, changing only the status fields', () => {
     const { setStatus, record, employee } = server();
-    const coToken = employee('EMP-CO-9', 'Customer Operations');
+    const coToken = employee('EMP-CO-9');
     const before = { ...record('CUS900') };
 
     const suspended = setStatus(coToken, 'CUS900', { status: 'Blocked', reason: '  Chargeback investigation  ', remarks: 'Raised by finance' });
-    expect(suspended).toEqual({ changed: true, customer: { id: 'CUS900', fullName: 'Asha Fixture', email: 'asha@example.test', phone: '9000000901', location: 'Chennai', registrationDate: '01/01/2026', status: 'Blocked' } });
+    expect(suspended).toEqual({ changed: true, customer: { id: 'CUS900', fullName: 'Asha Fixture', email: 'asha@example.test', phone: '9000000901', registrationDate: '01/01/2026', status: 'Blocked' } });
     expect(JSON.stringify(suspended)).not.toMatch(/password|hash|token|statusHistory|blockReason/i);
 
     const after = record('CUS900');
@@ -118,7 +118,7 @@ describe('Customer suspend / activate', () => {
 
   it('treats a customer without a recorded status as Active and makes repeated requests no-ops', () => {
     const { setStatus, record, employee } = server();
-    const coToken = employee('EMP-CO-9', 'Customer Operations');
+    const coToken = employee('EMP-CO-9');
     expect(setStatus(coToken, 'CUS902', { status: 'Active' })).toEqual(expect.objectContaining({ changed: false }));
     expect(record('CUS902').statusHistory).toBeUndefined();
 
@@ -129,7 +129,7 @@ describe('Customer suspend / activate', () => {
 
   it('lets a superuser suspend and reactivate, recorded as the superuser', () => {
     const { setStatus, record, login } = server();
-    const suToken = login('superuser', 'super@example.test');
+    const suToken = login('super@example.test');
     expect(setStatus(suToken, 'CUS901', { status: 'Blocked' }).customer.status).toBe('Blocked');
     expect(record('CUS901').statusHistory[0]).toMatchObject({ performedBy: 'Superuser', performedById: 'SU900' });
     expect(setStatus(suToken, 'CUS901', { status: 'Active' }).customer.status).toBe('Active');
@@ -138,10 +138,10 @@ describe('Customer suspend / activate', () => {
   it('denies Support, Provider Operations, customers and providers, even with spoofed headers', () => {
     const { setStatus, record, employee, login } = server();
     const tokens = [
-      employee('EMP-SUP-9', 'Support'),
-      employee('EMP-PO-9', 'Provider Operations'),
-      login('customer', 'ravi@example.test'),
-      login('provider', 'pro@example.test'),
+      employee('EMP-SUP-9'),
+      employee('EMP-PO-9'),
+      login('ravi@example.test'),
+      login('PRO900'),
     ];
     for (const token of tokens) {
       expect(denied(() => setStatus(token, 'CUS900', { status: 'Blocked' }))).toBe(true);
@@ -152,8 +152,8 @@ describe('Customer suspend / activate', () => {
 
   it('rejects invalid ids, missing customers, non-customer accounts, the caller and unmanaged statuses', () => {
     const { setStatus, record, employee, login } = server();
-    const coToken = employee('EMP-CO-9', 'Customer Operations');
-    const suToken = login('superuser', 'super@example.test');
+    const coToken = employee('EMP-CO-9');
+    const suToken = login('super@example.test');
     expect(() => setStatus(coToken, '../CUS900', { status: 'Blocked' })).toThrow(BadRequestException);
     expect(() => setStatus(coToken, 'CUS999', { status: 'Blocked' })).toThrow(NotFoundException);
     expect(() => setStatus(coToken, 'PRO900', { status: 'Blocked' })).toThrow('Only customer accounts can be suspended or activated here.');
@@ -185,34 +185,34 @@ describe('Customer suspend / activate', () => {
 
   it('persists the status through the state file so it survives a backend restart', () => {
     const first = server();
-    first.setStatus(first.employee('EMP-CO-9', 'Customer Operations'), 'CUS900', { status: 'Blocked' });
+    first.setStatus(first.employee('EMP-CO-9'), 'CUS900', { status: 'Blocked' });
     const onDisk = JSON.parse(readFileSync(stateFile, 'utf8')) as Array<{ key: string; value: { users: Record<string, any>[] } }>;
     expect(onDisk.find((entry) => entry.key === 'serveEaseData')!.value.users.find((user) => user.id === 'CUS900')).toMatchObject({ accountStatus: 'Blocked', role: 'customer', email: 'asha@example.test' });
 
     const restarted = server();
     expect(restarted.record('CUS900').accountStatus).toBe('Blocked');
-    expect(() => restarted.login('customer', 'asha@example.test')).toThrow(ForbiddenException);
-    restarted.setStatus(restarted.employee('EMP-CO-9', 'Customer Operations'), 'CUS900', { status: 'Active' });
-    expect(server().login('customer', 'asha@example.test')).toEqual(expect.any(String));
+    expect(() => restarted.login('asha@example.test')).toThrow(ForbiddenException);
+    restarted.setStatus(restarted.employee('EMP-CO-9'), 'CUS900', { status: 'Active' });
+    expect(server().login('asha@example.test')).toEqual(expect.any(String));
   });
 
   it('refuses new logins for a suspended customer without revealing it to a wrong password', () => {
     const { setStatus, employee, login, auth } = server();
-    setStatus(employee('EMP-CO-9', 'Customer Operations'), 'CUS900', { status: 'Blocked' });
-    expect(() => login('customer', 'asha@example.test')).toThrow('Your ServeEase customer account is currently suspended.');
-    expect(() => auth.login({ role: 'customer', email: 'asha@example.test', password: 'Wrong@123' })).toThrow(UnauthorizedException);
-    expect(() => auth.login({ role: 'customer', email: 'asha@example.test', password: 'Wrong@123' })).not.toThrow(/suspended/);
+    setStatus(employee('EMP-CO-9'), 'CUS900', { status: 'Blocked' });
+    expect(() => login('asha@example.test')).toThrow('Your ServeEase customer account is currently suspended.');
+    expect(() => auth.login({ identifier: 'asha@example.test', password: 'Wrong@123' })).toThrow(UnauthorizedException);
+    expect(() => auth.login({ identifier: 'asha@example.test', password: 'Wrong@123' })).not.toThrow(/suspended/);
   });
 
   it('stops an existing session of the suspended customer and leaves every other session working', () => {
     const { setStatus, guarded, employee, login, auth } = server();
-    const coToken = employee('EMP-CO-9', 'Customer Operations');
-    const supportToken = employee('EMP-SUP-9', 'Support');
-    const suspendedToken = login('customer', 'asha@example.test');
-    const secondDevice = login('customer', 'asha@example.test');
-    const otherCustomer = login('customer', 'ravi@example.test');
-    const provider = login('provider', 'pro@example.test');
-    const superuser = login('superuser', 'super@example.test');
+    const coToken = employee('EMP-CO-9');
+    const supportToken = employee('EMP-SUP-9');
+    const suspendedToken = login('asha@example.test');
+    const secondDevice = login('asha@example.test');
+    const otherCustomer = login('ravi@example.test');
+    const provider = login('PRO900');
+    const superuser = login('super@example.test');
     expect(guarded(BookingsController, 'createForCustomer', suspendedToken).auth.userId).toBe('CUS900');
 
     setStatus(coToken, 'CUS900', { status: 'Blocked' });
@@ -232,13 +232,13 @@ describe('Customer suspend / activate', () => {
     // Reactivation does not revive the old sessions; the customer signs in again.
     setStatus(coToken, 'CUS900', { status: 'Active' });
     expect(() => auth.sessionUser(suspendedToken)).toThrow(UnauthorizedException);
-    const fresh = login('customer', 'asha@example.test');
+    const fresh = login('asha@example.test');
     expect(guarded(BookingsController, 'createForCustomer', fresh).auth.userId).toBe('CUS900');
   });
 
   it('refuses a session whose customer was suspended outside this endpoint (status re-read per request)', () => {
     const { record, login, auth, guarded } = server();
-    const token = login('customer', 'asha@example.test');
+    const token = login('asha@example.test');
     record('CUS900').accountStatus = 'Blocked';
     expect(denied(() => guarded(BookingsController, 'createForCustomer', token))).toBe(true);
     expect(() => auth.sessionUser(token)).toThrow(UnauthorizedException);

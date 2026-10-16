@@ -149,11 +149,33 @@ export function categoryProviders(catalog, { categoryId, cityId }) {
   return [...byIdentity.values()]
 }
 
+// The price slider spans the prices these results actually have, rounded out to the step, so every position
+// changes something: the original page hard-coded ₹0-₹10,000 however much the category really cost.
+export function priceBounds(rows) {
+  const prices = (Array.isArray(rows) ? rows : []).map((row) => Number(row?.startingPrice)).filter((price) => Number.isFinite(price) && price > 0)
+  if (!prices.length) return { min: 0, max: MAX_PRICE }
+  const min = Math.max(0, Math.floor(Math.min(...prices) / PRICE_STEP) * PRICE_STEP)
+  const max = Math.min(MAX_PRICE, Math.ceil(Math.max(...prices) / PRICE_STEP) * PRICE_STEP)
+  return { min, max: Math.max(max, min + PRICE_STEP) }
+}
+
+// The Service Type options: every service the listed providers actually offer, so a new or renamed service
+// appears here as soon as it is published and no option is a dead end. The category's own sub-services are
+// the fallback while nothing is listed.
+export function serviceOptions(rows, category) {
+  const names = new Set()
+  ;(Array.isArray(rows) ? rows : []).forEach((row) => (row.serviceNames || []).forEach((name) => names.add(name)))
+  if (!names.size) (category?.subServices || []).forEach((name) => names.add(name))
+  return [...names].sort((left, right) => left.localeCompare(right))
+}
+
 export function filterProviders(rows, { query = '', service = 'all', maxPrice = MAX_PRICE, categories = [] }) {
   const needle = query.trim().toLowerCase()
   const categoryName = (id) => categories.find((category) => category.id === id)?.name || ''
   return rows.filter((row) => {
-    if (row.startingPrice > maxPrice) return false
+    const price = Number(row.startingPrice)
+    // A listing with no known price is never hidden by the price filter.
+    if (Number.isFinite(price) && price > maxPrice) return false
     if (service !== 'all' && !row.serviceNames.includes(service)) return false
     if (!needle) return true
     return [row.name, categoryName(row.category), ...row.serviceNames].join(' ').toLowerCase().includes(needle)
@@ -228,5 +250,5 @@ export function validatePayment(type, payment) {
 export function paymentMethodLabel(type, payment) {
   if (type === 'upi') return `UPI - ${payment.upiApp}`
   if (type === 'netbanking') return `Net Banking - ${payment.bankName}`
-  return 'Credit / Debit Card'
+  return `Credit / Debit Card - XXXX ${String(payment.cardNumber || '').replace(/\D/g, '').slice(-4)}`
 }

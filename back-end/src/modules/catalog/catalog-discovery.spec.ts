@@ -46,13 +46,13 @@ describe('Verified provider discovery (HTTP)', () => {
   const http = () => request(app.getHttpServer());
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
   const login = async (body: Record<string, string>) => (await http().post('/api/auth/login').send({ password: PASSWORD, ...body })).body.data.token as string;
-  const po = () => login({ role: 'employee', employeeId: 'EMP-PO-7', department: 'Provider Operations' });
+  const po = () => login({ identifier: 'EMP-PO-7' });
   const decide = async (id: string, decision: string, reason?: string) => http().patch(`/api/employee/provider-operations/providers/${id}/verification`).set(auth(await po())).send({ decision, ...(reason ? { reason } : {}) });
   const setStatus = async (id: string, status: string) => http().patch(`/api/employee/provider-operations/providers/${id}/status`).set(auth(await po())).send({ status, reason: 'Fixture review' });
   const catalog = async () => (await http().get('/api/catalog').set({ role: 'user' })).body.data.providers as Array<Record<string, any>>;
   const ownedBy = async (owner: string) => (await catalog()).filter((item) => item.ownerProviderId === owner);
-  const addService = async (providerId: string, email: string, body: Record<string, unknown>) => http().post(`/api/catalog/providers/${providerId}/services`).set(auth(await login({ role: 'provider', email }))).send(body);
-  const book = async (providerId: string) => http().post('/api/bookings/customer').set(auth(await login({ role: 'customer', email: 'cus@example.test' }))).send({ service: 'Haircut', providerId, date: '2030-01-03', time: '10:00 AM - 12:00 PM', address: '1 Example Road' });
+  const addService = async (providerId: string, body: Record<string, unknown>) => http().post(`/api/catalog/providers/${providerId}/services`).set(auth(await login({ identifier: providerId }))).send(body);
+  const book = async (providerId: string) => http().post('/api/bookings/customer').set(auth(await login({ identifier: 'cus@example.test' }))).send({ service: 'Haircut', providerId, date: '2030-01-03', time: '10:00 AM - 12:00 PM', address: '1 Example Road' });
 
   beforeAll(async () => {
     dir = mkdtempSync(join(tmpdir(), 'serveease-discovery-'));
@@ -72,7 +72,7 @@ describe('Verified provider discovery (HTTP)', () => {
   });
 
   it('lists nothing for a pending provider, even once it has services', async () => {
-    expect((await addService('PRONEW', 'new@example.test', { name: 'Haircut', category: 'Salon at Home', price: 450 })).status).toBe(201);
+    expect((await addService('PRONEW', { name: 'Haircut', category: 'Salon at Home', price: 450 })).status).toBe(201);
     expect(await ownedBy('PRONEW')).toEqual([]);
     expect((await book('PRONEW')).status).toBe(404);
   });
@@ -98,17 +98,17 @@ describe('Verified provider discovery (HTTP)', () => {
   });
 
   it('adds a listing for a new city or category the provider really serves, and nowhere else', async () => {
-    expect((await addService('PRONEW', 'new@example.test', { name: 'Tap Repair', category: 'Plumbing', price: 200, cityId: 3, cityName: 'Hyderabad' })).status).toBe(201);
+    expect((await addService('PRONEW', { name: 'Tap Repair', category: 'Plumbing', price: 200, cityId: 3, cityName: 'Hyderabad' })).status).toBe(201);
     const owned = await ownedBy('PRONEW');
     expect(owned.map((item) => `${item.category}|${item.cityId}`).sort()).toEqual(['plumbing|3', 'salon-at-home|3']);
     // A zero-priced service has no bookable price, so it creates nothing.
-    await addService('PRONEW', 'new@example.test', { name: 'Free', category: 'Plumbing', price: 0, cityId: 4, cityName: 'Delhi' });
+    await addService('PRONEW', { name: 'Free', category: 'Plumbing', price: 0, cityId: 4, cityName: 'Delhi' });
     expect((await ownedBy('PRONEW')).length).toBe(2);
   });
 
   it('keeps rejected and still-pending providers out of discovery and bookings', async () => {
-    await addService('PROREJ', 'rej@example.test', { name: 'Haircut', category: 'Salon at Home', price: 300 });
-    await addService('PROWAIT', 'wait@example.test', { name: 'Haircut', category: 'Salon at Home', price: 300 });
+    await addService('PROREJ', { name: 'Haircut', category: 'Salon at Home', price: 300 });
+    await addService('PROWAIT', { name: 'Haircut', category: 'Salon at Home', price: 300 });
     expect((await decide('PROREJ', 'reject', 'Blurred identity proof')).status).toBe(200);
     expect(await ownedBy('PROREJ')).toEqual([]);
     expect(await ownedBy('PROWAIT')).toEqual([]);
@@ -137,8 +137,28 @@ describe('Verified provider discovery (HTTP)', () => {
     expect(listings.find((item) => item.id === 'base-plumbing-1')).toMatchObject({ accountStatus: 'Active', rating: 0, reviews: 0, availableToday: true, startingPrice: 300 });
   });
 
-  it('never duplicates the synced listing of a provider who already has one', async () => {
-    await addService('PROBASE', 'base@example.test', { name: 'Tap', category: 'Plumbing', price: 150, cityId: 1, cityName: 'Chennai' });
-    expect((await ownedBy('PROBASE')).map((item) => item.id)).toEqual(['base-plumbing-1']);
+  // Manage Services is what customers see: a synced listing shows the provider's own service records, not the
+  // service list a front end last synced, so adding, repricing and deactivating all reach the discovery pages.
+  it("never duplicates the synced listing of a provider who already has one, and shows that provider's own services", async () => {
+    expect((await ownedBy('PROBASE'))[0]).toMatchObject({ subServices: ['Haircut'], startingPrice: 300 });
+    const created = await addService('PROBASE', { name: 'Tap', category: 'Plumbing', price: 150, cityId: 1, cityName: 'Chennai' });
+    expect(created.status).toBe(201);
+    const serviceId = created.body.data.id as string;
+    const listings = await ownedBy('PROBASE');
+    expect(listings.map((item) => item.id)).toEqual(['base-plumbing-1']);
+    expect(listings[0]).toMatchObject({ subServices: ['Tap'], servicePricing: { Tap: 150 }, startingPrice: 150 });
+
+    const edit = async (body: Record<string, unknown>) => http().patch(`/api/catalog/providers/PROBASE/services/${serviceId}`)
+      .set(auth(await login({ identifier: 'PROBASE' }))).send(body);
+    expect((await edit({ name: 'Tap Repair', price: 275 })).status).toBe(200);
+    expect((await ownedBy('PROBASE'))[0]).toMatchObject({ subServices: ['Tap Repair'], servicePricing: { 'Tap Repair': 275 }, startingPrice: 275 });
+
+    // Deactivated: nothing on this listing is bookable any more, so discovery has nothing to show for it.
+    expect((await edit({ isActive: false })).status).toBe(200);
+    const off = (await ownedBy('PROBASE'))[0];
+    expect(off.subServices).toEqual([]);
+    expect(off.services).toEqual([]);
+    expect((await edit({ isActive: true })).status).toBe(200);
+    expect((await ownedBy('PROBASE'))[0].subServices).toEqual(['Tap Repair']);
   });
 });

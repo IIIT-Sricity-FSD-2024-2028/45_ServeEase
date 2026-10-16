@@ -6,7 +6,7 @@ import { customerStats, display, filterCustomers } from './employeeOperations'
 import { useOperationsData } from './useOperationsData'
 import './employeeOperations.css'
 
-const statusOptions = [['all', 'All Status'], ['Active', 'Active'], ['Blocked', 'Blocked'], ['N/A', 'N/A']]
+const statusOptions = [['all', 'All Status'], ['Active', 'Active'], ['Blocked', 'Blocked']]
 
 // customer-operations.html: GET /employee/customer-operations/customers (Customer Operations department only).
 export default function EmployeeCustomerOperationsPage() {
@@ -35,7 +35,7 @@ export default function EmployeeCustomerOperationsPage() {
         <Metric description="Registered customers" icon="👥" label="Customers" value={stats.customers} />
         <Metric description="Active accounts" icon="🟢" label="Active" value={stats.active} />
         <Metric description="Blocked accounts" icon="🔴" label="Blocked" value={stats.blocked} />
-        <Metric description="Customer bookings" icon="📅" label="Bookings" value={stats.bookings} />
+        <Metric description="Bookings across all customers" icon="📅" label="Total Bookings" value={stats.bookings} />
         <Metric description="Customer tickets" icon="🎟" label="Support Tickets" value={stats.tickets} />
       </section>
       <section aria-labelledby="manage-customers-title" className="ops-panel">
@@ -46,15 +46,15 @@ export default function EmployeeCustomerOperationsPage() {
           </select>
         </div>
         <label className="ops-search">Search customers<input onChange={(event) => setParam('q', event.target.value)} placeholder="Name, email, phone, or status" type="search" value={query} /></label>
-        <div className="ops-table-wrap">
+        <div className="ops-table-wrap table-scroll">
           <table className="ops-table">
-            <thead><tr><th scope="col">Customer ID</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Phone</th><th scope="col">Location</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
+            <thead><tr><th scope="col">Customer ID</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Phone</th><th scope="col">Bookings</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead>
             <tbody>{customers.length ? customers.map((customer) => <tr key={customer.id}>
               <td>{customer.id}</td>
               <td>{display(customer.fullName)}</td>
               <td>{display(customer.email)}</td>
               <td>{display(customer.phone)}</td>
-              <td>{display(customer.location)}</td>
+              <td>{display(customer.bookings)}</td>
               <td><Chip value={customer.status} /></td>
               <td><Link aria-label={`View ${display(customer.fullName)}`} className="ops-action" to={`/employee/customer-operations/${encodeURIComponent(customer.id)}`}>View</Link></td>
             </tr>) : <tr><td colSpan="7"><div className="ops-empty">No existing customer records found for this view.</div></td></tr>}</tbody>

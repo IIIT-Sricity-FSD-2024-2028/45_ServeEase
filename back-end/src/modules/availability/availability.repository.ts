@@ -18,8 +18,37 @@ export class AvailabilityRepository {
       if (entry.key.startsWith('serveEaseAvailabilityOverride:')) {
         const parts = entry.key.split(':');
         const override = entry.value as unknown as DateOverride;
-        if (parts.length >= 3 && override?.date) this.overrides.set(this.key(parts[1], parts.slice(2).join(':')), override);
+        if (parts.length >= 3 && override?.date) this.overrides.set(this.key(canonicalProviderId(parts[1]), parts.slice(2).join(':')), override);
       }
+    });
+    this.adoptListingKeyedAvailability();
+  }
+
+  // Availability recorded before a provider had one identity sits under their catalog listing id, while the
+  // provider's own pages read and write their account id. Each such record is adopted by the owning account
+  // when that account has nothing of its own, so published hours survive and both sides now agree.
+  private adoptListingKeyedAvailability(): void {
+    const data = this.state.findById('serveEaseData')?.value as { users?: Array<Record<string, any>>; providers?: Array<Record<string, any>> } | undefined;
+    const accounts = (Array.isArray(data?.users) ? data!.users! : []).filter((account) => account?.role === 'provider');
+    const listings = Array.isArray(data?.providers) ? data!.providers! : [];
+    listings.forEach((listing) => {
+      const listingId = canonicalProviderId(String(listing?.id ?? ''));
+      if (!listingId) return;
+      const owners = listing.ownerProviderId
+        ? accounts.filter((account) => String(account.id) === String(listing.ownerProviderId))
+        : accounts.filter((account) => String(account.providerCatalogId ?? '') === String(listing.id));
+      if (owners.length !== 1) return;
+      const accountId = canonicalProviderId(String(owners[0].id));
+      if (accountId === listingId) return;
+
+      if (!this.schedules.has(accountId)) {
+        (this.schedules.get(listingId) ?? []).forEach((schedule) => this.addSchedule({ ...schedule, providerId: accountId }));
+      }
+      Array.from(this.overrides.entries()).forEach(([key, override]) => {
+        if (!key.startsWith(`${listingId}|`)) return;
+        const adopted = this.key(accountId, override.date);
+        if (!this.overrides.has(adopted)) this.overrides.set(adopted, override);
+      });
     });
   }
   findSchedule(providerId: string): StoredWeeklySchedule | undefined {

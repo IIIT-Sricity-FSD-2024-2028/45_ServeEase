@@ -5,7 +5,7 @@ import { employeeOperationsApi } from '../../services/api'
 import { formatPrice } from '../customer/customerOperations'
 import { CustomerStatusAction, CustomerStatusDialog } from './CustomerStatusControls'
 import { Breadcrumb, Chip, LoadState, Metric } from './EmployeeOpsParts'
-import { customerDetailStats, customerStatusAction, display, initialStatusChange, statusChangeError, statusChangeNotice, statusChangeReducer } from './employeeOperations'
+import { customerDetailStats, customerStatusAction, display, formatDate, initialStatusChange, statusChangeError, statusChangeNotice, statusChangeReducer } from './employeeOperations'
 import { useOperationsData } from './useOperationsData'
 import './employeeOperations.css'
 
@@ -69,8 +69,7 @@ export default function EmployeeCustomerDetailPage() {
           <InfoField label="Full Name" value={customer.fullName} />
           <InfoField label="Email" value={customer.email} />
           <InfoField label="Phone" value={customer.phone} />
-          <InfoField label="Location" value={customer.location} />
-          <InfoField label="Registration Date" value={customer.registrationDate} />
+          <InfoField label="Registration Date" value={customer.registrationDate && formatDate(customer.registrationDate)} />
           <InfoField label="Account Status" value={customer.status} />
         </div>
         <CustomerStatusAction action={action} change={change} onOpen={() => dispatch({ type: 'open', nextStatus: action.nextStatus })} status={customer.status} />
@@ -85,33 +84,35 @@ export default function EmployeeCustomerDetailPage() {
         onSignIn={signInAgain}
       />}
 
-      <section aria-label="Selected customer statistics" className="ops-stats ops-stats--four">
+      <section aria-label="Selected customer statistics" className="ops-stats">
         <Metric description="All linked customer bookings" icon="📅" label="Total Bookings" value={stats.total} />
-        <Metric description="Pending or accepted bookings" icon="🟢" label="Active / Upcoming Bookings" value={stats.active} />
-        <Metric description="Completed booking records" icon="✓" label="Completed Bookings" value={stats.completed} />
+        <Metric description="Pending or accepted bookings" icon="🟢" label="Upcoming" value={stats.upcoming} />
+        <Metric description="Completed booking records" icon="✓" label="Completed" value={stats.completed} />
+        <Metric description="Cancelled or rejected bookings" icon="✕" label="Cancelled" value={stats.cancelled} />
         <Metric description="Open operational support items" icon="🎟" label="Open Support Tickets" value={stats.openTickets} />
       </section>
 
       <section aria-labelledby="customer-bookings-title" className="ops-panel ops-panel--detail">
         <div className="ops-panel-head"><h2 id="customer-bookings-title">Customer Booking Activity</h2><span>{bookings.length} records</span></div>
-        <div className="ops-table-wrap"><table className="ops-table">
-          <thead><tr><th scope="col">Booking ID</th><th scope="col">Service</th><th scope="col">Provider</th><th scope="col">Date / Time</th><th scope="col">Status</th><th scope="col">Payment</th></tr></thead>
+        <div className="ops-table-wrap table-scroll"><table className="ops-table">
+          <thead><tr><th scope="col">Booking ID</th><th scope="col">Service</th><th scope="col">Provider</th><th scope="col">Date / Time</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Payment Status</th></tr></thead>
           <tbody>{bookings.length ? bookings.map((booking) => <tr key={booking.id}>
             <td>{booking.id}</td><td>{display(booking.service)}</td><td>{display(booking.provider)}</td>
-            <td>{display(booking.date)}{booking.time ? ` · ${booking.time}` : ''}</td>
+            <td className="ops-cell-nowrap">{formatDate(booking.date)}{booking.time ? ` · ${booking.time}` : ''}</td>
+            <td className="ops-cell-nowrap">{formatPrice(booking.total)}</td>
             <td><Chip value={booking.status} /></td>
-            <td>{booking.total === null || booking.total === undefined ? display(booking.paymentStatus) : `${formatPrice(booking.total)} · ${display(booking.paymentStatus)}`}</td>
-          </tr>) : <tr><td colSpan="6"><div className="ops-empty">No bookings are linked to this customer.</div></td></tr>}</tbody>
+            <td><Chip value={booking.paymentStatus} /></td>
+          </tr>) : <tr><td colSpan="7"><div className="ops-empty">No bookings are linked to this customer.</div></td></tr>}</tbody>
         </table></div>
       </section>
 
       <section aria-labelledby="customer-tickets-title" className="ops-panel ops-panel--detail">
         <div className="ops-panel-head"><h2 id="customer-tickets-title">Customer Support Tickets</h2><span>{tickets.length} records</span></div>
-        <div className="ops-table-wrap"><table className="ops-table">
+        <div className="ops-table-wrap table-scroll"><table className="ops-table">
           <thead><tr><th scope="col">Ticket ID</th><th scope="col">Booking Reference</th><th scope="col">Subject</th><th scope="col">Category</th><th scope="col">Status</th><th scope="col">Created</th></tr></thead>
           <tbody>{tickets.length ? tickets.map((ticket) => <tr key={ticket.ticketId}>
             <td>{ticket.ticketId}</td><td>{display(ticket.relatedBookingId)}</td><td>{display(ticket.subject)}</td><td>{display(ticket.ticketType)}</td>
-            <td><Chip value={ticket.status} /></td><td>{display(ticket.createdAt?.slice(0, 10))}</td>
+            <td><Chip value={ticket.status} /></td><td>{formatDate(ticket.createdAt)}</td>
           </tr>) : <tr><td colSpan="6"><div className="ops-empty">No support tickets are linked to this customer.</div></td></tr>}</tbody>
         </table></div>
       </section>

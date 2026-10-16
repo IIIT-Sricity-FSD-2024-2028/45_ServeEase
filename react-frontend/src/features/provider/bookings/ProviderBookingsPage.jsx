@@ -5,6 +5,7 @@ import { bookingsApi, reviewsApi } from '../../../services/api'
 import { ReviewRating } from '../../reviews/ReviewParts'
 import { formatDisplayDate } from '../../customer/customerOperations'
 import { providerStatusPill } from '../providerStatus'
+import { settleBooking } from '../../finance/revenueModel'
 import '../providerPortal.css'
 
 const tabs = ['All', 'Pending', 'Accepted', 'Completed', 'Rejected', 'Cancelled']
@@ -38,12 +39,13 @@ function Row({ label, value }) {
 
 function BookingDetails({ booking, review, onClose }) {
   if (!booking) return null
+  const settled = settleBooking(booking)
   return <div className="modal-backdrop" role="presentation" onClick={(event) => event.target === event.currentTarget && onClose()}><section aria-labelledby="provider-booking-details-title" aria-modal="true" className="modal-card booking-details-modal provider-booking-modal-card" role="dialog">
     <div className="modal-head"><h2 id="provider-booking-details-title">Booking Details</h2><button aria-label="Close booking details" className="close-modal-btn" onClick={onClose} type="button">×</button></div>
     <div className="modal-body"><div className="info-grid">
       <div className="info-box"><strong>Booking Information</strong><Row label="Booking Reference" value={booking.id} /><div className="info-row"><span>Status:</span><span className={`status-pill ${providerStatusPill(booking.status)}`}>{statusLabel(booking.status)}</span></div><Row label="Cancellation Reason" value={booking.cancellationReason} /><Row label="Progress" value={`${statusProgress(booking.status)}%`} /></div>
       <div className="info-box"><strong>Customer Information</strong><Row label="Name" value={booking.customerName} /><Row label="Phone" value={booking.customerPhone} /><Row label="Location" value={booking.address || booking.location} /></div>
-      <div className="info-box"><strong>Service Information</strong><Row label="Service" value={booking.service} /><Row label="Date" value={formatDate(booking.date)} /><Row label="Time" value={booking.time} /><Row label="Amount" value={formatMoney(booking.amount)} /><Row label="Payment Status" value={booking.paymentStatus} /></div>
+      <div className="info-box"><strong>Service Information</strong><Row label="Service" value={booking.service} /><Row label="Date" value={formatDate(booking.date)} /><Row label="Time" value={booking.time} /><Row label="Service Fee" value={formatMoney(settled.serviceFee)} /><Row label="Your Payout" value={formatMoney(settled.providerPayout)} /><Row label="Payment Status" value={settled.paymentStatus} /></div>
       <div className="info-box booking-review-section"><strong>Customer Review</strong>{review
         ? <><ReviewRating rating={review.rating} /><div className="review-feedback"><strong>Feedback</strong><div>{review.feedback || 'No feedback provided.'}</div></div></>
         : <div>No customer review yet.</div>}</div>
@@ -93,7 +95,7 @@ export function ProviderBookingsPage() {
           <div className="provider-booking-top"><div><div className="provider-booking-title">{booking.service || 'Service unavailable'}</div><div className="provider-booking-submeta">{booking.customerName || 'Customer unavailable'} • {booking.id || 'Reference unavailable'}</div></div><span className={`status-pill ${providerStatusPill(status)}`}>{status}</span></div>
           <div className="provider-booking-line">📅 {formatDate(booking.date)} &nbsp; • &nbsp; 🕒 {booking.time || 'Time unavailable'}</div>
           <div className="provider-booking-line">📍 {booking.address || booking.location || 'Location unavailable'}</div>
-          <div className="provider-booking-line">Amount: <strong>{formatMoney(booking.amount)}</strong></div>
+          <div className="provider-booking-line">Service Fee: <strong>{formatMoney(settleBooking(booking).serviceFee)}</strong></div>
           <div aria-label={`Booking progress ${statusProgress(status)} percent`} className="provider-booking-progress"><span style={{ width: `${statusProgress(status)}%` }} /></div>
           <div className="provider-booking-actions">
             {normalized === 'pending' && <><button className="btn btn-primary" disabled={Boolean(updatingId)} onClick={() => updateStatus(booking, 'Accepted')} type="button">{updatingId === booking.id ? 'Updating…' : 'Accept'}</button><button className="danger-action" disabled={Boolean(updatingId)} onClick={() => updateStatus(booking, 'Rejected')} type="button">Reject</button></>}

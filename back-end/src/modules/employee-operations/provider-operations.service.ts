@@ -1,7 +1,9 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PROVIDER_ACCOUNT_STATUSES, VERIFICATION_DECISIONS, providerAccountStatus, providerVerificationStatus } from '../../common/provider-account-status';
+import { canonicalProviderId } from '../../common/provider-identity';
 import { AuthService } from '../auth/auth.service';
 import { AvailabilityService } from '../availability/availability.service';
+import { canonicalPaymentStatus } from '../bookings/booking-finance';
 import { BookingsRepository } from '../bookings/bookings.repository';
 import { CatalogService } from '../catalog/catalog.service';
 import { ProviderDocumentsService } from '../provider-documents/provider-documents.service';
@@ -58,19 +60,23 @@ export class ProviderOperationsService {
 
   detail(id: string, listing?: string) {
     const account = this.find(id, listing);
-    const catalogId = text(account.providerCatalogId);
     const email = lower(account.email);
-    const bookings = catalogId
-      ? this.bookings.findAll().filter((booking) => String(booking.providerId || '') === catalogId).map((booking) => ({
+    // A provider that registered here has no stored catalog listing: its bookings are recorded against the
+    // account id (the derived listing's ownerProviderId), so both ids are matched, canonically, as elsewhere.
+    const bookingIds = new Set([text(account.providerCatalogId), String(account.id)]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => canonicalProviderId(value)));
+    const bookings = this.bookings.findAll()
+      .filter((booking) => bookingIds.has(canonicalProviderId(String(booking.providerId || ''))))
+      .map((booking) => ({
         id: booking.id,
         customer: text(booking.customerName),
         service: text(booking.service),
         date: text(booking.date),
         time: text(booking.time),
         status: text(booking.status),
-        paymentStatus: text(booking.paymentStatus),
-      }))
-      : [];
+        paymentStatus: canonicalPaymentStatus(booking),
+      }));
     const tickets = this.tickets.findAllForSupport()
       .filter((ticket) => ticket.raisedByType === 'provider'
         && (String(ticket.raisedById || '') === String(account.id) || (email !== '' && lower(ticket.raisedByEmail) === email)))

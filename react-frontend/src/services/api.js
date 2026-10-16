@@ -45,6 +45,11 @@ export const bookingsApi = {
 export const availabilityApi = {
   get: (providerId) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}`),
   getWeeklySchedule: (providerId) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}/weekly-schedule`),
+  // PUT /availability/providers/:id/weekly-schedule replaces the recurring schedule (UpsertWeeklyScheduleDto).
+  saveWeeklySchedule: (providerId, weeklySchedule) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}/weekly-schedule`, {
+    method: 'PUT',
+    body: JSON.stringify({ weeklySchedule }),
+  }),
   getDateOverrides: (providerId) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}/date-overrides`),
   saveDateOverride: (providerId, date, override) => apiRequest(`/availability/providers/${encodeURIComponent(providerId)}/date-overrides/${encodeURIComponent(date)}`, {
     method: 'PUT',

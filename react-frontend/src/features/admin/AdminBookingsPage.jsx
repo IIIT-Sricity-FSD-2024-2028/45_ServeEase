@@ -5,6 +5,7 @@ import { AdminAccessGate } from './AdminAccessGate'
 import { AdminPageHeader } from './AdminPageHeader'
 import { getBooking, listBookings } from './adminApi'
 import { money, show, useAdminData } from './useAdminData'
+import { settleBooking } from '../finance/revenueModel'
 import './admin.css'
 
 const standardBookingGroups = [
@@ -45,7 +46,11 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? show(value) : new Intl.DateTimeFormat('en-GB').format(date)
 }
 
+// Settled bookings report the payment state the revenue model derives (Paid / Refunded);
+// records without a known amount fall back to whatever status the booking carries.
 function paymentStatus(booking) {
+  const settled = settleBooking(booking)
+  if (settled.financialsAvailable) return settled.paymentStatus
   return booking.paymentStatus || booking.payment || booking.paymentState || 'Pending'
 }
 
@@ -84,7 +89,7 @@ function BookingCard({ booking, onView }) {
       <p className="admin-booking-card-service"><strong>{show(category)}</strong> - {show(service)}</p>
       <div className="admin-booking-card-meta">
         <span>Customer: {show(customer)}</span><span>Provider: {show(provider)}</span>
-        <span>{dateLabel}: {formatDate(date)}</span><span>{secondaryLabel}: {show(secondaryValue)}</span><span>Amount: {money(booking.amount)}</span>
+        <span>{dateLabel}: {formatDate(date)}</span><span>{secondaryLabel}: {show(secondaryValue)}</span><span>Amount: {money(settleBooking(booking).customerTotal)}</span>
       </div>
     </div>
     <button aria-label={`View details for ${booking.id || booking.bookingId}`} className="admin-button admin-button--secondary admin-booking-view" onClick={() => onView(String(booking.id || booking.bookingId))} type="button">◉ View<br />Details</button>
@@ -94,11 +99,15 @@ function BookingCard({ booking, onView }) {
 function BookingDetails({ booking, onClose }) {
   const status = normalizedStatus(booking)
   const payment = paymentStatus(booking)
+  const settled = settleBooking(booking)
   const serviceInfo = [
     ['Category:', booking.category || booking.serviceCategory || 'N/A'],
     ['Service Type:', booking.service || booking.serviceType || booking.category || 'N/A'],
     ['Provider:', booking.provider || booking.providerName || booking.providerId || 'N/A'],
     ['Service Time:', booking.time || booking.serviceTime || 'N/A'],
+    ['Service Fee:', money(settled.serviceFee)],
+    ['Customer Total:', money(settled.customerTotal)],
+    ['Payment Method:', booking.paymentMethod || 'N/A'],
   ]
   const customerInfo = [
     ['Name', booking.customerName || booking.customer || booking.customerId || 'N/A'],

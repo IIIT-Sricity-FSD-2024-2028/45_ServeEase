@@ -57,7 +57,7 @@ describe('Provider services: registration, counts and discovery (HTTP)', () => {
   const http = () => request(app.getHttpServer());
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
   const login = async (body: Record<string, string>) => (await http().post('/api/auth/login').send({ password: PASSWORD, ...body })).body.data.token as string;
-  const po = () => login({ role: 'employee', employeeId: 'EMP-PO-6', department: 'Provider Operations' });
+  const po = () => login({ identifier: 'EMP-PO-6' });
   const opsList = async () => (await http().get('/api/employee/provider-operations/providers').set(auth(await po()))).body.data.providers as Array<Record<string, any>>;
   const opsDetail = async (id: string, listingId?: string) => (await http().get(`/api/employee/provider-operations/providers/${id}${listingId ? `?listing=${listingId}` : ''}`).set(auth(await po()))).body.data;
   const catalog = async () => (await http().get('/api/catalog').set({ role: 'user' })).body.data.providers as Array<Record<string, any>>;
@@ -138,15 +138,26 @@ describe('Provider services: registration, counts and discovery (HTTP)', () => {
     expect((await catalog()).filter((item) => item.ownerProviderId === id)).toEqual([]);
   });
 
-  it('refuses services that are not the category\'s, duplicated, unpriced, or sent for a customer, and saves nothing', async () => {
+  it('refuses services that are duplicated, unpriced, or sent for a customer, and saves nothing', async () => {
     const before = app.get(StateRepository).findAll().length;
-    for (const services of [[{ name: 'Tap Repair', price: 100 }], [{ name: 'Haircut', price: 100 }, { name: 'HAIRCUT', price: 120 }], [{ name: 'Haircut', price: 0 }], [{ name: 'Haircut' }], [{ name: 'Haircut', price: 100, extra: 1 }]]) {
+    for (const services of [[{ name: 'Haircut', price: 100 }, { name: 'HAIRCUT', price: 120 }], [{ name: 'Haircut', price: 0 }], [{ name: 'Haircut' }], [{ name: 'Haircut', price: 100, extra: 1 }]]) {
       const response = await register({ email: 'bad@example.test', phone: '9876500002', services });
       expect(response.status).toBe(400);
     }
     expect((await register({ email: 'bad@example.test', phone: '9876500002', serviceType: 'Unknown', services: [{ name: 'Haircut', price: 100 }] })).status).toBe(400);
     expect(app.get(StateRepository).findAll().length).toBe(before);
     expect((await opsList()).some((provider) => provider.email === 'bad@example.test')).toBe(false);
+  });
+
+  it("registers a service the category does not list yet, under the provider's own name", async () => {
+    const response = await register({ email: 'other@example.test', phone: '9876500009', services: [{ name: 'Haircut', price: 500 }, { name: 'Bridal Make-up', price: 2500 }] });
+    expect(response.status).toBe(201);
+    const id = response.body.data.user.id as string;
+    expect(saved(id)?.map((service) => service.name)).toEqual(['Haircut', 'Bridal Make-up']);
+    await http().patch(`/api/employee/provider-operations/providers/${id}/verification`).set(auth(await po())).send({ decision: 'approve' });
+    const listed = (await catalog()).find((item) => item.ownerProviderId === id);
+    // The customer pages offer it like any listed service, at the price the provider set.
+    expect(listed).toMatchObject({ subServices: ['Haircut', 'Bridal Make-up'], servicePricing: { Haircut: 500, 'Bridal Make-up': 2500 }, startingPrice: 500 });
   });
 
   it('keeps a pending, rejected or suspended provider unlisted and unbookable', async () => {
@@ -160,7 +171,7 @@ describe('Provider services: registration, counts and discovery (HTTP)', () => {
     expect((await catalog()).some((item) => item.ownerProviderId === suspended)).toBe(true);
     await http().patch(`/api/employee/provider-operations/providers/${suspended}/status`).set(auth(token)).send({ status: 'Suspended', reason: 'Fixture review' });
     for (const id of [pending, rejected, suspended]) expect((await catalog()).filter((item) => item.ownerProviderId === id)).toEqual([]);
-    const customer = await login({ role: 'customer', email: 'cus@example.test' });
+    const customer = await login({ identifier: 'cus@example.test' });
     const book = (providerId: string) => http().post('/api/bookings/customer').set(auth(customer)).send({ service: 'Haircut', providerId, date: '2030-01-03', time: '10:00 AM - 12:00 PM', address: '1 Example Road' });
     for (const id of [pending, rejected, suspended]) expect((await book(id)).status).toBe(404);
   });
@@ -172,7 +183,7 @@ describe('Provider services: registration, counts and discovery (HTTP)', () => {
     Object.assign(value.users.find((user) => user.id === 'PROSEED')!, { accountStatus: 'Suspended', status: 'Suspended', approvalStatus: 'Suspended' });
     stateRepository.update('serveEaseData', { value });
     expect((await catalog()).find((item) => item.id === 'seed-plumber-1')).toMatchObject({ accountStatus: 'Suspended' });
-    const customer = await login({ role: 'customer', email: 'cus@example.test' });
+    const customer = await login({ identifier: 'cus@example.test' });
     const response = await http().post('/api/bookings/customer').set(auth(customer)).send({ service: 'Tap Repair', providerId: 'seed-plumber-1', date: '2030-01-03', time: '10:00 AM - 12:00 PM', address: '1 Example Road' });
     expect(response.status).toBe(409);
     Object.assign(value.users.find((user) => user.id === 'PROSEED')!, { accountStatus: 'Active', status: 'Active', approvalStatus: 'Active' });

@@ -25,13 +25,13 @@ function harness() {
   };
   const auth = new AuthService(state as never);
   const guard = new RolesGuard(new Reflector(), auth);
-  const employee = (employeeId: string, department: string) => auth.login({ role: 'employee', employeeId, department, password: 'Pass@123' }).token;
+  const employee = (employeeId: string) => auth.login({ identifier: employeeId, password: 'Pass@123' }).token;
   const tokens = {
-    customerOps: employee('EMP-CO-9', 'Customer Operations'),
-    providerOps: employee('EMP-PO-9', 'Provider Operations'),
-    support: employee('EMP-SUP-9', 'Support'),
-    customer: auth.login({ role: 'customer', email: 'customer@example.test', password: 'Pass@123' }).token,
-    superuser: auth.login({ role: 'superuser', email: 'super@example.test', password: 'Pass@123' }).token,
+    customerOps: employee('EMP-CO-9'),
+    providerOps: employee('EMP-PO-9'),
+    support: employee('EMP-SUP-9'),
+    customer: auth.login({ identifier: 'customer@example.test', password: 'Pass@123' }).token,
+    superuser: auth.login({ identifier: 'super@example.test', password: 'Pass@123' }).token,
   };
   const call = (controller: { prototype: object }, method: string, token?: string, headers: Record<string, string> = {}) => {
     const request = { headers: { ...headers, ...(token ? { authorization: `Bearer ${token}` } : {}) } } as Record<string, any>;

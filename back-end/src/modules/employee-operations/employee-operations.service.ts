@@ -1,6 +1,7 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CUSTOMER_ACCOUNT_STATUSES, customerAccountStatus } from '../../common/customer-account-status';
 import { AuthService } from '../auth/auth.service';
+import { canonicalPaymentStatus } from '../bookings/booking-finance';
 import { BookingsRepository } from '../bookings/bookings.repository';
 import { StateRepository } from '../state/state.repository';
 import { TicketsService } from '../tickets/tickets.service';
@@ -26,12 +27,16 @@ export class EmployeeOperationsService {
   ) {}
 
   customerOverview() {
-    const customers = this.accounts('customer').map((account) => this.customerSummary(account));
+    const allBookings = this.bookings.findAll();
+    const customers = this.accounts('customer').map((account) => ({
+      ...this.customerSummary(account),
+      bookings: this.bookingsFor(allBookings, String(account.id), lower(account.email)).length,
+    }));
     return {
       customers,
       totals: {
         customers: customers.length,
-        bookings: this.bookings.findAll().length,
+        bookings: allBookings.length,
         customerTickets: this.tickets.findAllForSupport().filter((ticket) => ticket.raisedByType === 'customer').length,
       },
     };
@@ -41,8 +46,7 @@ export class EmployeeOperationsService {
     const account = this.accounts('customer').find((item) => String(item.id) === id);
     if (!account) throw new NotFoundException(`Customer with id "${id}" was not found.`);
     const email = lower(account.email);
-    const bookings = this.bookings.findAll()
-      .filter((booking) => String(booking.customerId || '') === id || (email !== '' && lower(booking.customerEmail) === email))
+    const bookings = this.bookingsFor(this.bookings.findAll(), id, email)
       .map((booking) => ({
         id: booking.id,
         service: booking.service,
@@ -50,7 +54,7 @@ export class EmployeeOperationsService {
         date: booking.date,
         time: booking.time,
         status: booking.status,
-        paymentStatus: text(booking.paymentStatus),
+        paymentStatus: canonicalPaymentStatus(booking),
         total: booking.customerTotal ?? booking.amount ?? null,
         createdAt: text(booking.createdAt),
       }));
@@ -106,6 +110,11 @@ export class EmployeeOperationsService {
     return { customer: this.customerSummary(account), changed: true };
   }
 
+  // One customer's bookings, matched the way the original pages did: by account id or by registered email.
+  private bookingsFor(bookings: Account[], id: string, email: string): Account[] {
+    return bookings.filter((booking) => String(booking.customerId || '') === id || (email !== '' && lower(booking.customerEmail) === email));
+  }
+
   private accounts(role: 'customer'): Account[] {
     const value = this.state.findById(ACCOUNTS_KEY)?.value as { users?: Account[] } | undefined;
     return (Array.isArray(value?.users) ? value!.users! : []).filter((account) => account?.role === role);
@@ -117,9 +126,8 @@ export class EmployeeOperationsService {
       fullName: text(account.fullName),
       email: text(account.email),
       phone: text(account.phone),
-      location: text(account.location || account.cityName || account.city),
       registrationDate: text(account.registrationDate),
-      status: text(account.accountStatus || account.status),
+      status: customerAccountStatus(account),
     };
   }
 }

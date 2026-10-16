@@ -101,18 +101,21 @@ test('unsupported departments see Access Denied, never another workspace', () =>
 test('customer operations stats and filters follow the original page', () => {
   const overview = {
     customers: [
-      { id: 'CUS1', fullName: 'Asha', email: 'asha@example.test', phone: '9000000001', location: 'Chennai', status: 'Active' },
-      { id: 'CUS2', fullName: 'Ravi', email: 'ravi@example.test', phone: null, location: null, status: 'Blocked' },
-      { id: 'CUS3', fullName: 'Meena', email: 'meena@example.test', phone: null, location: 'Delhi', status: null },
+      { id: 'CUS1', fullName: 'Asha', email: 'asha@example.test', phone: '9000000001', bookings: 4, status: 'Active' },
+      { id: 'CUS2', fullName: 'Ravi', email: 'ravi@example.test', phone: null, bookings: 3, status: 'Blocked' },
+      { id: 'CUS3', fullName: 'Meena', email: 'meena@example.test', phone: null, bookings: 0, status: null },
     ],
     totals: { customers: 3, bookings: 7, customerTickets: 2 },
   }
   assert.deepEqual(customerStats(overview), { customers: 3, active: 1, blocked: 1, bookings: 7, tickets: 2 })
   assert.deepEqual(filterCustomers(overview.customers, { status: 'N/A' }).map((c) => c.id), ['CUS3'])
   assert.deepEqual(filterCustomers(overview.customers, { status: 'Blocked' }).map((c) => c.id), ['CUS2'])
-  assert.deepEqual(filterCustomers(overview.customers, { query: 'chennai' }).map((c) => c.id), ['CUS1'])
+  assert.deepEqual(filterCustomers(overview.customers, { query: 'asha@example' }).map((c) => c.id), ['CUS1'])
   assert.equal(display(null), 'N/A')
-  assert.deepEqual(customerDetailStats([{ status: 'Pending' }, { status: 'Accepted' }, { status: 'Completed' }, { status: 'Cancelled' }], [{ status: 'Pending' }, { status: 'Resolved' }]), { total: 4, active: 2, completed: 1, openTickets: 1 })
+  // Every booking lands in exactly one bucket, so upcoming + completed + cancelled is the total.
+  const detailStats = customerDetailStats([{ status: 'Pending' }, { status: 'Accepted' }, { status: 'Completed' }, { status: 'Cancelled' }, { status: 'Rejected' }], [{ status: 'Pending' }, { status: 'Resolved' }])
+  assert.deepEqual(detailStats, { total: 5, upcoming: 2, completed: 1, cancelled: 2, openTickets: 1 })
+  assert.equal(detailStats.upcoming + detailStats.completed + detailStats.cancelled, detailStats.total)
 })
 
 test('employee workspaces call only their read-only endpoints with the session token', async () => {

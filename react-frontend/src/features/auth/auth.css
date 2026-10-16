@@ -85,13 +85,9 @@
 
 .auth-page .role-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   margin-bottom: 16px;
-}
-
-.auth-page .signup-tabs {
-  grid-template-columns: repeat(2, 1fr);
 }
 
 .auth-page .role-tab {
@@ -109,6 +105,27 @@
   background: #ffffff;
   color: #2f6df6;
   border-color: #b8caff;
+}
+
+/* The Provider ID panel shown once after a provider registers: it is their only sign-in credential. */
+.auth-page .issued-id {
+  margin: 12px 0 8px;
+  padding: 14px;
+  border: 1px dashed #b8caff;
+  border-radius: 10px;
+  background: #f4f6fb;
+  color: #2f6df6;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.auth-page .issued-id-note {
+  margin: 0 0 16px;
+  color: #526581;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .auth-page .form-group {
@@ -416,9 +433,7 @@
 }
 /* Phone-width tweaks. */
 @media (max-width: 480px) {
-  /* The original's four tabs overflow the card on phones; let them shrink instead. */
-  .auth-page .role-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-  .auth-page .signup-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .auth-page .role-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .auth-page .role-tab { padding: 9px 2px; }
 }
 
@@ -445,3 +460,49 @@
 .auth-page .provider-service-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; }
 .auth-page .provider-service-row label { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .auth-page .provider-service-row .provider-service-price { width: 130px; }
+/* "Other": its name field takes the free space so the row keeps the same shape as a listed service, and both
+   inputs in a service row carry the same control styling as every other field on the form. */
+.auth-page .provider-service-row--other label { flex: 0 0 auto; }
+.auth-page .provider-service-row .provider-service-other-name { flex: 1 1 150px; min-width: 0; }
+.auth-page .provider-service-row :is(.provider-service-price, .provider-service-other-name) {
+  box-sizing: border-box;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #e0e6ef;
+  border-radius: 8px;
+  background: #f7f9fc;
+  color: #11284b;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+.auth-page .provider-service-row :is(.provider-service-price, .provider-service-other-name):focus {
+  border-color: #7e97ff;
+  background: #fff;
+}
+
+/* front-end/CSS/auth.css "forgot password": the reset-request page reuses the shared .auth-page controls
+   (.form-group, .btn, .error) and only changes the page layout and card. */
+.forgot-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 36px 16px;
+  background: linear-gradient(180deg, #f6f9ff, #fbf5ff);
+}
+.forgot-page .back-link { margin-bottom: 12px; color: #657891; font-size: 13px; }
+.forgot-page .back-link:hover { color: #2f6df6; }
+.forgot-page .forgot-brand { margin-bottom: 18px; color: #4254f4; font-size: 30px; font-weight: 700; }
+.forgot-page .forgot-card { width: min(420px, 100%); padding: 28px 24px; border: 1px solid #e8edf5; border-radius: 16px; background: #fff; box-shadow: 0 12px 30px rgba(17, 40, 75, .08); text-align: center; }
+.forgot-page .forgot-icon { display: grid; width: 56px; height: 56px; margin: 0 auto 14px; place-items: center; border-radius: 50%; background: #eef4ff; color: #4863ff; font-size: 24px; }
+.forgot-page .forgot-icon.success { background: #e8faef; color: #16a34a; }
+.forgot-page .forgot-card h1 { margin-bottom: 10px; color: #13284a; font-size: 24px; }
+.forgot-page .forgot-card p { margin-bottom: 18px; color: #6d8099; font-size: 14px; line-height: 1.5; }
+.forgot-page .form-group { text-align: left; }
+.forgot-page .btn.forgot-btn { width: 100%; background: #091530; color: #fff; text-decoration: none; }
+.forgot-page .btn.forgot-btn:hover { background: #142348; }
+.forgot-page .note-box { margin-bottom: 16px; padding: 12px; border: 1px solid #d8e5ff; border-radius: 10px; background: #eef4ff; color: #536884; font-size: 13px; line-height: 1.5; text-align: left; }
+.forgot-page .forgot-bottom-link { display: inline-block; margin-top: 14px; color: #6b7d96; font-size: 13px; }
+.forgot-page .forgot-bottom-link:hover { color: #2f6df6; }

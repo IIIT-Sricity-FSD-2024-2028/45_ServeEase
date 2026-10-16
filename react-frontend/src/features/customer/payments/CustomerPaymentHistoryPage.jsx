@@ -3,6 +3,8 @@ import { useAuth } from '../../../context/useAuth'
 import { bookingsApi } from '../../../services/api'
 import { CustomerPageHeader, InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
 import { formatDisplayDate, formatPrice, paymentTag, statusPillClass, summarizePayments, transactionId } from '../customerOperations'
+import { settleBooking } from '../../finance/revenueModel'
+import { PaymentMethod } from '../../finance/PaymentMethod'
 import '../customerOperations.css'
 
 const emptyPayments = []
@@ -39,10 +41,19 @@ function PaymentDetails({ payment, onClose }) {
         <InfoRow label="Provider Name:">{payment.provider || '—'}</InfoRow>
       </div>
       <div className="info-box"><strong>Payment Breakdown</strong>
-        <InfoRow label="Payment Method:">{payment.paymentMethod || '—'}</InfoRow>
+        <InfoRow label="Payment Method:"><PaymentMethod value={payment.paymentMethod} /></InfoRow>
+        <InfoRow label="Service Fee:">{money(payment.serviceFee)}</InfoRow>
+        <InfoRow label={`Tax (${payment.taxRate}%):`}>{money(payment.taxAmount)}</InfoRow>
+        <InfoRow label={`Platform Fee (${payment.platformFeeRate}%):`}>{money(payment.platformFeeAmount)}</InfoRow>
         <InfoRow label="Amount Paid:"><strong>{money(payment.customerTotal)}</strong></InfoRow>
         <InfoRow label="Payment Date:">{hasValue(payment.paymentDate) ? formatDisplayDate(payment.paymentDate) : '—'}</InfoRow>
       </div>
+      {payment.cancellationPolicy && <div className="info-box"><strong>Refund</strong>
+        <InfoRow label="Policy Applied:">{payment.cancellationPolicyLabel}</InfoRow>
+        <InfoRow label="Refund Amount:"><strong>{money(payment.refundAmount)}</strong></InfoRow>
+        <InfoRow label="Non-refundable:">{money(payment.customerTotal - payment.refundAmount)}</InfoRow>
+        <InfoRow label="Refund Status:">{payment.refundStatus}</InfoRow>
+      </div>}
     </div>
   </OpsModal>
 }
@@ -54,7 +65,7 @@ function PaymentRow({ payment, onView }) {
     <td>{payment.id || '—'}</td>
     <td>{payment.service || '—'}</td>
     <td>{payment.provider || '—'}</td>
-    <td>{payment.paymentMethod || '—'}</td>
+    <td><PaymentMethod value={payment.paymentMethod} /></td>
     <td>{money(payment.customerTotal)}</td>
     <td>{hasValue(payment.paymentDate) ? formatDisplayDate(payment.paymentDate) : '—'}</td>
     <td><span className={`status-pill ${statusPillClass(status)}`}>{status}</span></td>
@@ -80,7 +91,7 @@ export default function CustomerPaymentHistoryPage() {
         if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
         // Every booking records its payment on the booking itself (paymentStatus, paymentDate, totals);
         // there is no separate payments endpoint.
-        const customerTransactions = records.filter((booking) => belongsToCustomer(booking, userId, email))
+        const customerTransactions = records.filter((booking) => belongsToCustomer(booking, userId, email)).map(settleBooking)
         setResult({ identityKey, status: 'ready', payments: customerTransactions, error: '' })
       })
       .catch((requestError) => {
@@ -110,7 +121,7 @@ export default function CustomerPaymentHistoryPage() {
 
       <section className="table-section">
         <h2 className="section-title-left">Transaction History</h2>
-        <div className="table-card">
+        <div className="table-card table-scroll">
           <table className="data-table">
             <thead><tr>
               <th scope="col">Transaction ID</th>

@@ -441,7 +441,13 @@
   border: 1px solid #edf1f6;
 }
 .provider-portal .provider-modal-card {
-  width: min(720px, 100%);
+  width: min(560px, 100%);
+}
+/* The city a service is offered in comes from the provider's account, so the form states it instead of asking. */
+.provider-portal .provider-modal-note {
+  margin: -2px 0 0;
+  color: #60748f;
+  font-size: 13px;
 }
 .provider-portal .provider-modal-form textarea {
   min-height: 90px;
@@ -452,8 +458,8 @@
   justify-content: flex-start;
   align-items: center;
   gap: 16px;
-  margin-top: 32px;
-  padding: 24px 0 12px 0;
+  margin-top: 8px;
+  padding: 14px 0 2px;
 }
 .provider-portal .provider-modal-actions .btn,
 .provider-portal .provider-modal-actions .secondary-btn {
@@ -602,15 +608,6 @@
   outline: none;
   border-color: #4254f4;
   box-shadow: 0 0 0 3px rgba(66, 84, 244, 0.1);
-}
-.provider-portal .provider-transaction-table-card {
-  max-height: 460px;
-  overflow: auto;
-}
-.provider-portal .provider-transaction-table-card thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
 }
 @media (max-width: 1100px) {
 .provider-portal .provider-services-layout,
@@ -1280,7 +1277,7 @@
 /* The original modal-card has 22px padding; only .booking-details-modal removes it (the head/body then carry it). */
 .provider-portal .modal-card.provider-modal-card { padding: 22px; }
 .provider-portal .modal-card.provider-modal-card .modal-head { padding: 0; margin-bottom: 16px; }
-.provider-portal .modal-card.provider-modal-card.provider-modal-card { width: min(720px, calc(100vw - 48px)); }
+.provider-portal .modal-card.provider-modal-card.provider-modal-card { width: min(560px, calc(100vw - 48px)); }
 .provider-portal .booking-details-modal .modal-head { margin-bottom: 0; }
 .provider-portal .provider-ticket-modal-card.modal-card { width: min(940px, calc(100vw - 48px)); padding: 30px; border-radius: 24px; }
 .provider-portal .provider-chat-modal-card.modal-card { width: min(700px, calc(100vw - 48px)); padding: 26px; border-radius: 24px; }
@@ -1337,7 +1334,6 @@
   .provider-portal .provider-weekly-slot { grid-template-columns: minmax(90px, 1fr) 8px minmax(90px, 1fr) 24px; }
 }
 /* The service form's single price field spans the whole row in the original. */
-.provider-portal .provider-modal-form .two-col-form { grid-template-columns: 1fr; }
 
 /* ---- provider profile (dashboard.css .provider-profile-photo-box + editable info boxes) ---- */
 .provider-portal .provider-profile-photo-box { display: flex; align-items: center; gap: 16px; padding: 14px; border: 1px solid #dbe7f5; border-radius: 8px; background: #f8fbff; }

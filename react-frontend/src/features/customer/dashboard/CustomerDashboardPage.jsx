@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/useAuth'
 import { ErrorState, LoadingState } from '../../../components/common/FeedbackStates'
 import { bookingsApi, ticketsApi } from '../../../services/api'
 import { formatDisplayDate, formatPrice, paymentTag, transactionId } from '../customerOperations'
+import { settleBooking } from '../../finance/revenueModel'
 import '../customerOperations.css'
 
 const upcomingStatuses = new Set(['Pending', 'Accepted', 'Requested'])
@@ -90,7 +91,7 @@ export default function CustomerDashboardPage() {
   }), [bookings, tickets])
 
   const recentBookings = useMemo(() => bookings.filter((booking) => upcomingStatuses.has(booking.status)).slice(0, 3), [bookings])
-  const recentPayments = useMemo(() => bookings.filter((booking) => booking.paymentStatus || booking.customerTotal || booking.amount).slice(0, 4), [bookings])
+  const recentPayments = useMemo(() => bookings.filter((booking) => booking.paymentStatus || booking.customerTotal || booking.amount).slice(0, 4).map(settleBooking), [bookings])
   const recentTickets = tickets
   const customerName = String(currentUser?.fullName || currentUser?.name || '').trim()
 
@@ -132,7 +133,7 @@ export default function CustomerDashboardPage() {
         <div className="panel-card">
           <div className="panel-head"><h2>Recent Payments</h2><Link to="/customer/payments">View All</Link></div>
           {recentPayments.length
-            ? recentPayments.map((booking) => <PreviewItem key={booking.id || `payment-${booking.date}`} meta={preview(transactionId(booking), formatPrice(booking.customerTotal ?? booking.amount), paymentTag(booking.paymentStatus))} title={booking.service || 'Service booking'} />)
+            ? recentPayments.map((booking) => <PreviewItem key={booking.id || `payment-${booking.date}`} meta={preview(transactionId(booking), formatPrice(booking.customerTotal), paymentTag(booking.paymentStatus))} title={booking.service || 'Service booking'} />)
             : <div className="empty-state-card">No payments yet.</div>}
         </div>
       </section>

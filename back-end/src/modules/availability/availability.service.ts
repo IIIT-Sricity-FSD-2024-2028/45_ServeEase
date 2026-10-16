@@ -12,7 +12,14 @@ import { canonicalProviderId } from '../../common/provider-identity';
 export class AvailabilityService {
   constructor(private readonly repository: AvailabilityRepository, private readonly bookings: BookingsRepository) {}
 
-  getWeeklySchedule(providerId: string): WeeklySchedule { providerId = canonicalProviderId(providerId); return this.toWeeklyScheduleResponse(this.scheduleOrThrow(providerId)); }
+  // A provider who has not set a schedule yet gets an empty week to fill in, not an error: nothing is
+  // recorded for them, and nothing is invented on their behalf.
+  getWeeklySchedule(providerId: string): WeeklySchedule {
+    providerId = canonicalProviderId(providerId);
+    this.validateProviderId(providerId);
+    const stored = this.repository.findScheduleForDate(providerId, this.today());
+    return this.toWeeklyScheduleResponse(stored ?? { providerId, days: WEEKDAYS.map((dayOfWeek) => ({ dayOfWeek, slots: [] })) });
+  }
 
   saveWeeklySchedule(providerId: string, data: UpsertWeeklyScheduleDto): WeeklySchedule {
     providerId = canonicalProviderId(providerId); this.validateProviderId(providerId);
@@ -60,7 +67,6 @@ export class AvailabilityService {
   getAvailability(providerId: string): ProviderAvailability {
     providerId = canonicalProviderId(providerId);
     this.validateProviderId(providerId);
-    this.ensureScheduleForAvailability(providerId);
     const dates: AvailableDate[] = this.windowDates(this.today()).map((date) => {
       const booked = this.bookings.findByProviderAndDate(providerId, date).filter((booking) => this.isBookingBlockingAvailability(booking));
       // A recurring schedule change must not erase an already-booked date
@@ -114,18 +120,6 @@ export class AvailabilityService {
     const disabled = new Set(override.disabledSlots);
     return slots.filter((slot) => !disabled.has(slot) || enabled.has(slot));
   }
-  private ensureScheduleForAvailability(providerId: string): StoredWeeklySchedule {
-    const existing = this.repository.findScheduleForDate(providerId, this.today());
-    if (existing) return existing;
-
-    return this.repository.saveSchedule({
-      providerId,
-      days: WEEKDAYS.map((dayOfWeek) => ({
-        dayOfWeek,
-        slots: dayOfWeek === 'Saturday' || dayOfWeek === 'Sunday' ? [] : ['09:00-12:00', '13:00-17:00'],
-      })),
-    });
-  }
   private meetsMinimumBookingNotice(date: string, slot: string): boolean {
     if (date !== this.today()) return true;
     const start = this.normalizeSlot(slot).split('-')[0];
@@ -142,7 +136,6 @@ export class AvailabilityService {
     return start.getTime() < Date.now();
   }
   private slotsForDate(providerId: string, date: string): string[] { return this.repository.findScheduleForDate(providerId, date)?.days.find((day) => day.dayOfWeek === this.weekdayForDate(date))?.slots ?? []; }
-  private scheduleOrThrow(providerId: string): StoredWeeklySchedule { this.validateProviderId(providerId); const schedule = this.repository.findScheduleForDate(providerId, this.today()); if (!schedule) throw new NotFoundException(`Weekly schedule for provider "${providerId}" was not found.`); return schedule; }
   private toWeeklyScheduleResponse(schedule: StoredWeeklySchedule): WeeklySchedule {
     return {
       providerId: schedule.providerId,

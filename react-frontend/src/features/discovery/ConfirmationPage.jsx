@@ -4,6 +4,7 @@ import { bookingsApi } from '../../services/api'
 import { formatCurrency, formatDisplayDate } from './catalogModel'
 import { paymentTag } from '../customer/customerOperations'
 import { readJourney } from './journeyState'
+import { settleBooking } from '../finance/revenueModel'
 import './journey.css'
 
 // Shows the booking returned by POST /bookings/customer; after a refresh it is re-read with
@@ -38,6 +39,7 @@ export function ConfirmationPage() {
   else {
     const status = booking.status || 'Pending'
     const pending = status.toLowerCase() === 'pending'
+    const charges = settleBooking(booking)
     content = <>
       <div className="success-icon-wrap">⌛</div>
       <h1>Booking Request Submitted!</h1>
@@ -59,7 +61,10 @@ export function ConfirmationPage() {
         <div className="checkout-info-row"><span>Date</span><strong>{formatDisplayDate(booking.date)}</strong></div>
         <div className="checkout-info-row"><span>Time</span><strong>{booking.time}</strong></div>
         <div className="checkout-info-row"><span>Payment Status</span><strong>{paymentTag(booking.paymentStatus)}</strong></div>
-        <div className="checkout-total-row compact"><span>Total Amount</span><strong>{formatCurrency(booking.customerTotal ?? booking.amount)}</strong></div>
+        <div className="checkout-info-row"><span>Service Fee</span><strong>{formatCurrency(charges.serviceFee)}</strong></div>
+        <div className="checkout-info-row"><span>Tax ({charges.taxRate}%)</span><strong>{formatCurrency(charges.taxAmount)}</strong></div>
+        <div className="checkout-info-row"><span>Platform Fee ({charges.platformFeeRate}%)</span><strong>{formatCurrency(charges.platformFeeAmount)}</strong></div>
+        <div className="checkout-total-row compact"><span>Total Amount</span><strong>{formatCurrency(charges.customerTotal)}</strong></div>
       </div>
 
       <div className="next-steps-box">

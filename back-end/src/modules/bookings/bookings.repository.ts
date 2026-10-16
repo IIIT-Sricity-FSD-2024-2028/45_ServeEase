@@ -4,6 +4,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { StateRepository } from '../state/state.repository';
 import { canonicalProviderId } from '../../common/provider-identity';
+import { canonicalPaymentStatus } from './booking-finance';
 
 @Injectable()
 export class BookingsRepository {
@@ -15,6 +16,14 @@ export class BookingsRepository {
     if (stored?.value && Array.isArray((stored.value as { bookings?: Booking[] }).bookings)) {
       this.bookings.push(...((stored.value as { bookings: Booking[] }).bookings));
     }
+    // Legacy records stored 'Successful' or 'Pending' for payments that are really Paid or Refunded.
+    const normalised = this.bookings.filter((booking) => {
+      const canonical = canonicalPaymentStatus(booking);
+      if (booking.paymentStatus === canonical) return false;
+      booking.paymentStatus = canonical;
+      return true;
+    });
+    if (normalised.length) this.persist();
   }
 
   findAll(): Booking[] {
@@ -64,9 +73,9 @@ export class BookingsRepository {
       createdAt,
       status,
       category: data.category ?? data.service,
-      paymentStatus: data.paymentStatus ?? 'Pending',
+      paymentStatus: canonicalPaymentStatus(data),
       paymentDate: data.paymentDate ?? this.paymentDateFor(data.date),
-      paymentId: data.paymentId ?? (data.paymentStatus === 'Paid' ? `TXN-${id.replace(/^BOOK-/, '')}` : undefined),
+      paymentId: data.paymentId ?? `TXN-${id.replace(/^BOOK-/, '')}`,
       statusUpdatedAt: data.statusUpdatedAt ?? createdAt,
       stateVersion: data.stateVersion ?? 1,
       receivedDate: status === 'Completed' ? (data.receivedDate ?? this.receivedDateFor(data.date)) : undefined,
@@ -88,6 +97,7 @@ export class BookingsRepository {
     const priorStatus = booking.status;
     const nextStateVersion = Math.max(Number(booking.stateVersion) || 0, Number(data.stateVersion) || 0) + 1;
     Object.assign(booking, data);
+    booking.paymentStatus = canonicalPaymentStatus(booking);
     booking.stateVersion = nextStateVersion;
     if (data.status && data.status !== priorStatus) booking.statusUpdatedAt = data.statusUpdatedAt ?? new Date().toISOString();
     if (data.status) {
@@ -147,7 +157,7 @@ export class BookingsRepository {
       if (booking.cancellationReason === 'Automatically cancelled because the provider did not confirm the booking before the scheduled service date.') {
         booking.status = 'Pending';
         booking.category = 'Pending';
-        booking.paymentStatus = 'Pending';
+        booking.paymentStatus = canonicalPaymentStatus(booking);
         delete (booking as any).cancellationReason;
       }
     });

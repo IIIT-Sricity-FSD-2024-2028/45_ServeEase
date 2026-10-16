@@ -9485,7 +9485,7 @@
           ]
         },
         {
-          "id": "PRO-CAT-019",
+          "id": "PRO-CAT-136",
           "role": "provider",
           "fullName": "Urban Shine Cleaner",
           "organisationName": "Urban Shine Cleaner",
@@ -9884,7 +9884,7 @@
           "accountStatus": "Active"
         },
         {
-          "id": "PRO-CAT-037",
+          "id": "PRO-CAT-137",
           "role": "provider",
           "fullName": "PowerFix Electrician",
           "organisationName": "PowerFix Electrician",
@@ -10052,7 +10052,7 @@
           "accountStatus": "Active"
         },
         {
-          "id": "PRO-CAT-042",
+          "id": "PRO-CAT-138",
           "role": "provider",
           "fullName": "VoltMaster Electric",
           "organisationName": "VoltMaster Electric",
@@ -11900,7 +11900,7 @@
             {
               "documentId": "DOC-PRO-CAT-004-PHOTO",
               "documentType": "Profile Photo",
-              "documentName": "blue.png",
+              "documentName": "homecleaning 4.jpg.jpeg",
               "documentUrl": "",
               "required": false,
               "documentStatus": "Uploaded",
@@ -12536,10 +12536,10 @@
           "location": "Chennai",
           "address": "rj@gmail.com",
           "providerCatalogId": "roshan-clean-care",
-          "approvalStatus": "Suspended",
+          "approvalStatus": "Active",
           "verificationStatus": "Verified",
-          "accountStatus": "Suspended",
-          "status": "Suspended",
+          "accountStatus": "Active",
+          "status": "Active",
           "documents": [
             {
               "documentId": "DOC-PRO143-1",
@@ -12581,6 +12581,16 @@
           "registrationDate": "31-08-2026",
           "submittedDate": "31-08-2026",
           "statusHistory": [
+            {
+              "dateTime": "2026-10-16T16:51:26.815Z",
+              "action": "Provider activated",
+              "previousStatus": "Suspended",
+              "newStatus": "Active",
+              "reason": "validated",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
             {
               "dateTime": "01-09-2026 05:27 PM",
               "action": "Provider suspended",
@@ -12647,8 +12657,7 @@
           ],
           "rejectionReason": "",
           "verified": true,
-          "adminRemarks": "",
-          "suspensionReason": "blocked"
+          "adminRemarks": ""
         },
         {
           "id": "PRO144",
@@ -12755,6 +12764,75 @@
               "newStatus": "Active",
               "reason": "",
               "remarks": "GOOD",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            }
+          ]
+        },
+        {
+          "id": "CUS017",
+          "role": "customer",
+          "fullName": "Kiran",
+          "email": "kiran.p@gmail.com",
+          "phone": "7412589633",
+          "passwordHash": "ddebd003eb59e9c8156cbb1243b694ee:0f4988140fc740dd3ca62e0c7016258de074b7a7882177764d649ebfe67b12ad944baea97666ccf4b6ba8e84977961ab9350ac684906394f4ab35858c323d682",
+          "registrationDate": "2026-10-16",
+          "accountStatus": "Active",
+          "status": "Active"
+        },
+        {
+          "id": "PRO147",
+          "role": "provider",
+          "fullName": "Kiran",
+          "email": "kiran.pk@gmail.com",
+          "phone": "7412589600",
+          "passwordHash": "900e2827ddac47deda0754e5650360ea:da3be7945dcfc08ca468a1bbf8da88f07e6fa309cef6d5c3565844f81862d6297a0f74aa90a7b223eaed54477f4002cc308a613a76763ca3a6620bfd19689600",
+          "registrationDate": "2026-10-16",
+          "organisationName": "Kiran Cleancare ",
+          "serviceType": "Home cleaning",
+          "experience": 0,
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "location": "Bangalore",
+          "address": "123 MG Road, Whitefield, Bangalore.",
+          "idProofType": "Aadhaar",
+          "documents": [
+            {
+              "documentType": "idProof",
+              "documentName": "homecleaning 5.jpg.jpeg",
+              "required": true,
+              "documentStatus": "Pending selection",
+              "documentId": "DOC-PRO147-1"
+            },
+            {
+              "documentType": "addressProof",
+              "documentName": "homecleaning 2.jpg.jpeg",
+              "required": true,
+              "documentStatus": "Pending selection",
+              "documentId": "DOC-PRO147-2"
+            },
+            {
+              "documentType": "profilePhoto",
+              "documentName": "homecleaning 5.jpg.jpeg",
+              "required": true,
+              "documentStatus": "Pending selection",
+              "documentId": "DOC-PRO147-3"
+            }
+          ],
+          "approvalStatus": "Active",
+          "verificationStatus": "Verified",
+          "accountStatus": "Active",
+          "status": "Active",
+          "verified": true,
+          "adminRemarks": "",
+          "statusHistory": [
+            {
+              "dateTime": "2026-10-16T16:52:27.851Z",
+              "action": "Verification approved",
+              "previousStatus": "Under Verification",
+              "newStatus": "Active",
+              "reason": "",
+              "remarks": "",
               "performedBy": "Provider Operations",
               "performedById": "EMP-PO-001"
             }
@@ -13553,7 +13631,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-16T07:26:28.462Z"
+    "updatedAt": "2026-10-16T18:51:02.204Z"
   },
   {
     "key": "serveEaseSupportModuleData",
@@ -21606,6 +21684,41 @@
     "value": {
       "bookings": [
         {
+          "service": "Kitchen Cleaning",
+          "provider": "Cleanpro Services",
+          "providerId": "PRO001",
+          "date": "2026-10-17",
+          "time": "09:00-11:00",
+          "address": "147856",
+          "serviceFee": 799,
+          "taxRate": 10,
+          "taxAmount": 79.9,
+          "platformFeeRate": 5,
+          "platformFeeAmount": 39.95,
+          "customerTotal": 918.85,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "providerPayoutAmount": 719.1,
+          "platformRevenueAmount": 119.85,
+          "amount": 918.85,
+          "payoutStatus": "Pending",
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "customerPhone": "9876543210",
+          "customerEmail": "user@serveease.com",
+          "status": "Accepted",
+          "category": "home-cleaning",
+          "paymentStatus": "Paid",
+          "paymentMethod": "Net Banking - RBL Bank",
+          "id": "BOOK-20261016-2020-0017",
+          "createdAt": "2026-10-16T14:50:28.741Z",
+          "paymentDate": "2026-10-16",
+          "paymentId": "TXN-20261016-2020-0017",
+          "statusUpdatedAt": "2026-10-16T14:52:29.693Z",
+          "stateVersion": 2
+        },
+        {
           "service": "Furniture Repair",
           "provider": "RMD Carpenters",
           "providerId": "PRO133",
@@ -21619,16 +21732,31 @@
           "customerName": "Raghava Kumar",
           "customerPhone": "9876543210",
           "customerEmail": "user@serveease.com",
-          "status": "Pending",
+          "status": "Cancelled",
           "category": "carpentry",
-          "paymentStatus": "Paid",
+          "paymentStatus": "Refunded",
           "paymentMethod": "Net Banking - HDFC Bank",
           "id": "BOOK-20261016-1620-0016",
           "createdAt": "2026-10-16T10:50:48.728Z",
           "paymentDate": "2026-10-16",
           "paymentId": "TXN-20261016-1620-0016",
-          "statusUpdatedAt": "2026-10-16T10:50:48.728Z",
-          "stateVersion": 1
+          "statusUpdatedAt": "2026-10-16T14:51:37.151Z",
+          "stateVersion": 2,
+          "cancellationActor": "Customer",
+          "cancelledAt": "2026-10-16T14:51:37.150Z",
+          "cancellationPolicy": "CUSTOMER_CANCEL_GT_24H",
+          "refundAmount": 566,
+          "refundServiceFee": 566,
+          "refundPlatformFee": 0,
+          "refundTax": 0,
+          "taxRefundAmount": 0,
+          "refundStatus": "Refunded",
+          "refundDate": "2026-10-16",
+          "providerCommissionAmount": 0,
+          "providerPayout": 0,
+          "providerPayoutAmount": 0,
+          "platformRevenueAmount": 28.3,
+          "payoutStatus": "Not Paid"
         },
         {
           "service": "Kitchen Cleaning",
@@ -21646,7 +21774,7 @@
           "customerEmail": "user@serveease.com",
           "status": "Accepted",
           "category": "home-cleaning",
-          "paymentStatus": "Pending",
+          "paymentStatus": "Paid",
           "id": "BOOK-20261016-1600-0015",
           "createdAt": "2026-10-16T10:30:10.347Z",
           "paymentDate": "2026-10-16",
@@ -21669,7 +21797,7 @@
           "customerEmail": "user@serveease.com",
           "status": "Cancelled",
           "category": "home-cleaning",
-          "paymentStatus": "Pending",
+          "paymentStatus": "Paid",
           "id": "BOOK-20261016-1557-0014",
           "createdAt": "2026-10-16T10:27:35.585Z",
           "paymentDate": "2026-10-16",
@@ -21694,7 +21822,7 @@
           "customerEmail": "abhi@gmail.com",
           "status": "Cancelled",
           "category": "appliance-repair-installation",
-          "paymentStatus": "Pending",
+          "paymentStatus": "Paid",
           "id": "BOOK-20261015-1405-0013",
           "createdAt": "2026-10-15T08:35:58.370Z",
           "paymentDate": "2026-10-15",
@@ -21719,7 +21847,7 @@
           "customerEmail": "user@serveease.com",
           "status": "Completed",
           "category": "home-cleaning",
-          "paymentStatus": "Pending",
+          "paymentStatus": "Paid",
           "id": "BOOK-20261015-0317-0012",
           "createdAt": "2026-10-14T21:47:31.802Z",
           "paymentDate": "2026-10-14",
@@ -21751,7 +21879,7 @@
           "customerId": "CUS001",
           "customerEmail": "user@serveease.com",
           "category": "home-cleaning",
-          "paymentStatus": "Successful",
+          "paymentStatus": "Paid",
           "id": "BOOK-20260903-2157-0011",
           "createdAt": "2026-09-03T16:27:47.860Z",
           "paymentDate": "03-09-2026",
@@ -21877,7 +22005,7 @@
           "customerId": "CUS001",
           "customerEmail": "user@serveease.com",
           "category": "home-cleaning",
-          "paymentStatus": "Successful",
+          "paymentStatus": "Paid",
           "id": "BOOK-20260902-0107-0008",
           "createdAt": "2026-09-01T19:37:11.279Z",
           "paymentDate": "02-09-2026",
@@ -22095,7 +22223,7 @@
           "customerId": "CUS001",
           "customerEmail": "user@serveease.com",
           "category": "home-cleaning",
-          "paymentStatus": "Successful",
+          "paymentStatus": "Paid",
           "id": "BOOK-20260901-2349-0003",
           "createdAt": "2026-09-01T18:19:57.282Z",
           "paymentDate": "01-09-2026",
@@ -22129,7 +22257,7 @@
           "customerId": "CUS001",
           "customerEmail": "user@serveease.com",
           "category": "home-cleaning",
-          "paymentStatus": "Successful",
+          "paymentStatus": "Paid",
           "id": "BOOK-20260901-2326-0002",
           "createdAt": "2026-09-01T17:56:53.808Z",
           "paymentDate": "01-09-2026",
@@ -22163,7 +22291,7 @@
           "customerId": "CUS001",
           "customerEmail": "user@serveease.com",
           "category": "home-cleaning",
-          "paymentStatus": "Successful",
+          "paymentStatus": "Paid",
           "id": "BOOK-20260901-2248-0001",
           "createdAt": "2026-09-01T17:18:26.781Z",
           "paymentDate": "01-09-2026",
@@ -22175,7 +22303,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-16T10:50:48.728Z"
+    "updatedAt": "2026-10-16T15:12:34.997Z"
   },
   {
     "key": "serveEaseEmployeeModuleData",
@@ -22746,7 +22874,7 @@
           "price": 299,
           "status": "Inactive",
           "isActive": false,
-          "updatedAt": "2026-09-03T19:09:58.229Z"
+          "updatedAt": "2026-10-16T17:46:36.845Z"
         },
         {
           "name": "car washing",
@@ -22760,9 +22888,9 @@
           "updatedAt": "2026-10-13T17:37:13.659Z"
         }
       ],
-      "updatedAt": "2026-10-13T17:37:13.659Z"
+      "updatedAt": "2026-10-16T17:46:36.845Z"
     },
-    "updatedAt": "2026-10-13T17:37:13.659Z"
+    "updatedAt": "2026-10-16T17:46:36.845Z"
   },
   {
     "key": "serveEaseProviderServices:PRO143",
@@ -26490,36 +26618,6 @@
           ]
         },
         {
-          "documentId": "DOC-PRO-CAT-004-PHOTO",
-          "providerAccountId": "PRO-CAT-004",
-          "ownerEmail": "cleanpro-services-home-cleaning-1@serveease.com",
-          "providerListingId": "cleanpro-services-home-cleaning-1",
-          "documentType": "Profile Photo",
-          "verificationStatus": "Uploaded",
-          "originalFilename": "blue.png",
-          "mimeType": "image/png",
-          "size": 186,
-          "sha256": "79e21799945dde08a0dfb56ece7109b0fc80365b0fc83f3c385c94feb0cebeb5",
-          "storageKey": "79e21799945dde08a0dfb56ece7109b0fc80365b0fc83f3c385c94feb0cebeb5.png",
-          "source": "secure-upload",
-          "sourceReference": null,
-          "recordOrigin": "account",
-          "createdAt": "2026-10-16T07:21:16.604Z",
-          "updatedAt": "2026-10-16T07:21:18.467Z",
-          "history": [
-            {
-              "at": "2026-10-16T07:21:18.467Z",
-              "action": "profile-photo-replaced",
-              "actor": "Provider (PRO-CAT-004)"
-            },
-            {
-              "at": "2026-10-16T07:21:16.604Z",
-              "action": "profile-photo-replaced",
-              "actor": "Provider (PRO-CAT-004)"
-            }
-          ]
-        },
-        {
           "documentId": "DOC-PRO001-PHOTO",
           "providerAccountId": "PRO001",
           "ownerEmail": "provider@serveease.com",
@@ -26553,10 +26651,120 @@
               "actor": "Provider (PRO001)"
             }
           ]
+        },
+        {
+          "documentId": "DOC-PRO147-1",
+          "providerAccountId": "PRO147",
+          "ownerEmail": "kiran.pk@gmail.com",
+          "providerListingId": null,
+          "documentType": "idProof",
+          "verificationStatus": "Pending selection",
+          "originalFilename": "homecleaning 5.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 45474,
+          "sha256": "ed5b1bd2e8567e00a1a73a1e20fc011869ed9c553c15513d1fed14297191c075",
+          "storageKey": "ed5b1bd2e8567e00a1a73a1e20fc011869ed9c553c15513d1fed14297191c075.jpg",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-16T16:51:56.720Z",
+          "updatedAt": "2026-10-16T16:51:56.720Z",
+          "history": [
+            {
+              "at": "2026-10-16T16:51:56.720Z",
+              "action": "uploaded",
+              "actor": "Provider (PRO147)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO147-2",
+          "providerAccountId": "PRO147",
+          "ownerEmail": "kiran.pk@gmail.com",
+          "providerListingId": null,
+          "documentType": "addressProof",
+          "verificationStatus": "Pending selection",
+          "originalFilename": "homecleaning 2.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 40751,
+          "sha256": "c487344b6dc1cb969ca2c7f674bfb09af229d32e542c7ad395cad52f1c91c21e",
+          "storageKey": "c487344b6dc1cb969ca2c7f674bfb09af229d32e542c7ad395cad52f1c91c21e.jpg",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-16T16:51:56.760Z",
+          "updatedAt": "2026-10-16T16:51:56.760Z",
+          "history": [
+            {
+              "at": "2026-10-16T16:51:56.760Z",
+              "action": "uploaded",
+              "actor": "Provider (PRO147)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO147-3",
+          "providerAccountId": "PRO147",
+          "ownerEmail": "kiran.pk@gmail.com",
+          "providerListingId": null,
+          "documentType": "profilePhoto",
+          "verificationStatus": "Pending selection",
+          "originalFilename": "homecleaning 5.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 45474,
+          "sha256": "ed5b1bd2e8567e00a1a73a1e20fc011869ed9c553c15513d1fed14297191c075",
+          "storageKey": "ed5b1bd2e8567e00a1a73a1e20fc011869ed9c553c15513d1fed14297191c075.jpg",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-16T16:51:56.782Z",
+          "updatedAt": "2026-10-16T16:51:56.782Z",
+          "history": [
+            {
+              "at": "2026-10-16T16:51:56.782Z",
+              "action": "uploaded",
+              "actor": "Provider (PRO147)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO-CAT-004-PHOTO",
+          "providerAccountId": "PRO-CAT-004",
+          "ownerEmail": "cleanpro-services-home-cleaning-1@serveease.com",
+          "providerListingId": "cleanpro-services-home-cleaning-1",
+          "documentType": "Profile Photo",
+          "verificationStatus": "Uploaded",
+          "originalFilename": "homecleaning 4.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 55503,
+          "sha256": "3cf6e08c387e7df44c261627aba847603055d3a41d4ccfa812d85f13c39143d1",
+          "storageKey": "3cf6e08c387e7df44c261627aba847603055d3a41d4ccfa812d85f13c39143d1.jpg",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-16T07:21:16.604Z",
+          "updatedAt": "2026-10-16T17:00:12.263Z",
+          "history": [
+            {
+              "at": "2026-10-16T17:00:12.263Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO-CAT-004)"
+            },
+            {
+              "at": "2026-10-16T07:21:18.467Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO-CAT-004)"
+            },
+            {
+              "at": "2026-10-16T07:21:16.604Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO-CAT-004)"
+            }
+          ]
         }
       ]
     },
-    "updatedAt": "2026-10-16T07:26:18.719Z"
+    "updatedAt": "2026-10-16T17:00:12.263Z"
   },
   {
     "key": "serveEaseAvailabilityWeekly:PRO135:0000-01-01",
@@ -26876,5 +27084,92 @@
       "effectiveFrom": "0000-01-01"
     },
     "updatedAt": "2026-10-16T10:50:48.427Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO147",
+    "value": {
+      "providerId": "PRO147",
+      "services": [
+        {
+          "id": "SVC001",
+          "name": "Full Home Cleaning",
+          "category": "Home cleaning",
+          "description": "Full Home Cleaning offered by Kiran Cleancare ",
+          "price": 699,
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "location": "Bangalore",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-16T16:51:56.682Z"
+        },
+        {
+          "name": "Kitchen cleaning",
+          "category": "General",
+          "description": "cleans kitchen",
+          "price": 699,
+          "location": "Bangalore",
+          "id": "SVC-1792169640754",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-16T16:54:00.754Z"
+        }
+      ],
+      "updatedAt": "2026-10-16T16:54:00.754Z"
+    },
+    "updatedAt": "2026-10-16T16:54:00.754Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO147:0000-01-01",
+    "value": {
+      "providerId": "PRO147",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-16T16:56:21.000Z"
   }
 ]

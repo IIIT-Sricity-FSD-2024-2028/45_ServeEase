@@ -68,8 +68,8 @@ describe('Provider suspension and verification documents (HTTP)', () => {
     const response = await http().post('/api/auth/login').send({ password: PASSWORD, ...body });
     return { status: response.status, message: response.body.message, token: response.body.data?.token as string };
   };
-  const employee = async (employeeId: string, department: string) => (await login({ role: 'employee', employeeId, department })).token;
-  const user = async (role: string, email: string) => (await login({ role, email })).token;
+  const employee = async (employeeId: string) => (await login({ identifier: employeeId })).token;
+  const user = async (identifier: string) => (await login({ identifier })).token;
   const auth = (token?: string) => (token ? { Authorization: `Bearer ${token}` } : {});
   const setStatus = (token: string | undefined, id: string, body: Record<string, unknown>, headers: Record<string, string> = {}) => http().patch(`/api/employee/provider-operations/providers/${id}/status`).set({ ...auth(token), ...headers }).send(body);
   const upload = (token: string | undefined, documentId: string, file: Buffer, filename: string, contentType: string) => http().post(`/api/provider/verification-documents/${documentId}/file`).set(auth(token)).attach('file', file, { filename, contentType });
@@ -104,9 +104,9 @@ describe('Provider suspension and verification documents (HTTP)', () => {
 
   describe('provider suspension', () => {
     it('lets Provider Operations suspend and reactivate, ends the provider\'s sessions and blocks sign-in while suspended', async () => {
-      const po = await employee('EMP-PO-9', 'Provider Operations');
-      const providerSession = await user('provider', 'active@example.test');
-      const otherProvider = await user('provider', 'other@example.test');
+      const po = await employee('EMP-PO-9');
+      const providerSession = await user('PROACT');
+      const otherProvider = await user('PROOTHER');
       expect((await http().get('/api/bookings/provider').set(auth(providerSession))).status).toBe(200);
 
       const credentialBefore = account('PROACT').passwordHash;
@@ -123,8 +123,8 @@ describe('Provider suspension and verification documents (HTTP)', () => {
       expect(blocked.status).toBe(403);
       expect((await http().get('/api/auth/session').set(auth(providerSession))).status).toBeGreaterThanOrEqual(400);
       // New sign-in is refused with a clear message, after the password check.
-      expect(await login({ role: 'provider', email: 'active@example.test' })).toMatchObject({ status: 403, message: expect.stringContaining('currently suspended') });
-      expect((await http().post('/api/auth/login').send({ role: 'provider', email: 'active@example.test', password: 'Wrong@123' })).status).toBe(401);
+      expect(await login({ identifier: 'PROACT' })).toMatchObject({ status: 403, message: expect.stringContaining('currently suspended') });
+      expect((await http().post('/api/auth/login').send({ identifier: 'PROACT', password: 'Wrong@123' })).status).toBe(401);
       // Unrelated sessions keep working; public discovery is unchanged.
       expect((await http().get('/api/bookings/provider').set(auth(otherProvider))).status).toBe(200);
       expect((await http().get('/api/employee/provider-operations/providers').set(auth(po))).status).toBe(200);
@@ -136,26 +136,26 @@ describe('Provider suspension and verification documents (HTTP)', () => {
       expect(activated.body.data).toMatchObject({ changed: true, provider: { accountStatus: 'Active' } });
       expect(account('PROACT').suspensionReason).toBeUndefined();
       expect((await http().get('/api/auth/session').set(auth(providerSession))).status).toBeGreaterThanOrEqual(400);
-      const fresh = await user('provider', 'active@example.test');
+      const fresh = await user('PROACT');
       expect((await http().get('/api/bookings/provider').set(auth(fresh))).status).toBe(200);
     });
 
     it('persists the status across a restart', async () => {
-      const po = await employee('EMP-PO-9', 'Provider Operations');
+      const po = await employee('EMP-PO-9');
       expect((await setStatus(po, 'PROACT', { status: 'Suspended', reason: 'Restart check' })).status).toBe(200);
       await app.close();
       app = await boot();
-      const again = await employee('EMP-PO-9', 'Provider Operations');
+      const again = await employee('EMP-PO-9');
       expect((await http().get('/api/employee/provider-operations/providers/PROACT').set(auth(again))).body.data.provider.accountStatus).toBe('Suspended');
-      expect((await login({ role: 'provider', email: 'active@example.test' })).status).toBe(403);
+      expect((await login({ identifier: 'PROACT' })).status).toBe(403);
     });
 
     it('allows a superuser and refuses every other caller, including spoofed headers', async () => {
-      const su = await user('superuser', 'super@example.test');
+      const su = await user('super@example.test');
       expect((await setStatus(su, 'PROOTHER', { status: 'Suspended', reason: 'Superuser check' })).status).toBe(200);
       expect(account('PROOTHER').statusHistory[0]).toMatchObject({ performedBy: 'Superuser', performedById: 'SU900' });
 
-      const callers = [await employee('EMP-CO-9', 'Customer Operations'), await employee('EMP-SUP-9', 'Support'), await user('customer', 'customer@example.test'), await user('provider', 'active@example.test'), undefined];
+      const callers = [await employee('EMP-CO-9'), await employee('EMP-SUP-9'), await user('customer@example.test'), await user('PROACT'), undefined];
       for (const token of callers) {
         const response = await setStatus(token, 'PROACT', { status: 'Suspended', reason: 'Not allowed' }, { role: 'admin', department: 'Provider Operations', 'user-id': 'SU900' });
         expect(response.status).toBe(403);
@@ -164,7 +164,7 @@ describe('Provider suspension and verification documents (HTTP)', () => {
     });
 
     it('validates ids, targets and the request body', async () => {
-      const po = await employee('EMP-PO-9', 'Provider Operations');
+      const po = await employee('EMP-PO-9');
       expect((await setStatus(po, 'bad id!', { status: 'Suspended', reason: 'x' })).status).toBe(400);
       expect((await setStatus(po, 'PRO404', { status: 'Suspended', reason: 'x' })).status).toBe(404);
       expect((await setStatus(po, 'CUS900', { status: 'Suspended', reason: 'x' })).status).toBe(404);
@@ -181,7 +181,7 @@ describe('Provider suspension and verification documents (HTTP)', () => {
 
   describe('verification document upload and preview', () => {
     it('stores a real PNG privately and streams it only to Provider Operations with safe headers', async () => {
-      const provider = await user('provider', 'pending@example.test');
+      const provider = await user('PROPEND');
       const uploaded = await upload(provider, 'DOC-PROPEND-1', PNG, 'my id.png', 'image/png');
       expect(uploaded.status).toBe(201);
       expect(uploaded.body.data).toEqual({ documentId: 'DOC-PROPEND-1', documentType: 'ID Proof', documentName: 'my id.png', documentStatus: 'Pending', required: true, rejectionReason: null, recordOrigin: 'account', state: 'stored', hasFile: true, fileType: 'image/png', fileSize: PNG.length, source: 'secure-upload', uploadedAt: expect.any(String), unavailableReason: null, message: null });
@@ -195,7 +195,7 @@ describe('Provider suspension and verification documents (HTTP)', () => {
       expect(stateText).not.toContain(PNG.toString('base64'));
       expect(stateText).not.toContain(documentDir.replace(/\\/g, '\\\\'));
 
-      const po = await employee('EMP-PO-9', 'Provider Operations');
+      const po = await employee('EMP-PO-9');
       const detail = await http().get('/api/employee/provider-operations/providers/PROPEND').set(auth(po));
       expect(detail.body.data.documents.map((item: { hasFile: boolean }) => item.hasFile)).toEqual([true, false, false]);
       expect(detail.body.data.documents[0]).toMatchObject({ documentName: 'my id.png', fileType: 'image/png' });
@@ -211,25 +211,25 @@ describe('Provider suspension and verification documents (HTTP)', () => {
       expect(response.headers['content-security-policy']).toContain('sandbox');
       expect((response.body as Buffer).equals(PNG)).toBe(true);
 
-      const su = await user('superuser', 'super@example.test');
+      const su = await user('super@example.test');
       expect((await preview(su, 'PROPEND', 'DOC-PROPEND-1')).status).toBe(200);
     });
 
     it('accepts a PDF and streams it as application/pdf; replacing a file removes the old one', async () => {
-      const provider = await user('provider', 'pending@example.test');
+      const provider = await user('PROPEND');
       expect((await upload(provider, 'DOC-PROPEND-2', PNG, 'first.png', 'image/png')).status).toBe(201);
       const first = storedFiles();
       expect((await upload(provider, 'DOC-PROPEND-2', PDF, 'address.pdf', 'application/pdf')).status).toBe(201);
       const after = storedFiles();
       expect(after).toHaveLength(1);
       expect(after[0]).not.toBe(first[0]);
-      const response = await preview(await employee('EMP-PO-9', 'Provider Operations'), 'PROPEND', 'DOC-PROPEND-2');
+      const response = await preview(await employee('EMP-PO-9'), 'PROPEND', 'DOC-PROPEND-2');
       expect(response.headers['content-type']).toBe('application/pdf');
       expect((response.body as Buffer).equals(PDF)).toBe(true);
     });
 
     it('rejects unsupported, spoofed, oversized, empty and malformed uploads without storing anything', async () => {
-      const provider = await user('provider', 'pending@example.test');
+      const provider = await user('PROPEND');
       const cases = [
         await upload(provider, 'DOC-PROPEND-1', EXE, 'tool.exe', 'application/octet-stream'),
         await upload(provider, 'DOC-PROPEND-1', EXE, 'photo.png', 'image/png'),
@@ -249,24 +249,24 @@ describe('Provider suspension and verification documents (HTTP)', () => {
     });
 
     it('allows uploads only by the owning provider, for its own documents, while under verification', async () => {
-      const callers = [await employee('EMP-PO-9', 'Provider Operations'), await employee('EMP-CO-9', 'Customer Operations'), await user('customer', 'customer@example.test'), await user('superuser', 'super@example.test'), undefined];
+      const callers = [await employee('EMP-PO-9'), await employee('EMP-CO-9'), await user('customer@example.test'), await user('super@example.test'), undefined];
       for (const token of callers) expect((await upload(token, 'DOC-PROPEND-1', PNG, 'a.png', 'image/png')).status).toBe(403);
-      const other = await user('provider', 'pending2@example.test');
+      const other = await user('PROPEND2');
       expect((await upload(other, 'DOC-PROPEND-1', PNG, 'a.png', 'image/png')).status).toBe(404);
       expect((await upload(other, '..%2F..%2Fstate.json', PNG, 'a.png', 'image/png')).status).toBe(400);
-      const active = await user('provider', 'active@example.test');
+      const active = await user('PROACT');
       expect((await upload(active, 'DOC-PROPEND-1', PNG, 'a.png', 'image/png')).status).toBe(409);
       expect(storedFiles()).toHaveLength(0);
     });
 
     it('refuses previews to other departments, roles and spoofed headers, and across providers or documents', async () => {
-      await upload(await user('provider', 'pending@example.test'), 'DOC-PROPEND-1', PNG, 'a.png', 'image/png');
-      const callers = [await employee('EMP-CO-9', 'Customer Operations'), await employee('EMP-SUP-9', 'Support'), await user('customer', 'customer@example.test'), await user('provider', 'pending@example.test'), undefined];
+      await upload(await user('PROPEND'), 'DOC-PROPEND-1', PNG, 'a.png', 'image/png');
+      const callers = [await employee('EMP-CO-9'), await employee('EMP-SUP-9'), await user('customer@example.test'), await user('PROPEND'), undefined];
       for (const token of callers) {
         const response = await preview(token, 'PROPEND', 'DOC-PROPEND-1').set({ role: 'admin', department: 'Provider Operations' });
         expect(response.status).toBe(403);
       }
-      const po = await employee('EMP-PO-9', 'Provider Operations');
+      const po = await employee('EMP-PO-9');
       expect((await preview(po, 'PROPEND2', 'DOC-PROPEND-1')).status).toBe(404);
       expect((await preview(po, 'PROPEND', 'DOC-PROPEND2-1')).status).toBe(404);
       expect((await preview(po, 'PROPEND', '..%2F..%2Fstate.json')).status).toBe(400);
@@ -275,12 +275,12 @@ describe('Provider suspension and verification documents (HTTP)', () => {
     });
 
     it('explains legacy metadata-only documents and files missing from disk', async () => {
-      const po = await employee('EMP-PO-9', 'Provider Operations');
+      const po = await employee('EMP-PO-9');
       const legacy = await preview(po, 'PROPEND', 'DOC-PROPEND-3');
       expect(legacy.status).toBe(404);
       expect(JSON.parse(legacy.text || (legacy.body as Buffer).toString()).message).toBe("This document's file was kept only in the web browser where the provider registered on the original ServeEase site. It was never sent to the server, so it cannot be previewed until it is imported from that browser.");
 
-      await upload(await user('provider', 'pending@example.test'), 'DOC-PROPEND-1', PNG, 'a.png', 'image/png');
+      await upload(await user('PROPEND'), 'DOC-PROPEND-1', PNG, 'a.png', 'image/png');
       unlinkSync(join(documentDir, storedFiles()[0]));
       const missing = await preview(po, 'PROPEND', 'DOC-PROPEND-1');
       expect(missing.status).toBe(404);
@@ -288,16 +288,16 @@ describe('Provider suspension and verification documents (HTTP)', () => {
     });
 
     it('keeps the file and its record across a restart', async () => {
-      await upload(await user('provider', 'pending@example.test'), 'DOC-PROPEND-1', PNG, 'a.png', 'image/png');
+      await upload(await user('PROPEND'), 'DOC-PROPEND-1', PNG, 'a.png', 'image/png');
       await app.close();
       app = await boot();
-      const response = await preview(await employee('EMP-PO-9', 'Provider Operations'), 'PROPEND', 'DOC-PROPEND-1');
+      const response = await preview(await employee('EMP-PO-9'), 'PROPEND', 'DOC-PROPEND-1');
       expect(response.status).toBe(200);
       expect((response.body as Buffer).equals(PNG)).toBe(true);
     });
 
     it('removes the stored file when its record cannot be saved', async () => {
-      const provider = await user('provider', 'pending@example.test');
+      const provider = await user('PROPEND');
       const failure = jest.spyOn(StateRepository.prototype, 'create').mockImplementationOnce(() => { throw new Error('disk full'); });
       const response = await upload(provider, 'DOC-PROPEND-1', PNG, 'a.png', 'image/png');
       failure.mockRestore();

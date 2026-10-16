@@ -30,8 +30,9 @@ describe('EmployeeOperationsService', () => {
   it('lists only customer accounts with the fields Customer Operations shows', () => {
     const { customers, totals } = service().customerOverview();
     expect(customers).toEqual([
-      { id: 'CUS1', fullName: 'Asha', email: 'Asha@Example.test', phone: '9000000001', location: 'Chennai', registrationDate: '01/01/2026', status: null },
-      { id: 'CUS2', fullName: 'Ravi', email: 'ravi@example.test', phone: null, location: null, registrationDate: null, status: 'Blocked' },
+      // CUS1 records no status: a customer account without one is Active, as it always was on the original site.
+      { id: 'CUS1', fullName: 'Asha', email: 'Asha@Example.test', phone: '9000000001', registrationDate: '01/01/2026', status: 'Active', bookings: 2 },
+      { id: 'CUS2', fullName: 'Ravi', email: 'ravi@example.test', phone: null, registrationDate: null, status: 'Blocked', bookings: 1 },
     ]);
     expect(totals).toEqual({ customers: 2, bookings: 3, customerTickets: 1 });
     expect(JSON.stringify(customers)).not.toMatch(/password|hash/i);
@@ -41,7 +42,7 @@ describe('EmployeeOperationsService', () => {
     const detail = service().customerDetail('CUS1');
     expect(detail.customer.id).toBe('CUS1');
     expect(detail.bookings.map((booking) => booking.id)).toEqual(['BOOK-1', 'BOOK-2']);
-    expect(detail.bookings[0]).toEqual({ id: 'BOOK-1', service: 'AC Repair', provider: 'Fixers', date: '2026-10-20', time: '09:00-12:00', status: 'Pending', paymentStatus: 'Pending', total: 599, createdAt: null });
+    expect(detail.bookings[0]).toEqual({ id: 'BOOK-1', service: 'AC Repair', provider: 'Fixers', date: '2026-10-20', time: '09:00-12:00', status: 'Pending', paymentStatus: 'Paid', total: 599, createdAt: null });
     expect(detail.bookings[1].total).toBe(400);
     expect(detail.tickets).toEqual([{ ticketId: 'TKT-1', relatedBookingId: 'BOOK-1', subject: 'Late', ticketType: 'Late Arrival', status: 'Pending', createdAt: '2026-10-15' }]);
     expect(JSON.stringify(detail)).not.toMatch(/private details|internal|customerPhone|Home/);
