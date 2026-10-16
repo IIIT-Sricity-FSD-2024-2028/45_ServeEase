@@ -2,20 +2,27 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { bookingsApi, catalogApi, ticketsApi } from '../../../services/api'
-import './providerDashboard.css'
+import { formatDisplayDate } from '../../customer/customerOperations'
+import '../providerPortal.css'
 
 const currency = (value) => value == null ? 'Unavailable' : `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
 const isCompleted = (booking) => String(booking?.status || '').toLowerCase() === 'completed'
 const payoutFor = (booking) => isCompleted(booking) ? Number(booking.providerPayout ?? booking.providerPayoutAmount ?? Number(booking.amount || 0) * 0.9) : 0
 const dateValue = (value) => { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? null : parsed }
-const statusClass = (value) => String(value || 'Unavailable').toLowerCase().replace(/\s+/g, '-')
 
 function FeatureCard({ icon, tone, title, description, to }) {
-  return <Link className="provider-dashboard-feature" to={to}><span aria-hidden="true" className={`provider-dashboard-feature-icon ${tone}`}>{icon}</span><h2>{title}</h2><p>{description}</p></Link>
+  return <Link className="feature-card" to={to}><div className={`feature-icon ${tone}`}>{icon}</div><h3>{title}</h3><p>{description}</p></Link>
 }
 
 function PanelHeading({ title, to, action }) {
-  return <div className="provider-dashboard-panel-heading"><h2>{title}</h2>{to && <Link to={to}>{action}</Link>}</div>
+  return <div className="panel-head"><h2>{title}</h2>{to && <Link to={to}>{action}</Link>}</div>
+}
+
+const pillClass = (status) => {
+  const key = String(status || '').toLowerCase()
+  if (['active', 'approved', 'verified'].includes(key)) return 'status-accepted'
+  if (['suspended', 'rejected', 'blocked', 'inactive'].includes(key)) return 'status-cancelled'
+  return 'status-pending'
 }
 
 export function ProviderDashboardPage() {
@@ -44,17 +51,20 @@ export function ProviderDashboardPage() {
   const providerName = currentUser?.fullName || currentUser?.organisationName || 'Provider'
   const providerStatus = currentUser?.accountStatus || currentUser?.status || currentUser?.approvalStatus || currentUser?.verificationStatus
 
-  if (!isAuthenticated || role !== 'provider') return <section className="provider-dashboard-page"><div className="provider-dashboard-feedback">Please sign in with a provider account to view your dashboard.</div></section>
-  if (!providerId) return <section className="provider-dashboard-page"><div className="provider-dashboard-feedback provider-dashboard-feedback--error">Your provider profile could not be identified.</div></section>
+  if (!isAuthenticated || role !== 'provider') return <section className="provider-portal"><div className="panel-card ops-state">Please sign in with a provider account to view your dashboard.</div></section>
+  if (!providerId) return <section className="provider-portal"><div className="panel-card ops-state ops-state--error">Your provider profile could not be identified.</div></section>
 
-  return <section className="provider-dashboard-page">
-    <div className="provider-dashboard-breadcrumb"><strong>Provider Dashboard</strong></div>
-    <section className="provider-dashboard-hero"><div><h1>Welcome, {providerName}!</h1><p>Manage bookings, services, availability, earnings, and support from one place.</p></div><div className="provider-dashboard-hero-side"><div><strong>Provider ID:</strong> <span>{providerId}</span></div>{providerStatus && <div><strong>Status:</strong> <span className="provider-dashboard-status">{providerStatus}</span></div>}</div></section>
-    {data.loading && <div className="provider-dashboard-feedback">Loading your provider dashboard…</div>}
-    {!data.loading && Object.entries(data.errors).map(([key, message]) => <div className="provider-dashboard-feedback provider-dashboard-feedback--error" key={key} role="alert">{message}</div>)}
-    <div className="provider-dashboard-feature-grid"><FeatureCard icon="🛠" tone="blue" title="Manage Services" description="Add, edit, activate, and manage availability slots." to="/provider/services" /><FeatureCard icon="📅" tone="orange" title="Booking Management" description="Accept, reject, and track service booking requests." to="/provider/bookings" /><FeatureCard icon="💰" tone="green" title="Earnings & Payments" description="Track payments, earnings, and transaction details." to="/provider/earnings" /><FeatureCard icon="🎧" tone="purple" title="Get Support" description="Raise support tickets and contact the support team." to="/provider/support" /></div>
-    <div className="provider-dashboard-stat-grid" aria-label="Provider statistics">{[['🛠', 'Total Services', data.services?.length], ['📅', 'Total Bookings', data.bookings?.length], ['✓', 'Completed Bookings', data.bookings ? completed.length : null], ['₹', 'Total Earnings', totalEarnings]].map(([icon, label, value]) => <article className="provider-dashboard-stat" key={label}><span className="provider-dashboard-stat-icon">{icon}</span><div><strong>{value == null ? 'Unavailable' : label === 'Total Earnings' ? currency(value) : value}</strong><span>{label}</span></div></article>)}</div>
-    <div className="provider-dashboard-two-column"><section className="provider-dashboard-panel"><PanelHeading title="Service Performance" to="/provider/bookings" action="View Bookings" />{data.bookings === null ? <p className="provider-dashboard-muted">Booking performance is unavailable.</p> : recentBookings.length === 0 ? <p className="provider-dashboard-muted">No bookings are available yet.</p> : <div>{recentBookings.map((booking) => <div className="provider-dashboard-preview-item" key={booking.id}><div><strong>{booking.service || 'Service unavailable'}</strong><span>{booking.customerName || 'Customer unavailable'}</span></div><div className="provider-dashboard-preview-meta"><span>{booking.date || 'Date unavailable'}</span><b className={`provider-dashboard-status-text ${statusClass(booking.status)}`}>{booking.status || 'Unavailable'}</b></div></div>)}</div>}</section><section className="provider-dashboard-panel"><PanelHeading title="Notifications" to="/provider/support" action="Open Support" />{data.tickets === null ? <p className="provider-dashboard-muted">Notifications are unavailable.</p> : data.tickets.length === 0 ? <p className="provider-dashboard-muted">No support notifications yet.</p> : <div>{data.tickets.slice(0, 4).map((ticket) => <div className="provider-dashboard-preview-item" key={ticket.id}><div><strong>{ticket.subject || ticket.category || 'Support ticket'}</strong><span>{ticket.remarks || 'Support ticket status updated.'}</span></div><b className={`provider-dashboard-status-text ${statusClass(ticket.status)}`}>{ticket.status || 'Open'}</b></div>)}</div>}</section></div>
-    <div className="provider-dashboard-two-column"><section className="provider-dashboard-panel provider-dashboard-gradient"><h2>Earnings This Month</h2><strong className="provider-dashboard-monthly-value">{monthEarnings == null ? 'Unavailable' : currency(monthEarnings)}</strong><div className="provider-dashboard-earnings-mini"><div><span>Total Earnings</span><strong>{currency(totalEarnings)}</strong></div><div><span>Pending Payout</span><strong>{currency(pendingPayout)}</strong></div></div><Link className="provider-dashboard-light-button" to="/provider/earnings">View Earnings</Link></section><section className="provider-dashboard-panel"><PanelHeading title="Quick Links" /><div className="provider-dashboard-quick-links">{[['Manage Services', '/provider/services'], ['Booking Management', '/provider/bookings'], ['Earnings & Payments', '/provider/earnings'], ['Support Center', '/provider/support'], ['My Profile', '/provider/account']].map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}</div></section></div>
+  const stats = [['orange', '🧰', 'Total Services', data.services?.length], ['blue', '📋', 'Total Bookings', data.bookings?.length], ['green', '✅', 'Completed Bookings', data.bookings ? completed.length : null], ['purple', '💰', 'Total Earnings', totalEarnings == null ? null : currency(totalEarnings)]]
+  return <section className="provider-portal">
+    <div className="breadcrumb-row"><strong>Provider Dashboard</strong></div>
+    <section className="provider-hero-card"><div><h1>Welcome, {providerName}!</h1><p>Manage bookings, services, availability, earnings, and support from one place.</p></div><div className="provider-hero-side"><div className="provider-hero-line"><strong>Provider ID:</strong> <span>{providerId}</span></div>{providerStatus && <div className="provider-hero-line"><strong>Status:</strong> <span className={`status-pill ${pillClass(providerStatus)}`}>{providerStatus}</span></div>}</div></section>
+    {data.loading && <div className="panel-card ops-state">Loading your provider dashboard…</div>}
+    {!data.loading && Object.entries(data.errors).map(([key, message]) => <div className="panel-card ops-state ops-state--error" key={key} role="alert">{message}</div>)}
+    <section className="dashboard-actions-grid provider-actions-grid"><FeatureCard icon="🛠" tone="blue" title="Manage Services" description="Add, edit, activate, and manage availability slots." to="/provider/services" /><FeatureCard icon="📅" tone="orange" title="Booking Management" description="Accept, reject, and track service booking requests." to="/provider/bookings" /><FeatureCard icon="💰" tone="green" title="Earnings & Payments" description="Track payments, earnings, and transaction details." to="/provider/earnings" /><FeatureCard icon="🎧" tone="purple" title="Get Support" description="Raise support tickets and contact the support team." to="/provider/support" /></section>
+    <section className="dashboard-stats-grid" aria-label="Provider statistics">{stats.map(([tone, icon, label, value]) => <div className="stat-card-dashboard" key={label}><div className={`feature-icon ${tone}`}>{icon}</div><h3>{value == null ? 'Unavailable' : value}</h3><p>{label}</p></div>)}</section>
+    <section className="dashboard-two-column provider-two-column"><div className="panel-card"><PanelHeading title="Service Performance" to="/provider/bookings" action="View Bookings" /><div id="providerPerformanceList">{data.bookings === null ? <div className="preview-item"><div className="preview-meta">Booking performance is unavailable.</div></div> : recentBookings.length === 0 ? <div className="preview-item"><div className="preview-meta">No bookings yet.</div></div> : recentBookings.map((booking) => <div className="preview-item" key={booking.id}><div className="preview-title">{booking.service || 'Service unavailable'}</div><div className="preview-meta">{[booking.customerName || 'Customer unavailable', booking.date ? formatDisplayDate(booking.date) : 'Date unavailable', booking.status || 'Unavailable'].join(' • ')}</div></div>)}</div></div>
+      <div className="panel-card"><PanelHeading title="Notifications" to="/provider/support" action="Open Support" /><div id="providerNotificationPreview">{data.tickets === null ? <div className="preview-item"><div className="preview-meta">Notifications are unavailable.</div></div> : data.tickets.length === 0 ? <div className="preview-item"><div className="preview-meta">No new notifications.</div></div> : data.tickets.slice(0, 4).map((ticket) => <div className="preview-item" key={ticket.id}><div className="preview-title">{ticket.subject || ticket.category || 'Support ticket'}</div><div className="preview-meta">{ticket.remarks || `Support ticket is ${ticket.status || 'Open'}.`}</div></div>)}</div></div></section>
+    <section className="dashboard-two-column provider-two-column"><div className="panel-card gradient-panel"><h2>Earnings This Month</h2><p>{monthEarnings == null ? 'Unavailable' : currency(monthEarnings)}</p><div className="provider-earnings-mini"><div><span>Total Earnings</span><strong>{currency(totalEarnings)}</strong></div><div><span>Pending Payout</span><strong>{currency(pendingPayout)}</strong></div></div><Link className="btn btn-light" to="/provider/earnings">View Earnings</Link></div>
+      <div className="panel-card"><div className="panel-head"><h2>Quick Links</h2></div><div className="provider-quick-links">{[['Manage Services', '/provider/services'], ['Booking Management', '/provider/bookings'], ['Earnings & Payments', '/provider/earnings'], ['Support Center', '/provider/support'], ['My Profile', '/provider/account']].map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}</div></div></section>
   </section>
 }

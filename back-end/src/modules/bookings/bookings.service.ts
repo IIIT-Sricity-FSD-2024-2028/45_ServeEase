@@ -65,6 +65,8 @@ export class BookingsService {
       canonicalProviderId(candidate.id) === requestedProviderId || canonicalProviderId(candidate.ownerProviderId || '') === requestedProviderId,
     );
     if (!provider) throw new NotFoundException('The selected provider was not found.');
+    // The owning account decides: a suspended, rejected or unverified provider cannot be booked even if a listing remains.
+    if (!this.catalogService.isBookable(provider)) throw new ConflictException('This provider is not currently available for booking.');
 
     const serviceKey = (value: string) => String(value || '').trim().toLowerCase();
     const requestedService = serviceKey(data.service);

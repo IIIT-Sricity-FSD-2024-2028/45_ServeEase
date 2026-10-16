@@ -591,29 +591,14 @@
     });
   }
 
+  // Document previews come from the canonical registry (attachments.js), like every other page.
   function previewDocument(documentId) {
     const document = (selectedProvider.documents || []).find(function (item) { return item.documentId === documentId; });
     if (!document) return;
-    const resolver = window.ServeEaseAttachments && window.ServeEaseAttachments.canonicalResolveProviderDocument;
-    const resolved = resolver ? resolver(selectedProvider.id, document) : null;
-    const previewUrl = resolved && resolved.previewUrl;
-    const mimeType = String((resolved && resolved.mimeType) || document.mimeType || "").toLowerCase();
-    const fileName = String((resolved && resolved.filename) || document.documentName || "").toLowerCase();
-    const isImagePreview = mimeType.indexOf("image/") === 0 || /\.(png|jpe?g|gif|webp|bmp|svg)(?:$|\?)/.test(fileName);
-    const isPdfPreview = mimeType === "application/pdf" || /\.pdf(?:$|\?)/.test(fileName);
-    const previewMarkup = previewUrl && isImagePreview
-      ? '<img class="provider-document-preview-media" src="' + previewUrl + '" alt="' + escapeHtml(document.documentName) + '" />'
-      : (previewUrl && isPdfPreview
-        ? '<div class="provider-document-pdf-actions"><p>PDF preview is available using the original uploaded file.</p><a class="btn btn-primary" target="_blank" rel="noopener" href="' + previewUrl + '">Open PDF</a><a class="btn btn-outline" target="_blank" rel="noopener" download="' + escapeHtml(resolved.filename) + '" href="' + previewUrl + '">Download PDF</a></div>'
-        : (previewUrl
-          ? '<div class="provider-document-placeholder"><strong>' + escapeHtml(resolved.filename) + '</strong><p>This file type does not support inline preview.</p><a class="btn btn-primary" target="_blank" rel="noopener" download="' + escapeHtml(resolved.filename) + '" href="' + previewUrl + '">Open or download file</a></div>'
-          : '<div class="provider-document-placeholder">' + (resolved && resolved.metadataOnly
-          ? 'This document contains verification metadata only; no uploaded file content is stored.'
-          : 'Preview unavailable because the stored file content is missing or corrupted.') + '</div>'));
+    if (window.ServeEaseAttachments && window.ServeEaseAttachments.previewProviderDocument(selectedProvider.id, document)) return;
     byId("providerDocumentTitle").textContent = document.documentType;
     byId("providerDocumentSubtitle").textContent = document.documentName;
-    byId("providerDocumentBody").innerHTML =
-      '<div class="provider-document-preview"><strong>' + escapeHtml(document.documentName) + '</strong><p>Status: ' + escapeHtml(document.documentStatus) + '</p>' + previewMarkup + '</div>';
+    byId("providerDocumentBody").innerHTML = '<div class="provider-document-placeholder">Document preview is unavailable on this page.</div>';
     openModal("providerDocumentModalBackdrop");
   }
 

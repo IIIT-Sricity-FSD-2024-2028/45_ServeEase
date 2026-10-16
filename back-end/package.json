@@ -9,7 +9,8 @@
     "start:dev": "nest start --watch",
     "build": "nest build",
     "lint": "eslint \"src/**/*.ts\" --fix",
-    "test": "jest"
+    "test": "jest",
+    "documents:migrate": "node dist/scripts/migrate-provider-documents.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.10",

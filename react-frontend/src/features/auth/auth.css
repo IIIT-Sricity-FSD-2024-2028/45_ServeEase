@@ -2,7 +2,9 @@
    Every rule is scoped to .auth-page so nothing leaks into other React pages. */
 
 .auth-page {
+  min-height: 100vh;
   padding: 22px;
+  background: #f7f9fd;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -412,11 +414,34 @@
   .auth-page.provider-signup-mode .provider-document-upload-section > h3,
   .auth-page.provider-signup-mode .provider-document-upload-section > p { grid-column: auto; }
 }
-/* The React page sits inside the app shell, which already provides side gutters on phones. */
+/* Phone-width tweaks. */
 @media (max-width: 480px) {
-  .auth-page { padding: 22px 0; }
   /* The original's four tabs overflow the card on phones; let them shrink instead. */
   .auth-page .role-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .auth-page .signup-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .auth-page .role-tab { padding: 9px 2px; }
 }
+
+/* Suspended-account state (front-end/CSS/auth.css .blocked-account-state). */
+.auth-page .blocked-account-state { padding: 18px; border: 1px solid #f2c6c2; border-radius: 12px; background: #fff7f6; }
+.auth-page .blocked-account-state h2 { margin: 0 0 8px; color: #a62d26; font-size: 21px; }
+.auth-page .blocked-account-state h2:focus { outline: none; }
+.auth-page .blocked-account-state h2:focus-visible { outline: 2px solid #a62d26; outline-offset: 3px; }
+.auth-page .blocked-account-state p { margin: 0 0 10px; color: #5e6f87; line-height: 1.5; }
+.auth-page .blocked-account-state .blocked-account-reason-label { margin-bottom: 3px; color: #22395d; font-size: 13px; font-weight: 700; }
+.auth-page .blocked-account-state .blocked-account-reason { margin-bottom: 16px; color: #22395d; overflow-wrap: anywhere; }
+.auth-page .blocked-account-actions { display: grid; gap: 10px; margin-bottom: 12px; }
+.auth-page .blocked-account-actions .btn { justify-content: center; text-align: center; text-decoration: none; }
+.auth-page .blocked-account-state .blocked-account-note { margin: 0; font-size: 13px; }
+.auth-page .blocked-account-state .blocked-account-note a { color: #1d4ed8; text-decoration: underline; }
+
+.auth-page .btn-outline { border: 1px solid #d8dfea; background: #fff; color: #2f6df6; }
+.auth-page .btn-outline:hover { background: #eef4ff; }
+.auth-page .btn-outline:focus-visible { outline: 2px solid rgba(56, 103, 246, 0.45); outline-offset: 2px; }
+
+.auth-page .provider-services-section { margin: 0 0 14px; padding: 12px 14px; border: 1px solid #d8dfea; border-radius: 10px; }
+.auth-page .provider-services-section legend { padding: 0 6px; color: #22395d; font-size: 14px; font-weight: 700; }
+.auth-page .provider-services-section p { margin: 0 0 8px; color: #5e6f87; font-size: 13px; }
+.auth-page .provider-service-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; }
+.auth-page .provider-service-row label { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.auth-page .provider-service-row .provider-service-price { width: 130px; }

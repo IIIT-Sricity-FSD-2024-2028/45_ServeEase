@@ -174,7 +174,7 @@ export function ProviderProfilePage() {
         <div className="pricing-card">
           <h2>Service Pricing</h2>
           {services.map((service) => <div className="price-table-row" key={service.name}>
-            <span>{service.name}{service.duration ? ` · ${service.duration}` : ''}</span>
+            <span>{service.name}</span>
             <strong>{formatCurrency(service.price)}</strong>
           </div>)}
           <div className="info-note">Final price may vary depending on service requirements and specific needs.</div>

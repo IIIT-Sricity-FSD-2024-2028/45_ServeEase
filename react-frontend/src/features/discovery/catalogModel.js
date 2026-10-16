@@ -1,6 +1,8 @@
 // Catalog helpers for the customer journey, ported from front-end/JavaScript/app.js
 // (initCategoryServicesPage, provider profile and checkout helpers).
 
+import { API_BASE_URL } from '../../services/apiBase.js'
+
 export const MAX_PRICE = 10000
 export const PRICE_STEP = 50
 const FALLBACK_IMAGE = '/assets/images/home-cleaning/clean1.jpg'
@@ -38,6 +40,8 @@ export function assetUrl(value) {
 export function providerDisplayImage(provider) {
   if (!provider) return FALLBACK_IMAGE
   const photo = String(provider.profilePhoto || '').trim()
+  // An approved provider's own submitted photo, served by the catalog API (never a private document URL).
+  if (/^\/catalog\/providers\/[A-Za-z0-9._%-]+\/photo$/.test(photo)) return `${API_BASE_URL}${photo}`
   if (/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/]+=*$/i.test(photo) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(photo)) return photo
   const image = String(provider.image || '').trim()
   if (/^\/uploads\/profiles\//i.test(image) || /^https?:\/\/[^/]+\/uploads\/profiles\//i.test(image)) return FALLBACK_IMAGE
@@ -177,15 +181,16 @@ export function dateParts(item) {
   if (!match) return { weekday: item?.dayOfWeek || 'Date', date: item?.date || '' }
   const local = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
   return {
-    weekday: item.dayOfWeek || local.toLocaleDateString('en-IN', { weekday: 'long' }),
-    date: local.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+    weekday: item.dayOfWeek || local.toLocaleDateString(undefined, { weekday: 'long' }),
+    date: local.toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
   }
 }
 
+// api.js ServeEaseDate.formatDate(): DD-MM-YYYY for a YYYY-MM-DD date.
 export function formatDisplayDate(value) {
   const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (!match) return value || ''
-  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+  return `${match[3]}-${match[2]}-${match[1]}`
 }
 
 // Checkout validation, from submitBookingCheckout() in the original.

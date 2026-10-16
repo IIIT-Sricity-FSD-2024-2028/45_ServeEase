@@ -60,3 +60,14 @@ test('checkout validation messages match the original', () => {
   assert.equal(validatePayment('card', { cardHolder: 'Asha Rao', cardNumber: '4111 1111 1111 1111', expiry: '12-39', cvv: '123' }), null)
   assert.equal(validatePayment('netbanking', {}).message, 'Please select your bank.')
 })
+
+test('an approved provider\'s submitted photo is shown from the catalog photo route, and nothing else is trusted', async () => {
+  const { providerDisplayImage } = await import('../src/features/discovery/catalogModel.js')
+  const { API_BASE_URL } = await import('../src/services/apiBase.js')
+  assert.equal(providerDisplayImage({ profilePhoto: '/catalog/providers/glow-studio-salon-at-home-3/photo', image: 'assets/images/salon-at-home/salon1.jpg' }), `${API_BASE_URL}/catalog/providers/glow-studio-salon-at-home-3/photo`)
+  for (const profilePhoto of ['/catalog/providers/../../etc/photo', '/catalog/providers/x/photo?a=1', 'http://evil.test/catalog/providers/x/photo', '//evil.test/x', 'javascript:alert(1)']) {
+    assert.notEqual(providerDisplayImage({ profilePhoto, image: 'assets/images/salon-at-home/salon1.jpg' }), profilePhoto)
+    assert.doesNotMatch(providerDisplayImage({ profilePhoto, image: 'assets/images/salon-at-home/salon1.jpg' }), /evil|javascript|etc/)
+  }
+  assert.match(providerDisplayImage({ profilePhoto: '', image: 'assets/images/salon-at-home/salon1.jpg' }), /salon1\.jpg$/)
+})

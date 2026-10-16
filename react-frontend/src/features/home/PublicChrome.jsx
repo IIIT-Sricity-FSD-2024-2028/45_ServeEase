@@ -75,7 +75,7 @@ export function PublicFooter({ sectionBase = '' }) {
   return <footer className="home-footer" id="footer">
     <div className="home-container home-footer-grid">
       <div><h4>Company</h4><a href={`${sectionBase}#about-us`}>About Us</a></div>
-      <div><h4>Support</h4><Link to="/customer/support">Contact Support</Link><Link to="/customer/bookings">Track Booking</Link></div>
+      <div><h4>Support</h4><Link to="/contact-support">Contact Support</Link><Link to="/customer/bookings">Track Booking</Link></div>
       <div><h4>Legal</h4><a href={`${sectionBase}#terms-and-conditions`}>Terms &amp; Conditions</a><a href={`${sectionBase}#privacy-policy`}>Privacy Policy</a><a href={`${sectionBase}#cancellation-policy`}>Cancellation Policy</a></div>
     </div>
     <div className="home-container home-footer-bottom-row"><p>© 2026 ServeEase. All rights reserved.</p><div className="home-footer-socials"><span>f</span><span>◎</span><span>𝕏</span><span>in</span></div></div>

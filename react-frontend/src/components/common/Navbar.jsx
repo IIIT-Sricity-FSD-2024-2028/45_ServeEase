@@ -1,8 +1,78 @@
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { formatDisplayDateTime } from '../../features/customer/customerOperations'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { bookingsApi, ticketsApi } from '../../services/api'
+import { applyProviderSearch, providerSearchPlaceholders } from './providerSearch'
 import './Navbar.css'
+
+// Authenticated dashboard topbar reconstructed from the original front-end pages:
+// customer  -> customer-dashboard.html, my-bookings.html, booking-checkout.html, ...
+// provider  -> provider-*.html (provider-topbar: static brand, no notification bell)
+// support   -> support-dashboard.html (support-topbar)
+// superuser -> superuser-*.html (superuser-topbar)
+// The original topbar is brand + search + actions only; page navigation lives in the page bodies.
+const topbarVariants = {
+  customer: {
+    brandLinksHome: true,
+    notifications: 'customer',
+    profileCard: null,
+    profileLinks: (pathname) => [
+      { label: 'My Profile', to: '/customer/profile' },
+      // my-bookings.html adds "My Tickets" to its menu.
+      ...(pathname === '/customer/bookings' ? [{ label: 'My Tickets', to: '/customer/tickets' }] : []),
+      // customer-dashboard.html offers "Go to Home"; every other customer page offers "Go to Dashboard".
+      pathname === '/customer/dashboard'
+        ? { label: 'Go to Home', to: '/' }
+        : { label: 'Go to Dashboard', to: '/customer/dashboard' },
+    ],
+  },
+  provider: {
+    brandLinksHome: false,
+    notifications: null,
+    profileCard: null,
+    profileLinks: () => [
+      { label: 'My Profile', to: '/provider/account' },
+      { label: 'Go to Dashboard', to: '/provider/dashboard' },
+    ],
+  },
+  support: {
+    brandLinksHome: false,
+    notifications: 'support',
+    profileCard: 'Support Agent',
+    // The original "My Profile" (employee-profile.html) has no React route. The workspace page exists only in
+    // React and is reachable from nowhere else, so it stays here alongside the dashboard link.
+    profileLinks: () => [
+      { label: 'Support Dashboard', to: '/employee/support-tickets' },
+      { label: 'Support Workspace', to: '/employee/support-workspace' },
+    ],
+  },
+  superuser: {
+    brandLinksHome: false,
+    notifications: 'superuser',
+    profileCard: 'Superuser',
+    profileLinks: () => [{ label: '⌂ Superuser Dashboard', to: '/admin' }],
+  },
+  // Employees outside Support (customer-operations.html / provider-operations.html have no notification bell).
+  'customer-operations': {
+    brandLinksHome: false,
+    notifications: null,
+    profileCard: 'Customer Operations',
+    profileLinks: () => [{ label: 'Customer Operations', to: '/employee/customer-operations' }],
+  },
+  'provider-operations': {
+    brandLinksHome: false,
+    notifications: null,
+    profileCard: 'Provider Operations',
+    profileLinks: () => [{ label: 'Provider Operations', to: '/employee/provider-operations' }],
+  },
+  // A department without a workspace gets no links, only Logout.
+  employee: { brandLinksHome: false, notifications: null, profileCard: 'Employee', profileLinks: () => [] },
+}
+
+// Every employee signs in with the 'support' role; the topbar follows the department on their record.
+const employeeVariants = { 'Customer Operations': 'customer-operations', 'Provider Operations': 'provider-operations', Support: 'support' }
+const areaRoles = { Customer: 'customer', Provider: 'provider' }
 
 const notificationReadKey = (user) => `serveEaseCustomerNotificationReads:${user?.userId || user?.email || 'customer'}`
 
@@ -73,67 +143,69 @@ function buildCustomerNotifications(bookings, tickets, user) {
   return notifications.sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0)).slice(0, 30)
 }
 
+// api.js ServeEaseDate.formatDateTime(): DD-MM-YYYY hh:mm AM/PM, as the original notification panel shows it.
 function formatNotificationTime(value) {
-  if (!value) return 'Time unavailable'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Time unavailable'
-  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+  return value ? formatDisplayDateTime(value) : 'Time unavailable'
 }
 
 export function Navbar({ area = 'ServeEase' }) {
   const { currentUser, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const isSupportPage = location.pathname.startsWith('/employee/support-tickets')
-  const isSupportDashboard = location.pathname === '/employee/support-tickets'
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const { pathname } = useLocation()
+  const [openMenu, setOpenMenu] = useState(null)
+  const isSupportPage = pathname.startsWith('/employee/support-tickets')
+  const isSupportDashboard = pathname === '/employee/support-tickets'
   const [ticketSearch, setTicketSearch] = useState('')
   const [hasNewNotifications, setHasNewNotifications] = useState(false)
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [notificationOwnerKey, setNotificationOwnerKey] = useState('')
   const [notificationState, setNotificationState] = useState('idle')
   const [notificationError, setNotificationError] = useState('')
   const [showAllNotifications, setShowAllNotifications] = useState(false)
-  const profileMenuRef = useRef(null)
-  const notificationPanelRef = useRef(null)
+  const actionsRef = useRef(null)
   const profileButtonRef = useRef(null)
   const notificationButtonRef = useRef(null)
   const notificationRequestRef = useRef(0)
-  const isCustomerRole = currentUser?.role === 'customer' || area === 'Customer'
-  const isProviderRole = currentUser?.role === 'provider'
+  const [menuPathname, setMenuPathname] = useState(pathname)
+
+  // Route changes (including browser back/forward) always leave both menus closed.
+  if (menuPathname !== pathname) {
+    setMenuPathname(pathname)
+    setOpenMenu(null)
+  }
+
+  const accountVariant = currentUser?.role === 'support' ? employeeVariants[currentUser.department] || 'employee' : currentUser?.role
+  const role = (isAuthenticated && topbarVariants[accountVariant] ? accountVariant : null) || areaRoles[area] || null
+  const variant = role ? topbarVariants[role] : null
+  const isProfileOpen = openMenu === 'profile'
+  const isNotificationsOpen = openMenu === 'notifications'
   const customerNotificationIdentity = currentUser?.role === 'customer'
     ? String(currentUser.userId || currentUser.email || '')
     : ''
   const customerNotifications = notificationOwnerKey === customerNotificationIdentity ? notifications : []
   const customerNotificationState = notificationOwnerKey === customerNotificationIdentity ? notificationState : 'idle'
+  const notificationUnreadCount = customerNotifications.filter((notification) => notification.isUnread).length
 
   useEffect(() => {
+    if (!openMenu) return undefined
+
     function closeOnOutsideClick(event) {
-      if (!profileMenuRef.current?.contains(event.target)) setIsProfileOpen(false)
-      if (!notificationPanelRef.current?.contains(event.target)) setIsNotificationsOpen(false)
+      if (!actionsRef.current?.contains(event.target)) setOpenMenu(null)
     }
 
     function closeOnEscape(event) {
-      if (event.key === 'Escape') {
-        if (isProfileOpen) {
-          setIsProfileOpen(false)
-          profileButtonRef.current?.focus()
-        }
-        if (isNotificationsOpen) {
-          setIsNotificationsOpen(false)
-          notificationButtonRef.current?.focus()
-        }
-      }
+      if (event.key !== 'Escape') return
+      setOpenMenu(null)
+      ;(openMenu === 'profile' ? profileButtonRef : notificationButtonRef).current?.focus()
     }
 
-    document.addEventListener('click', closeOnOutsideClick)
+    document.addEventListener('mousedown', closeOnOutsideClick)
     document.addEventListener('keydown', closeOnEscape)
     return () => {
-      document.removeEventListener('click', closeOnOutsideClick)
+      document.removeEventListener('mousedown', closeOnOutsideClick)
       document.removeEventListener('keydown', closeOnEscape)
     }
-  }, [isNotificationsOpen, isProfileOpen])
+  }, [openMenu])
 
   useEffect(() => {
     if (!isSupportPage) return undefined
@@ -180,14 +252,17 @@ export function Navbar({ area = 'ServeEase' }) {
   }
 
   function toggleNotifications() {
-    setIsProfileOpen(false)
     setShowAllNotifications(false)
     if (isNotificationsOpen) {
-      setIsNotificationsOpen(false)
+      setOpenMenu(null)
       return
     }
-    setIsNotificationsOpen(true)
+    setOpenMenu('notifications')
     void loadNotifications()
+  }
+
+  function toggleProfile() {
+    setOpenMenu(isProfileOpen ? null : 'profile')
   }
 
   function markNotificationRead(notification) {
@@ -196,7 +271,7 @@ export function Navbar({ area = 'ServeEase' }) {
       readIds.add(notification.id)
       localStorage.setItem(notificationReadKey(currentUser), JSON.stringify([...readIds]))
       setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, isUnread: false } : item))
-      setIsNotificationsOpen(false)
+      setOpenMenu(null)
       navigate(notification.to)
     } catch {
       setNotificationError('Read state could not be saved in this browser.')
@@ -214,111 +289,101 @@ export function Navbar({ area = 'ServeEase' }) {
     }
   }
 
-  const notificationUnreadCount = customerNotifications.filter((notification) => notification.isUnread).length
-
   async function handleLogout() {
+    setOpenMenu(null)
+    // Leave the protected route before the session clears; otherwise its guard redirects to /login
+    // instead of home (the original pages log out to index.html).
+    navigate('/')
     try {
       await logout()
     } catch (logoutError) {
       console.error('Logout request failed.', logoutError)
-    } finally {
-      setIsProfileOpen(false)
-      navigate('/')
     }
   }
 
-  return <header className={`app-header${isSupportPage ? ' app-header--support' : ''}`}>
-    <Link className="brand" to="/"><span className={`brand-icon${isSupportPage ? ' brand-icon--home' : ''}`}>{isSupportPage ? <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z" /></svg> : 'SE'}</span><span>ServeEase</span></Link>
-    {!isSupportPage && <nav className="primary-nav" aria-label="Primary navigation">
-      <NavLink end to="/">Home</NavLink>
-      <NavLink to="/services">Services</NavLink>
-      {isCustomerRole && <>
-        <NavLink end to="/customer/dashboard">Dashboard</NavLink>
-        <NavLink end to="/customer/bookings">My Bookings</NavLink>
-      </>}
-      {isProviderRole && <>
-        <NavLink end to="/provider/dashboard">Dashboard</NavLink>
-        <NavLink end to="/provider/bookings">Bookings</NavLink>
-        <NavLink to="/provider/availability">Availability</NavLink>
-        <NavLink to="/provider/services">Services</NavLink>
-        <NavLink to="/provider/earnings">Earnings</NavLink>
-        <NavLink to="/provider/support">Support</NavLink>
-      </>}
-      {isAuthenticated && currentUser?.role === 'support' && <>
-        <NavLink to="/employee/support-tickets">Support tickets</NavLink>
-        <NavLink to="/employee/support-workspace">Workspace</NavLink>
-      </>}
-      {isAuthenticated && currentUser?.role === 'superuser' && <NavLink to="/admin">Admin</NavLink>}
-    </nav>}
-    <div className="dashboard-search"><input type="search" placeholder={isSupportPage ? 'Search tickets or booking references...' : 'Search for services...'} aria-label={isSupportPage ? 'Search support tickets' : 'Search for services'} value={isSupportPage ? ticketSearch : undefined} onChange={isSupportPage ? (event) => { setTicketSearch(event.target.value); if (isSupportDashboard) window.dispatchEvent(new CustomEvent('serveease-ticket-search', { detail: event.target.value })) } : undefined} onKeyDown={isSupportPage ? (event) => { if (event.key === 'Enter' && !isSupportDashboard) navigate(`/employee/support-tickets?search=${encodeURIComponent(ticketSearch)}`) } : (event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} /></div>
-    <div className="dashboard-topbar-actions">
+  const brandContent = <><span className="brand-icon">SE</span><span>ServeEase</span></>
+  const visibleNotifications = showAllNotifications ? customerNotifications : customerNotifications.slice(0, 4)
+
+  return <header className={`se-topbar${role ? ` se-topbar--${role}` : ''}`}>
+    {variant?.brandLinksHome === false
+      ? <div className="se-topbar__brand">{brandContent}</div>
+      : <Link className="se-topbar__brand" to="/">{brandContent}</Link>}
+
+    <div className="se-topbar__search">
       {isSupportPage
-        ? <button className="icon-btn support-header-bell" type="button" aria-label="Notifications" onClick={() => navigate('/employee/support-tickets#support-notifications')}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>{hasNewNotifications && <span className="support-dot" />}</button>
-        : <div className="notification-wrap" ref={notificationPanelRef}>
-        <button aria-expanded={isNotificationsOpen} aria-label={notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'} className="icon-btn notification-trigger" onClick={toggleNotifications} ref={notificationButtonRef} type="button">
-          🔔{notificationUnreadCount > 0 && <span className="notification-count">{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}</span>}
+        ? <input type="search" placeholder="Search tickets or booking references..." aria-label="Search support tickets" value={ticketSearch} onChange={(event) => { setTicketSearch(event.target.value); if (isSupportDashboard) window.dispatchEvent(new CustomEvent('serveease-ticket-search', { detail: event.target.value })) }} onKeyDown={(event) => { if (event.key === 'Enter' && !isSupportDashboard) navigate(`/employee/support-tickets?search=${encodeURIComponent(ticketSearch)}`) }} />
+        : role === 'provider'
+        ? <input key={pathname} type="search" placeholder={providerSearchPlaceholders[pathname] || 'Search...'} aria-label="Search this page" onChange={(event) => applyProviderSearch(pathname, event.target.value)} />
+        : <input type="search" placeholder="Search for services..." aria-label="Search for services" onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} />}
+    </div>
+
+    <div className="se-topbar__actions" ref={actionsRef}>
+      {isSupportPage && variant?.notifications === 'support'
+        ? <div className="se-topbar__notifications">
+          <button aria-label="Notifications" className="se-topbar__icon-btn" onClick={() => navigate('/employee/support-tickets#support-notifications')} type="button">
+            <span aria-hidden="true">🔔</span>{hasNewNotifications && <span className="se-topbar__count se-topbar__count--dot" />}
+          </button>
+        </div>
+        : variant?.notifications && <div className="se-topbar__notifications">
+        <button
+          aria-controls="se-topbar-notification-panel"
+          aria-expanded={isNotificationsOpen}
+          aria-label={notificationUnreadCount ? `Notifications, ${notificationUnreadCount} unread` : 'Notifications'}
+          className="se-topbar__icon-btn"
+          onClick={toggleNotifications}
+          ref={notificationButtonRef}
+          type="button"
+        >
+          {variant.notifications === 'superuser'
+            ? <span aria-hidden="true" className="se-topbar__alert-symbol">!</span>
+            : <span aria-hidden="true">🔔</span>}
+          {notificationUnreadCount > 0 && <span className="se-topbar__count">{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}</span>}
         </button>
-        {isNotificationsOpen && <section aria-label="Notifications" className="navbar-notification-panel">
-          <div className="navbar-notification-head"><h2>Notifications</h2>{notificationState === 'ready' && <span className="navbar-notification-badge">{notificationUnreadCount} New</span>}</div>
-          {customerNotificationState === 'loading' && <p className="navbar-notification-state">Loading notifications…</p>}
-          {customerNotificationState === 'error' && <div className="navbar-notification-error"><p>{notificationError}</p><button onClick={() => void loadNotifications()} type="button">Retry</button></div>}
-          {notificationError && customerNotificationState === 'ready' && <p className="navbar-notification-error-message" role="alert">{notificationError}</p>}
-          {customerNotificationState === 'signed-out' && <p className="navbar-notification-state">Sign in to view notifications.</p>}
-          {customerNotificationState === 'unavailable' && <p className="navbar-notification-state">Notifications are not available for this role in the React app yet.</p>}
+        {isNotificationsOpen && <section aria-label="Notifications" className="se-notification-panel" id="se-topbar-notification-panel">
+          <div className="se-notification-panel__head">
+            <h3>Notifications</h3>
+            {customerNotificationState === 'ready' && <span className="se-notification-panel__badge">{notificationUnreadCount} New</span>}
+          </div>
+          {customerNotificationState === 'loading' && <p className="se-notification-panel__state" role="status">Loading notifications…</p>}
+          {customerNotificationState === 'error' && <div className="se-notification-panel__error" role="alert">
+            <p>{notificationError}</p>
+            <button className="se-notification-panel__action" onClick={() => void loadNotifications()} type="button">Retry</button>
+          </div>}
+          {notificationError && customerNotificationState === 'ready' && <p className="se-notification-panel__error-message" role="alert">{notificationError}</p>}
+          {customerNotificationState === 'signed-out' && <p className="se-notification-panel__state">Sign in to view notifications.</p>}
+          {customerNotificationState === 'unavailable' && <p className="se-notification-panel__state">Notifications are not available for this role in the React app yet.</p>}
           {customerNotificationState === 'ready' && <>
             {customerNotifications.length === 0
-              ? <p className="navbar-notification-empty">No notifications yet. New booking, payment, and support updates will appear here.</p>
-              : <div className="navbar-notification-list">{(showAllNotifications ? customerNotifications : customerNotifications.slice(0, 4)).map((notification) => <button className={`navbar-notification-item${notification.isUnread ? ' is-unread' : ''}`} key={notification.id} onClick={() => markNotificationRead(notification)} type="button">
-                <span>{notification.text}</span><time>{formatNotificationTime(notification.createdAt)}</time>
+              ? <div className="se-notification-panel__empty"><strong>No notifications yet</strong><span>New booking, payment, and support updates will appear here.</span></div>
+              : <div className="se-notification-panel__list">{visibleNotifications.map((notification) => <button className={`se-notification-item${notification.isUnread ? ' is-unread' : ''}`} key={notification.id} onClick={() => markNotificationRead(notification)} type="button">
+                <p>{notification.text}</p>
+                <time dateTime={notification.createdAt || undefined}>{formatNotificationTime(notification.createdAt)}</time>
               </button>)}</div>}
-            {customerNotifications.some((notification) => notification.isUnread) && <button className="navbar-notification-mark-read" onClick={markAllNotificationsRead} type="button">Mark All as Read</button>}
-            {customerNotifications.length > 4 && <button className="navbar-notification-view-all" onClick={() => setShowAllNotifications((shown) => !shown)} type="button">{showAllNotifications ? 'Show Recent' : 'View All Notifications'}</button>}
-            <p className="navbar-notification-local-note">Read state is stored in this browser for this customer.</p>
+            {notificationUnreadCount > 0 && <button className="se-notification-panel__action" onClick={markAllNotificationsRead} type="button">Mark All as Read</button>}
+            {customerNotifications.length > 4 && <button className="se-notification-panel__action" onClick={() => setShowAllNotifications((shown) => !shown)} type="button">{showAllNotifications ? 'Show Recent' : 'View All Notifications'}</button>}
           </>}
         </section>}
-        </div>}
-      <div className="profile-menu-wrap" ref={profileMenuRef}>
-        <button className={`profile-btn${isSupportPage ? ' support-profile-btn' : ''}`} ref={profileButtonRef} type="button" aria-label={`${area} profile`} aria-expanded={isProfileOpen} onClick={() => setIsProfileOpen((open) => !open)}>{isSupportPage ? <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.6-3.6 3-5.5 7-5.5s6.4 1.9 7 5.5" /></svg> : '👤'}</button>
-        {isProfileOpen && <div className={`profile-dropdown${currentUser?.role === 'customer' ? ' profile-dropdown--customer' : ''}`} role="menu">
-          {isAuthenticated ? <>
-            {currentUser?.role === 'customer' && <>
-              <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
-              <Link role="menuitem" to="/customer/profile" onClick={() => setIsProfileOpen(false)}>My Profile</Link>
-              <Link role="menuitem" to="/" onClick={() => setIsProfileOpen(false)}>Go to Home</Link>
-              <button role="menuitem" type="button" onClick={handleLogout}>Logout</button>
-            </>}
-            {currentUser?.role === 'provider' && <>
-              <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
-              <Link role="menuitem" to="/provider/dashboard" onClick={() => setIsProfileOpen(false)}>Dashboard</Link>
-              <Link role="menuitem" to="/provider/bookings" onClick={() => setIsProfileOpen(false)}>Bookings</Link>
-              <Link role="menuitem" to="/provider/availability" onClick={() => setIsProfileOpen(false)}>Availability</Link>
-              <Link role="menuitem" to="/provider/services" onClick={() => setIsProfileOpen(false)}>Services</Link>
-              <Link role="menuitem" to="/provider/support" onClick={() => setIsProfileOpen(false)}>Support Center</Link>
-              <Link role="menuitem" to="/provider/account" onClick={() => setIsProfileOpen(false)}>My Profile</Link>
-              <Link role="menuitem" to="/provider/earnings" onClick={() => setIsProfileOpen(false)}>Earnings & Payments</Link>
-            </>}
-            {currentUser?.role === 'support' && <>
-              <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
-              <Link to="/employee/support-tickets" role="menuitem" onClick={() => setIsProfileOpen(false)}>Support tickets</Link>
-              <Link to="/employee/support-workspace" role="menuitem" onClick={() => setIsProfileOpen(false)}>Support workspace</Link>
-            </>}
-            {currentUser?.role === 'superuser' && <>
-              <div className="profile-dropdown__identity"><strong>{currentUser?.fullName || currentUser?.email || 'Signed-in user'}</strong><span>{currentUser?.email || currentUser?.role || ''}</span></div>
-              <Link to="/admin" role="menuitem" onClick={() => setIsProfileOpen(false)}>Admin dashboard</Link>
-              <Link to="/admin/providers" role="menuitem" onClick={() => setIsProfileOpen(false)}>Providers</Link>
-              <Link to="/admin/verification" role="menuitem" onClick={() => setIsProfileOpen(false)}>Verification</Link>
-              <Link to="/admin/bookings" role="menuitem" onClick={() => setIsProfileOpen(false)}>Bookings</Link>
-            </>}
-            {currentUser?.role === 'customer' && <>
-              <Link role="menuitem" to="/customer/dashboard" onClick={() => setIsProfileOpen(false)}>Dashboard</Link>
-              <Link role="menuitem" to="/customer/bookings" onClick={() => setIsProfileOpen(false)}>My Bookings</Link>
-              <Link role="menuitem" to="/customer/payments" onClick={() => setIsProfileOpen(false)}>Payment History</Link>
-              <Link role="menuitem" to="/customer/support" onClick={() => setIsProfileOpen(false)}>Support Center</Link>
-            </>}
-            {currentUser?.role !== 'customer' && <button type="button" role="menuitem" onClick={handleLogout}>Logout</button>}
-          </> : <>
-            <Link role="menuitem" to="/login" onClick={() => setIsProfileOpen(false)}>Login</Link>
-          </>}
+      </div>}
+
+      <div className="se-topbar__profile">
+        <button
+          aria-controls="se-topbar-profile-dropdown"
+          aria-expanded={isProfileOpen}
+          aria-label="Open account menu"
+          className="se-topbar__profile-btn"
+          onClick={toggleProfile}
+          ref={profileButtonRef}
+          type="button"
+        />
+        {isProfileOpen && <div className={`se-profile-dropdown${variant?.profileCard ? ' se-profile-dropdown--card' : ''}`} id="se-topbar-profile-dropdown">
+          {isAuthenticated && variant ? <>
+            {variant.profileCard && <div className="se-profile-dropdown__card">
+              <strong>{currentUser?.fullName || currentUser?.email || variant.profileCard}</strong>
+              <span>{variant.profileCard}</span>
+            </div>}
+            {variant.profileLinks(pathname).map((item) => <Link key={item.to} onClick={() => setOpenMenu(null)} to={item.to}>{item.label}</Link>)}
+            <button onClick={handleLogout} type="button">Logout</button>
+          </> : <Link onClick={() => setOpenMenu(null)} to="/login">Login</Link>}
         </div>}
       </div>
     </div>

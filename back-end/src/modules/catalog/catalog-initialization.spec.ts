@@ -166,9 +166,14 @@ describe('Catalog initialization from persisted state', () => {
     const { categories, providers } = catalog.findAll();
     expect(categories.map((category) => category.id).sort()).toEqual(saved.categories.map((category: { id: string }) => category.id).sort());
     expect(providers.length).toBeGreaterThan(0);
-    expect(providers.length).toBeLessThanOrEqual(saved.providers.length);
+    // Every synced listing appears at most once; the only extra rows are listings derived for an active, verified
+    // provider account that has priced services but no synced listing yet.
+    const synced = providers.filter((item) => saved.providers.some((source: { id: string }) => source.id === item.id));
+    expect(synced.length).toBeLessThanOrEqual(saved.providers.length);
+    providers.filter((item) => !synced.includes(item)).forEach((item) => {
+      expect(saved.users.some((user: { id: string; role: string; email: string; accountStatus?: string }) => user.role === 'provider' && user.id === item.ownerProviderId && user.email.toLowerCase() === item.ownerProviderEmail && user.accountStatus === 'Active')).toBe(true);
+    });
     providers.forEach((item) => {
-      expect(saved.providers.some((source: { id: string }) => source.id === item.id)).toBe(true);
       expect(categories.some((category) => category.id === item.category)).toBe(true);
     });
   });

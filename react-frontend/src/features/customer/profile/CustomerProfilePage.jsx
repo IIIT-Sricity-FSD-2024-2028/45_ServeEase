@@ -1,144 +1,62 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ErrorState } from '../../../components/common/FeedbackStates'
-import { useAuth } from '../../../context/useAuth'
-import './customerProfile.css'
+import { authApi } from '../../../services/api'
+import { CustomerPageHeader, LoadState } from '../CustomerOpsParts'
+import { hasValue } from '../customerOperations'
+import '../customerOperations.css'
 
-function displayValue(value) {
-  if (value === null || value === undefined || String(value).trim() === '') {
-    return 'Not provided'
-  }
+// The original edits the phone number in localStorage. The backend has no customer profile update
+// endpoint, so the control stays visible but disabled instead of pretending to save.
+const phoneEditUnavailable = 'Phone number changes are not supported by the ServeEase backend yet.'
 
-  return String(value)
-}
+const display = (value) => (hasValue(value) ? String(value) : 'Not provided')
 
+// customer-profile.html + initCustomerProfilePage(); the account is read from GET /auth/session, which
+// returns the signed-in user's own record without credentials.
 export default function CustomerProfilePage() {
-  const { currentUser, isAuthenticated } = useAuth()
-  const initialPhone = displayValue(currentUser?.phone).replace('Not provided', '')
-  const [isEditingPhone, setIsEditingPhone] = useState(false)
-  const [draftPhone, setDraftPhone] = useState(initialPhone)
-  const [profilePhone, setProfilePhone] = useState(initialPhone)
-  const [phoneMessage, setPhoneMessage] = useState('')
+  const [load, setLoad] = useState({ state: 'loading', user: null, error: '' })
 
-  const fullName = displayValue(currentUser?.fullName || currentUser?.name)
-  const email = displayValue(currentUser?.email)
-  const phone = displayValue(profilePhone || currentUser?.phone || '')
-  const accountStatus = displayValue(currentUser?.accountStatus || currentUser?.status || 'Active')
+  const reload = useCallback(() => {
+    setLoad((current) => ({ ...current, state: 'loading', error: '' }))
+    authApi.session()
+      .then((user) => setLoad({ state: 'ready', user, error: '' }))
+      .catch((error) => setLoad({ state: 'error', user: null, error: error.message || 'Your profile could not be loaded.' }))
+  }, [])
 
-  const handlePhoneSave = () => {
-    const nextPhone = draftPhone.trim()
+  useEffect(() => {
+    let active = true
+    authApi.session()
+      .then((user) => { if (active) setLoad({ state: 'ready', user, error: '' }) })
+      .catch((error) => { if (active) setLoad({ state: 'error', user: null, error: error.message || 'Your profile could not be loaded.' }) })
+    return () => { active = false }
+  }, [])
 
-    if (!/^[6-9]\d{9}$/.test(nextPhone)) {
-      setPhoneMessage('Enter a valid 10-digit phone number.')
-      return
-    }
-
-    const storedSession = JSON.parse(sessionStorage.getItem('serveEaseSession') || '{}')
-    if (storedSession) {
-      sessionStorage.setItem('serveEaseSession', JSON.stringify({ ...storedSession, phone: nextPhone }))
-    }
-
-    setProfilePhone(nextPhone)
-    setDraftPhone(nextPhone)
-    setIsEditingPhone(false)
-    setPhoneMessage('')
-  }
-
-  if (!isAuthenticated) {
-    return <section className="customer-profile-page" aria-labelledby="customer-profile-title">
-      <div className="customer-profile-container">
-        <div className="customer-profile-breadcrumb">
-          <Link to="/">Home</Link>
-          <span>›</span>
-          <strong>My Profile</strong>
-        </div>
-        <h1 id="customer-profile-title">My Profile</h1>
-        <ErrorState message="Please sign in to view your profile." />
-      </div>
-    </section>
-  }
-
-  return <section className="customer-profile-page" aria-labelledby="customer-profile-title">
-    <div className="customer-profile-container">
-      <div className="customer-profile-breadcrumb">
-        <Link to="/">Home</Link>
-        <span>›</span>
-        <Link to="/customer/dashboard">Customer Dashboard</Link>
-        <span>›</span>
-        <strong>My Profile</strong>
-      </div>
-
-      <div className="customer-profile-header">
-        <div className="customer-profile-title-wrap">
-          <h1 id="customer-profile-title">My Profile</h1>
-          <p>View your personal information and account details.</p>
-        </div>
-        <Link className="customer-profile-bookings-link" to="/customer/bookings">My Bookings</Link>
-      </div>
-
-      <div className="customer-profile-main">
-        <section className="customer-profile-card">
-          <h2 className="panel-title">Profile Information</h2>
-
-          <div className="customer-profile-info-grid">
-            <div className="customer-profile-info-box">
-              <strong>Full Name</strong>
-              <span>{fullName}</span>
+  const user = load.user
+  return <div className="customer-ops">
+    <CustomerPageHeader crumbs={[['Home', '/'], ['Customer Dashboard', '/customer/dashboard'], ['My Profile']]} description="View your personal information and account details." title="My Profile" />
+    <LoadState error={load.error} loadingText="Loading your profile…" onRetry={reload} state={load.state} />
+    {load.state === 'ready' && <section className="dashboard-two-column">
+      <div className="panel-card">
+        <h2 className="panel-title">Profile Information</h2>
+        <div className="info-grid profile-info-grid">
+          <div className="info-box"><strong>Full Name</strong><div>{display(user?.fullName)}</div></div>
+          <div className="info-box"><strong>Email</strong><div>{display(user?.email)}</div></div>
+          <div className="info-box"><strong>Phone Number</strong>
+            <div className="profile-edit-row">
+              <span>{hasValue(user?.phone) ? user.phone : 'Not added'}</span>
+              <button aria-describedby="profile-phone-note" className="btn btn-outline profile-inline-btn" disabled title={phoneEditUnavailable} type="button">Edit</button>
             </div>
-
-            <div className="customer-profile-info-box">
-              <strong>Email</strong>
-              <span>{email}</span>
-            </div>
-
-            <div className="customer-profile-info-box">
-              <strong>Phone Number</strong>
-
-              {!isEditingPhone ? (
-                <div className="customer-profile-phone-row">
-                  <span>{phone}</span>
-                  <button type="button" className="customer-profile-edit-btn" onClick={() => { setDraftPhone(phone === 'Not provided' ? '' : phone); setPhoneMessage(''); setIsEditingPhone(true) }}>
-                    Edit
-                  </button>
-                </div>
-              ) : (
-                <div className="customer-profile-edit-wrap">
-                  <input
-                    className="customer-profile-inline-input"
-                    maxLength={10}
-                    onChange={(event) => setDraftPhone(event.target.value.replace(/\D/g, ''))}
-                    value={draftPhone}
-                  />
-
-                  <div className="customer-profile-edit-actions">
-                    <button type="button" className="customer-profile-save-btn" onClick={handlePhoneSave}>Save</button>
-                    <button type="button" className="customer-profile-cancel-btn" onClick={() => { setDraftPhone(phone === 'Not provided' ? '' : phone); setPhoneMessage(''); setIsEditingPhone(false) }}>
-                      Cancel
-                    </button>
-                  </div>
-
-                  {phoneMessage && <small className="customer-profile-inline-message">{phoneMessage}</small>}
-                </div>
-              )}
-            </div>
-
-            <div className="customer-profile-info-box">
-              <strong>Account Status</strong>
-              <span>{accountStatus}</span>
-            </div>
+            <small className="info-note" id="profile-phone-note">{phoneEditUnavailable}</small>
           </div>
-        </section>
-
-        <aside className="customer-profile-status-card">
-          <div>
-            <h2>Account Status</h2>
-            <p>Your customer account is active and ready to use.</p>
-            <p>Use your dashboard to manage bookings, payments, and support.</p>
-          </div>
-
-          <Link className="customer-profile-status-button" to="/customer/dashboard">Go to Dashboard</Link>
-        </aside>
+          <div className="info-box"><strong>Account Status</strong><div>{display(user?.accountStatus || user?.status || 'Active')}</div></div>
+        </div>
       </div>
-    </div>
-  </section>
+      <div className="panel-card gradient-panel">
+        <h2>Account Status</h2>
+        <p>Your customer account is active and ready to use.</p>
+        <p>Use your dashboard to manage bookings, payments, and support.</p>
+        <Link className="btn btn-light" to="/customer/dashboard">Go to Dashboard</Link>
+      </div>
+    </section>}
+  </div>
 }

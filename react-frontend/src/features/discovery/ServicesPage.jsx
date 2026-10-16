@@ -93,6 +93,8 @@ export function ServicesPage() {
             <button type="button" className="text-btn" onClick={resetFilters}>Reset All</button>
           </div>
 
+          {/* The original page filters only by service type and price; search and category appear when the page was opened without a category or from a search. */}
+          {(!category || query) && <>
           <div className="filter-block">
             <label htmlFor="searchFilter">Search</label>
             <input id="searchFilter" type="search" placeholder="Search by service or provider" value={query} onChange={(event) => setParam('q', event.target.value, '', true)} />
@@ -105,6 +107,7 @@ export function ServicesPage() {
               {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </div>
+          </>}
 
           <div className="filter-block">
             <label htmlFor="serviceTypeFilter">Service Type</label>

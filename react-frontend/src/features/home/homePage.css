@@ -89,7 +89,7 @@
 .home-footer { margin-top: 40px; padding: 40px 0 18px; background: #0d1630; color: #dbe6ff; }
 .home-footer-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 24px; }
 .home-footer-grid h4 { margin: 0 0 10px; }
-.home-footer-grid a { display: block; margin-bottom: 8px; color: #b7c8ea; }
+.home-footer-grid a { display: block; text-decoration: none; margin-bottom: 8px; color: #b7c8ea; }
 .home-footer-grid a:hover,.home-footer-grid a:focus-visible { color: #fff; text-decoration: underline; }
 .home-footer-bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 26px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.08); color: #b8c8e5; }
 .home-footer-bottom-row p { margin: 0; }
@@ -97,7 +97,7 @@
 .home-footer-socials span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; background: rgba(255,255,255,.08); }
 
 @media (max-width: 1024px) {
-  .home-hero-grid,.home-category-grid,.home-service-grid,.home-footer-grid { grid-template-columns: 1fr; }
+  .home-hero-grid,.home-category-grid,.home-service-grid,.home-footer-grid,.home-footer-info-grid { grid-template-columns: 1fr; }
   .home-nav-links { display: none; }
   .home-hero-left h1 { font-size: 40px; }
   .home-footer-bottom-row { flex-direction: column; gap: 12px; }
@@ -112,5 +112,6 @@
   .home-city-pin { font-size: 12px; }
   .home-profile-button { width: 38px; height: 38px; }
   .home-nav-actions .home-button { min-height: 38px; padding: 8px 10px; font-size: 12px; }
-  .home-footer-info-grid { grid-template-columns: 1fr; }
 }
+
+.public-layout-header { min-height: 0; }

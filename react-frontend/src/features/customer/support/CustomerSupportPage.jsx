@@ -1,176 +1,107 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { EmptyState, ErrorState, LoadingState } from '../../../components/common/FeedbackStates'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { ticketsApi } from '../../../services/api'
-import './customerSupport.css'
+import { bookingsApi, ticketsApi } from '../../../services/api'
+import { CustomerPageHeader, LoadState, OpsModal, TicketDetails, TicketStatus } from '../CustomerOpsParts'
+import {
+  attachmentValidationError, belongsToCustomer, canonicalBookingId, customerTicketTypes, formatDisplayDate, openTicketForBooking, sortNewestFirst, validateTicketForm,
+} from '../customerOperations'
+import '../customerOperations.css'
 
-const ticketTypes = ['Poor Service Quality', 'Provider Not Arrived', 'Late Arrival', 'Overcharging', 'Misbehavior', 'Payment Issue', 'Service Not Completed', 'Refund Request', 'Fraud', 'Safety Concern', 'Other']
 const blankForm = { bookingId: '', ticketType: '', subject: '', description: '' }
-const maxAttachmentSize = 5000 * 1024
-const attachmentExtensions = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp'])
-const attachmentMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+// There is no ticket messaging endpoint; the original chat only replayed canned agent greetings.
+const chatUnavailable = 'Live chat with support is not available yet. Support updates appear under View Ticket.'
 
-function attachmentValidationError(file) {
-  const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
-  if (!attachmentExtensions.has(extension) || !attachmentMimeTypes.has(file.type)) {
-    return 'Choose a PDF, JPG, PNG, or WebP file.'
-  }
-  if (file.size > maxAttachmentSize) return 'Attachment must be 5000 KB or smaller.'
-  return ''
-}
+// Help Resources accordion, text from customer-support-center.html.
+const faqs = [
+  ['How can I track my booking status?', 'You can check live booking progress from the My Bookings page, where upcoming, completed, and pending bookings are listed with their current status.'],
+  ['When will I receive my refund after cancellation?', 'Approved refunds are usually processed to the original payment method after cancellation review. Processing time may vary based on the payment provider and booking stage.'],
+  ['What should I do if the provider is late?', 'Raise a support ticket with your booking reference and issue details. Our team will review the delay and coordinate with the assigned provider.'],
+  ['How do I report a payment issue?', 'Choose Payment Issue while submitting a support ticket, add the transaction reference if available, and describe the failed, delayed, or incorrect payment issue.'],
+]
 
-function formatDate(value) {
-  const date = new Date(value || '')
-  return Number.isNaN(date.getTime()) ? 'Date unavailable' : new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(date)
-}
-
-function TicketDetailsModal({ ticket, onClose }) {
-  const [details, setDetails] = useState(null)
-  const [detailError, setDetailError] = useState('')
-
-  useEffect(() => {
-    let active = true
-    ticketsApi.get(ticket.ticketId)
-      .then((record) => { if (active) setDetails(record) })
-      .catch((requestError) => { if (active) setDetailError(requestError.message || 'Ticket details could not be loaded.') })
-    return () => { active = false }
-  }, [ticket.ticketId])
-
-  const record = details || ticket
-
-  return <div className="customer-support-modal-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose() }} role="presentation">
-    <section aria-labelledby="customer-support-ticket-detail-title" aria-modal="true" className="customer-support-modal" role="dialog">
-      <header className="customer-support-modal-head">
-        <h2 id="customer-support-ticket-detail-title">Support Ticket Details</h2>
-        <button aria-label="Close ticket details" className="customer-support-modal-close" onClick={onClose} type="button">×</button>
-      </header>
-      {detailError && <ErrorState message={detailError} />}
-      <div className="customer-support-ticket-details">
-        <section><h3>Ticket Information</h3><p><span>Ticket ID</span><strong>{record.ticketId}</strong></p><p><span>Status</span><strong>{record.status || 'Not provided'}</strong></p><p><span>Created On</span><strong>{formatDate(record.createdAt)}</strong></p></section>
-        <section><h3>Issue Summary</h3><p><span>Booking Ref</span><strong>{record.relatedBookingId || 'Not provided'}</strong></p><p><span>Category</span><strong>{record.ticketType || 'Not provided'}</strong></p><p><span>Subject</span><strong>{record.subject || 'Not provided'}</strong></p><p><span>Description</span><strong>{record.description || 'Not provided'}</strong></p></section>
-        <section><h3>Support Update</h3><p>{record.supportRemarks || 'Your ticket has been received and is currently being reviewed by the support team.'}</p></section>
-      </div>
-    </section>
-  </div>
-}
-
-function ChatWithSupportModal({ ticket, customerId, onClose }) {
-  const storageKey = `serveEaseChatDemo:${customerId || 'customer'}:${ticket.ticketId}`
-  const inputRef = useRef(null)
-  const [messages, setMessages] = useState(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(storageKey) || '[]')
-      return Array.isArray(stored) ? stored : []
-    } catch {
-      return []
-    }
-  })
-  const [draft, setDraft] = useState('')
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    inputRef.current?.focus()
-    function closeOnEscape(event) {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', closeOnEscape)
-    return () => document.removeEventListener('keydown', closeOnEscape)
-  }, [onClose])
-
-  function sendMessage(event) {
-    event.preventDefault()
-    const text = draft.trim()
-    if (!text) {
-      setError('Enter a message before sending.')
-      return
-    }
-
-    const message = { sender: 'customer', text, createdAt: new Date().toISOString() }
-    const nextMessages = [...messages, message]
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(nextMessages))
-      setMessages(nextMessages)
-      setDraft('')
-      setError('')
-    } catch {
-      setError('This browser could not save the demo message. Your text has not been sent.')
-    }
-  }
-
-  return <div className="customer-support-modal-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose() }} role="presentation">
-    <section aria-labelledby="customer-support-chat-title" aria-modal="true" className="customer-support-modal customer-support-chat-modal" role="dialog">
-      <header className="customer-support-modal-head">
-        <div><h2 id="customer-support-chat-title">Chat with Support</h2><p>Ticket {ticket.ticketId} · Booking {ticket.relatedBookingId || 'not provided'}</p></div>
-        <button aria-label="Close chat" className="customer-support-modal-close" onClick={onClose} type="button">×</button>
-      </header>
-      <p className="customer-support-chat-demo-note">Demo only: messages are stored in this browser and are not delivered to Support.</p>
-      <div aria-live="polite" className="customer-support-chat-thread">
-        {ticket.description && <article className="customer-support-chat-bubble customer-support-chat-bubble--customer"><span>Ticket issue</span>{ticket.description}</article>}
-        {ticket.supportRemarks && <article className="customer-support-chat-bubble customer-support-chat-bubble--support"><span>Support update</span>{ticket.supportRemarks}</article>}
-        {messages.map((message, index) => <article className="customer-support-chat-bubble customer-support-chat-bubble--customer" key={`${message.createdAt || 'message'}-${index}`}>
-          {message.text}<time>{message.createdAt ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(message.createdAt)) : ''}</time>
-        </article>)}
-        {!ticket.description && !ticket.supportRemarks && messages.length === 0 && <p className="customer-support-chat-empty">No ticket context or saved demo messages are available.</p>}
-      </div>
-      <form className="customer-support-chat-form" onSubmit={sendMessage}>
-        <label className="sr-only" htmlFor="customer-support-chat-input">Message</label>
-        <input autoComplete="off" id="customer-support-chat-input" onChange={(event) => { setDraft(event.target.value); setError('') }} placeholder="Type your message here" ref={inputRef} value={draft} />
-        <button className="journey-button" disabled={!draft.trim()} type="submit">Send</button>
-      </form>
-      {error && <p className="customer-support-chat-error" role="alert">{error}</p>}
-    </section>
-  </div>
-}
-
-function statusClass(status) {
-  return String(status || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
-}
-
+// customer-support-center.html + initSupportCenter(), backed by POST /tickets/customer, GET /tickets/my-tickets
+// and POST /uploads/tickets.
 export default function CustomerSupportPage() {
   const { currentUser } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const prefillRef = (searchParams.get('bookingRef') || '').trim()
+  const viewTicketId = searchParams.get('ticket') || ''
   const attachmentInputRef = useRef(null)
-  const [tickets, setTickets] = useState([])
-  const [form, setForm] = useState(blankForm)
+  const [form, setForm] = useState(() => ({ ...blankForm, bookingId: prefillRef }))
+  const [errors, setErrors] = useState({})
   const [attachment, setAttachment] = useState(null)
   const [uploadedAttachment, setUploadedAttachment] = useState(null)
-  const [attachmentError, setAttachmentError] = useState('')
-  const [loadState, setLoadState] = useState('loading')
-  const [isSaving, setIsSaving] = useState(false)
-  const [submissionStage, setSubmissionStage] = useState('')
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-  const [selectedTicket, setSelectedTicket] = useState(null)
-  const [chatTicket, setChatTicket] = useState(null)
-  const chatTriggerRef = useRef(null)
+  const [submitError, setSubmitError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [stage, setStage] = useState('')
+  const [openFaq, setOpenFaq] = useState(-1)
+  const [ticketsLoad, setTicketsLoad] = useState({ state: 'loading', tickets: [], error: '' })
+  const [bookingsLoad, setBookingsLoad] = useState({ state: 'loading', bookings: [], error: '' })
 
-  function closeChat() {
-    setChatTicket(null)
-    requestAnimationFrame(() => chatTriggerRef.current?.focus())
-  }
+  const fetchTickets = useCallback(async () => {
+    const records = await ticketsApi.listMine()
+    if (!Array.isArray(records)) throw new Error('The ticket service returned an invalid response.')
+    return sortNewestFirst(records)
+  }, [])
+
+  const fetchBookings = useCallback(async () => {
+    const records = await bookingsApi.list()
+    if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
+    return records.filter((booking) => belongsToCustomer(booking, currentUser))
+  }, [currentUser])
+
+  const reloadTickets = useCallback(() => {
+    setTicketsLoad((current) => ({ ...current, state: 'loading', error: '' }))
+    return fetchTickets()
+      .then((tickets) => setTicketsLoad({ state: 'ready', tickets, error: '' }))
+      .catch((error) => setTicketsLoad({ state: 'error', tickets: [], error: error.message || 'Your support tickets could not be loaded.' }))
+  }, [fetchTickets])
+
+  const reloadBookings = useCallback(() => {
+    setBookingsLoad((current) => ({ ...current, state: 'loading', error: '' }))
+    fetchBookings()
+      .then((bookings) => setBookingsLoad({ state: 'ready', bookings, error: '' }))
+      .catch((error) => setBookingsLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }))
+  }, [fetchBookings])
 
   useEffect(() => {
     let active = true
-    ticketsApi.listMine()
-      .then((records) => { if (active) { setTickets(Array.isArray(records) ? records : []); setLoadState('ready') } })
-      .catch((requestError) => { if (active) { setError(requestError.message || 'Your support tickets could not be loaded.'); setLoadState('error') } })
+    fetchTickets()
+      .then((tickets) => { if (active) setTicketsLoad({ state: 'ready', tickets, error: '' }) })
+      .catch((error) => { if (active) setTicketsLoad({ state: 'error', tickets: [], error: error.message || 'Your support tickets could not be loaded.' }) })
+    fetchBookings()
+      .then((bookings) => { if (active) setBookingsLoad({ state: 'ready', bookings, error: '' }) })
+      .catch((error) => { if (active) setBookingsLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }) })
     return () => { active = false }
-  }, [])
+  }, [fetchBookings, fetchTickets])
 
-  function update(name, value) { setForm((current) => ({ ...current, [name]: value })); setError(''); setNotice('') }
+  const prefillBooking = useMemo(() => bookingsLoad.bookings.find((booking) => String(booking.id).toLowerCase() === prefillRef.toLowerCase()), [bookingsLoad.bookings, prefillRef])
+  const existingTicket = prefillRef ? openTicketForBooking(ticketsLoad.tickets, prefillRef) : null
+  const selectedTicket = ticketsLoad.tickets.find((ticket) => ticket.ticketId === viewTicketId)
+
+  function setParam(key, value) {
+    const next = new URLSearchParams(searchParams)
+    if (value) next.set(key, value); else next.delete(key)
+    setSearchParams(next)
+  }
+
+  function update(name, value) {
+    setForm((current) => ({ ...current, [name]: value }))
+    setErrors((current) => ({ ...current, [name]: undefined }))
+    setSubmitError('')
+    setSuccess('')
+  }
 
   function chooseAttachment(event) {
     const file = event.target.files?.[0] || null
-    setAttachmentError('')
     setUploadedAttachment(null)
-    if (!file) {
-      setAttachment(null)
-      return
-    }
+    setErrors((current) => ({ ...current, attachment: undefined }))
+    if (!file) { setAttachment(null); return }
     const validationError = attachmentValidationError(file)
     if (validationError) {
       setAttachment(null)
-      setAttachmentError(validationError)
+      setErrors((current) => ({ ...current, attachment: validationError }))
       event.target.value = ''
       return
     }
@@ -180,82 +111,132 @@ export default function CustomerSupportPage() {
   function removeAttachment() {
     setAttachment(null)
     setUploadedAttachment(null)
-    setAttachmentError('')
     if (attachmentInputRef.current) attachmentInputRef.current.value = ''
   }
 
   async function submit(event) {
     event.preventDefault()
-    if (!form.bookingId.trim() || !form.ticketType || form.description.trim().length < 10) {
-      setError('Enter a booking reference, issue category, and at least 10 characters of detail.')
+    setSubmitError('')
+    setSuccess('')
+    if (bookingsLoad.state !== 'ready') {
+      setSubmitError('Your bookings must load before a ticket can be linked to one.')
       return
     }
-    setIsSaving(true)
-    setError('')
+    const nextErrors = validateTicketForm(form, bookingsLoad.bookings)
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
+
     try {
       let attachmentMetadata = uploadedAttachment
       if (attachment && !attachmentMetadata) {
-        setSubmissionStage('Uploading attachment…')
+        setStage('Uploading attachment…')
         attachmentMetadata = await ticketsApi.uploadAttachment(attachment)
         if (!attachmentMetadata?.fileUrl) throw new Error('The attachment upload did not return a saved file reference.')
         setUploadedAttachment(attachmentMetadata)
       }
-
-      setSubmissionStage('Submitting ticket…')
+      setStage('Submitting ticket…')
+      // Customer identity is taken from the authenticated session on the server, not from this body.
       const created = await ticketsApi.createCustomer({
-        bookingId: form.bookingId.trim(),
+        bookingId: canonicalBookingId(bookingsLoad.bookings, form.bookingId),
         ticketType: form.ticketType,
-        subject: form.subject.trim() || undefined,
+        subject: form.subject.trim(),
         description: form.description.trim(),
-        attachmentUrl: attachmentMetadata?.fileUrl,
-        customerId: currentUser?.userId,
-        customerName: currentUser?.fullName || currentUser?.name,
+        ...(attachmentMetadata?.fileUrl ? { attachmentUrl: attachmentMetadata.fileUrl } : {}),
       })
-      setTickets((current) => [created, ...current])
+      if (!created?.ticketId) throw new Error('The server did not return the new ticket.')
       setForm(blankForm)
       removeAttachment()
-      setNotice(`Ticket ${created.ticketId} was submitted.`)
-    } catch (requestError) {
-      setError(requestError.message || 'The ticket could not be submitted.')
-    } finally { setIsSaving(false); setSubmissionStage('') }
+      setSuccess(`Support ticket ${created.ticketId} submitted successfully. Status: ${created.status || 'not provided'}.`)
+      if (prefillRef) setParam('bookingRef', '')
+      await reloadTickets()
+    } catch (error) {
+      setSubmitError(error.message || 'The ticket could not be submitted.')
+    } finally {
+      setStage('')
+    }
   }
 
-  return <section className="customer-support-page">
-    <p className="customer-support-breadcrumb"><Link to="/">Home</Link> › <Link to="/customer/dashboard">Customer Dashboard</Link> › <strong>Support Center</strong></p>
-    <header className="customer-support-heading"><p>Customer care</p><h1>Customer Support Center</h1><span>Get help with bookings, payments, or service issues.</span></header>
-    <div className="customer-support-layout">
-      <form className="customer-support-card customer-support-form" onSubmit={submit}>
-        <h2>Raise Support Ticket</h2>
-        <label>Booking reference number<input maxLength="80" onChange={(event) => update('bookingId', event.target.value)} placeholder="Enter booking reference number" required value={form.bookingId} /></label>
-        <label>Issue category<select onChange={(event) => update('ticketType', event.target.value)} required value={form.ticketType}><option value="">Select issue category</option>{ticketTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
-        <label>Subject (optional)<input maxLength="120" onChange={(event) => update('subject', event.target.value)} placeholder="Brief description of your issue" value={form.subject} /></label>
-        <label>Description<textarea maxLength="1000" minLength="10" onChange={(event) => update('description', event.target.value)} placeholder="Provide detailed information about your issue" required value={form.description} /></label>
-        <div className="customer-support-attachment-field">
-          <label htmlFor="customer-support-attachment">Attachment (Optional)</label>
-          <input accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" id="customer-support-attachment" onChange={chooseAttachment} ref={attachmentInputRef} type="file" />
-          <small>PDF, JPG, PNG, or WebP. Maximum file size: 5000 KB.</small>
-          {attachment && <div className="customer-support-attachment-selected"><span>📎 {attachment.name}</span><button onClick={removeAttachment} type="button">Remove</button></div>}
-          {attachmentError && <small className="customer-support-attachment-error" role="alert">{attachmentError}</small>}
-        </div>
-        {error && <ErrorState message={error} />}{notice && <p className="customer-support-notice" role="status">{notice}</p>}
-        <button className="journey-button" disabled={isSaving || Boolean(attachmentError)} type="submit">{isSaving ? submissionStage : 'Submit Ticket'}</button>
-      </form>
-      <aside className="customer-support-sidebar">
-        <section className="customer-support-card"><h2>Help resources</h2><details><summary>How can I track a booking?</summary><p>Open My Bookings to review the latest booking status.</p></details><details><summary>When will I receive a refund?</summary><p>Refund handling depends on the booking review and payment workflow.</p></details><details><summary>What if a provider is late?</summary><p>Raise a ticket with the booking reference and relevant details.</p></details><details><summary>How do I report a payment issue?</summary><p>Select Payment Issue and include the booking reference.</p></details></section>
-        <section className="customer-support-card customer-support-contact"><h2>Need Immediate Help?</h2><p>Our support team is available 24/7 to assist you.</p><p>📞 +91 1800-123-4567</p><p>📧 support@serveease.com</p></section>
-      </aside>
-    </div>
-    <section className="customer-support-tickets"><h2>My Support Tickets</h2>{loadState === 'loading' && <LoadingState message="Loading your support tickets…" />}{loadState === 'error' && <ErrorState message={error} />}{loadState === 'ready' && (tickets.length ? <div className="customer-support-ticket-list">{tickets.map((ticket) => <article className="customer-support-ticket" key={ticket.ticketId}>
-      <div className="customer-support-ticket-top"><h3>{ticket.subject || ticket.ticketType || 'Support request'}</h3><span className={`customer-support-status customer-support-status--${statusClass(ticket.status)}`}>{ticket.status || 'Not provided'}</span></div>
-      <p className="customer-support-ticket-meta">Ticket ID: <strong>{ticket.ticketId || 'Not provided'}</strong></p>
-      <p className="customer-support-ticket-meta">Booking Ref: <strong>{ticket.relatedBookingId || 'Not provided'}</strong></p>
-      <p className="customer-support-ticket-meta">{ticket.ticketType || 'Category not provided'} <span aria-hidden="true">•</span> {formatDate(ticket.createdAt)}</p>
-      <div className="customer-support-ticket-actions">
-        <button className="customer-support-view-ticket" onClick={() => setSelectedTicket(ticket)} type="button">View Ticket</button>
-        <button className="customer-support-chat-ticket" onClick={(event) => { chatTriggerRef.current = event.currentTarget; setChatTicket(ticket) }} type="button">Chat with Support</button>
+  const fieldProps = (name) => ({ 'aria-describedby': `support-${name}-error`, 'aria-invalid': errors[name] ? 'true' : undefined, id: `support-${name}` })
+  const fieldError = (name) => <small className="field-error" id={`support-${name}-error`}>{errors[name] || ''}</small>
+
+  return <div className="customer-ops">
+    <CustomerPageHeader crumbs={[['Home', '/'], ['Customer Dashboard', '/customer/dashboard'], ['Support Center']]} description="Get help with bookings, payments, or service issues." title="Customer Support Center" />
+
+    <section className="support-layout">
+      <div className="panel-card">
+        <h2 className="panel-title">Raise Support Ticket</h2>
+        <form className="support-form" noValidate onSubmit={submit}>
+          <label htmlFor="support-bookingId">Booking Reference Number</label>
+          <input {...fieldProps('bookingId')} list="support-own-bookings" maxLength="80" onChange={(event) => update('bookingId', event.target.value)} placeholder="Enter booking reference number" readOnly={Boolean(prefillRef)} value={form.bookingId} />
+          <datalist id="support-own-bookings">{bookingsLoad.bookings.map((booking) => <option key={booking.id} value={booking.id}>{booking.service}</option>)}</datalist>
+          {fieldError('bookingId')}
+          {prefillRef && <small className="support-form-hint">{prefillBooking ? `Booking context loaded for ${prefillBooking.service}. Please describe the issue in your own words.` : 'Booking reference loaded. Please select the issue category and describe the problem.'}</small>}
+          {existingTicket && <small className="support-form-hint">Ticket {existingTicket.ticketId} is already open for this booking ({existingTicket.status}).</small>}
+          {bookingsLoad.state === 'error' && <p className="ops-alert" role="alert">{bookingsLoad.error} <button className="table-link-btn" onClick={reloadBookings} type="button">Retry</button></p>}
+
+          <label htmlFor="support-ticketType">Issue Category</label>
+          <select {...fieldProps('ticketType')} onChange={(event) => update('ticketType', event.target.value)} value={form.ticketType}>
+            <option value="">Select issue category</option>
+            {customerTicketTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+          </select>
+          {fieldError('ticketType')}
+
+          <label htmlFor="support-subject">Subject</label>
+          <input {...fieldProps('subject')} maxLength="120" onChange={(event) => update('subject', event.target.value)} placeholder="Brief description of your issue" value={form.subject} />
+          {fieldError('subject')}
+
+          <label htmlFor="support-description">Description</label>
+          <textarea {...fieldProps('description')} maxLength="1000" onChange={(event) => update('description', event.target.value)} placeholder="Provide detailed information about your issue" value={form.description} />
+          {fieldError('description')}
+
+          <label htmlFor="support-attachment">Attachment <span>(Optional)</span></label>
+          <input {...fieldProps('attachment')} accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" onChange={chooseAttachment} ref={attachmentInputRef} type="file" />
+          {attachment && <div className="support-attachment"><span>📎 {attachment.name}</span><button onClick={removeAttachment} type="button">Remove</button></div>}
+          {fieldError('attachment')}
+
+          {submitError && <p className="ops-alert" role="alert">{submitError}</p>}
+          {success && <p className="ops-notice" role="status">{success}</p>}
+          <button className="btn btn-primary btn-full" disabled={Boolean(stage)} type="submit">{stage || 'Submit Ticket'}</button>
+        </form>
       </div>
-    </article>)}</div> : <EmptyState message="You have not raised any support tickets yet." />)}</section>
-    {selectedTicket && <TicketDetailsModal onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />}
-    {chatTicket && <ChatWithSupportModal customerId={currentUser?.userId} key={chatTicket.ticketId} onClose={closeChat} ticket={chatTicket} />}
-  </section>
+
+      <div className="support-sidebar">
+        <div className="panel-card">
+          <h2 className="panel-title">Help Resources</h2>
+          <div className="faq-list">{faqs.map(([question, answer], index) => <div key={question}>
+            <button aria-controls={`support-faq-${index}`} aria-expanded={openFaq === index} className="faq-item" onClick={() => setOpenFaq(openFaq === index ? -1 : index)} type="button">
+              <span>{question}</span><span aria-hidden="true" className="faq-toggle">{openFaq === index ? '−' : '+'}</span>
+            </button>
+            <div className="faq-answer" hidden={openFaq !== index} id={`support-faq-${index}`}>{answer}</div>
+          </div>)}</div>
+        </div>
+        <div className="panel-card gradient-panel">
+          <h2>Need Immediate Help?</h2>
+          <p>Our support team is available 24/7 to assist you.</p>
+          <p>📞 +91 1800-123-4567</p>
+          <p>📧 support@serveease.com</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="my-support-tickets-heading" className="table-section">
+      <h2 className="section-title-left" id="my-support-tickets-heading">My Support Tickets</h2>
+      <LoadState error={ticketsLoad.error} loadingText="Loading your support tickets…" onRetry={reloadTickets} state={ticketsLoad.state} />
+      {ticketsLoad.state === 'ready' && (ticketsLoad.tickets.length ? <div className="ticket-list">{ticketsLoad.tickets.map((ticket) => <article className="ticket-card" key={ticket.ticketId}>
+        <div className="ticket-top"><h3>{ticket.subject || ticket.ticketType}</h3><TicketStatus status={ticket.status} /></div>
+        <p>Ticket ID: <strong>{ticket.ticketId}</strong></p>
+        <p>Booking Ref: {ticket.relatedBookingId || 'Not provided'}</p>
+        <p>{ticket.ticketType} • {formatDisplayDate(ticket.createdAt)}</p>
+        <div className="ticket-actions">
+          <button className="secondary-action" onClick={() => setParam('ticket', ticket.ticketId)} type="button">View Ticket</button>
+          <button className="btn btn-primary" disabled title={chatUnavailable} type="button">Chat with Support</button>
+        </div>
+        <p className="ticket-note">{chatUnavailable}</p>
+      </article>)}</div> : <div className="empty-state-card">You have not raised any support tickets yet.</div>)}
+    </section>
+
+    {viewTicketId && <OpsModal labelId="support-ticket-title" onClose={() => setParam('ticket', '')} title="Support Ticket Details">
+      <TicketDetails fallback={selectedTicket} key={viewTicketId} ticketId={viewTicketId} />
+    </OpsModal>}
+  </div>
 }

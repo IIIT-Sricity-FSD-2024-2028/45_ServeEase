@@ -1,0 +1,221 @@
+/* Customer operation pages, ported from front-end/CSS/global.css, dashboard.css and pages.css
+   (my-bookings.html, customer-support-center.html, my-tickets.html, customer-profile.html).
+   Every rule is scoped to .customer-ops so it cannot leak into other React pages. */
+
+.customer-ops { width: 100%; color: #11284b; line-height: 1.5; }
+/* global.css resets every margin; the React app does not, so do it inside this scope only. */
+.customer-ops :where(h1, h2, h3, p, ul, dl, dd) { margin: 0; }
+/* The original relies on browser-default form controls (13.33px Arial); React's foundation.css makes them inherit 16px. */
+.customer-ops :where(button, input, select, textarea) { font-family: inherit; font-size: 13.3333px; line-height: normal; }
+.customer-ops a { color: inherit; text-decoration: none; }
+/* In the original the last block's bottom margin collapses through <main> into the footer's own top margin. */
+.customer-ops.customer-ops > :last-child { margin-bottom: 0; }
+
+/* Page header */
+.customer-ops .breadcrumb-row { margin-bottom: 18px; color: #6b7c95; font-size: 14px; }
+.customer-ops .breadcrumb-row a { color: #6b7c95; }
+.customer-ops .breadcrumb-row a:hover,
+.customer-ops .breadcrumb-row a:focus-visible { color: #3158d4; text-decoration: underline; }
+.customer-ops .breadcrumb-sep { margin: 0 6px; }
+.customer-ops .page-title-block { margin-bottom: 24px; }
+.customer-ops .page-title-block h1 { margin-bottom: 6px; color: #12284a; font-size: 46px; }
+.customer-ops .page-title-block p { color: #667a97; font-size: 16px; }
+.customer-ops .section-title-left { margin-bottom: 16px; color: #12284a; font-size: 24px; }
+.customer-ops .panel-title { color: #12284a; font-size: 24px; }
+
+/* Buttons (global.css) */
+.customer-ops .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .25s ease; }
+.customer-ops .btn-primary { background: linear-gradient(90deg, #2f6df6, #8c35ff); color: #fff; }
+.customer-ops .btn-primary:hover { opacity: .92; }
+.customer-ops .btn-outline { border: 1px solid #d8dfea; background: #fff; color: #2f6df6; }
+.customer-ops .btn-outline:hover { background: #eef4ff; }
+.customer-ops .btn-danger { background: #ef4444; color: #fff; }
+.customer-ops .btn-full { width: 100%; }
+.customer-ops .btn-light { display: inline-flex; align-items: center; justify-content: center; padding: 12px 16px; border: none; border-radius: 10px; background: #fff; color: #2563eb; font-weight: 700; }
+.customer-ops .btn:disabled,
+.customer-ops .secondary-action:disabled,
+.customer-ops .danger-action:disabled,
+.customer-ops .table-link-btn:disabled { cursor: not-allowed; opacity: .55; }
+
+/* Cards */
+.customer-ops .panel-card,
+.customer-ops .booking-card-customer,
+.customer-ops .table-card { border: 1px solid #e6ebf2; border-radius: 18px; background: #fff; box-shadow: 0 8px 20px rgba(17, 40, 75, .06); }
+.customer-ops .panel-card { padding: 20px; }
+.customer-ops .empty-state-card { padding: 28px; border: 1px solid #e8edf5; border-radius: 16px; background: #fff; color: #637793; }
+.customer-ops .gradient-panel { background: linear-gradient(90deg, #2563eb, #a21caf); color: #fff; }
+.customer-ops .gradient-panel h2 { margin-bottom: 10px; }
+.customer-ops .gradient-panel p { margin-bottom: 10px; color: #f3f4f6; }
+.customer-ops .dashboard-two-column,
+.customer-ops .support-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 24px; }
+.customer-ops .ops-state { margin-bottom: 24px; }
+.customer-ops .ops-state p { margin-bottom: 12px; }
+.customer-ops .ops-state--error { border-color: #f5c2c2; color: #a83232; }
+.customer-ops .ops-notice { margin-bottom: 18px; padding: 12px 14px; border-radius: 10px; background: #e8f7ec; color: #176b3a; font-weight: 600; }
+.customer-ops .ops-alert { margin: 0 0 14px; padding: 12px 14px; border-radius: 10px; background: #fdecec; color: #b42318; font-size: 14px; }
+
+/* My Bookings: tabs, cards */
+.customer-ops .tabs-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 26px; padding: 10px; border: 1px solid #e6ebf2; border-radius: 16px; background: #fff; }
+.customer-ops .tab-btn { padding: 12px 18px; border: none; border-radius: 12px; background: #f4f6fb; color: #4b5b73; font-weight: 700; cursor: pointer; }
+.customer-ops .tab-btn.active { background: linear-gradient(90deg, #2563eb, #a21caf); color: #fff; }
+.customer-ops .booking-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 34px; }
+.customer-ops .booking-grid > .empty-state-card { grid-column: 1 / -1; }
+.customer-ops .booking-card-customer { padding: 18px; }
+.customer-ops .booking-card-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.customer-ops .booking-card-customer h3 { color: #12284a; font-size: 20px; }
+.customer-ops .booking-provider { margin-bottom: 14px; color: #667a97; }
+.customer-ops .booking-info-line { margin-bottom: 8px; color: #50627c; font-size: 15px; }
+.customer-ops .booking-bottom-row { display: flex; justify-content: space-between; align-items: center; margin: 14px 0; padding-top: 12px; border-top: 1px solid #edf1f6; }
+.customer-ops .booking-ref { color: #667a97; font-size: 14px; }
+.customer-ops .booking-price { color: #2563eb; font-size: 30px; font-weight: 700; }
+.customer-ops .booking-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.customer-ops .booking-actions--two { grid-template-columns: repeat(2, 1fr); }
+.customer-ops .secondary-action,
+.customer-ops .danger-action { height: 42px; padding: 0; border: 1px solid #dde5f0; border-radius: 10px; background: #fff; font-weight: 700; cursor: pointer; }
+.customer-ops .danger-action { color: #ef4444; }
+.customer-ops .secondary-action:hover:not(:disabled) { background: #f5f8ff; }
+
+/* Status pills (customer.js statusClass) */
+.customer-ops .status-pill { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.customer-ops .status-accepted { background: #e8f7ec; color: #1f9d55; }
+.customer-ops .status-pending { background: #fff3e8; color: #ea580c; }
+.customer-ops .status-cancelled { background: #fdecec; color: #dc2626; }
+.customer-ops .status-refunded { background: #e8efff; color: #2563eb; }
+
+/* Tables */
+.customer-ops .table-section { margin-bottom: 32px; }
+.customer-ops .table-card { overflow-x: auto; }
+.customer-ops .data-table { width: 100%; min-width: 980px; border-collapse: collapse; }
+.customer-ops .data-table th,
+.customer-ops .data-table td { padding: 14px 18px; border-bottom: 1px solid #edf1f6; text-align: left; vertical-align: top; }
+.customer-ops .data-table th { background: #fbfcfe; color: #667a97; font-size: 12px; text-transform: uppercase; }
+.customer-ops .data-table td { color: #12284a; }
+.customer-ops .table-link-btn { padding: 0; border: none; background: transparent; color: #111827; font-weight: 600; cursor: pointer; }
+.customer-ops .table-link-btn + .table-link-btn { margin-left: 10px; }
+.customer-ops .table-link-btn:hover:not(:disabled) { color: #2563eb; }
+
+/* Modals */
+.customer-ops .modal-backdrop { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; overscroll-behavior: contain; background: rgba(15, 23, 42, .48); }
+.customer-ops .modal-card { display: flex; width: min(760px, calc(100vw - 48px)); max-height: 88vh; flex-direction: column; overflow: hidden; padding: 0; border-radius: 18px; background: #fff; box-shadow: 0 20px 50px rgba(0, 0, 0, .2); }
+.customer-ops .modal-card--confirm { width: min(400px, calc(100vw - 48px)); padding: 32px 24px; text-align: center; }
+.customer-ops .modal-card--confirm h3 { margin-bottom: 14px; color: #12284a; font-size: 22px; }
+.customer-ops .modal-card--confirm p { margin-bottom: 24px; color: #60748f; }
+.customer-ops .modal-card--confirm .ops-alert { text-align: left; }
+.customer-ops .confirm-actions { display: flex; justify-content: center; gap: 12px; }
+.customer-ops .modal-head { display: flex; flex: 0 0 auto; justify-content: space-between; align-items: center; padding: 22px 22px 16px; }
+.customer-ops .modal-head h2 { color: #12284a; font-size: 24px; }
+.customer-ops .modal-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 22px 22px; }
+.customer-ops .close-modal-btn { display: inline-flex; width: 40px; height: 40px; flex: 0 0 auto; align-items: center; justify-content: center; border: none; border-radius: 50%; background: #f4f6fb; color: #12284a; font-size: 24px; line-height: 1; cursor: pointer; transition: background .2s ease, color .2s ease; }
+.customer-ops .close-modal-btn:hover,
+.customer-ops .close-modal-btn:focus-visible { background: #e8eefb; color: #3867f6; }
+.customer-ops .close-modal-btn:focus-visible { outline: 3px solid rgba(56, 103, 246, .25); outline-offset: 2px; }
+.customer-ops .info-grid { display: grid; gap: 14px; }
+.customer-ops .info-box { padding: 14px 16px; border: 1px solid #edf1f6; border-radius: 12px; background: #f8faff; overflow-wrap: anywhere; }
+.customer-ops .info-box > strong { display: block; margin-bottom: 8px; color: #12284a; }
+.customer-ops .info-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.customer-ops .info-row > span:first-child { flex: 0 0 auto; color: #667a97; }
+.customer-ops .info-row > span:last-child { text-align: right; }
+.customer-ops .info-note { color: #667a97; font-size: 13px; }
+
+/* Support Center */
+/* supportTickets.css (employee workspace) styles .support-form globally; pin the original values here. */
+.customer-ops .support-form { display: block; margin-top: 0; }
+.customer-ops .support-form label { display: block; margin: 14px 0 8px; color: #22395d; font-size: 16px; font-weight: 700; }
+.customer-ops .support-form label span { color: #667a97; font-weight: 400; }
+.customer-ops .support-form input,
+.customer-ops .support-form select,
+.customer-ops .support-form textarea { width: 100%; padding: 12px 14px; border: 1px solid #dfe6ef; border-radius: 10px; outline: none; background: #f8faff; color: fieldtext; font-size: 14px; }
+.customer-ops .support-form input:focus,
+.customer-ops .support-form select:focus,
+.customer-ops .support-form textarea:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
+.customer-ops .support-form input[readonly] { background: #eef2f8; color: #4b5b73; }
+.customer-ops .support-form textarea { min-height: 120px; line-height: normal; resize: vertical; }
+.customer-ops .support-form [aria-invalid="true"] { border-color: #dc2626; }
+.customer-ops .field-error { display: block; margin-top: 6px; color: #dc2626; font-size: 12px; }
+.customer-ops .field-error:empty { display: none; }
+.customer-ops .support-form-hint { display: block; margin-top: 6px; color: #2563eb; font-size: 13px; }
+/* The original reserves two empty message lines (.error, .success-message: 22px each) above the button. */
+.customer-ops .support-form .btn-full { margin-top: 44px; }
+.customer-ops .support-attachment { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; padding: 10px 12px; border: 1px solid #dfe6ef; border-radius: 10px; background: #fff; font-size: 14px; }
+.customer-ops .support-attachment button { padding: 5px 9px; border: 1px solid #d8dfea; border-radius: 7px; background: #fff; color: #3158d4; font-weight: 700; cursor: pointer; }
+.customer-ops .support-sidebar { display: grid; gap: 0; align-content: start; }
+.customer-ops .faq-list { display: flex; flex-direction: column; gap: 12px; }
+.customer-ops .faq-item { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid #e7edf6; border-radius: 14px; background: #f8fbff; color: #12284a; font-weight: 700; text-align: left; cursor: pointer; }
+.customer-ops .faq-toggle { font-size: 20px; line-height: 1; }
+.customer-ops .faq-answer { margin-top: -4px; margin-bottom: 6px; padding: 0 12px 10px; color: #667a97; font-size: 14px; line-height: 1.6; }
+
+/* Tickets (later dashboard.css .ticket-card rules win in the original) */
+.customer-ops .ticket-list { display: grid; gap: 16px; }
+.customer-ops .ticket-card { padding: 18px; border: 1px solid #dbe7f5; border-radius: 8px; background: #fff; box-shadow: 0 10px 24px rgba(18, 40, 74, .07); }
+.customer-ops .ticket-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.customer-ops .ticket-card h3 { margin: 0 0 6px; color: #12284a; font-size: 18px; overflow-wrap: anywhere; }
+.customer-ops .ticket-card p { color: #60748f; }
+.customer-ops .ticket-meta { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; color: #60748f; font-size: 14px; }
+.customer-ops .ticket-meta strong { color: #12284a; }
+.customer-ops .ticket-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.customer-ops .ticket-note { margin-top: 8px; color: #667a97; font-size: 12px; }
+.customer-ops .ticket-status { display: inline-flex; align-items: center; width: fit-content; padding: 6px 10px; border-radius: 999px; background: #f1f5f9; color: #334155; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.customer-ops .ticket-status.pending,
+.customer-ops .ticket-status.open { background: #fff7ed; color: #c2410c; }
+.customer-ops .ticket-status.in-progress,
+.customer-ops .ticket-status.under-review { background: #eff6ff; color: #1d4ed8; }
+.customer-ops .ticket-status.resolved,
+.customer-ops .ticket-status.resolved-by-support { background: #ecfdf5; color: #047857; }
+.customer-ops .ticket-status.escalated,
+.customer-ops .ticket-status.rejected { background: #fef2f2; color: #dc2626; }
+.customer-ops .ticket-history { display: grid; gap: 10px; margin-top: 18px; }
+.customer-ops .ticket-history div { padding: 8px 12px; border-left: 3px solid #3867f6; border-radius: 6px; background: #f8fbff; }
+.customer-ops .ticket-history span { display: block; margin-top: 3px; color: #60748f; font-size: 13px; }
+.customer-ops .attachment-link { display: inline-block; margin-top: 8px; color: #2563eb !important; font-weight: 700; }
+
+/* Profile */
+.customer-ops .profile-edit-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.customer-ops .profile-inline-btn { min-width: 82px; padding: 10px 14px; }
+
+.customer-ops :is(.tab-btn, .secondary-action, .danger-action, .table-link-btn, .faq-item, .btn, .btn-light):focus-visible { outline: 3px solid rgba(56, 103, 246, .35); outline-offset: 2px; }
+
+@media (max-width: 1100px) {
+  .customer-ops .booking-grid,
+  .customer-ops .dashboard-two-column,
+  .customer-ops .support-layout { grid-template-columns: 1fr; }
+  .customer-ops .page-title-block h1 { font-size: 32px; }
+}
+
+@media (max-width: 640px) {
+  .customer-ops .modal-backdrop { padding: 16px; }
+  .customer-ops .modal-card { width: 100%; max-height: 90vh; }
+  .customer-ops .modal-head { padding: 18px 18px 14px; }
+  .customer-ops .modal-body { padding: 0 18px 18px; }
+  /* The original keeps booking and ticket actions in a row and the status pill beside the title at phone width. */
+}
+
+/* Customer Dashboard (front-end/CSS/dashboard.css: .dashboard-hero, .feature-card, .stat-card-dashboard, .preview-item) */
+.customer-ops .dashboard-hero { margin-bottom: 24px; padding: 28px; border-radius: 18px; background: linear-gradient(90deg, #2563eb, #a21caf); color: #fff; }
+.customer-ops .dashboard-hero h1 { margin-bottom: 8px; font-size: 38px; }
+.customer-ops .dashboard-actions-grid,
+.customer-ops .dashboard-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 24px; }
+.customer-ops .feature-card,
+.customer-ops .stat-card-dashboard { border: 1px solid #e6ebf2; border-radius: 18px; background: #fff; box-shadow: 0 8px 20px rgba(17, 40, 75, .06); }
+.customer-ops .feature-card { display: block; padding: 22px; color: #12284a; }
+.customer-ops .feature-card h3 { margin: 14px 0 8px; font-size: 22px; }
+.customer-ops .feature-card p { color: #667a97; font-size: 14px; }
+.customer-ops .feature-icon { display: grid; width: 56px; height: 56px; place-items: center; border-radius: 16px; font-size: 24px; }
+.customer-ops .feature-icon.blue { background: #e8f0ff; }
+.customer-ops .feature-icon.green { background: #eaf9ef; }
+.customer-ops .feature-icon.orange { background: #fff1e8; }
+.customer-ops .feature-icon.purple { background: #f1eaff; }
+.customer-ops .stat-card-dashboard { padding: 22px; }
+.customer-ops .stat-card-dashboard h3 { margin: 12px 0 4px; color: #12284a; font-size: 34px; }
+.customer-ops .stat-card-dashboard p { color: #667a97; }
+.customer-ops .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.customer-ops .panel-head h2 { color: #12284a; }
+.customer-ops .preview-item { padding: 14px 0; border-top: 1px solid #edf1f6; }
+.customer-ops .preview-item:first-child { border-top: none; }
+.customer-ops .preview-title { margin-bottom: 6px; color: #12284a; font-weight: 700; }
+.customer-ops .preview-meta { color: #667a97; font-size: 14px; }
+
+@media (max-width: 1100px) {
+  .customer-ops .dashboard-actions-grid,
+  .customer-ops .dashboard-stats-grid { grid-template-columns: 1fr; }
+  .customer-ops .dashboard-hero h1 { font-size: 32px; }
+}

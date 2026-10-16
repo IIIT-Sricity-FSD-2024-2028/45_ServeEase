@@ -26,5 +26,10 @@ export async function load(url, context, nextLoad) {
     if (result.errors?.length) throw new Error(`${path}: ${result.errors.map((error) => error.message).join('; ')}`)
     return { format: 'module', source: result.code, shortCircuit: true }
   }
+  // Vite defines import.meta.env; Node does not. Give source modules an empty env so they fall back to defaults.
+  if (url.endsWith('.js') && url.includes('/src/')) {
+    const source = await readFile(fileURLToPath(url), 'utf8')
+    if (source.includes('import.meta.env')) return { format: 'module', source: `import.meta.env ??= {};\n${source}`, shortCircuit: true }
+  }
   return nextLoad(url, context)
 }

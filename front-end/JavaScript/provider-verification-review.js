@@ -141,6 +141,13 @@
 
   renderInfo(state.provider);
   renderDocuments(state.provider);
+  if (window.ServeEaseAttachments && typeof window.ServeEaseAttachments.loadCanonicalDocuments === "function") {
+    window.ServeEaseAttachments.loadCanonicalDocuments(state.provider.id).then(function (documents) {
+      if (!documents) return;
+      state.provider.documents = documents;
+      renderDocuments(state.provider);
+    });
+  }
 
   const approveBtn = byId("providerVerificationApproveBtn");
   const rejectBtn = byId("providerVerificationRejectBtn");

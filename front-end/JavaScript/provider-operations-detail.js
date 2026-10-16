@@ -95,13 +95,26 @@
       ].join("");
     }
     if (!list) return;
+    renderDocumentList(provider, list);
+    const attachments = window.ServeEaseAttachments;
+    if (attachments && typeof attachments.loadCanonicalDocuments === "function") {
+      attachments.loadCanonicalDocuments(provider.id).then(function (documents) {
+        if (!documents) return;
+        provider.documents = documents;
+        renderDocumentList(provider, list);
+        annotateCanonicalDocuments(provider, list, documents);
+      });
+    }
+  }
+
+  function renderDocumentList(provider, list) {
     if (!provider.documents || !provider.documents.length) {
       list.innerHTML = '<div class="provider-operations-empty-state">No verification documents are recorded for this provider.</div>';
       return;
     }
     list.innerHTML = provider.documents.map(function (document) {
       return [
-        '<div class="provider-operations-list-item">',
+        '<div class="provider-operations-list-item" data-document-row="' + escapeHtml(document.documentId) + '">',
         '  <div class="provider-operations-document-type"><span>Document Type :</span><strong>' + escapeHtml(document.documentType || "Document") + '</strong></div>',
         '  <div class="provider-operations-document-file"><span>File Name :</span><strong title="' + escapeHtml(document.documentName || "Not submitted") + '">' + escapeHtml(document.documentName || "Not submitted") + '</strong></div>',
         '  <div class="provider-operations-document-status"><span>Status :</span>' + ops.statusChip(document.documentStatus || emptyValue) + '</div>',
@@ -116,6 +129,49 @@
     });
   }
 
+  // Reads the canonical registry's view of each document. Documents whose file was kept only in the browser
+  // that registered the provider get an explicit "Import from this browser" action, but only when this
+  // browser really holds that file; the server validates the association and reports the result.
+  function annotateCanonicalDocuments(provider, list, documents) {
+    const attachments = window.ServeEaseAttachments;
+    if (!attachments || typeof attachments.hasBrowserCopy !== "function") return;
+    (function () {
+      const canonicalById = {};
+      (documents || []).forEach(function (item) { canonicalById[item.documentId] = item; });
+      list.querySelectorAll("[data-document-row]").forEach(function (row) {
+        const documentId = row.getAttribute("data-document-row");
+        const canonical = canonicalById[documentId];
+        const action = row.querySelector(".provider-operations-document-action");
+        if (!canonical || !action) return;
+        const preview = action.querySelector("[data-preview-document]");
+        if (preview && !canonical.hasFile && canonical.message) preview.title = canonical.message;
+        if (canonical.state !== "awaiting-browser-import" || !attachments.hasBrowserCopy(provider.id, documentId) || action.querySelector("[data-import-document]")) return;
+        const button = document.createElement("button");
+        button.className = "provider-operations-inline-action";
+        button.type = "button";
+        button.setAttribute("data-import-document", documentId);
+        button.textContent = "Import from this browser";
+        const note = document.createElement("small");
+        note.setAttribute("aria-live", "polite");
+        button.addEventListener("click", function () {
+          const providerDocument = (provider.documents || []).find(function (item) { return item.documentId === documentId; });
+          button.disabled = true;
+          note.textContent = "Importing…";
+          attachments.importBrowserDocument(provider.id, providerDocument).then(function (result) {
+            note.textContent = result && result.imported ? "Imported to secure storage." : "Already stored.";
+            button.remove();
+            if (preview) preview.removeAttribute("title");
+          }).catch(function (error) {
+            note.textContent = error.message || "The import failed.";
+            button.disabled = false;
+          });
+        });
+        action.appendChild(button);
+        action.appendChild(note);
+      });
+    })();
+  }
+
   function previewDocument(provider, documentId) {
     const providerDocument = (provider.documents || []).find(function (item) { return item.documentId === documentId; });
     if (!providerDocument) return;
@@ -124,7 +180,7 @@
     }
     const message = document.createElement("div");
     message.className = "provider-operations-empty-state";
-    message.textContent = "Preview unavailable because the stored file content is missing or corrupted.";
+    message.textContent = "Document preview is unavailable on this page.";
     const list = byId("providerOperationsDocumentList");
     if (list) list.prepend(message);
   }

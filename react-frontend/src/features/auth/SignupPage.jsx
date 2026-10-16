@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { authApi } from '../../services/api'
+import { authApi, catalogApi, providerDocumentsApi } from '../../services/api'
 import { useAuth } from '../../context/useAuth'
 import { AuthFooterLinks, AuthPromo, FieldError, PasswordInput } from './AuthParts'
+import { documentFileError, uploadRegisteredDocuments } from './providerDocuments'
+import { categoryServices, signupPayload } from './signupPayload'
 import './auth.css'
 
 const initial = { fullName: '', email: '', phone: '', password: '', confirmPassword: '', organisationName: '', serviceType: '', experience: '', cityId: '', address: '', idProofType: '' }
@@ -12,7 +14,7 @@ const documentFields = [['idProof', 'ID Proof', 'Upload ID proof.'], ['addressPr
 const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/
 const sanitizers = { fullName: (value) => value.replace(/[^A-Za-z\s]/g, ''), phone: (value) => value.replace(/[^0-9]/g, '') }
 
-function validate(role, values, documents) {
+function validate(role, values, documents, offered, available) {
   const errors = {
     fullName: !/^[A-Za-z\s]{3,}$/.test(values.fullName) && 'Enter a valid full name.',
     email: !/^\S+@\S+\.\S+$/.test(values.email) && 'Enter a valid email address.',
@@ -28,8 +30,10 @@ function validate(role, values, documents) {
       cityId: !values.cityId && 'City is required.',
       address: values.address.length < 5 && 'Enter a valid address.',
       idProofType: !values.idProofType && 'Select the ID proof type.',
+      services: values.serviceType && (Object.keys(offered).length === 0 ? 'Select at least one service you offer and enter its price.'
+        : Object.entries(offered).some(([name, price]) => !available.includes(name) || !(Number(price) >= 1 && Number(price) <= 1000000)) ? 'Enter a price of at least 1 for every service you selected.' : false),
     })
-    documentFields.forEach(([name, , message]) => { if (message) errors[name] = !documents[name] && message })
+    documentFields.forEach(([name, , message]) => { const problem = documentFileError(name, documents[name]) || (message && !documents[name] && message); if (message || problem) errors[name] = problem })
   }
   return errors
 }
@@ -37,24 +41,40 @@ function validate(role, values, documents) {
 export function SignupPage() {
   const [params] = useSearchParams(); const [role, setRole] = useState(params.get('role') === 'provider' ? 'provider' : 'customer')
   const [values, setValues] = useState(initial); const [documents, setDocuments] = useState({}); const [errors, setErrors] = useState({}); const [submitted, setSubmitted] = useState(false); const [error, setError] = useState(''); const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState(null); const [categoriesError, setCategoriesError] = useState(false); const [offered, setOffered] = useState({})
   const { isAuthenticated, currentUser, establishSession } = useAuth(); const navigate = useNavigate()
+  useEffect(() => {
+    if (role !== 'provider' || categories) return undefined
+    let live = true
+    catalogApi.getCatalog().then((catalog) => { if (live) { setCategories(Array.isArray(catalog?.categories) ? catalog.categories : []); setCategoriesError(false) } }).catch(() => { if (live) setCategoriesError(true) })
+    return () => { live = false }
+  }, [role, categories])
   if (isAuthenticated) return <Navigate to={currentUser.role === 'provider' ? '/provider/dashboard' : '/customer/dashboard'} replace />
-  const update = (event) => { const { name, value } = event.target; setValues({ ...values, [name]: sanitizers[name] ? sanitizers[name](value) : value }) }
+  const update = (event) => { const { name, value } = event.target; if (name === 'serviceType') setOffered({}); setValues({ ...values, [name]: sanitizers[name] ? sanitizers[name](value) : value }) }
   const choose = (event) => setDocuments({ ...documents, [event.target.name]: event.target.files?.[0] })
   const setAccountRole = (next) => { setRole(next); setErrors({}); setSubmitted(false); setError('') }
   const stateClass = (name) => (errors[name] ? 'error-field' : submitted && name in errors ? 'success-field' : undefined)
   const field = (name, props = {}) => <div className="form-group"><input name={name} aria-label={props.placeholder} className={stateClass(name)} value={values[name]} onChange={update} {...props} /><FieldError error={errors[name]} /></div>
   const select = (name, placeholder, options) => <div className="form-group"><select name={name} aria-label={placeholder} className={`service-category-select ${stateClass(name) || ''}`} value={values[name]} onChange={update}><option value="">{placeholder}</option>{options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><FieldError error={errors[name]} /></div>
 
+  const available = categoryServices(categories || [], values.serviceType)
+  const toggleService = (name) => setOffered((current) => { const next = { ...current }; if (name in next) delete next[name]; else next[name] = ''; return next })
+
   async function submit(event) {
     event.preventDefault(); setError('')
-    const nextErrors = validate(role, values, documents)
+    const nextErrors = validate(role, values, documents, offered, available)
     setErrors(nextErrors); setSubmitted(true)
     if (Object.values(nextErrors).some(Boolean)) return
     setLoading(true)
     try {
       const documentData = Object.entries(documents).filter(([, file]) => file).map(([documentType, file]) => ({ documentType, documentName: file.name, required: ['idProof', 'addressProof', 'profilePhoto'].includes(documentType), documentStatus: 'Pending selection' }))
-      const result = await authApi.register({ ...values, role, experience: values.experience === '' ? undefined : Number(values.experience), cityId: values.cityId === '' ? undefined : Number(values.cityId), documents: documentData })
+      const result = await authApi.register(signupPayload(role, values, documentData, offered))
+      // The files themselves go to private server storage, against the document ids the server just assigned.
+      const failures = role === 'provider' ? await uploadRegisteredDocuments({ user: result.user, token: result.token, files: documents, upload: providerDocumentsApi.upload }) : []
+      if (failures.length) {
+        setError(`Your provider account was created, but ${failures.map((failure) => `${failure.name} (${failure.message})`).join('; ')} could not be uploaded. Sign in to continue; ServeEase Support can help you resubmit.`)
+        return
+      }
       establishSession(result); navigate(role === 'provider' ? '/provider/dashboard' : '/customer/dashboard', { replace: true })
     } catch (requestError) { setError(requestError.message) } finally { setLoading(false) }
   }
@@ -77,6 +97,18 @@ export function SignupPage() {
               {role === 'provider' && <div className="provider-fields">
                 {field('organisationName', { placeholder: 'Organisation Name' })}
                 {select('serviceType', 'Select Service Category', services.map((value) => [value, value]))}
+                {values.serviceType && <fieldset className="provider-services-section">
+                  <legend>Services you offer</legend>
+                  <p>Tick each service and enter your price (₹). Customers can book only the services listed here.</p>
+                  {categoriesError && <p className="error" role="alert">The service list could not be loaded. Refresh the page to try again.</p>}
+                  {!categoriesError && !categories && <p>Loading services…</p>}
+                  {categories && !available.length && !categoriesError && <p className="error" role="alert">No services are available for this category yet.</p>}
+                  {available.map((name) => <div className="provider-service-row" key={name}>
+                    <label><input checked={name in offered} onChange={() => toggleService(name)} type="checkbox" /> {name}</label>
+                    {name in offered && <input aria-label={`${name} price in rupees`} className="provider-service-price" inputMode="decimal" min="1" onChange={(event) => setOffered({ ...offered, [name]: event.target.value })} placeholder="Price (₹)" step="0.01" type="number" value={offered[name]} />}
+                  </div>)}
+                  <FieldError error={errors.services} />
+                </fieldset>}
                 {field('experience', { type: 'number', placeholder: 'Experience', min: 0, max: 50 })}
                 {select('cityId', 'Select City', cities)}
                 {field('address', { placeholder: 'Address', autoComplete: 'street-address' })}

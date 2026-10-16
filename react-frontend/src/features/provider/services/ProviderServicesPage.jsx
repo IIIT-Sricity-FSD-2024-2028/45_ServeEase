@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ServiceCard } from './ServiceCard'
 import { useAuth } from '../../../context/useAuth'
 import { catalogApi } from '../../../services/api'
 import { ProviderAvailabilityPanel } from '../availability/ProviderAvailabilityPanel'
-import './providerServices.css'
+import '../providerPortal.css'
 
 const emptyService = { name: '', description: '', price: '', location: '' }
 
@@ -24,7 +25,6 @@ export function ProviderServicesPage() {
   const [services, setServices] = useState([])
   const [isLoading, setIsLoading] = useState(Boolean(providerId))
   const [error, setError] = useState('')
-  const [query, setQuery] = useState('')
   const [editingService, setEditingService] = useState(null)
   const [form, setForm] = useState(emptyService)
   const [isSaving, setIsSaving] = useState(false)
@@ -53,13 +53,6 @@ export function ProviderServicesPage() {
 
     return () => { active = false }
   }, [providerId, role])
-
-  const visibleServices = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    if (!normalizedQuery) return services
-    return services.filter((service) => [service.name, service.category, service.description, service.location, service.status]
-      .some((value) => String(value || '').toLowerCase().includes(normalizedQuery)))
-  }, [query, services])
 
   const closeModal = () => {
     setEditingService(null)
@@ -120,41 +113,42 @@ export function ProviderServicesPage() {
   }
 
   if (!isAuthenticated || role !== 'provider') {
-    return <section className="provider-services-page"><div className="provider-feedback">Please sign in with a provider account to manage services.</div></section>
+    return <section className="provider-portal"><div className="panel-card ops-state">Please sign in with a provider account to manage services.</div></section>
   }
 
   if (!providerId) {
-    return <section className="provider-services-page"><div className="provider-feedback provider-feedback--error">Your provider profile could not be identified.</div></section>
+    return <section className="provider-portal"><div className="panel-card ops-state ops-state--error">Your provider profile could not be identified.</div></section>
   }
 
   return (
-    <section className="provider-services-page">
-      <div className="provider-breadcrumb">Provider Dashboard <span aria-hidden="true">›</span> <strong>Manage Services</strong></div>
-      <div className="provider-page-title">
-        <div><h1>Manage Services</h1><p>Manage your service listings, activation status, and availability slots.</p></div>
-        <button className="provider-primary-button" onClick={openAdd} type="button">+ Add New Service</button>
-      </div>
-      {error && <div className="provider-feedback provider-feedback--error" role="alert">{error}</div>}
-      <div className="provider-services-layout">
-        <div className="provider-services-panel">
-        <div className="provider-panel-head"><h2>Your Services</h2><label className="provider-search">Search services<input onChange={(event) => setQuery(event.target.value)} placeholder="Search services..." value={query} /></label></div>
-        {showLoading && <div className="provider-feedback">Loading your services…</div>}
-        {!showLoading && !error && visibleServices.length === 0 && <div className="provider-feedback">{services.length ? 'No services found for the current search.' : 'You have not added any services yet.'}</div>}
-        {!showLoading && visibleServices.length > 0 && <div className="provider-service-grid">
-          {visibleServices.map((service) => <ServiceCard key={service.id} isUpdating={updatingId === service.id} onEdit={openEdit} onToggle={toggleService} service={service} />)}
-        </div>}
+    <section className="provider-portal">
+      <div className="breadcrumb-row"><Link to="/provider/dashboard">Provider Dashboard</Link> &nbsp;›&nbsp; <strong>Manage Services &amp; Availability</strong></div>
+      <section className="page-title-block provider-page-title"><h1>Manage Services</h1><p>Manage your service listings, activation status, and availability slots.</p></section>
+      {error && !editingService && <div className="panel-card ops-state ops-state--error" role="alert">{error}</div>}
+      <section className="provider-services-layout">
+        <div className="panel-card">
+          <div className="panel-head"><h2>Your Services</h2><button className="btn btn-primary" onClick={openAdd} type="button">+ Add New Service</button></div>
+          <div className="provider-service-grid" id="providerServiceGrid">
+            {showLoading && <div className="superuser-empty-state">Loading your services…</div>}
+            {!showLoading && services.length === 0 && !error && <div className="superuser-empty-state">You have not added any services yet.</div>}
+            {!showLoading && services.map((service) => <ServiceCard key={service.id} isUpdating={updatingId === service.id} onEdit={openEdit} onToggle={toggleService} service={service} />)}
+          </div>
         </div>
-        <div className="provider-services-panel provider-availability-services-panel"><div className="provider-panel-head"><h2>Availability Management</h2></div><ProviderAvailabilityPanel embedded providerId={providerId} /></div>
-      </div>
-      {editingService && <div className="provider-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isSaving) closeModal() }}>
-        <div aria-modal="true" className="provider-modal-card" role="dialog">
-          <div className="provider-modal-head"><h2>{editingService.isNew ? 'Add New Service' : 'Edit Service'}</h2><button aria-label="Close" disabled={isSaving} onClick={closeModal} type="button">×</button></div>
-          <form className="provider-service-form" onSubmit={saveService}>
-            <label>Service Name<input maxLength="120" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required value={form.name} /></label>
-            <label>Service Description<textarea maxLength="1000" onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} required value={form.description} /></label>
-            <label>Price (₹)<input min="1" onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} required type="number" value={form.price} /></label>
-            <label>Service Location<input maxLength="120" onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} required value={form.location} /></label>
-            <div className="provider-modal-actions"><button className="provider-primary-button" disabled={isSaving} type="submit">{isSaving ? 'Saving…' : 'Save Changes'}</button><button className="provider-secondary-button" disabled={isSaving} onClick={closeModal} type="button">Cancel</button></div>
+        <div className="panel-card"><div className="panel-head"><h2>Availability Management</h2></div><div id="providerAvailabilityPanel"><ProviderAvailabilityPanel embedded providerId={providerId} /></div></div>
+      </section>
+      {editingService && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isSaving) closeModal() }}>
+        <div aria-labelledby="providerServiceModalTitle" aria-modal="true" className="modal-card provider-modal-card" role="dialog">
+          <div className="modal-head"><h2 id="providerServiceModalTitle">{editingService.isNew ? 'Add New Service' : 'Edit Service'}</h2><button aria-label="Close" className="close-modal-btn" disabled={isSaving} onClick={closeModal} type="button">×</button></div>
+          <form className="provider-modal-form" onSubmit={saveService}>
+            <label htmlFor="providerServiceName">Service Name</label>
+            <input id="providerServiceName" maxLength="120" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="Enter service name" required value={form.name} />
+            <label htmlFor="providerServiceDescription">Service Description</label>
+            <textarea id="providerServiceDescription" maxLength="1000" onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="Enter service description" required value={form.description} />
+            <div className="two-col-form"><div><label htmlFor="providerServicePrice">Price (₹)</label><input id="providerServicePrice" min="1" onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} placeholder="799" required type="number" value={form.price} /></div></div>
+            <label htmlFor="providerServiceLocation">Service Location</label>
+            <input id="providerServiceLocation" maxLength="120" onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} placeholder="Enter service city" required value={form.location} />
+            <small className="error" id="providerServiceError" role="alert">{error}</small>
+            <div className="provider-modal-actions"><button className="btn btn-primary" disabled={isSaving} type="submit">{isSaving ? 'Saving…' : 'Save Changes'}</button><button className="secondary-btn" disabled={isSaving} onClick={closeModal} type="button">Cancel</button></div>
           </form>
         </div>
       </div>}

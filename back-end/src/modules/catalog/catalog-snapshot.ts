@@ -12,7 +12,7 @@ export interface CatalogSnapshotResult {
   error?: string;
 }
 
-const CATEGORY_IMAGES: Record<string, string> = {
+export const CATEGORY_IMAGES: Record<string, string> = {
   'home-cleaning': 'assets/images/home-cleaning/clean1.jpg',
   carpentry: 'assets/images/carpentry/carpentry1.jpg.jpeg',
   painting: 'assets/images/painting/painting1.jpg.jpeg',

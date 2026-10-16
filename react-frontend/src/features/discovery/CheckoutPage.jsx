@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { availabilityApi, bookingsApi, catalogApi } from '../../services/api'
-import { availabilityProviderId, bookableServices, formatCurrency, formatDisplayDate, formatSlot, paymentMethodLabel, validateCustomerDetails, validatePayment } from './catalogModel'
+import { availabilityProviderId, bookableServices, formatCurrency, formatDisplayDate, paymentMethodLabel, validateCustomerDetails, validatePayment } from './catalogModel'
 import { readJourney, saveJourney } from './journeyState'
 import './journey.css'
 
@@ -151,7 +151,7 @@ export function CheckoutPage() {
           <div className="checkout-info-row"><span>Service Category</span><strong>{category?.name || '-'}</strong></div>
           <div className="checkout-info-row"><span>Service Location</span><strong>{provider.location || '-'}</strong></div>
           <div className="checkout-info-row"><span>Booking Date</span><strong>{formatDisplayDate(selection.date)}</strong></div>
-          <div className="checkout-info-row"><span>Time Slot</span><strong>{formatSlot(selection.time)}</strong></div>
+          <div className="checkout-info-row"><span>Time Slot</span><strong>{selection.time}</strong></div>
         </div>
 
         <div className="checkout-card">
@@ -221,7 +221,7 @@ export function CheckoutPage() {
           <div className="checkout-info-row"><span>Service:</span><strong>{service.name}</strong></div>
           <div className="checkout-info-row"><span>Provider:</span><strong>{provider.name}</strong></div>
           <div className="checkout-info-row"><span>Date:</span><strong>{formatDisplayDate(selection.date)}</strong></div>
-          <div className="checkout-info-row"><span>Time:</span><strong>{formatSlot(selection.time)}</strong></div>
+          <div className="checkout-info-row"><span>Time:</span><strong>{selection.time}</strong></div>
           <div className="checkout-total-row compact"><span>Total:</span><strong>{formatCurrency(total)}</strong></div>
           <button className="btn btn-primary btn-full" type="button" disabled={submitting || Boolean(alreadyBooked) || slotUnavailable} onClick={confirm}>{submitting ? 'Submitting booking…' : 'Confirm Booking'}</button>
           <button className="secondary-btn full-width-btn" type="button" disabled={submitting} onClick={() => navigate(profileUrl)}>Cancel Booking</button>

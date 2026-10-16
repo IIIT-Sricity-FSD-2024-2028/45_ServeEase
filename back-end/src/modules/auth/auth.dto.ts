@@ -1,11 +1,19 @@
-import { IsEmail, IsIn, IsInt, IsOptional, IsString, Matches, Max, Min, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ArrayMaxSize, IsArray, IsEmail, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
+import { EMPLOYEE_DEPARTMENTS } from '../../common/employee-departments';
 
 export class LoginDto {
   @IsOptional() @IsEmail() email?: string;
   @IsString() password!: string;
   @IsIn(['customer', 'provider', 'employee', 'superuser']) role!: string;
   @IsOptional() @IsString() employeeId?: string;
-  @IsOptional() @IsIn(['Customer Operations', 'Provider Operations', 'Support']) department?: string;
+  @IsOptional() @IsIn(EMPLOYEE_DEPARTMENTS) department?: string;
+}
+
+// A service the provider offers from registration: a sub-service of the chosen category and the provider's own price.
+export class RegisterServiceDto {
+  @IsString() @MinLength(1) @MaxLength(120) name!: string;
+  @IsNumber({ maxDecimalPlaces: 2 }) @Min(1) @Max(1000000) price!: number;
 }
 
 export class RegisterDto {
@@ -21,4 +29,5 @@ export class RegisterDto {
   @IsOptional() @IsString() @MinLength(5) address?: string;
   @IsOptional() @IsIn(['Aadhaar', 'PAN', 'Driving License']) idProofType?: string;
   @IsOptional() documents?: Array<Record<string, unknown>>;
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({ each: true }) @Type(() => RegisterServiceDto) services?: RegisterServiceDto[];
 }

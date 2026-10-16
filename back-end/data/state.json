@@ -223,7 +223,6 @@
       ],
       "recentRegistrations": [
         "CUS011",
-        "PRO013",
         "CUS002",
         "PRO001",
         "CUS003"
@@ -322,20 +321,6 @@
           "verified": true,
           "adminRemarks": "",
           "category": "Home cleaning"
-        },
-        {
-          "id": "PRO013",
-          "fullName": "Anita Verma",
-          "organisationName": "Anita Beauty Studio",
-          "email": "anita.verma@email.com",
-          "phone": "+91 9876543230",
-          "category": "Salon Services",
-          "experience": 5,
-          "location": "Mumbai",
-          "registrationDate": "8 Mar 2026",
-          "approvalStatus": "Active",
-          "status": "Active",
-          "blockReason": ""
         },
         {
           "id": "PRO137",
@@ -9116,6 +9101,66 @@
               "action": "Customer activated",
               "previousStatus": "Blocked",
               "newStatus": "Active",
+              "reason": "test success",
+              "remarks": "",
+              "dateTime": "2026-10-15T21:18:50.636Z",
+              "performedBy": "Customer Operations",
+              "performedById": "EMP-CO-001"
+            },
+            {
+              "action": "Customer suspended",
+              "previousStatus": "Active",
+              "newStatus": "Blocked",
+              "reason": "test case",
+              "remarks": "",
+              "dateTime": "2026-10-15T18:40:56.458Z",
+              "performedBy": "Customer Operations",
+              "performedById": "EMP-CO-001"
+            },
+            {
+              "action": "Customer activated",
+              "previousStatus": "Blocked",
+              "newStatus": "Active",
+              "reason": "test case",
+              "remarks": "",
+              "dateTime": "2026-10-15T17:53:51.852Z",
+              "performedBy": "Customer Operations",
+              "performedById": "EMP-CO-001"
+            },
+            {
+              "action": "Customer suspended",
+              "previousStatus": "Active",
+              "newStatus": "Blocked",
+              "reason": "test case",
+              "remarks": "",
+              "dateTime": "2026-10-15T17:50:05.058Z",
+              "performedBy": "Customer Operations",
+              "performedById": "EMP-CO-001"
+            },
+            {
+              "action": "Customer activated",
+              "previousStatus": "Blocked",
+              "newStatus": "Active",
+              "reason": "test success",
+              "remarks": "",
+              "dateTime": "2026-10-15T10:10:14.554Z",
+              "performedBy": "Customer Operations",
+              "performedById": "EMP-CO-001"
+            },
+            {
+              "action": "Customer suspended",
+              "previousStatus": "Active",
+              "newStatus": "Blocked",
+              "reason": "test case",
+              "remarks": "",
+              "dateTime": "2026-10-15T10:09:20.348Z",
+              "performedBy": "Customer Operations",
+              "performedById": "EMP-CO-001"
+            },
+            {
+              "action": "Customer activated",
+              "previousStatus": "Blocked",
+              "newStatus": "Active",
               "reason": "ok",
               "remarks": "",
               "dateTime": "2026-08-24T19:43:40.567Z",
@@ -9263,8 +9308,27 @@
           "status": "Active",
           "verified": true,
           "adminRemarks": "",
-          "suspensionReason": "test",
           "statusHistory": [
+            {
+              "dateTime": "2026-10-16T05:45:17.330Z",
+              "action": "Provider activated",
+              "previousStatus": "Suspended",
+              "newStatus": "Active",
+              "reason": "test done",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
+            {
+              "dateTime": "2026-10-15T17:54:44.655Z",
+              "action": "Provider suspended",
+              "previousStatus": "Active",
+              "newStatus": "Suspended",
+              "reason": "test case",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
             {
               "dateTime": "25-08-2026 01:14 AM",
               "action": "Provider activated",
@@ -9366,25 +9430,6 @@
           "passwordHash": "6642052dc8eb21e82ce571e71681945c:d48b54c1f0d1dbf30efbcf85ec79dfc8212acc449e4321cafdfdc2865eea5f8b567c9f8e6fcf0f98bf1ce7328a982778c85d6f2ceba875cf32a875ffcf8e3ceb"
         },
         {
-          "id": "PRO-CAT-005",
-          "role": "provider",
-          "fullName": "Cleanpro Service",
-          "organisationName": "Cleanpro Service",
-          "email": "cleanpro-service@serveease.com",
-          "phone": "9100000004",
-          "password": "Password@123",
-          "serviceType": "Home Cleaning",
-          "experience": 8,
-          "address": "Chennai, Tamil Nadu",
-          "providerCatalogId": "cleanpro-service",
-          "serviceSubcategory": "Full Home Cleaning",
-          "cityId": 1,
-          "cityName": "Chennai",
-          "location": "Chennai",
-          "registrationDate": "2023-10-02",
-          "accountStatus": "Active"
-        },
-        {
           "id": "PRO-CAT-019",
           "role": "provider",
           "fullName": "Fresh Space Cleaning",
@@ -9401,7 +9446,32 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "status": "Active",
+          "approvalStatus": "Active",
+          "adminRemarks": "",
+          "statusHistory": [
+            {
+              "dateTime": "2026-10-15T12:19:59.059Z",
+              "action": "Provider activated",
+              "previousStatus": "Suspended",
+              "newStatus": "Active",
+              "reason": "test success",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
+            {
+              "dateTime": "2026-10-15T11:35:08.801Z",
+              "action": "Provider suspended",
+              "previousStatus": "Active",
+              "newStatus": "Suspended",
+              "reason": "many complaint from customers",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            }
+          ]
         },
         {
           "id": "PRO-CAT-019",
@@ -9733,7 +9803,6 @@
           "organisationName": "AllFix Appliances",
           "email": "allfix-appliances@serveease.com",
           "phone": "9100000035",
-          "password": "Password@123",
           "serviceType": "Appliance Repair / Installation",
           "experience": 8,
           "address": "Hyderabad, Telangana",
@@ -9743,7 +9812,8 @@
           "cityName": "Hyderabad",
           "location": "Hyderabad",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "f6d53825c8e89d780a70fc9806d4c107:708b31fa73bf876939d778ec632032f89acca935c9e7885063db4bd9e34fa9e3ad570a4de779b1bd59dd3f0b8a3ee944faf8491de25356be29dd1245b74d9178"
         },
         {
           "id": "PRO-CAT-037",
@@ -11735,21 +11805,6 @@
           "accountStatus": "Active"
         },
         {
-          "id": "PRO123",
-          "role": "provider",
-          "fullName": "Koushik Sreeraj",
-          "email": "koushik@gmail.com",
-          "phone": "9198765000",
-          "password": "Koushik@123",
-          "organisationName": "Sreeraj Services",
-          "serviceType": "Electrician",
-          "experience": 5,
-          "address": "123 MG Road, Chennai, Tamil Nadu",
-          "providerCatalogId": "sreeraj-services",
-          "registrationDate": "2024-05-09",
-          "accountStatus": "Active"
-        },
-        {
           "id": "CUS002",
           "role": "customer",
           "fullName": "Bandaru Surya",
@@ -11825,24 +11880,6 @@
           "address": "Bangalore",
           "providerCatalogId": "cleanpro-services-home-cleaning-1",
           "registrationDate": "2025-03-03",
-          "accountStatus": "Active"
-        },
-        {
-          "id": "PRO-CAT-005",
-          "role": "provider",
-          "fullName": "RMD plumbers",
-          "organisationName": "RMD plumbers",
-          "email": "rmd-plumbers-plumbing-1@serveease.com",
-          "phone": "9100000004",
-          "password": "Password@123",
-          "serviceType": "Plumbing",
-          "experience": 5,
-          "cityId": 1,
-          "cityName": "Chennai",
-          "location": "Chennai",
-          "address": "123 MG Road, Chennai, Tamil Nadu",
-          "providerCatalogId": "rmd-plumbers-plumbing-1",
-          "registrationDate": "2023-10-02",
           "accountStatus": "Active"
         },
         {
@@ -11941,7 +11978,6 @@
           "fullName": "Surya",
           "email": "S@gmail.com",
           "phone": "9875468705",
-          "password": "Password@123",
           "organisationName": "Surya Services",
           "serviceType": "Salon at Home",
           "experience": 4,
@@ -11951,7 +11987,8 @@
           "address": "145 MG Road, Hyderabad, Telangana",
           "providerCatalogId": "surya-services",
           "approvalStatus": "Active",
-          "registrationDate": "5 May 2026"
+          "registrationDate": "5 May 2026",
+          "passwordHash": "3949e4773afb2a02549b2667fa6a65c3:9122553c18095deea85139ed7ee01acb645e34f2f28945c33f630d5dfcfb2ce5040b49b19142facaff657911cc23802f2620a74cde92e6ffbf435d4742dd2db0"
         },
         {
           "id": "PRO136",
@@ -11988,26 +12025,6 @@
           "providerCatalogId": "ramesh-solutions",
           "approvalStatus": "Active",
           "registrationDate": "5 May 2026"
-        },
-        {
-          "id": "PRO013",
-          "fullName": "Anita Verma",
-          "organisationName": "Anita Beauty Studio",
-          "email": "anita.verma@email.com",
-          "phone": "+91 9876543230",
-          "category": "Salon Services",
-          "experience": 5,
-          "location": "Mumbai",
-          "registrationDate": "8 Mar 2026",
-          "approvalStatus": "Active",
-          "status": "Active",
-          "role": "provider",
-          "password": "",
-          "serviceType": "Salon Services",
-          "cityId": "",
-          "cityName": "Mumbai",
-          "address": "",
-          "providerCatalogId": ""
         },
         {
           "id": "PRO138",
@@ -12234,11 +12251,36 @@
           "fullName": "Abhi",
           "email": "abhi@gmail.com",
           "phone": "8521479631",
-          "password": "Password@123",
           "location": "Chennai",
           "cityName": "Chennai",
           "registrationDate": "2023-11-27",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "c3b4f7da1f4348e2a77a98f4a4a13371:872453ed87ab4c881f9d60a27b2bb2b665d9f918a2974e702819b46385ea3e121be9af114d7cd0d88f4d8fc7c7cc2fdbaf887669c00acb64b4845fd16db5a967",
+          "status": "Active",
+          "blockReason": "",
+          "adminRemarks": "",
+          "statusHistory": [
+            {
+              "action": "Customer activated",
+              "previousStatus": "Blocked",
+              "newStatus": "Active",
+              "reason": "Workflow verification complete",
+              "remarks": "",
+              "dateTime": "2026-10-15T10:05:49.275Z",
+              "performedBy": "Customer Operations",
+              "performedById": "EMP-CO-001"
+            },
+            {
+              "action": "Customer suspended",
+              "previousStatus": "Active",
+              "newStatus": "Blocked",
+              "reason": "Verification of the Customer Operations suspend workflow",
+              "remarks": "Reactivated immediately after the check",
+              "dateTime": "2026-10-15T10:05:20.183Z",
+              "performedBy": "Customer Operations",
+              "performedById": "EMP-CO-001"
+            }
+          ]
         },
         {
           "id": "CUS012",
@@ -12635,89 +12677,65 @@
           "accountStatus": "Active"
         },
         {
-          "id": "PRO015",
-          "fullName": "Manoj Singh",
-          "organisationName": "Singh Appliance Care",
-          "email": "manoj.singh@email.com",
-          "phone": "+91 9876543237",
-          "category": "Appliance Repair",
-          "serviceType": "Appliance Repair",
-          "experience": 5,
-          "cityId": "",
-          "cityName": "Delhi",
-          "location": "Delhi",
-          "address": "Rohini, Delhi, NCR",
-          "registrationDate": "2026-02-10T12:00:00.000Z",
+          "id": "PRO146",
+          "role": "provider",
+          "fullName": "Hemanth Kumar",
+          "email": "hk.a@gmail.com",
+          "phone": "9874563555",
+          "passwordHash": "6ccbab756e723f9fb05cb1c9a7006b25:5e77b2be6cd98aff3e17fca4ca83d4afcca550e317030c2e4f75d71feb8d6a4ada819a8d831f603598a195bf4786d914d6c7b72bb109543191103edc33fa4ad8",
+          "registrationDate": "16/10/2026",
+          "organisationName": "Darling Solutions",
+          "serviceType": "Salon at Home",
+          "experience": 3,
+          "cityId": 3,
+          "cityName": "Hyderabad",
+          "location": "Hyderabad",
+          "address": "123, Charminar Rd, Hyderabad",
+          "idProofType": "Aadhaar",
+          "documents": [
+            {
+              "documentType": "profilePhoto",
+              "documentName": "saloon2.jpg.jpeg",
+              "required": true,
+              "documentStatus": "Pending selection",
+              "documentId": "DOC-PRO146-1"
+            },
+            {
+              "documentType": "idProof",
+              "documentName": "IIITS Mess Menu revised Aug 2026.pdf",
+              "required": true,
+              "documentStatus": "Pending selection",
+              "documentId": "DOC-PRO146-2"
+            },
+            {
+              "documentType": "addressProof",
+              "documentName": "videoframe_1276698.png",
+              "required": true,
+              "documentStatus": "Pending selection",
+              "documentId": "DOC-PRO146-3"
+            }
+          ],
           "approvalStatus": "Active",
-          "status": "Active",
           "verificationStatus": "Verified",
-          "providerCatalogId": "PRO015",
-          "role": "provider"
+          "accountStatus": "Active",
+          "status": "Active",
+          "verified": true,
+          "adminRemarks": "GOOD",
+          "statusHistory": [
+            {
+              "dateTime": "2026-10-15T20:20:47.483Z",
+              "action": "Verification approved",
+              "previousStatus": "Under Verification",
+              "newStatus": "Active",
+              "reason": "",
+              "remarks": "GOOD",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            }
+          ]
         }
       ],
       "providerApprovalRequests": [
-        {
-          "id": "PRO015",
-          "fullName": "Manoj Singh",
-          "organisationName": "Singh Appliance Care",
-          "email": "manoj.singh@email.com",
-          "phone": "+91 9876543237",
-          "category": "Appliance Repair",
-          "experience": 5,
-          "location": "Ahmedabad",
-          "registrationDate": "10 Feb 2026",
-          "approvalStatus": "Active",
-          "role": "provider",
-          "serviceType": "Appliance Repair",
-          "documents": [
-            {
-              "documentId": "DOC-PRO015-1",
-              "documentType": "ID Proof",
-              "documentName": "Aadhaar Card",
-              "documentUrl": "/documents/providers/PRO015/id-proof.pdf",
-              "documentStatus": "Approved",
-              "required": true,
-              "uploadedAt": "2026-03-08T10:30:00.000Z"
-            },
-            {
-              "documentId": "DOC-PRO015-2",
-              "documentType": "Address Proof",
-              "documentName": "Electricity Bill",
-              "documentUrl": "/documents/providers/PRO015/address-proof.pdf",
-              "documentStatus": "Approved",
-              "required": true,
-              "uploadedAt": "2026-03-08T10:30:00.000Z"
-            },
-            {
-              "documentId": "DOC-PRO015-3",
-              "documentType": "Skill Certificate",
-              "documentName": "Skill Training Certificate",
-              "documentUrl": "/documents/providers/PRO015/skill-certificate.pdf",
-              "documentStatus": "Approved",
-              "required": false,
-              "uploadedAt": "2026-03-08T10:30:00.000Z"
-            },
-            {
-              "documentId": "DOC-PRO015-4",
-              "documentType": "Experience Proof",
-              "documentName": "Previous Employer Letter",
-              "documentUrl": "/documents/providers/PRO015/experience-proof.pdf",
-              "documentStatus": "Approved",
-              "required": false,
-              "uploadedAt": "2026-03-08T10:30:00.000Z"
-            },
-            {
-              "documentId": "DOC-PRO015-5",
-              "documentType": "Profile Photo",
-              "documentName": "Profile Photo",
-              "documentUrl": "/documents/providers/PRO015/profile-photo.pdf",
-              "documentStatus": "Approved",
-              "required": true,
-              "uploadedAt": "2026-03-08T10:30:00.000Z"
-            }
-          ],
-          "verificationStatus": "Verified"
-        },
         {
           "id": "PRO138",
           "role": "provider",
@@ -13509,7 +13527,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-13T13:29:28.293Z"
+    "updatedAt": "2026-10-16T05:45:17.330Z"
   },
   {
     "key": "serveEaseSupportModuleData",
@@ -21562,6 +21580,31 @@
     "value": {
       "bookings": [
         {
+          "service": "Washing Machine",
+          "provider": "AllFix Appliances",
+          "providerId": "allfix-appliances",
+          "date": "2026-10-16",
+          "time": "09:00-12:00",
+          "address": "21 Test Street, Bengaluru",
+          "amount": 599,
+          "serviceFee": 599,
+          "customerTotal": 599,
+          "customerId": "CUS011",
+          "customerName": "Abhi Tester",
+          "customerPhone": "9876501234",
+          "customerEmail": "abhi@gmail.com",
+          "status": "Cancelled",
+          "category": "appliance-repair-installation",
+          "paymentStatus": "Pending",
+          "id": "BOOK-20261015-1405-0013",
+          "createdAt": "2026-10-15T08:35:58.370Z",
+          "paymentDate": "2026-10-15",
+          "statusUpdatedAt": "2026-10-15T08:37:04.839Z",
+          "stateVersion": 2,
+          "cancellationActor": "Customer",
+          "cancelledAt": "2026-10-15T08:37:04.839Z"
+        },
+        {
           "service": "Bathroom Cleaning",
           "provider": "Cleanpro Services",
           "providerId": "PRO001",
@@ -22032,7 +22075,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-14T21:48:13.497Z"
+    "updatedAt": "2026-10-15T08:37:04.839Z"
   },
   {
     "key": "serveEaseEmployeeModuleData",
@@ -22045,7 +22088,7 @@
           "permissions": [
             "CUSTOMER_OPERATIONS"
           ],
-          "password": "Password@123"
+          "passwordHash": "68c05080256ab868bb95c1f78601e840:6284f775c3ea0c6563d784edcaa7610ac87a4e3f3b8b1691b7d59c540dc5ae6dc466bec110b2ff142530c7c45d4b2d0cd0164ffffc063bb815d4f5e7eeca3df4"
         },
         {
           "employeeId": "EMP-PO-001",
@@ -22054,7 +22097,7 @@
           "permissions": [
             "PROVIDER_OPERATIONS"
           ],
-          "password": "Password@123"
+          "passwordHash": "7ff1c8789a70219edfdfe9e3110f995b:68e8825cc07218d9f9a091fea7e822f726719640e69b8cb29539276f73118efe0b5e608b35188451e59f65056e0d763c91143371285dbc4bd2df1223e4ddc86b"
         },
         {
           "employeeId": "EMP-SUP-001",
@@ -22089,7 +22132,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-13T14:15:07.907Z"
+    "updatedAt": "2026-10-15T09:48:15.240Z"
   },
   {
     "key": "serveEaseCustomerModuleData:CUS002",
@@ -22682,26 +22725,6 @@
     "updatedAt": "2026-10-13T12:50:26.100Z"
   },
   {
-    "key": "serveEaseProviderServices:PRO-CAT-005",
-    "value": {
-      "providerId": "PRO-CAT-005",
-      "services": [
-        {
-          "id": "SVC001",
-          "name": "Full Home Cleaning",
-          "category": "Home Cleaning",
-          "description": "Full Home Cleaning offered by Cleanpro Services",
-          "price": 499,
-          "duration": "2 hours",
-          "status": "Active",
-          "isActive": true
-        }
-      ],
-      "updatedAt": "2026-09-02T21:18:25.090Z"
-    },
-    "updatedAt": "2026-09-02T21:18:25.090Z"
-  },
-  {
     "key": "serveEaseAvailabilityWeekly:sparkle-home-care",
     "value": {
       "providerId": "sparkle-home-care",
@@ -23050,6 +23073,37 @@
     "key": "serveEaseCanonicalTickets",
     "value": {
       "tickets": [
+        {
+          "ticketId": "TKT-20261015-941768",
+          "raisedByType": "customer",
+          "raisedById": "CUS011",
+          "raisedByName": "Abhi Tester",
+          "raisedByEmail": "abhi@gmail.com",
+          "raisedByPhone": "9876501234",
+          "relatedBookingId": "BOOK-20261015-1405-0013",
+          "providerId": "allfix-appliances",
+          "providerName": "AllFix Appliances",
+          "customerId": "CUS011",
+          "customerName": "Abhi Tester",
+          "ticketType": "Late Arrival",
+          "subject": "Provider arrival check",
+          "description": "Verification ticket: checking that the React support form submits to the backend.",
+          "priority": "Low",
+          "status": "Pending",
+          "escalationReason": "",
+          "assignedSupportId": "SUP001",
+          "assignedSupportName": "Priya Sharma",
+          "createdAt": "2026-10-15T08:36:55.290Z",
+          "updatedAt": "2026-10-15T08:36:55.290Z",
+          "statusHistory": [
+            {
+              "status": "Pending",
+              "note": "Ticket created by customer.",
+              "updatedBy": "Customer",
+              "updatedAt": "2026-10-15T08:36:55.290Z"
+            }
+          ]
+        },
         {
           "ticketId": "TICKET-2026-039844",
           "raisedByType": "customer",
@@ -25025,5 +25079,784 @@
       ]
     },
     "updatedAt": "2026-10-12T20:32:43.704Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO124:0000-01-01",
+    "value": {
+      "providerId": "PRO124",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T07:25:26.519Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO139:0000-01-01",
+    "value": {
+      "providerId": "PRO139",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T07:25:26.543Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO136:0000-01-01",
+    "value": {
+      "providerId": "PRO136",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T07:25:26.594Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO137:0000-01-01",
+    "value": {
+      "providerId": "PRO137",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T07:25:26.616Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO138:0000-01-01",
+    "value": {
+      "providerId": "PRO138",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T07:25:26.638Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO127:0000-01-01",
+    "value": {
+      "providerId": "PRO127",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T07:25:26.661Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:allfix-appliances:0000-01-01",
+    "value": {
+      "providerId": "allfix-appliances",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T08:35:50.040Z"
+  },
+  {
+    "key": "serveEaseProviderDocumentRegistry",
+    "value": {
+      "version": 1,
+      "documents": [
+        {
+          "documentId": "DOC-PRO144-1",
+          "providerAccountId": "PRO144",
+          "ownerEmail": "sreeraj.p@gmail.com",
+          "providerListingId": "PRO144",
+          "documentType": "ID Proof - Aadhaar",
+          "verificationStatus": "Approved",
+          "originalFilename": "React Conversion of Category Services Page.pdf",
+          "mimeType": "application/pdf",
+          "size": 82323,
+          "sha256": "5a7ff9b9a47404e604d24d0f98c4241af6b9d2f6c410f2fbad6e03a98f0a0ace",
+          "storageKey": "5a7ff9b9a47404e604d24d0f98c4241af6b9d2f6c410f2fbad6e03a98f0a0ace.pdf",
+          "source": "legacy-server-upload",
+          "sourceReference": "/uploads/verification/1788202645859-742cea73-94ec-4680-a26e-cf38a44dedf0.pdf",
+          "recordOrigin": "approval-request",
+          "createdAt": "2026-10-15T17:06:29.852Z",
+          "updatedAt": "2026-10-15T17:06:29.852Z",
+          "history": [
+            {
+              "at": "2026-10-15T17:06:29.852Z",
+              "action": "migrated",
+              "actor": "Superuser (SUR001)",
+              "detail": "from /uploads/verification/1788202645859-742cea73-94ec-4680-a26e-cf38a44dedf0.pdf"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO144-2",
+          "providerAccountId": "PRO144",
+          "ownerEmail": "sreeraj.p@gmail.com",
+          "providerListingId": "PRO144",
+          "documentType": "Address Proof",
+          "verificationStatus": "Approved",
+          "originalFilename": "VedicReport5-31-20261-00-35PM.pdf",
+          "mimeType": "application/pdf",
+          "size": 844563,
+          "sha256": "194200ae7d84394e04fbb1fad991879f55103ede6bb63e59ae05eb33e55afecf",
+          "storageKey": "194200ae7d84394e04fbb1fad991879f55103ede6bb63e59ae05eb33e55afecf.pdf",
+          "source": "legacy-server-upload",
+          "sourceReference": "/uploads/verification/1788202645883-8fb3353d-d8dc-4458-8079-33b9486f06fa.pdf",
+          "recordOrigin": "approval-request",
+          "createdAt": "2026-10-15T17:06:29.859Z",
+          "updatedAt": "2026-10-15T17:06:29.859Z",
+          "history": [
+            {
+              "at": "2026-10-15T17:06:29.859Z",
+              "action": "migrated",
+              "actor": "Superuser (SUR001)",
+              "detail": "from /uploads/verification/1788202645883-8fb3353d-d8dc-4458-8079-33b9486f06fa.pdf"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO144-3",
+          "providerAccountId": "PRO144",
+          "ownerEmail": "sreeraj.p@gmail.com",
+          "providerListingId": "PRO144",
+          "documentType": "Skill Certificate",
+          "verificationStatus": "Approved",
+          "originalFilename": "WhatsApp Image 2026-08-15 at 12.45.46 AM.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 23949,
+          "sha256": "822c79b7193059702c1e140ae4f4bca7309a1162dda3af9faae5a35db622fb1e",
+          "storageKey": "822c79b7193059702c1e140ae4f4bca7309a1162dda3af9faae5a35db622fb1e.jpg",
+          "source": "legacy-server-upload",
+          "sourceReference": "/uploads/verification/1788202645898-29bc9160-7594-4524-96a5-fa33ce82c2b8.jpeg",
+          "recordOrigin": "approval-request",
+          "createdAt": "2026-10-15T17:06:29.863Z",
+          "updatedAt": "2026-10-15T17:06:29.863Z",
+          "history": [
+            {
+              "at": "2026-10-15T17:06:29.863Z",
+              "action": "migrated",
+              "actor": "Superuser (SUR001)",
+              "detail": "from /uploads/verification/1788202645898-29bc9160-7594-4524-96a5-fa33ce82c2b8.jpeg"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO144-4",
+          "providerAccountId": "PRO144",
+          "ownerEmail": "sreeraj.p@gmail.com",
+          "providerListingId": "PRO144",
+          "documentType": "Profile Photo",
+          "verificationStatus": "Approved",
+          "originalFilename": "ele1.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 41132,
+          "sha256": "f090c1d2d15cc5b1a0aec00cc8a76c32ae1a2bb1cde856a99611189d2b1708c3",
+          "storageKey": "f090c1d2d15cc5b1a0aec00cc8a76c32ae1a2bb1cde856a99611189d2b1708c3.jpg",
+          "source": "legacy-server-upload",
+          "sourceReference": "/uploads/verification/1788202645907-54e3d74e-95d0-4308-8414-dcdca30160b1.jpeg",
+          "recordOrigin": "approval-request",
+          "createdAt": "2026-10-15T17:06:29.867Z",
+          "updatedAt": "2026-10-15T17:06:29.867Z",
+          "history": [
+            {
+              "at": "2026-10-15T17:06:29.867Z",
+              "action": "migrated",
+              "actor": "Superuser (SUR001)",
+              "detail": "from /uploads/verification/1788202645907-54e3d74e-95d0-4308-8414-dcdca30160b1.jpeg"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO145-1",
+          "providerAccountId": "PRO145",
+          "ownerEmail": "sreeraja.p@gmail.com",
+          "providerListingId": "PRO145",
+          "documentType": "ID Proof - Aadhaar",
+          "verificationStatus": "Approved",
+          "originalFilename": "CCN SQ2 Questions.pdf",
+          "mimeType": "application/pdf",
+          "size": 75324,
+          "sha256": "bfba778bea187c0b6abe4635a896e0ed66ee13c18f146416a56ed3cc8411f083",
+          "storageKey": "bfba778bea187c0b6abe4635a896e0ed66ee13c18f146416a56ed3cc8411f083.pdf",
+          "source": "legacy-server-upload",
+          "sourceReference": "/uploads/verification/1788204439677-5d7be941-737a-4dfc-9bd4-addb3ec96ed6.pdf",
+          "recordOrigin": "approval-request",
+          "createdAt": "2026-10-15T17:06:29.872Z",
+          "updatedAt": "2026-10-15T17:06:29.872Z",
+          "history": [
+            {
+              "at": "2026-10-15T17:06:29.872Z",
+              "action": "migrated",
+              "actor": "Superuser (SUR001)",
+              "detail": "from /uploads/verification/1788204439677-5d7be941-737a-4dfc-9bd4-addb3ec96ed6.pdf"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO145-2",
+          "providerAccountId": "PRO145",
+          "ownerEmail": "sreeraja.p@gmail.com",
+          "providerListingId": "PRO145",
+          "documentType": "Address Proof",
+          "verificationStatus": "Approved",
+          "originalFilename": "AI PYQ Analysis.pdf",
+          "mimeType": "application/pdf",
+          "size": 107422,
+          "sha256": "7be42fb6bfe1b245f7551ec0eb04b8d5561e753cd20aec390ee40207c2fdddda",
+          "storageKey": "7be42fb6bfe1b245f7551ec0eb04b8d5561e753cd20aec390ee40207c2fdddda.pdf",
+          "source": "legacy-server-upload",
+          "sourceReference": "/uploads/verification/1788204439705-abe4ccdb-3167-45e4-8d9a-e7b83bf02672.pdf",
+          "recordOrigin": "approval-request",
+          "createdAt": "2026-10-15T17:06:29.877Z",
+          "updatedAt": "2026-10-15T17:06:29.877Z",
+          "history": [
+            {
+              "at": "2026-10-15T17:06:29.877Z",
+              "action": "migrated",
+              "actor": "Superuser (SUR001)",
+              "detail": "from /uploads/verification/1788204439705-abe4ccdb-3167-45e4-8d9a-e7b83bf02672.pdf"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO145-3",
+          "providerAccountId": "PRO145",
+          "ownerEmail": "sreeraja.p@gmail.com",
+          "providerListingId": "PRO145",
+          "documentType": "Profile Photo",
+          "verificationStatus": "Approved",
+          "originalFilename": "ele4.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 48721,
+          "sha256": "52a00fdbe94cd73d46cdd5cc58a7050940d90e14fff560f469710f977ce9e146",
+          "storageKey": "52a00fdbe94cd73d46cdd5cc58a7050940d90e14fff560f469710f977ce9e146.jpg",
+          "source": "legacy-server-upload",
+          "sourceReference": "/uploads/verification/1788204439713-69576d3b-af21-458f-9c86-b98469ca0c6d.jpeg",
+          "recordOrigin": "approval-request",
+          "createdAt": "2026-10-15T17:06:29.882Z",
+          "updatedAt": "2026-10-15T17:06:29.882Z",
+          "history": [
+            {
+              "at": "2026-10-15T17:06:29.882Z",
+              "action": "migrated",
+              "actor": "Superuser (SUR001)",
+              "detail": "from /uploads/verification/1788204439713-69576d3b-af21-458f-9c86-b98469ca0c6d.jpeg"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO146-1",
+          "providerAccountId": "PRO146",
+          "ownerEmail": "hk.a@gmail.com",
+          "providerListingId": null,
+          "documentType": "profilePhoto",
+          "verificationStatus": "Pending selection",
+          "originalFilename": "saloon2.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 50128,
+          "sha256": "8c44b2b87d20594cb150066b962a3dc14230f73e1e63046beebe189f883820b4",
+          "storageKey": "8c44b2b87d20594cb150066b962a3dc14230f73e1e63046beebe189f883820b4.jpg",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-15T20:19:27.882Z",
+          "updatedAt": "2026-10-15T20:19:27.882Z",
+          "history": [
+            {
+              "at": "2026-10-15T20:19:27.882Z",
+              "action": "uploaded",
+              "actor": "Provider (PRO146)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO146-2",
+          "providerAccountId": "PRO146",
+          "ownerEmail": "hk.a@gmail.com",
+          "providerListingId": null,
+          "documentType": "idProof",
+          "verificationStatus": "Pending selection",
+          "originalFilename": "IIITS Mess Menu revised Aug 2026.pdf",
+          "mimeType": "application/pdf",
+          "size": 74739,
+          "sha256": "1b088bb6b2fc37e1f705635b3e2871f73bf840bc364c680970e74dda3508e489",
+          "storageKey": "1b088bb6b2fc37e1f705635b3e2871f73bf840bc364c680970e74dda3508e489.pdf",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-15T20:19:27.920Z",
+          "updatedAt": "2026-10-15T20:19:27.920Z",
+          "history": [
+            {
+              "at": "2026-10-15T20:19:27.920Z",
+              "action": "uploaded",
+              "actor": "Provider (PRO146)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO146-3",
+          "providerAccountId": "PRO146",
+          "ownerEmail": "hk.a@gmail.com",
+          "providerListingId": null,
+          "documentType": "addressProof",
+          "verificationStatus": "Pending selection",
+          "originalFilename": "videoframe_1276698.png",
+          "mimeType": "image/png",
+          "size": 1903547,
+          "sha256": "b4184c4cf3dda3dcc7ea6a5ec7d93c242dec1b4d0fd13afd427760ca1feb1558",
+          "storageKey": "b4184c4cf3dda3dcc7ea6a5ec7d93c242dec1b4d0fd13afd427760ca1feb1558.png",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-15T20:19:28.020Z",
+          "updatedAt": "2026-10-15T20:19:28.020Z",
+          "history": [
+            {
+              "at": "2026-10-15T20:19:28.020Z",
+              "action": "uploaded",
+              "actor": "Provider (PRO146)"
+            }
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-15T20:19:28.020Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO135:0000-01-01",
+    "value": {
+      "providerId": "PRO135",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T17:44:11.581Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO146",
+    "value": {
+      "providerId": "PRO146",
+      "services": [
+        {
+          "id": "SVC001",
+          "name": "Haircut & Styling",
+          "category": "Salon at Home",
+          "description": "Haircut & Styling offered by Darling Solutions",
+          "price": 199,
+          "cityId": 3,
+          "cityName": "Hyderabad",
+          "location": "Hyderabad",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-15T20:19:27.816Z"
+        },
+        {
+          "id": "SVC002",
+          "name": "Facial & Cleanup",
+          "category": "Salon at Home",
+          "description": "Facial & Cleanup offered by Darling Solutions",
+          "price": 399,
+          "cityId": 3,
+          "cityName": "Hyderabad",
+          "location": "Hyderabad",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-15T20:19:27.816Z"
+        }
+      ],
+      "updatedAt": "2026-10-15T20:19:27.833Z"
+    },
+    "updatedAt": "2026-10-15T20:19:27.833Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO146:0000-01-01",
+    "value": {
+      "providerId": "PRO146",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ],
+      "effectiveFrom": "0000-01-01"
+    },
+    "updatedAt": "2026-10-15T20:20:59.023Z"
   }
 ]

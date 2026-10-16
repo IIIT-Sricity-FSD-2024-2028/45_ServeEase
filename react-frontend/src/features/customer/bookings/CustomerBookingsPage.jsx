@@ -1,75 +1,114 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { ErrorState, EmptyState, LoadingState } from '../../../components/common/FeedbackStates'
 import { bookingsApi } from '../../../services/api'
+import { CustomerPageHeader, LoadState, OpsModal } from '../CustomerOpsParts'
+import { belongsToCustomer, bookingTabs, bookingTabView, canCustomerCancel, sortNewestFirst } from '../customerOperations'
 import { BookingCard } from './BookingCard'
 import { BookingDetailsModal } from './BookingDetailsModal'
 import { BookingHistory } from './BookingHistory'
 import { BookingTabs } from './BookingTabs'
-import './customerBookings.css'
+import '../customerOperations.css'
 
-const upcomingStatuses = ['Accepted', 'Pending', 'Requested']
-const historyStatuses = ['Completed', 'Cancelled', 'Rejected']
-
-function belongsToCustomer(booking, user) {
-  if (booking.customerId && user?.userId) return String(booking.customerId) === String(user.userId)
-  if (booking.customerEmail && user?.email) return String(booking.customerEmail).toLowerCase() === String(user.email).toLowerCase()
-  return false
-}
-
-function filterForTab(bookings, tab) {
-  if (tab === 'All') return bookings
-  if (tab === 'Cancelled') return bookings.filter((booking) => booking.status === 'Cancelled')
-  return bookings.filter((booking) => booking.status === tab)
-}
-
+// my-bookings.html + initMyBookings(). Bookings come from GET /bookings, which the backend already scopes
+// to the signed-in customer; the ownership filter is kept as a second guard.
 export default function CustomerBookingsPage() {
-  const { currentUser, isAuthenticated } = useAuth()
-  const [bookings, setBookings] = useState([])
-  const [activeTab, setActiveTab] = useState('All')
-  const [selectedBooking, setSelectedBooking] = useState(null)
-  const [status, setStatus] = useState(() => isAuthenticated ? 'loading' : 'error')
-  const [error, setError] = useState(() => isAuthenticated ? '' : 'Please sign in as a customer to view bookings.')
+  const { currentUser } = useAuth()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [load, setLoad] = useState({ state: 'loading', bookings: [], error: '' })
   const [notice, setNotice] = useState('')
+  const [cancelState, setCancelState] = useState(null)
+  const tabParam = searchParams.get('tab')
+  const activeTab = bookingTabs.includes(tabParam) ? tabParam : 'All'
+  const selectedId = searchParams.get('booking') || ''
+
+  const loadBookings = useCallback(async () => {
+    const records = await bookingsApi.list()
+    if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
+    return sortNewestFirst(records.filter((booking) => belongsToCustomer(booking, currentUser)))
+  }, [currentUser])
+
+  const refresh = useCallback(() => {
+    setLoad((current) => ({ ...current, state: 'loading', error: '' }))
+    loadBookings()
+      .then((bookings) => setLoad({ state: 'ready', bookings, error: '' }))
+      .catch((error) => setLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }))
+  }, [loadBookings])
 
   useEffect(() => {
-    let cancelled = false
-    if (!isAuthenticated) return undefined
-    bookingsApi.list()
-      .then((records) => {
-        if (cancelled) return
-        setBookings((Array.isArray(records) ? records : []).filter((booking) => belongsToCustomer(booking, currentUser)))
-        setStatus('ready')
-      })
-      .catch((requestError) => { if (!cancelled) { setError(requestError.message); setStatus('error') } })
-    return () => { cancelled = true }
-  }, [currentUser, isAuthenticated])
+    let active = true
+    loadBookings()
+      .then((bookings) => { if (active) setLoad({ state: 'ready', bookings, error: '' }) })
+      .catch((error) => { if (active) setLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }) })
+    return () => { active = false }
+  }, [loadBookings])
 
-  const filtered = useMemo(() => filterForTab(bookings, activeTab), [activeTab, bookings])
-  const upcoming = filtered.filter((booking) => upcomingStatuses.includes(booking.status))
-  const history = filtered.filter((booking) => historyStatuses.includes(booking.status))
-  const showUpcoming = activeTab === 'All' || upcomingStatuses.includes(activeTab)
-  const showHistory = activeTab === 'All' || historyStatuses.includes(activeTab) || activeTab === 'Cancelled'
+  const view = useMemo(() => bookingTabView(load.bookings, activeTab), [activeTab, load.bookings])
+  const selectedBooking = load.bookings.find((booking) => booking.id === selectedId)
 
-  function raiseTicket() {
-    // Customer ticket creation requires a support form and a verified ticket type.
-    // That workflow is outside this slice; no unsupported mutation is attempted.
-    setNotice('Raise Ticket is available through the customer support workflow, which is not part of this React slice yet.')
+  function updateParams(changes) {
+    const next = new URLSearchParams(searchParams)
+    Object.entries(changes).forEach(([key, value]) => { if (value) next.set(key, value); else next.delete(key) })
+    setSearchParams(next)
   }
 
-  return <div className="customer-bookings-page">
-    <nav aria-label="Breadcrumb" className="customer-bookings-breadcrumb"><Link to="/">Home</Link><span aria-hidden="true">›</span><Link to="/customer/dashboard">Customer Dashboard</Link><span aria-hidden="true">›</span><strong aria-current="page">My Bookings</strong></nav>
-    <div className="customer-bookings-title"><h1>My Bookings</h1><p>View and manage all your service bookings.</p></div>
-    <BookingTabs activeTab={activeTab} bookings={bookings} onChange={setActiveTab} />
-    {notice && <ErrorState message={notice} />}
-    {status === 'loading' && <LoadingState message="Loading your bookings…" />}
-    {status === 'error' && <ErrorState message={error} />}
-    {status === 'ready' && <>
-      {showUpcoming && <section><h2 className="customer-bookings-section-title">{activeTab === 'All' ? 'Upcoming Bookings' : `${activeTab} Bookings`}</h2><div className="customer-bookings-grid">{upcoming.length ? upcoming.map((booking) => <BookingCard key={booking.id} booking={booking} onViewDetails={setSelectedBooking} onRaiseTicket={raiseTicket} />) : <EmptyState message={`No ${activeTab === 'All' ? 'upcoming' : activeTab.toLowerCase()} bookings found.`} />}</div></section>}
-      {showHistory && <section className="customer-bookings-history"><h2 className="customer-bookings-section-title">{activeTab === 'All' ? 'Past Booking History' : `${activeTab} Bookings`}</h2><BookingHistory bookings={history} onViewDetails={setSelectedBooking} onRaiseTicket={raiseTicket} /></section>}
-      {!showUpcoming && !showHistory && <EmptyState message={`No ${activeTab.toLowerCase()} bookings found.`} />}
+  const openDetails = (booking) => updateParams({ booking: booking.id })
+  const closeDetails = useCallback(() => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('booking')
+    setSearchParams(next)
+  }, [searchParams, setSearchParams])
+  // createSupportTicketDraft(): continue in the Support Center with the booking reference filled in.
+  const raiseTicket = (booking) => navigate(`/customer/support?bookingRef=${encodeURIComponent(booking.id)}`)
+
+  async function confirmCancel() {
+    const booking = cancelState.booking
+    setCancelState({ booking, saving: true, error: '' })
+    try {
+      // persistCustomerCancellation(): re-read the canonical booking before asking for the transition.
+      const latest = await bookingsApi.get(booking.id)
+      if (!canCustomerCancel(latest)) throw new Error(`This booking is ${String(latest.status).toLowerCase()} and can no longer be cancelled.`)
+      const saved = await bookingsApi.updateStatus(booking.id, 'Cancelled')
+      if (saved?.status !== 'Cancelled') throw new Error('The server did not confirm the cancellation.')
+      setCancelState(null)
+      setNotice(`Booking ${booking.id} was cancelled.`)
+      refresh()
+    } catch (error) {
+      setCancelState({ booking, saving: false, error: error.message || 'The booking could not be cancelled.' })
+    }
+  }
+
+  return <div className="customer-ops">
+    <CustomerPageHeader crumbs={[['Home', '/'], ['Customer Dashboard', '/customer/dashboard'], ['My Bookings']]} description="View and manage all your service bookings." title="My Bookings" />
+    <BookingTabs activeTab={activeTab} bookings={load.bookings} onChange={(tab) => updateParams({ tab: tab === 'All' ? '' : tab })} />
+    {notice && <p className="ops-notice" role="status">{notice}</p>}
+    <LoadState error={load.error} loadingText="Loading your bookings…" onRetry={refresh} state={load.state} />
+
+    {load.state === 'ready' && <>
+      {view.upcoming && <section aria-labelledby="upcoming-bookings-heading">
+        <h2 className="section-title-left" id="upcoming-bookings-heading">{view.upcomingHeading}</h2>
+        <div className="booking-grid">{view.upcoming.length
+          ? view.upcoming.map((booking) => <BookingCard booking={booking} key={booking.id} onCancel={(item) => setCancelState({ booking: item, saving: false, error: '' })} onRaiseTicket={raiseTicket} onViewDetails={openDetails} />)
+          : <div className="empty-state-card">No {activeTab === 'All' ? 'upcoming' : activeTab.toLowerCase()} bookings found.</div>}
+        </div>
+      </section>}
+      {view.history && <section aria-labelledby="booking-history-heading" className="table-section">
+        <h2 className="section-title-left" id="booking-history-heading">{view.historyHeading}</h2>
+        <BookingHistory bookings={view.history} emptyLabel={`No ${activeTab === 'All' ? 'past' : activeTab.toLowerCase()} bookings found.`} onRaiseTicket={raiseTicket} onViewDetails={openDetails} />
+      </section>}
     </>}
-    <BookingDetailsModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
+
+    {selectedId && <BookingDetailsModal bookingId={selectedId} fallback={selectedBooking} key={selectedId} onClose={closeDetails} />}
+
+    {cancelState && <OpsModal labelId="cancel-booking-title" onClose={() => { if (!cancelState.saving) setCancelState(null) }} title="Cancel Booking" variant="confirm">
+      <h3 id="cancel-booking-title">Cancel Booking</h3>
+      <p>Are you sure you want to cancel this booking? This action cannot be undone.</p>
+      {cancelState.error && <p className="ops-alert" role="alert">{cancelState.error}</p>}
+      <div className="confirm-actions">
+        <button className="btn btn-outline" disabled={cancelState.saving} onClick={() => setCancelState(null)} type="button">No, Keep It</button>
+        <button className="btn btn-danger" disabled={cancelState.saving} onClick={confirmCancel} type="button">{cancelState.saving ? 'Cancelling…' : 'Yes, Cancel'}</button>
+      </div>
+    </OpsModal>}
   </div>
 }

@@ -24,7 +24,12 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   app.useStaticAssets(join(process.cwd(), '..', 'front-end'));
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
+  // Only genuinely public uploads are served statically (catalog profile photos, ticket attachments and their
+  // development fixtures). Provider verification documents are private: they are served only through the
+  // authenticated provider-document API from canonical storage.
+  for (const folder of ['profiles', 'tickets', 'dev-fixtures/profiles', 'dev-fixtures/tickets']) {
+    app.useStaticAssets(join(process.cwd(), 'uploads', folder), { prefix: `/uploads/${folder}/` });
+  }
 
   const config = new DocumentBuilder()
     .setTitle('ServeEase API')

@@ -1,5 +1,9 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
-import { Request } from 'express';
+import { Body, Controller, Delete, ForbiddenException, Get, NotFoundException, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Request, Response } from 'express';
+import { createReadStream } from 'node:fs';
+import { providerAccountStatus } from '../../common/provider-account-status';
+import { ProviderDocumentsService } from '../provider-documents/provider-documents.service';
+import { profilePhotoPath } from '../provider-documents/profile-photo';
 import { ApiBody, ApiExtraModels, ApiHeader, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiSuccessResponse, successResponse, successResponseSchema } from '../../common/api-response';
 import { Roles } from '../../guards/roles.decorator';
@@ -19,7 +23,7 @@ import { ProviderServiceDto, UpdateProviderServiceDto } from './dto/provider-ser
 })
 @Controller('catalog')
 export class CatalogController {
-  constructor(private readonly catalogService: CatalogService) {}
+  constructor(private readonly catalogService: CatalogService, private readonly documents: ProviderDocumentsService) {}
 
   @Get()
   @Roles('admin', 'user')
@@ -35,6 +39,25 @@ export class CatalogController {
   @ApiOkResponse({ description: 'Provider returned successfully.', schema: successResponseSchema(CatalogProvider) })
   findById(@Param('id') id: string) {
     return successResponse(this.catalogService.findById(id));
+  }
+
+  // Public on purpose: customers' browsers load listing images without a session. It serves only the profile-photo
+  // image an Active provider submitted for a listing that points at this route; nothing else from the document
+  // store is reachable, and any other state answers 404.
+  @Get('providers/:id/photo')
+  @ApiOperation({ summary: "Get an approved provider's submitted profile photo (public image)" })
+  photo(@Param('id') id: string, @Res() response: Response) {
+    const listing = this.catalogService.findAll().providers.find((candidate) => candidate.id === id);
+    const account = listing && listing.profilePhoto === profilePhotoPath(listing.id) ? this.catalogService.ownerOf(listing) : undefined;
+    const file = account && providerAccountStatus(account) === 'Active' ? this.documents.publicProfilePhoto(account) : undefined;
+    if (!file) throw new NotFoundException('This provider has no profile photo.');
+    response.setHeader('Content-Type', file.mimeType);
+    response.setHeader('Content-Length', String(file.size));
+    response.setHeader('Cache-Control', 'private, max-age=30');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    createReadStream(file.path).on('error', () => response.destroy()).pipe(response);
   }
 
   @Post('sync')

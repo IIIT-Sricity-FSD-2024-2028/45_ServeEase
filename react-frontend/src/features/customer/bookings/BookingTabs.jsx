@@ -1,18 +1,15 @@
-const tabs = ['All', 'Pending', 'Requested', 'Accepted', 'Completed', 'Rejected', 'Cancelled']
+import { bookingTabs, countForTab } from '../customerOperations'
 
+// my-bookings.html #bookingTabs (.tabs-row / .tab-btn)
 export function BookingTabs({ activeTab, bookings, onChange }) {
-  return <div className="customer-bookings-tabs" role="tablist" aria-label="Booking status">
-    {tabs.map((tab) => {
-      const count = tab === 'All' ? bookings.length : bookings.filter((booking) => booking.status === tab).length
-      return <button
-        className={`customer-bookings-tab${activeTab === tab ? ' customer-bookings-tab--active' : ''}`}
-        key={tab}
-        type="button"
-        role="tab"
-        aria-selected={activeTab === tab}
-        onClick={() => onChange(tab)}
-      >{tab} <span>{count}</span></button>
-    })}
-  </div>
+  return <section aria-label="Booking status" className="tabs-row" role="tablist">
+    {bookingTabs.map((tab) => <button
+      aria-selected={activeTab === tab}
+      className={`tab-btn${activeTab === tab ? ' active' : ''}`}
+      key={tab}
+      onClick={() => onChange(tab)}
+      role="tab"
+      type="button"
+    >{tab} <span>{countForTab(bookings, tab)}</span></button>)}
+  </section>
 }
-

@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { EmptyState, ErrorState, LoadingState } from '../../../components/common/FeedbackStates'
 import { useAuth } from '../../../context/useAuth'
 import { bookingsApi } from '../../../services/api'
-import './customerPayments.css'
+import { CustomerPageHeader, InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
+import { formatDisplayDate, formatPrice, statusPillClass } from '../customerOperations'
+import '../customerOperations.css'
 
 const emptyPayments = []
-const knownPaymentStatuses = new Set(['Pending', 'Successful', 'Refunded', 'Failed'])
 
 function belongsToCustomer(booking, userId, email) {
   if (!booking) return false
@@ -19,70 +18,53 @@ function hasValue(value) {
   return value !== undefined && value !== null && value !== ''
 }
 
-function formatMoney(value) {
-  if (!hasValue(value) || !Number.isFinite(Number(value))) return 'Not provided'
-  return `₹${Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const money = (value) => (hasValue(value) && Number.isFinite(Number(value)) ? formatPrice(Number(value)) : 'Not provided')
+
+function StatCard({ icon, tone, value, label }) {
+  return <div className="stat-card-dashboard"><div className={`feature-icon ${tone}`}>{icon}</div><h3>{value}</h3><p>{label}</p></div>
 }
 
-function formatDate(value) {
-  if (!hasValue(value)) return 'Not provided'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return String(value)
-  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(parsed)
-}
-
-function statusClass(status) {
-  return String(status || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
-}
-
-function SummaryCard({ icon, tone, label, value }) {
-  return <article className="customer-payments-summary-card">
-    <span className={`customer-payments-summary-icon customer-payments-summary-icon--${tone}`} aria-hidden="true">{icon}</span>
-    <div>
-      <p>{label}</p>
-      <strong>{value}</strong>
-    </div>
-  </article>
-}
-
+// openPaymentModal() in customer.js: Transaction, Service and Payment Breakdown boxes.
 function PaymentDetails({ payment, onClose }) {
-  const status = String(payment.paymentStatus || 'Not provided')
-  return <div className="customer-payments-modal-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose() }} role="presentation">
-    <section aria-labelledby="payment-details-title" aria-modal="true" className="customer-payments-modal" role="dialog">
-      <header className="customer-payments-modal-head">
-        <h2 id="payment-details-title">Payment Details</h2>
-        <button aria-label="Close payment details" className="customer-payments-modal-close" onClick={onClose} type="button">×</button>
-      </header>
-      <div className="customer-payments-detail-grid">
-        <section><h3>Transaction Information</h3><Detail label="Transaction ID" value={payment.paymentId} /><Detail label="Booking Reference" value={payment.id} /><Detail label="Payment Status" value={status} /></section>
-        <section><h3>Service Information</h3><Detail label="Service Name" value={payment.service} /><Detail label="Service Provider" value={payment.provider} /></section>
-        <section><h3>Payment Breakdown</h3><Detail label="Payment Method" value={payment.paymentMethod} /><Detail label="Service Fee" value={formatMoney(payment.serviceFee)} /><Detail label="Tax (10%)" value={formatMoney(payment.taxAmount)} /><Detail label="Platform Fee (5%)" value={formatMoney(payment.platformFeeAmount)} /><Detail label="Total Paid" value={formatMoney(payment.customerTotal)} /><Detail label="Transaction Date" value={formatDate(payment.paymentDate)} /></section>
+  const status = hasValue(payment.paymentStatus) ? String(payment.paymentStatus) : 'Not provided'
+  return <OpsModal className="payment-details-modal" labelId="payment-details-title" onClose={onClose} title="Payment Details">
+    <div className="info-grid">
+      <div className="info-box"><strong>Transaction Information</strong>
+        <InfoRow label="Transaction ID:">{payment.paymentId || 'Not recorded'}</InfoRow>
+        <InfoRow label="Booking Reference:">{payment.id}</InfoRow>
+        <InfoRow label="Payment Status:"><span className={`status-pill ${statusPillClass(status)}`}>{status}</span></InfoRow>
       </div>
-    </section>
-  </div>
-}
-
-function Detail({ label, value }) {
-  return <div className="customer-payments-detail-row"><span>{label}</span><strong>{hasValue(value) ? value : 'Not provided'}</strong></div>
+      <div className="info-box"><strong>Service Information</strong>
+        <InfoRow label="Service Name:">{payment.service || 'Not provided'}</InfoRow>
+        <InfoRow label="Provider Name:">{payment.provider || 'Not provided'}</InfoRow>
+      </div>
+      <div className="info-box"><strong>Payment Breakdown</strong>
+        <InfoRow label="Payment Method:">{payment.paymentMethod || 'Not provided'}</InfoRow>
+        <InfoRow label="Service Fee:">{money(payment.serviceFee)}</InfoRow>
+        <InfoRow label="Tax (10% GST):">{money(payment.taxAmount)}</InfoRow>
+        <InfoRow label="Platform Fee (5%):">{money(payment.platformFeeAmount)}</InfoRow>
+        <InfoRow label="Total Paid:"><strong>{money(payment.customerTotal)}</strong></InfoRow>
+        <InfoRow label="Payment Date:">{hasValue(payment.paymentDate) ? formatDisplayDate(payment.paymentDate) : 'Not provided'}</InfoRow>
+      </div>
+    </div>
+  </OpsModal>
 }
 
 function PaymentRow({ payment, onView }) {
   const status = hasValue(payment.paymentStatus) ? String(payment.paymentStatus) : 'Not provided'
-  const hasKnownStatus = knownPaymentStatuses.has(status)
-
   return <tr>
-    <td>{payment.paymentId}</td>
+    <td>{payment.paymentId || 'Not recorded'}</td>
     <td>{payment.id || 'Not provided'}</td>
     <td>{payment.service || 'Not provided'}</td>
     <td>{payment.provider || 'Not provided'}</td>
     <td>{payment.paymentMethod || 'Not provided'}</td>
-    <td>{formatMoney(payment.serviceFee)}</td>
-    <td>{formatMoney(payment.taxAmount)}</td>
-    <td>{formatMoney(payment.platformFeeAmount)}</td>
-    <td>{formatMoney(payment.customerTotal)}</td>
-    <td>{formatDate(payment.paymentDate)}</td>
-    <td><span className={`customer-payments-status${hasKnownStatus ? ` customer-payments-status--${statusClass(status)}` : ''}`}>{status}</span></td>
-    <td><button className="customer-payments-view-button" onClick={() => onView(payment)} type="button">View Details</button></td>
+    <td>{money(payment.serviceFee)}</td>
+    <td>{money(payment.taxAmount)}</td>
+    <td>{money(payment.platformFeeAmount)}</td>
+    <td>{money(payment.customerTotal)}</td>
+    <td>{hasValue(payment.paymentDate) ? formatDisplayDate(payment.paymentDate) : 'Not provided'}</td>
+    <td><span className={`status-pill ${statusPillClass(status)}`}>{status}</span></td>
+    <td><button className="table-link-btn" onClick={() => onView(payment)} type="button">View Details</button></td>
   </tr>
 }
 
@@ -102,8 +84,10 @@ export default function CustomerPaymentHistoryPage() {
       .then((records) => {
         if (!active) return
         if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
+        // Every booking records its payment on the booking itself (paymentStatus, paymentDate, totals);
+        // there is no separate payments endpoint. A missing paymentId stays "Not recorded".
         const customerTransactions = records.filter((booking) => belongsToCustomer(booking, userId, email)
-          && hasValue(booking.paymentId))
+          && hasValue(booking.paymentStatus))
         setResult({ identityKey, status: 'ready', payments: customerTransactions, error: '' })
       })
       .catch((requestError) => {
@@ -135,27 +119,22 @@ export default function CustomerPaymentHistoryPage() {
     return { totalPaid, successful, refunded }
   }, [payments])
 
-  return <div className="customer-payments-page">
-    <nav aria-label="Breadcrumb" className="customer-payments-breadcrumb"><Link to="/">Home</Link><span aria-hidden="true">›</span><Link to="/customer/dashboard">Customer Dashboard</Link><span aria-hidden="true">›</span><strong aria-current="page">Payment History</strong></nav>
-    <header className="customer-payments-heading">
-      <h1>Payment History</h1>
-      <p>View all your service payment transactions.</p>
-    </header>
+  return <div className="customer-ops">
+    <CustomerPageHeader crumbs={[['Home', '/'], ['Customer Dashboard', '/customer/dashboard'], ['Payment History']]} description="View all your service payment transactions." title="Payment History" />
 
-    {loadState === 'loading' && <LoadingState message="Loading your payment information…" />}
-    {loadState === 'error' && <ErrorState message={error} />}
+    <LoadState error={error} loadingText="Loading your payment information…" state={loadState === 'ready' ? 'ready' : loadState} />
 
     {loadState === 'ready' && <>
-      <section aria-label="Payment summaries" className="customer-payments-summary">
-        <SummaryCard icon="✅" tone="green" label="Total Payments Made" value={formatMoney(summary.totalPaid)} />
-        <SummaryCard icon="📄" tone="orange" label="Successful Transactions" value={String(summary.successful)} />
-        <SummaryCard icon="🔄" tone="blue" label="Refunded Amount" value={formatMoney(summary.refunded)} />
+      <section aria-label="Payment summaries" className="dashboard-stats-grid">
+        <StatCard icon="✅" tone="green" label="Total Payments Made" value={money(summary.totalPaid ?? 0)} />
+        <StatCard icon="📄" tone="orange" label="Successful Transactions" value={String(summary.successful)} />
+        <StatCard icon="🔄" tone="blue" label="Refunded Amount" value={money(summary.refunded ?? 0)} />
       </section>
 
-      <section aria-labelledby="customer-payments-history-title" className="customer-payments-history">
-        <h2 id="customer-payments-history-title">Transaction History</h2>
-        <div className="customer-payments-table-wrap">
-          <table className="customer-payments-table">
+      <section className="table-section">
+        <h2 className="section-title-left">Transaction History</h2>
+        <div className="table-card">
+          <table className="data-table">
             <thead><tr>
               <th scope="col">Transaction ID</th>
               <th scope="col">Booking Reference</th>
@@ -171,8 +150,8 @@ export default function CustomerPaymentHistoryPage() {
               <th scope="col">Actions</th>
             </tr></thead>
             <tbody>{payments.length
-              ? payments.map((payment) => <PaymentRow key={payment.paymentId} onView={setSelectedPayment} payment={payment} />)
-              : <tr><td className="customer-payments-empty-cell" colSpan="12"><EmptyState message="No verified payment transactions are available for your account." /></td></tr>}
+              ? payments.map((payment) => <PaymentRow key={payment.paymentId || payment.id} onView={setSelectedPayment} payment={payment} />)
+              : <tr><td colSpan="12">No payments found.</td></tr>}
             </tbody>
           </table>
         </div>

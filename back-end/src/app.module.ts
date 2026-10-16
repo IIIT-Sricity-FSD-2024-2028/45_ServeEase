@@ -10,9 +10,11 @@ import { AvailabilityModule } from './modules/availability/availability.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { RequestLoggingMiddleware } from './middleware/request-logging.middleware';
 import { AuthModule } from './modules/auth/auth.module';
+import { EmployeeOperationsModule } from './modules/employee-operations/employee-operations.module';
+import { ProviderDocumentsModule } from './modules/provider-documents/provider-documents.module';
 
 @Module({
-  imports: [AuthModule, TasksModule, BookingsModule, CatalogModule, ActivitiesModule, StateModule, ProviderVerificationModule, TicketsModule, AvailabilityModule, UploadsModule],
+  imports: [AuthModule, TasksModule, BookingsModule, CatalogModule, ActivitiesModule, StateModule, ProviderVerificationModule, TicketsModule, AvailabilityModule, UploadsModule, EmployeeOperationsModule, ProviderDocumentsModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

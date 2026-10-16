@@ -18,7 +18,7 @@ describe('Booking bearer-session authorization', () => {
     create: (data: Partial<Booking>) => { const item = { ...data, id: 'BOOK-20300102-1000-0003', createdAt: new Date().toISOString() } as Booking; bookings.unshift(item); return item; }, delete: () => undefined,
   };
   const availability = { assertBookable: jest.fn() };
-  const catalog = { findAll: () => ({ providers: [{ id: 'PRO-A', ownerProviderId: 'PRO-A', name: 'Provider A', category: 'Cleaning', subServices: ['Cleaning'], servicePricing: { Cleaning: 799 }, startingPrice: 799 }] }) };
+  const catalog = { isBookable: () => true, findAll: () => ({ providers: [{ id: 'PRO-A', ownerProviderId: 'PRO-A', name: 'Provider A', category: 'Cleaning', subServices: ['Cleaning'], servicePricing: { Cleaning: 799 }, startingPrice: 799 }] }) };
   const booking = (id: string, customerId: string, providerId: string): Booking => ({ id, customerId, providerId, service: 'Cleaning', provider: providerId, date: '2030-01-02', time: '10:00 AM - 12:00 PM', address: '123 Example Road', status: 'Pending', category: 'Cleaning', paymentStatus: 'Pending', amount: 100, customerName: customerId, customerPhone: '1234567890', customerEmail: `${customerId.toLowerCase()}@example.test`, createdAt: new Date().toISOString() });
 
   beforeAll(async () => {

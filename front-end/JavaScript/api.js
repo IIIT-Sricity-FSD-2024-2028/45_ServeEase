@@ -288,6 +288,36 @@
     return payload ? payload.data : null;
   }
 
+  // Canonical provider documents (one registry for every frontend). Errors keep the HTTP status and, for
+  // documents without a stored file, the server's `state` so callers can tell missing bytes from refusals.
+  async function documentRequest(path, options) {
+    const session = getSession();
+    const headers = Object.assign({}, options && options.headers ? options.headers : {});
+    const token = (options && options.token) || session.token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}${path}`, { method: (options && options.method) || "GET", headers: headers, body: options && options.body });
+    } catch (error) {
+      const failure = new Error("The ServeEase server could not be reached.");
+      failure.status = 0;
+      throw failure;
+    }
+    if (!response.ok) {
+      const payload = await response.json().catch(function () { return null; });
+      const message = payload && payload.message ? payload.message : "Backend request failed.";
+      const failure = new Error(Array.isArray(message) ? message.join(" ") : message);
+      failure.status = response.status;
+      failure.state = payload && payload.state ? payload.state : null;
+      throw failure;
+    }
+    if (options && options.blob) return response.blob();
+    const payload = await response.json().catch(function () { return null; });
+    return payload ? payload.data : null;
+  }
+  const providerDocumentsPath = function (providerId) { return "/employee/provider-operations/providers/" + encodeURIComponent(providerId) + "/documents"; };
+  const fileForm = function (file, filename) { const form = new FormData(); form.append("file", file, filename || file.name); return form; };
+
   window.ServeEaseApi = {
     login: function (credentials) {
       return request("/auth/login", { method: "POST", body: JSON.stringify(credentials) });
@@ -361,6 +391,23 @@
     },
     uploadProviderProfilePhoto: function (file) {
       return upload("/uploads/profiles/photo", file);
+    },
+    // Provider Operations / superuser: canonical document metadata, file bytes, and browser-local import.
+    listProviderDocuments: function (providerId) {
+      return documentRequest(providerDocumentsPath(providerId));
+    },
+    getProviderDocument: function (providerId, documentId) {
+      return documentRequest(providerDocumentsPath(providerId) + "/" + encodeURIComponent(documentId));
+    },
+    getProviderDocumentFile: function (providerId, documentId) {
+      return documentRequest(providerDocumentsPath(providerId) + "/" + encodeURIComponent(documentId) + "/preview", { blob: true });
+    },
+    importBrowserProviderDocument: function (providerId, documentId, file, filename) {
+      return documentRequest(providerDocumentsPath(providerId) + "/" + encodeURIComponent(documentId) + "/browser-import", { method: "POST", body: fileForm(file, filename) });
+    },
+    // The signed-in provider (or a just-registered one, via `token`): own documents only.
+    uploadOwnProviderDocument: function (documentId, file, token) {
+      return documentRequest("/provider/verification-documents/" + encodeURIComponent(documentId) + "/file", { method: "POST", body: fileForm(file), token: token });
     },
     syncCatalog: function (catalog) {
       if (!this.canManageSystemState()) return Promise.resolve(null);

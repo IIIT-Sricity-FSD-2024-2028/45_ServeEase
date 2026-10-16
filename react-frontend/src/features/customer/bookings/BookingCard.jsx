@@ -1,24 +1,25 @@
-function statusClass(status) {
-  return String(status || '').toLowerCase().replace(/\s+/g, '-')
-}
+import { bookingTotal, canCustomerCancel, formatDisplayDate, formatPrice, statusPillClass } from '../customerOperations'
 
-export function BookingCard({ booking, onViewDetails, onRaiseTicket }) {
-  return <article className="customer-booking-card">
-    <div className="customer-booking-card__top">
-      <div><h3>{booking.service}</h3><div className="customer-booking-provider">{booking.provider}</div></div>
-      <span className={`customer-booking-status customer-booking-status--${statusClass(booking.status)}`}>{booking.status}</span>
+// Upcoming booking card from initMyBookings(): View Details, Raise Ticket and, while the backend
+// still allows it (Pending/Accepted), Cancel.
+export function BookingCard({ booking, onViewDetails, onRaiseTicket, onCancel }) {
+  const cancellable = canCustomerCancel(booking)
+  return <article className="booking-card-customer">
+    <div className="booking-card-top">
+      <div><h3>{booking.service}</h3><div className="booking-provider">{booking.provider}</div></div>
+      <span className={`status-pill ${statusPillClass(booking.status)}`}>{booking.status}</span>
     </div>
-    <div className="customer-booking-info">📅 {booking.date}</div>
-    <div className="customer-booking-info">🕒 {booking.time}</div>
-    <div className="customer-booking-info">📍 {booking.address}</div>
-    <div className="customer-booking-card__bottom">
-      <div className="customer-booking-reference">{booking.id}</div>
-      <div className="customer-booking-price">₹{Number(booking.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+    <div className="booking-info-line">📅 {formatDisplayDate(booking.date)}</div>
+    <div className="booking-info-line">🕒 {booking.time || 'Not provided'}</div>
+    <div className="booking-info-line">📍 {booking.address || 'Not provided'}</div>
+    <div className="booking-bottom-row">
+      <div className="booking-ref">{booking.id}</div>
+      <div className="booking-price">{formatPrice(bookingTotal(booking))}</div>
     </div>
-    <div className="customer-booking-actions">
-      <button className="customer-booking-action" type="button" onClick={() => onViewDetails(booking)}>View Details</button>
-      <button className="customer-booking-action" type="button" onClick={() => onRaiseTicket(booking)}>Raise Ticket</button>
+    <div className={`booking-actions${cancellable ? '' : ' booking-actions--two'}`}>
+      <button className="secondary-action" onClick={() => onViewDetails(booking)} type="button">View Details</button>
+      <button className="secondary-action" onClick={() => onRaiseTicket(booking)} type="button">Raise Ticket</button>
+      {cancellable && <button className="danger-action" onClick={() => onCancel(booking)} type="button">Cancel</button>}
     </div>
   </article>
 }
-

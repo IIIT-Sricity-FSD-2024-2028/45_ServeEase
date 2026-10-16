@@ -6,6 +6,10 @@ import { UpdateProviderDto } from './dto/update-provider.dto';
 import { ProviderServiceDto, UpdateProviderServiceDto } from './dto/provider-service.dto';
 import { StateRepository } from '../state/state.repository';
 import { canonicalProviderId } from '../../common/provider-identity';
+import { readProviderServices, writeProviderServices } from './provider-services-store';
+import { providerAccountStatus } from '../../common/provider-account-status';
+import { profilePhotoRecord } from '../provider-documents/profile-photo';
+import { accountServices, AccountService, catalogView, listingOwner } from './catalog-derivation';
 
 @Injectable()
 export class CatalogRepository implements OnModuleInit {
@@ -47,23 +51,12 @@ export class CatalogRepository implements OnModuleInit {
     return true;
   }
 
-  private servicesKey(providerId: string): string {
-    return `serveEaseProviderServices:${canonicalProviderId(providerId)}`;
-  }
-
   findServices(providerId: string): any[] {
-    const entry = this.stateRepository.findById(this.servicesKey(providerId));
-    return entry && Array.isArray(entry.value.services) ? this.dedupeServices(entry.value.services as any[]) : [];
+    return readProviderServices(this.stateRepository, providerId);
   }
 
   saveServices(providerId: string, services: any[]): any[] {
-    const cleanServices = this.dedupeServices(services);
-    const value = { providerId, services: cleanServices, updatedAt: new Date().toISOString() };
-    const key = this.servicesKey(providerId);
-    const existing = this.stateRepository.findById(key);
-    if (existing) this.stateRepository.update(key, { value });
-    else this.stateRepository.create({ key, value });
-    return cleanServices;
+    return writeProviderServices(this.stateRepository, providerId, services);
   }
 
   createService(providerId: string, data: ProviderServiceDto): any {
@@ -100,12 +93,44 @@ export class CatalogRepository implements OnModuleInit {
     })));
   }
 
+  // The catalog customers see: the synced listings with each owner's authoritative account status applied, plus
+  // a listing for every verified provider who has active services but none yet. It is rebuilt from the saved
+  // accounts and service records on every read, so an approval, rejection, suspension, reactivation or service
+  // change shows immediately, without a restart or a superuser sync, and repeated reads cannot duplicate anything.
   findAll(): CatalogState {
-    return this.catalog;
+    return { ...this.catalog, providers: catalogView({ users: this.providerUsers(), categories: this.catalog.categories, providers: this.catalog.providers, servicesFor: (providerId) => this.findServices(providerId), hasPhoto: (account) => Boolean(profilePhotoRecord(this.registryDocuments(), account)) }) };
   }
 
   findById(id: string): CatalogProvider | undefined {
-    return this.catalog.providers.find((provider) => provider.id === id);
+    return this.findAll().providers.find((provider) => provider.id === id);
+  }
+
+  // A listing is bookable only while its owning provider account is verified and active (synced listings can
+  // be stale; the account is the authority). Listings without an owning account fall back to the listing itself.
+  isBookable(listing: CatalogProvider): boolean {
+    const account = listingOwner(listing, this.providerUsers().filter((user) => user?.role === 'provider'));
+    return account ? providerAccountStatus(account) === 'Active' : listing.verified !== false;
+  }
+
+  // The account that owns a listing, by the same rules the catalog view uses.
+  ownerOf(listing: CatalogProvider): Record<string, any> | undefined {
+    return listingOwner(listing, this.providerUsers().filter((user) => user?.role === 'provider'));
+  }
+
+  private registryDocuments(): Array<Record<string, any>> {
+    const documents = (this.stateRepository.findById('serveEaseProviderDocumentRegistry')?.value as { documents?: unknown } | undefined)?.documents;
+    return Array.isArray(documents) ? (documents as Array<Record<string, any>>) : [];
+  }
+
+  // The single mapping from a provider account to its services (see accountServices).
+  servicesForAccount(account: Record<string, any>): AccountService[] {
+    const accounts = this.providerUsers().filter((user) => user?.role === 'provider');
+    return accountServices(account, accounts, this.catalog.providers, this.findServices(String(account.id)));
+  }
+
+  private providerUsers(): Array<Record<string, any>> {
+    const users = (this.stateRepository.findById(CATALOG_STATE_KEY)?.value as { users?: unknown } | undefined)?.users;
+    return Array.isArray(users) ? (users as Array<Record<string, any>>) : [];
   }
 
   create(data: SyncCatalogDto): CatalogState {
@@ -131,7 +156,7 @@ export class CatalogRepository implements OnModuleInit {
   }
 
   update(id: string, data: UpdateProviderDto): CatalogProvider | undefined {
-    const provider = this.findById(id);
+    const provider = this.catalog.providers.find((candidate) => candidate.id === id);
     if (!provider) return undefined;
     Object.assign(provider, data);
     return provider;
@@ -146,16 +171,6 @@ export class CatalogRepository implements OnModuleInit {
 
   private normalizeText(value: unknown): string {
     return String(value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  }
-
-  private dedupeServices(services: any[]): any[] {
-    const byKey = new Map<string, any>();
-    services.forEach((service) => {
-      if (!service || (!service.id && !service.name)) return;
-      const key = service.id ? `id:${String(service.id)}` : `name:${this.normalizeText(service.name)}`;
-      byKey.set(key, service);
-    });
-    return Array.from(byKey.values());
   }
 
   private isRemovedProvider(provider: CatalogProvider): boolean {

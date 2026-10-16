@@ -31,7 +31,7 @@ export function AuthFooterLinks() {
       <a href="/#about-us">About Us</a>
       <a href="/#privacy-policy">Privacy Policy</a>
       <a href="/#terms-and-conditions">Terms &amp; Conditions</a>
-      <a href="/customer/support">Contact Support</a>
+      <a href="/contact-support">Contact Support</a>
     </div>
   )
 }

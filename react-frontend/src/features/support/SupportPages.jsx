@@ -22,7 +22,7 @@ export function SupportDashboardPage() {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
   const [state, setState] = useState({ loading: true, tickets: [], error: '' })
-  const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('search') || '')
+  const [query, setQuery] = useState(() => (typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('search') || ''))
   const [queue, setQueue] = useState('all')
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')

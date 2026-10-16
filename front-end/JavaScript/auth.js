@@ -155,6 +155,41 @@ function readProviderPreviewStore(providerId) {
   }
 }
 
+// Files chosen on the signup form, with the document type the backend records for each.
+function selectedProviderDocumentFiles() {
+  const idProofType = document.getElementById("idProofType")?.value || "ID Proof";
+  return [
+    { inputId: "idProofFile", type: "ID Proof - " + idProofType, required: true },
+    { inputId: "addressProofFile", type: "Address Proof", required: true },
+    { inputId: "skillCertificateFile", type: "Skill Certificate", required: false },
+    { inputId: "experienceProofFile", type: "Experience Proof", required: false },
+    { inputId: "profilePhotoFile", type: "Profile Photo", required: true }
+  ].map(function (field) {
+    return Object.assign({}, field, { file: document.getElementById(field.inputId)?.files?.[0] || null });
+  }).filter(function (field) { return field.file; });
+}
+
+// New signups: each chosen file is uploaded to the canonical provider-document registry against the document
+// id the backend assigned at registration, using the registration token. Nothing is kept in localStorage.
+async function uploadCanonicalProviderDocuments(registeredUser) {
+  if (!window.ServeEaseApi || typeof window.ServeEaseApi.uploadOwnProviderDocument !== "function") throw new Error("Document upload is unavailable.");
+  const selected = selectedProviderDocumentFiles();
+  const documents = [];
+  for (const serverDocument of registeredUser.documents || []) {
+    const chosen = selected.find(function (field) { return field.type === serverDocument.documentType; });
+    if (!chosen) continue;
+    await window.ServeEaseApi.uploadOwnProviderDocument(serverDocument.documentId, chosen.file, registeredUser.token);
+    documents.push({
+      documentId: serverDocument.documentId,
+      documentType: serverDocument.documentType,
+      documentName: chosen.file.name,
+      documentStatus: "Pending",
+      required: chosen.required
+    });
+  }
+  return documents;
+}
+
 async function buildProviderDocumentPayload(providerId, existingDocuments) {
   const idProofType = document.getElementById("idProofType")?.value || "ID Proof";
   const documentFields = [
@@ -1340,7 +1375,9 @@ function setupSignupForm() {
             cityId: Number(providerCity.id),
             address: address,
             idProofType: idProofTypeInput.value,
-            documents: []
+            documents: selectedProviderDocumentFiles().map(function (field) {
+              return { documentType: field.type, documentName: field.file.name, required: field.required };
+            })
           } : {})
         });
         registeredUser = Object.assign({}, result.user, { token: result.token });
@@ -1379,9 +1416,13 @@ function setupSignupForm() {
       newUser.accountStatus = "Under Verification";
       newUser.status = "Under Verification";
       try {
-        newUser.documents = await buildProviderDocumentPayload(newUser.id, resubmissionRecord && resubmissionRecord.documents);
+        newUser.documents = registeredUser
+          ? await uploadCanonicalProviderDocuments(registeredUser)
+          : await buildProviderDocumentPayload(newUser.id, resubmissionRecord && resubmissionRecord.documents);
       } catch (error) {
-        showText("signupFormError", "Unable to read uploaded documents. Please try again.");
+        showText("signupFormError", registeredUser
+          ? "Your account was created, but a document could not be uploaded: " + (error.message || "upload failed") + " Sign in to continue."
+          : "Unable to read uploaded documents. Please try again.");
         return;
       }
       const submittedDate = window.ServeEaseDate ? window.ServeEaseDate.nowDate() : new Date().toLocaleDateString("en-GB");

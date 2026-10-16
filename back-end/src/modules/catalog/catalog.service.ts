@@ -13,6 +13,18 @@ export class CatalogService {
     return this.catalogRepository.findAll();
   }
 
+  servicesForAccount(account: Record<string, any>) {
+    return this.catalogRepository.servicesForAccount(account);
+  }
+
+  ownerOf(listing: CatalogProvider) {
+    return this.catalogRepository.ownerOf(listing);
+  }
+
+  isBookable(listing: CatalogProvider): boolean {
+    return this.catalogRepository.isBookable(listing);
+  }
+
   findById(id: string): CatalogProvider {
     if (!id.trim()) {
       throw new BadRequestException('Provider id is required.');

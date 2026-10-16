@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { destinationFor } from '../../app/destinations'
 import { useAuth } from '../../context/useAuth'
 import { authApi } from '../../services/api'
+import { suspendedKind } from '../../services/apiClient'
 import { AuthFooterLinks, AuthPromo, FieldError, PasswordInput } from './AuthParts'
+import { SuspendedAccountNotice } from './SuspendedAccountNotice'
 import './auth.css'
 
-const destinationFor = (role) => ({ customer: '/customer/dashboard', provider: '/provider/dashboard', support: '/employee/support-tickets', superuser: '/admin' }[role] || '/')
 const roleTabs = [['customer', 'Customer'], ['provider', 'Provider'], ['employee', 'Employee'], ['superuser', 'Superuser']]
 const emailCopy = {
   customer: ['Email', 'Enter your email'],
@@ -14,9 +16,10 @@ const emailCopy = {
 }
 
 export function LoginPage() {
-  const { isAuthenticated, currentUser, establishSession } = useAuth(); const navigate = useNavigate(); const location = useLocation()
+  const { isAuthenticated, currentUser, establishSession, suspension, clearSuspension, reportSuspension } = useAuth(); const navigate = useNavigate(); const location = useLocation()
   const [role, setRole] = useState('customer'); const [values, setValues] = useState({ email: '', employeeId: '', department: 'Customer Operations', password: '' }); const [errors, setErrors] = useState({}); const [submitted, setSubmitted] = useState(false); const [error, setError] = useState(''); const [loading, setLoading] = useState(false)
-  if (isAuthenticated) return <Navigate replace to={location.state?.from || destinationFor(currentUser.role)} />
+  const backToLogin = () => { clearSuspension(); setValues((current) => ({ ...current, password: '' })); setError('') }
+  if (isAuthenticated) return <Navigate replace to={location.state?.from || destinationFor(currentUser)} />
   const employee = role === 'employee'
   const update = (event) => setValues({ ...values, [event.target.name]: event.target.value })
   const stateClass = (name) => (errors[name] ? 'error-field' : submitted ? 'success-field' : undefined)
@@ -29,8 +32,8 @@ export function LoginPage() {
       : { email: !values.email && 'Email is required.', password: !values.password && 'Password is required.' }
     setErrors(nextErrors); setSubmitted(true)
     if (Object.values(nextErrors).some(Boolean)) return
-    setLoading(true)
-    try { const result = await authApi.login(employee ? { role, employeeId: values.employeeId, department: values.department, password: values.password } : { role, email: values.email, password: values.password }); establishSession(result); navigate(location.state?.from || destinationFor(result.user.role), { replace: true }) } catch (requestError) { setError(requestError.message) } finally { setLoading(false) }
+    setLoading(true); clearSuspension()
+    try { const result = await authApi.login(employee ? { role, employeeId: values.employeeId, department: values.department, password: values.password } : { role, email: values.email, password: values.password }); establishSession(result); navigate(location.state?.from || destinationFor(result.user), { replace: true }) } catch (requestError) { const kind = suspendedKind(requestError); if (kind) reportSuspension({ kind, reason: requestError.reason || '' }); else setError(requestError.message) } finally { setLoading(false) }
   }
 
   const [emailLabel, emailPlaceholder] = emailCopy[role] || emailCopy.customer
@@ -40,6 +43,7 @@ export function LoginPage() {
         <div className="auth-left">
           <Link className="brand auth-brand" to="/"><span className="brand-icon">SE</span><span>ServeEase</span></Link>
           <div className="auth-card">
+            {suspension ? <SuspendedAccountNotice kind={suspension.kind} onBack={backToLogin} reason={suspension.reason} /> : <>
             <h1>Welcome to ServeEase</h1>
             <p className="auth-subtitle">Login or create an account to continue</p>
             <div className="role-tabs">
@@ -73,6 +77,7 @@ export function LoginPage() {
               <button className="btn btn-primary btn-full" type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign In'}</button>
             </form>
             <p className="auth-switch">{role === 'customer' || role === 'provider' ? <>Don’t have an account? <Link to={`/signup?role=${role}`}>Sign Up</Link></> : employee ? 'Employee accounts are created by ServeEase administration.' : 'Super user access is restricted. No self-sign up is allowed.'}</p>
+            </>}
           </div>
           <AuthFooterLinks />
         </div>

@@ -1785,6 +1785,39 @@
         ]
       }
     },
+    "/api/catalog/providers/{id}/photo": {
+      "get": {
+        "operationId": "CatalogController_photo",
+        "summary": "Get an approved provider's submitted profile photo (public image)",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Use \"admin\" for full access or \"user\" for read-only GET access.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/catalog/sync": {
       "post": {
         "operationId": "CatalogController_create",
@@ -1957,6 +1990,172 @@
         },
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/api/provider/verification-documents": {
+      "get": {
+        "operationId": "ProviderDocumentsController_list",
+        "summary": "List your own verification documents (canonical metadata)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "provider-verification-documents"
+        ]
+      }
+    },
+    "/api/provider/verification-documents/{documentId}/file": {
+      "get": {
+        "operationId": "ProviderDocumentsController_file",
+        "summary": "Stream the canonical file of one of your own verification documents",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "provider-verification-documents"
+        ]
+      },
+      "post": {
+        "operationId": "ProviderDocumentsController_upload",
+        "summary": "Upload the file for one of your own verification documents (PNG, JPEG or PDF; account must be under verification)",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "provider-verification-documents"
+        ]
+      }
+    },
+    "/api/provider/verification-documents/{documentId}/browser-import": {
+      "post": {
+        "operationId": "ProviderDocumentsController_importFromBrowser",
+        "summary": "Import the file of one of your own documents that the original site kept only in this browser",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "provider-verification-documents"
+        ]
+      }
+    },
+    "/api/admin/provider-documents/migrations": {
+      "post": {
+        "operationId": "ProviderDocumentMigrationController_migrate",
+        "summary": "Report (default) or apply the consolidation of existing provider documents into canonical storage (superuser)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "provider-document-migration"
+        ]
+      }
+    },
+    "/api/admin/provider-documents/migrations/{runId}/rollback": {
+      "post": {
+        "operationId": "ProviderDocumentMigrationController_rollback",
+        "summary": "Roll back one applied migration run (superuser)",
+        "parameters": [
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "provider-document-migration"
         ]
       }
     },
@@ -3532,6 +3731,378 @@
         },
         "tags": [
           "uploads"
+        ]
+      }
+    },
+    "/api/employee/customer-operations/customers": {
+      "get": {
+        "operationId": "EmployeeOperationsController_customers",
+        "summary": "List customer accounts with booking and ticket totals (Customer Operations, read-only)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/customer-operations/customers/{id}": {
+      "get": {
+        "operationId": "EmployeeOperationsController_customer",
+        "summary": "Read one customer with their bookings and support tickets (Customer Operations, read-only)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/customer-operations/customers/{id}/status": {
+      "patch": {
+        "operationId": "EmployeeOperationsController_updateCustomerStatus",
+        "summary": "Suspend ('Blocked') or reactivate ('Active') a customer account (Customer Operations or superuser)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/providers": {
+      "get": {
+        "operationId": "EmployeeOperationsController_providers",
+        "summary": "List provider accounts with account/verification status and document and service counts (Provider Operations)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/providers/{id}": {
+      "get": {
+        "operationId": "EmployeeOperationsController_provider",
+        "summary": "Read one provider with documents (metadata only), services, bookings, availability, tickets and status history (Provider Operations)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "listing",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/providers/{id}/verification": {
+      "patch": {
+        "operationId": "EmployeeOperationsController_decideProviderVerification",
+        "summary": "Approve or reject a pending provider verification (Provider Operations or superuser)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "listing",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderVerificationDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/providers/{id}/status": {
+      "patch": {
+        "operationId": "EmployeeOperationsController_updateProviderStatus",
+        "summary": "Suspend ('Suspended') or reactivate ('Active') a verified provider (Provider Operations or superuser)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "listing",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/providers/{id}/documents": {
+      "get": {
+        "operationId": "EmployeeOperationsController_providerDocuments",
+        "summary": "List one provider's verification documents from the canonical registry (Provider Operations or superuser)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "listing",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/providers/{id}/documents/{documentId}": {
+      "get": {
+        "operationId": "EmployeeOperationsController_providerDocument",
+        "summary": "Read one verification document's canonical metadata (Provider Operations or superuser)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "listing",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/providers/{id}/documents/{documentId}/preview": {
+      "get": {
+        "operationId": "EmployeeOperationsController_previewProviderDocument",
+        "summary": "Stream the canonical file behind one provider verification document (Provider Operations or superuser)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "listing",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/providers/{id}/documents/{documentId}/browser-import": {
+      "post": {
+        "operationId": "EmployeeOperationsController_importBrowserDocument",
+        "summary": "Import a document file that the original site kept only in this browser (Provider Operations or superuser)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "listing",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
         ]
       }
     }
@@ -5181,6 +5752,10 @@
         "type": "object",
         "properties": {}
       },
+      "MigrationRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
       "Activity": {
         "type": "object",
         "properties": {
@@ -5966,6 +6541,83 @@
         "required": [
           "finalDecision",
           "adminRemarks"
+        ]
+      },
+      "UpdateCustomerStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "Active",
+              "Blocked"
+            ],
+            "example": "Blocked",
+            "description": "'Blocked' suspends the customer; 'Active' reactivates them."
+          },
+          "reason": {
+            "type": "string",
+            "example": "Repeated payment disputes under review."
+          },
+          "remarks": {
+            "type": "string",
+            "example": "Reviewed with the support team."
+          }
+        },
+        "required": [
+          "status",
+          "reason"
+        ]
+      },
+      "ProviderVerificationDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "example": "reject"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Experience proof does not match the declared work history.",
+            "description": "Required when rejecting; not used when approving."
+          },
+          "remarks": {
+            "type": "string",
+            "example": "Documents checked against the registration details."
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "UpdateProviderStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "Active",
+              "Suspended"
+            ],
+            "example": "Suspended",
+            "description": "'Suspended' blocks a verified provider; 'Active' reactivates them."
+          },
+          "reason": {
+            "type": "string",
+            "example": "Repeated no-shows under review."
+          },
+          "remarks": {
+            "type": "string",
+            "example": "Agreed with the operations lead."
+          }
+        },
+        "required": [
+          "status",
+          "reason"
         ]
       }
     }

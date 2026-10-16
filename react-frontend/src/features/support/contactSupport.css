@@ -1,0 +1,16 @@
+/* Public contact page, in the ServeEase look of front-end customer-support-center.html (panel cards, gradient buttons). */
+.contact-support { padding: 40px 16px; min-height: 70vh; }
+.contact-support-card { max-width: 720px; margin: 0 auto; padding: 28px; border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(34, 57, 93, 0.08); }
+.contact-support h1 { margin: 0 0 8px; color: #22395d; font-size: 28px; }
+.contact-support h2 { margin: 0 0 10px; color: #22395d; font-size: 17px; }
+.contact-support-lead { margin: 0 0 16px; color: #5e6f87; line-height: 1.5; }
+.contact-support-context { margin: 0 0 18px; padding: 14px 16px; border: 1px solid #f2c6c2; border-radius: 12px; background: #fff7f6; color: #22395d; line-height: 1.5; }
+.contact-support-methods { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.contact-support-methods article { padding: 16px; border: 1px solid #e3e9f3; border-radius: 12px; }
+.contact-support .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border: 0; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; overflow-wrap: anywhere; }
+.contact-support .btn-primary { background: linear-gradient(90deg, #2f6df6, #8c35ff); color: #fff; }
+.contact-support .btn-outline { border: 1px solid #d8dfea; background: #fff; color: #2f6df6; }
+.contact-support .btn:focus-visible { outline: 2px solid rgba(56, 103, 246, 0.6); outline-offset: 2px; }
+.contact-support-note { margin: 0 0 18px; color: #5e6f87; font-size: 13px; line-height: 1.5; }
+.contact-support-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 480px) { .contact-support-card { padding: 20px 16px; } .contact-support-actions .btn { width: 100%; } }
