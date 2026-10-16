@@ -1,59 +1,140 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
-import { StatusBadge } from '../../components/common/StatusBadge'
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminPageHeader } from './AdminPageHeader'
-import { getBooking, listBookings, listEscalatedTickets } from './adminApi'
+import { getBooking, listBookings } from './adminApi'
 import { money, show, useAdminData } from './useAdminData'
 import { settleBooking } from '../finance/revenueModel'
 import './admin.css'
 
 const standardBookingGroups = [
-  { key: 'Requested', statuses: ['Requested', 'Pending'], className: 'requested', subtitle: 'bookings awaiting provider approval' },
-  { key: 'Upcoming', statuses: ['Upcoming', 'Accepted'], className: 'upcoming', subtitle: 'bookings scheduled' },
-  { key: 'Completed', statuses: ['Completed'], className: 'completed', subtitle: 'bookings successfully completed' },
-  { key: 'Cancelled', statuses: ['Cancelled'], className: 'cancelled', subtitle: 'bookings cancelled' },
+  { key: 'Requested', statuses: ['Requested', 'Pending'], className: 'requested', subtitle: 'bookings awaiting provider approval', icon: '◔' },
+  { key: 'Upcoming', statuses: ['Upcoming', 'Accepted', 'Scheduled', 'In Progress'], className: 'upcoming', subtitle: 'bookings scheduled', icon: '◷' },
+  { key: 'Completed', statuses: ['Completed', 'Complete'], className: 'completed', subtitle: 'bookings successfully completed', icon: '✓' },
+  { key: 'Cancelled', statuses: ['Cancelled', 'Canceled'], className: 'cancelled', subtitle: 'bookings cancelled', icon: '×' },
 ]
 
-function bookingGroups(bookings) {
-  const known = new Set(standardBookingGroups.flatMap((group) => group.statuses))
-  const extra = [...new Set(bookings.map((booking) => booking.status).filter((status) => status && !known.has(status)))].map((status) => ({ key: status, statuses: [status], className: 'other', subtitle: 'bookings with this status' }))
-  return [...standardBookingGroups, ...extra]
+function normalizedStatus(booking) {
+  const rawStatus = String(booking.status || booking.bookingStatus || 'Requested').trim()
+  const key = rawStatus.toLowerCase()
+  const reason = booking.cancellationReason || booking.reason || booking.cancelReason
+  if (String(reason || '').startsWith('Automatically cancelled because the provider did not confirm')) return 'Requested'
+  const group = standardBookingGroups.find((item) => item.statuses.some((status) => status.toLowerCase() === key))
+  return group?.key || rawStatus
 }
 
-function isInGroup(booking, group) {
-  return group.statuses.includes(booking.status)
-}
-
-function matchesSearch(booking, query) {
-  return [booking.id, booking.customerName, booking.customerEmail, booking.customerId, booking.provider, booking.providerId, booking.service, booking.category]
-    .some((value) => value !== null && value !== undefined && String(value).toLocaleLowerCase().includes(query))
+function groupBookings(bookings) {
+  const knownStatuses = new Set(standardBookingGroups.map((group) => group.key))
+  const normalizedBookings = bookings.map((booking) => ({ ...booking, displayStatus: normalizedStatus(booking) }))
+  const extraGroups = [...new Set(normalizedBookings.map((booking) => booking.displayStatus).filter((status) => status && !knownStatuses.has(status)))].map((status) => ({
+    key: status,
+    statuses: [status],
+    className: 'other',
+    subtitle: 'bookings with this status',
+    icon: '•',
+  }))
+  return { rows: normalizedBookings, groups: [...standardBookingGroups, ...extraGroups] }
 }
 
 function formatDate(value) {
   if (!value) return 'Not available'
-  const date = new Date(value)
+  const dayFirst = String(value).match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
+  const date = dayFirst
+    ? new Date(Number(dayFirst[3]), Number(dayFirst[2]) - 1, Number(dayFirst[1]))
+    : new Date(value)
   return Number.isNaN(date.getTime()) ? show(value) : new Intl.DateTimeFormat('en-GB').format(date)
 }
 
-function SummaryCard({ label, count, attention = false }) {
-  return <article className={`admin-stat-card${attention ? ' admin-stat-card--attention' : ''}`}><span>{label}<span>SE</span></span><strong>{count}</strong></article>
+// Settled bookings report the payment state the revenue model derives (Paid / Refunded);
+// records without a known amount fall back to whatever status the booking carries.
+function paymentStatus(booking) {
+  const settled = settleBooking(booking)
+  if (settled.financialsAvailable) return settled.paymentStatus
+  return booking.paymentStatus || booking.payment || booking.paymentState || 'Pending'
+}
+
+function paymentTone(value) {
+  const status = String(value || '').toLowerCase()
+  if (status.includes('paid') || status.includes('success')) return 'paid'
+  if (status.includes('refund')) return 'refunded'
+  return 'pending'
+}
+
+function BookingStat({ label, count, icon, attention = false }) {
+  return <article className={`admin-booking-stat${attention ? ' admin-booking-stat--attention' : ''}`}>
+    <span>{label}<span aria-hidden="true">{icon}</span></span><strong>{count}</strong>
+  </article>
+}
+
+function BookingCard({ booking, onView }) {
+  const status = booking.displayStatus || normalizedStatus(booking)
+  const payment = paymentStatus(booking)
+  const completed = status === 'Completed'
+  const cancelled = status === 'Cancelled'
+  const dateLabel = completed ? 'Completed' : 'Service Date'
+  const date = completed ? (booking.receivedDate || booking.date || booking.serviceDate) : (booking.date || booking.serviceDate || booking.bookingDate)
+  const secondaryLabel = cancelled ? 'Reason' : 'Service Time'
+  const secondaryValue = cancelled
+    ? booking.cancellationReason || booking.reason || booking.cancelReason || 'N/A'
+    : booking.time || booking.serviceTime || 'N/A'
+  const customer = booking.customerName || booking.customer || booking.customerEmail || booking.customerId
+  const provider = booking.provider || booking.providerName || booking.providerId
+  const category = booking.category || booking.serviceCategory || booking.serviceType || 'N/A'
+  const service = booking.service || booking.serviceType || booking.category || 'N/A'
+
+  return <article className="admin-booking-card">
+    <div className="admin-booking-card-main">
+      <div className="admin-booking-card-title"><h3>{show(booking.id || booking.bookingId)}</h3><span className={`admin-booking-chip admin-booking-chip--${status.toLowerCase().replace(/\s+/g, '-')}`}>{status}</span><span className={`admin-booking-chip admin-booking-chip--${paymentTone(payment)}`}>{show(payment)}</span></div>
+      <p className="admin-booking-card-service"><strong>{show(category)}</strong> - {show(service)}</p>
+      <div className="admin-booking-card-meta">
+        <span>Customer: {show(customer)}</span><span>Provider: {show(provider)}</span>
+        <span>{dateLabel}: {formatDate(date)}</span><span>{secondaryLabel}: {show(secondaryValue)}</span><span>Amount: {money(settleBooking(booking).customerTotal)}</span>
+      </div>
+    </div>
+    <button aria-label={`View details for ${booking.id || booking.bookingId}`} className="admin-button admin-button--secondary admin-booking-view" onClick={() => onView(String(booking.id || booking.bookingId))} type="button">◉ View<br />Details</button>
+  </article>
+}
+
+function BookingDetails({ booking, onClose }) {
+  const status = normalizedStatus(booking)
+  const payment = paymentStatus(booking)
+  const settled = settleBooking(booking)
+  const serviceInfo = [
+    ['Category:', booking.category || booking.serviceCategory || 'N/A'],
+    ['Service Type:', booking.service || booking.serviceType || booking.category || 'N/A'],
+    ['Provider:', booking.provider || booking.providerName || booking.providerId || 'N/A'],
+    ['Service Time:', booking.time || booking.serviceTime || 'N/A'],
+    ['Service Fee:', money(settled.serviceFee)],
+    ['Customer Total:', money(settled.customerTotal)],
+    ['Payment Method:', booking.paymentMethod || 'N/A'],
+  ]
+  const customerInfo = [
+    ['Name', booking.customerName || booking.customer || booking.customerId || 'N/A'],
+    ['Email', booking.customerEmail || booking.email || 'N/A'],
+  ]
+
+  return <div className="admin-modal-backdrop admin-booking-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+    <section aria-labelledby="admin-booking-modal-title" aria-modal="true" className="admin-booking-modal" role="dialog">
+      <header className="admin-booking-modal-header"><div><h2 id="admin-booking-modal-title">{show(booking.id || booking.bookingId)}</h2><p>Booking Details</p></div><button aria-label="Close booking details" className="admin-booking-modal-close" onClick={onClose} type="button">×</button></header>
+      <div className="admin-booking-modal-body">
+        <div className="admin-booking-modal-badges"><span className={`admin-booking-chip admin-booking-chip--${status.toLowerCase().replace(/\s+/g, '-')}`}>{status}</span><span className={`admin-booking-chip admin-booking-chip--${paymentTone(payment)}`}>Payment: {show(payment)}</span></div>
+        <section><h3>Service Information</h3><dl className="admin-booking-detail-grid">{serviceInfo.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{show(value)}</dd></div>)}</dl></section>
+        <section><h3>Customer Information</h3><dl className="admin-booking-customer-info">{customerInfo.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{show(value)}</dd></div>)}</dl></section>
+      </div>
+      <footer className="admin-booking-modal-footer"><button className="admin-button admin-button--secondary admin-button--full" onClick={onClose} type="button">Close</button></footer>
+    </section>
+  </div>
 }
 
 export default function AdminBookingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('booking')
-  const [query, setQuery] = useState('')
   const bookings = useAdminData(listBookings)
-  const tickets = useAdminData(listEscalatedTickets)
   const loadSelectedBooking = useCallback(() => selectedId ? getBooking(selectedId) : Promise.resolve(null), [selectedId])
   const selectedBooking = useAdminData(loadSelectedBooking)
-  const bookingRecords = useMemo(() => Array.isArray(bookings.data) ? bookings.data : [], [bookings.data])
-  const ticketRecords = useMemo(() => Array.isArray(tickets.data) ? tickets.data : [], [tickets.data])
-  const queryText = query.trim().toLocaleLowerCase()
-  const groups = useMemo(() => bookingGroups(bookingRecords), [bookingRecords])
-  const visibleBookings = useMemo(() => bookingRecords.filter((booking) => matchesSearch(booking, queryText)), [bookingRecords, queryText])
+  const records = useMemo(() => Array.isArray(bookings.data) ? bookings.data : [], [bookings.data])
+  const { rows, groups } = useMemo(() => groupBookings(records), [records])
 
   function selectBooking(id) {
     const next = new URLSearchParams(searchParams)
@@ -67,77 +148,44 @@ export default function AdminBookingsPage() {
     setSearchParams(next)
   }
 
-  return (
-    <AdminAccessGate>
-      <section className="admin-page">
-        <AdminPageHeader section="Monitor Bookings" title="Monitor All Bookings" description="View bookings across the platform, organized by status." />
-        {bookings.isLoading && <LoadingState message="Loading booking summary…" />}
-        {!bookings.isLoading && bookings.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={bookings.error} /><button className="admin-button" onClick={bookings.reload} type="button">Retry</button></div>}
-        {!bookings.isLoading && !bookings.error && <div className="admin-grid admin-booking-summary">
-          {groups.map((group) => <SummaryCard attention={group.className === 'requested' || group.className === 'cancelled'} count={bookingRecords.filter((booking) => isInGroup(booking, group)).length} key={group.key} label={group.key} />)}
-        </div>}
+  useEffect(() => {
+    if (!selectedId) return undefined
+    function handleKeyDown(event) {
+      if (event.key !== 'Escape') return
+      const next = new URLSearchParams(searchParams)
+      next.delete('booking')
+      setSearchParams(next)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedId, searchParams, setSearchParams])
 
-        <label className="admin-form admin-booking-search">Search bookings<input onChange={(event) => setQuery(event.target.value)} placeholder="Search by ID, customer, provider, or service" type="search" value={query} /></label>
-        {bookings.data && !bookings.error && bookingRecords.length === 0 && <EmptyState message="No bookings are available." />}
-        {!bookings.isLoading && !bookings.error && bookingRecords.length > 0 && visibleBookings.length === 0 && <EmptyState message="No bookings match this search." />}
-        {!bookings.isLoading && !bookings.error && visibleBookings.length > 0 && groups.map((group) => {
-          const items = visibleBookings.filter((booking) => isInGroup(booking, group))
-          return <section className={`admin-booking-section admin-booking-section--${group.className}`} key={group.key}>
-            <div className="admin-booking-section-heading"><div><h2>{group.key} Bookings</h2><p>{items.length} {group.subtitle}</p></div></div>
-            {items.length === 0 ? <EmptyState message="No bookings found in this section." /> : <div className="admin-table-wrap"><table className="admin-table">
-              <thead><tr><th>ID</th><th>Service</th><th>Customer</th><th>Provider</th><th>Date</th><th>Status</th><th>Amount</th><th>Details</th></tr></thead>
-              <tbody>{items.map((booking, index) => <tr key={booking.id ?? index}>
-                <td><strong>{show(booking.id)}</strong></td><td>{show(booking.service || booking.category)}</td>
-                <td>{show(booking.customerName || booking.customerEmail || booking.customerId)}</td><td>{show(booking.provider || booking.providerId)}</td>
-                <td>{formatDate(booking.date)}</td><td><StatusBadge tone={booking.status === 'Completed' ? 'ready' : 'neutral'}>{show(booking.status)}</StatusBadge></td>
-                <td>{money(settleBooking(booking).customerTotal)}</td><td><button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectBooking(String(booking.id))} type="button">View details</button></td>
-              </tr>)}</tbody>
-            </table></div>}
+  return <AdminAccessGate>
+    <section className="admin-page admin-monitor-bookings">
+      <AdminPageHeader section="Monitor Bookings" title="Monitor All Bookings" description="View and manage all bookings across the platform organized by status." />
+      {bookings.isLoading && <LoadingState message="Loading booking summary…" />}
+      {!bookings.isLoading && bookings.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={bookings.error} /><button className="admin-button" onClick={bookings.reload} type="button">Retry</button></div>}
+      {!bookings.isLoading && !bookings.error && <div className="admin-booking-summary">
+        {standardBookingGroups.map((group) => <BookingStat attention={group.className === 'requested' || group.className === 'cancelled'} count={rows.filter((booking) => booking.displayStatus === group.key).length} icon={group.icon} key={group.key} label={group.key} />)}
+      </div>}
+      {!bookings.isLoading && !bookings.error && records.length === 0 && <EmptyState message="No bookings are available." />}
+      {!bookings.isLoading && !bookings.error && rows.length > 0 && <div className="admin-booking-sections">
+        {groups.map((group) => {
+          const items = rows.filter((booking) => booking.displayStatus === group.key)
+          return <section aria-label={`${group.key} bookings`} className={`admin-booking-section admin-booking-section--${group.className}`} key={group.key}>
+            <div className="admin-booking-section-heading"><span aria-hidden="true">{group.icon}</span><div><h2>{group.key} Bookings</h2><p>{items.length} {group.subtitle}</p></div></div>
+            {items.length ? <div className="admin-booking-card-list">{items.map((booking, index) => <BookingCard booking={booking} key={booking.id || index} onView={selectBooking} />)}</div> : <EmptyState message="No bookings found in this section." />}
           </section>
         })}
+      </div>}
+      <div className="admin-category-back"><Link className="admin-button admin-button--secondary" to="/admin">‹ Return to Dashboard</Link></div>
 
-        {selectedId && <section className="admin-panel admin-booking-detail">
-          <div className="admin-panel-heading"><h2>Booking Details</h2><button className="admin-button admin-button--secondary" onClick={closeBooking} type="button">Close</button></div>
-          {selectedBooking.isLoading && <LoadingState message="Loading booking details…" />}
-          {!selectedBooking.isLoading && selectedBooking.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={selectedBooking.error} /><button className="admin-button" onClick={selectedBooking.reload} type="button">Retry</button></div>}
-          {!selectedBooking.isLoading && !selectedBooking.error && !selectedBooking.data && <EmptyState message="Booking details are not available." />}
-          {selectedBooking.data && <dl className="admin-detail-grid">
-            {Object.entries({
-              'Booking ID': selectedBooking.data.id,
-              Service: selectedBooking.data.service,
-              Category: selectedBooking.data.category,
-              'Service date': formatDate(selectedBooking.data.date),
-              'Service time': selectedBooking.data.time,
-              Status: selectedBooking.data.status,
-              ...(() => {
-                const settled = settleBooking(selectedBooking.data)
-                return { 'Service fee': money(settled.serviceFee), 'Customer total': money(settled.customerTotal), 'Payment status': settled.paymentStatus }
-              })(),
-              'Payment method': selectedBooking.data.paymentMethod,
-              Customer: selectedBooking.data.customerName,
-              'Customer email': selectedBooking.data.customerEmail,
-              'Customer phone': selectedBooking.data.customerPhone,
-              Provider: selectedBooking.data.provider || selectedBooking.data.providerId,
-              Address: selectedBooking.data.address,
-              'Cancellation reason': selectedBooking.data.cancellationReason,
-            }).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{show(value)}</dd></div>)}
-          </dl>}
-        </section>}
-
-        <section className="admin-panel">
-          <div className="admin-panel-heading"><h2>Escalated Tickets ({tickets.data ? ticketRecords.length : 'Not available'})</h2><Link className="admin-button admin-button--secondary" to="/admin/escalated-tickets">Open Ticket Resolution Panel</Link></div>
-          {tickets.isLoading && <LoadingState message="Loading escalated tickets…" />}
-          {!tickets.isLoading && tickets.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={tickets.error} /><button className="admin-button" onClick={tickets.reload} type="button">Retry</button></div>}
-          {!tickets.isLoading && !tickets.error && ticketRecords.length === 0 && <EmptyState message="No escalated tickets are available." />}
-          {!tickets.isLoading && !tickets.error && ticketRecords.length > 0 && <div className="admin-table-wrap"><table className="admin-table">
-            <thead><tr><th>Ticket ID</th><th>Subject</th><th>Raised by</th><th>Priority</th><th>Status</th><th>Escalation reason</th><th>Action</th></tr></thead>
-            <tbody>{ticketRecords.map((ticket, index) => <tr key={ticket.ticketId ?? index}>
-              <td>{show(ticket.ticketId)}</td><td>{show(ticket.subject)}</td><td>{show(ticket.raisedByName)}</td><td>{show(ticket.priority)}</td><td>{show(ticket.status)}</td><td>{show(ticket.escalationReason)}</td>
-              <td><Link to={`/admin/escalated-tickets?ticket=${encodeURIComponent(ticket.ticketId)}`}>View details</Link></td>
-            </tr>)}</tbody>
-          </table></div>}
-        </section>
-      </section>
-    </AdminAccessGate>
-  )
+      {selectedId && <>
+        {selectedBooking.isLoading && <div className="admin-modal-backdrop admin-booking-modal-backdrop"><section aria-modal="true" className="admin-booking-modal" role="dialog"><LoadingState message="Loading booking details…" /></section></div>}
+        {!selectedBooking.isLoading && selectedBooking.error && <div className="admin-modal-backdrop admin-booking-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeBooking() }}><section aria-modal="true" className="admin-booking-modal" role="dialog"><div className="admin-feedback admin-feedback--error"><ErrorState message={selectedBooking.error} /><button className="admin-button" onClick={selectedBooking.reload} type="button">Retry</button><button className="admin-button admin-button--secondary" onClick={closeBooking} type="button">Close</button></div></section></div>}
+        {!selectedBooking.isLoading && !selectedBooking.error && !selectedBooking.data && <div className="admin-modal-backdrop admin-booking-modal-backdrop"><section aria-modal="true" className="admin-booking-modal" role="dialog"><EmptyState message="Booking details are not available." /><button className="admin-button admin-button--secondary" onClick={closeBooking} type="button">Close</button></section></div>}
+        {selectedBooking.data && !selectedBooking.isLoading && <BookingDetails booking={selectedBooking.data} onClose={closeBooking} />}
+      </>}
+    </section>
+  </AdminAccessGate>
 }

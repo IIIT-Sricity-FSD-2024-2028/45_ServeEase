@@ -6,10 +6,12 @@ import FinanceOverviewPage from './FinanceOverviewPage'
 import AdminBookingsPage from './AdminBookingsPage'
 import AdminEscalatedTicketsPage from './AdminEscalatedTicketsPage'
 import AdminServiceCategoriesPage from './AdminServiceCategoriesPage'
+import AdminAdministrationPage from './AdminAdministrationPage'
 
 // Register by mapping adminRoutes inside the admin/employee layout in routes.jsx.
 export const adminRoutes = [
   { path: '/admin', Component: AdminHubPage },
+  { path: '/admin/administration', Component: AdminAdministrationPage },
   { path: '/admin/customers', Component: CustomerOperationsPage },
   { path: '/admin/providers', Component: ProviderOperationsPage },
   { path: '/admin/verification', Component: ProviderVerificationPage },

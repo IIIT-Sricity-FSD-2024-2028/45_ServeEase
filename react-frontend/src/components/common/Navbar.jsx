@@ -6,6 +6,7 @@ import { bookingsApi, ticketsApi } from '../../services/api'
 import { buildSupportNotifications, readSupportNotificationIds, saveSupportNotificationIds } from '../../features/support/supportNotifications'
 import { buildProviderNotifications, readProviderNotificationIds, saveProviderNotificationIds } from '../../features/provider/providerNotifications'
 import { applyProviderSearch, providerSearchPlaceholders } from './providerSearch'
+import { getSuperuserModuleData, listEscalatedTickets, saveSuperuserModuleData } from '../../features/admin/adminApi'
 import './Navbar.css'
 
 // Authenticated dashboard topbar reconstructed from the original front-end pages:
@@ -145,6 +146,24 @@ function buildCustomerNotifications(bookings, tickets, user) {
   return notifications.sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0)).slice(0, 30)
 }
 
+function buildSuperuserNotifications(moduleData, tickets) {
+  const source = Array.isArray(moduleData?.notifications) ? moduleData.notifications : tickets.map((ticket) => {
+    const id = ticket.ticketId || ticket.id
+    return id ? { id: `AN-escalated-${id}`, eventId: `ticket-escalated:${id}:superuser`, text: `Support escalated ticket - ${id}`, type: 'red', createdAt: ticket.escalatedAt || ticket.createdAt, actionPage: '/admin/escalated-tickets', isNew: true } : null
+  }).filter(Boolean)
+  const seen = new Set()
+  return source.map((item, index) => {
+    const id = String(item.id || item.eventId || `notification-${index}`)
+    const eventId = String(item.eventId || id)
+    const hasReadState = item.read !== undefined || item.isRead !== undefined || item.isNew !== undefined
+    return { ...item, id, eventId, text: item.text || item.message || 'Platform update', createdAt: item.createdAt || item.createdAtIso || item.timestamp || item.time, to: item.actionPage?.startsWith('/admin/') ? item.actionPage : '/admin' , isUnread: hasReadState ? !(item.read === true || item.isRead === true || item.isNew === false) : false }
+  }).filter((item) => {
+    if (!item.createdAt || seen.has(item.eventId)) return false
+    seen.add(item.eventId)
+    return true
+  }).sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt))
+}
+
 // api.js ServeEaseDate.formatDateTime(): DD-MM-YYYY hh:mm AM/PM, as the original notification panel shows it.
 function formatNotificationTime(value) {
   return value ? formatDisplayDateTime(value) : 'Time unavailable'
@@ -159,6 +178,8 @@ export function Navbar({ area = 'ServeEase' }) {
   const isSupportDashboard = pathname === '/employee/support-tickets'
   const [ticketSearch, setTicketSearch] = useState('')
   const [notifications, setNotifications] = useState([])
+  const [superuserModuleData, setSuperuserModuleData] = useState(null)
+  const [superuserStateExists, setSuperuserStateExists] = useState(false)
   const [notificationOwnerKey, setNotificationOwnerKey] = useState('')
   const [notificationState, setNotificationState] = useState('idle')
   const [notificationError, setNotificationError] = useState('')
@@ -187,7 +208,8 @@ export function Navbar({ area = 'ServeEase' }) {
     : ''
   const customerNotifications = notificationOwnerKey === customerNotificationIdentity ? notifications : []
   const customerNotificationState = notificationOwnerKey === customerNotificationIdentity ? notificationState : 'idle'
-  const notificationUnreadCount = customerNotifications.filter((notification) => notification.isUnread).length
+  const activeNotifications = variant?.notifications === 'superuser' ? notifications : customerNotifications
+  const notificationUnreadCount = activeNotifications.filter((notification) => notification.isUnread).length
 
   useEffect(() => {
     if (!openMenu) return undefined
@@ -211,6 +233,24 @@ export function Navbar({ area = 'ServeEase' }) {
   }, [openMenu])
 
   async function loadNotifications(silent = false) {
+    if (variant?.notifications === 'superuser') {
+      const requestId = ++notificationRequestRef.current
+      if (!silent) { setNotificationState('loading'); setNotificationError('') }
+      try {
+        const [moduleResult, tickets] = await Promise.all([getSuperuserModuleData(), listEscalatedTickets()])
+        if (requestId !== notificationRequestRef.current) return
+        const moduleData = moduleResult.value || {}
+        setSuperuserModuleData(moduleData)
+        setSuperuserStateExists(moduleResult.exists)
+        setNotifications(buildSuperuserNotifications(moduleData, Array.isArray(tickets) ? tickets : []))
+        setNotificationState('ready')
+      } catch (error) {
+        if (requestId !== notificationRequestRef.current || silent) return
+        setNotificationError(error.message || 'Notifications could not be loaded.')
+        setNotificationState('error')
+      }
+      return
+    }
     if (isSupportAgent) {
       const requestId = ++notificationRequestRef.current
       const ownerKey = String(currentUser.userId || currentUser.email || '')
@@ -292,6 +332,15 @@ export function Navbar({ area = 'ServeEase' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSupportAgent, isProviderAccount, currentUser?.userId])
 
+  const isSuperuser = variant?.notifications === 'superuser' && currentUser?.role === 'superuser'
+  useEffect(() => {
+    if (!isSuperuser) return undefined
+    const first = window.setTimeout(() => void loadNotifications(true), 0)
+    const timer = window.setInterval(() => void loadNotifications(true), 30000)
+    return () => { window.clearTimeout(first); window.clearInterval(timer) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperuser, currentUser?.userId])
+
   function toggleProfile() {
     setOpenMenu(isProfileOpen ? null : 'profile')
   }
@@ -301,7 +350,14 @@ export function Navbar({ area = 'ServeEase' }) {
     : isProviderAccount ? saveProviderNotificationIds(currentUser, ids)
     : localStorage.setItem(notificationReadKey(currentUser), JSON.stringify([...ids])))
 
-  function markNotificationRead(notification) {
+  async function markNotificationRead(notification) {
+    if (variant?.notifications === 'superuser') {
+      const saved = await saveSuperuserNotifications(notifications.map((item) => item.id === notification.id ? { ...item, read: true, isRead: true, isNew: false } : item))
+      if (!saved) return
+      setOpenMenu(null)
+      navigate(notification.to)
+      return
+    }
     try {
       const readIds = readIdsFor()
       readIds.add(notification.id)
@@ -315,6 +371,10 @@ export function Navbar({ area = 'ServeEase' }) {
   }
 
   function markAllNotificationsRead() {
+    if (variant?.notifications === 'superuser') {
+      void saveSuperuserNotifications(notifications.map((item) => ({ ...item, read: true, isRead: true, isNew: false })))
+      return
+    }
     try {
       const readIds = readIdsFor()
       notifications.forEach((notification) => readIds.add(notification.id))
@@ -322,6 +382,22 @@ export function Navbar({ area = 'ServeEase' }) {
       setNotifications((current) => current.map((notification) => ({ ...notification, isUnread: false })))
     } catch {
       setNotificationError('Read state could not be saved in this browser.')
+    }
+  }
+
+  async function saveSuperuserNotifications(nextNotifications) {
+    try {
+      const entry = await saveSuperuserModuleData({ ...(superuserModuleData || {}), notifications: nextNotifications }, superuserStateExists)
+      const nextData = entry?.value && typeof entry.value === 'object' ? entry.value : { ...(superuserModuleData || {}), notifications: nextNotifications }
+      setSuperuserModuleData(nextData)
+      setSuperuserStateExists(true)
+      setNotifications(buildSuperuserNotifications(nextData, []))
+      setNotificationState('ready')
+      setNotificationError('')
+      return true
+    } catch (error) {
+      setNotificationError(error.message || 'Notification changes could not be saved.')
+      return false
     }
   }
 
@@ -338,7 +414,7 @@ export function Navbar({ area = 'ServeEase' }) {
   }
 
   const brandContent = <><span className="brand-icon">SE</span><span>ServeEase</span></>
-  const visibleNotifications = showAllNotifications ? customerNotifications : customerNotifications.slice(0, 4)
+  const visibleNotifications = showAllNotifications ? activeNotifications : activeNotifications.slice(0, 4)
 
   return <header className={`se-topbar${role ? ` se-topbar--${role}` : ''}`}>
     {variant?.brandLinksHome === false
@@ -350,7 +426,7 @@ export function Navbar({ area = 'ServeEase' }) {
         ? <input type="search" placeholder="Search tickets or booking references..." aria-label="Search support tickets" value={ticketSearch} onChange={(event) => { setTicketSearch(event.target.value); if (isSupportDashboard) window.dispatchEvent(new CustomEvent('serveease-ticket-search', { detail: event.target.value })) }} onKeyDown={(event) => { if (event.key === 'Enter' && !isSupportDashboard) navigate(`/employee/support-tickets?search=${encodeURIComponent(ticketSearch)}`) }} />
         : role === 'provider'
         ? <input key={pathname} type="search" placeholder={providerSearchPlaceholders[pathname] || 'Search...'} aria-label="Search this page" onChange={(event) => applyProviderSearch(pathname, event.target.value)} />
-        : <input type="search" placeholder="Search for services..." aria-label="Search for services" onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) }} />}
+        : <input key={pathname} type="search" placeholder={pathname === '/admin/finance' ? 'Search transaction, booking, customer or provider' : 'Search for services...'} aria-label={pathname === '/admin/finance' ? 'Search financial records' : 'Search for services'} onKeyDown={(event) => { if (event.key === 'Enter') { if (pathname === '/admin/finance') window.dispatchEvent(new CustomEvent('serveease-finance-search', { detail: event.currentTarget.value })); else navigate(`/services?q=${encodeURIComponent(event.currentTarget.value)}`) } }} />}
     </div>
 
     <div className="se-topbar__actions" ref={actionsRef}>
@@ -372,25 +448,26 @@ export function Navbar({ area = 'ServeEase' }) {
         {isNotificationsOpen && <section aria-label="Notifications" className="se-notification-panel" id="se-topbar-notification-panel">
           <div className="se-notification-panel__head">
             <h3>Notifications</h3>
-            {customerNotificationState === 'ready' && <span className="se-notification-panel__badge">{notificationUnreadCount} New</span>}
+          {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <span className="se-notification-panel__badge">{notificationUnreadCount} New</span>}
           </div>
-          {customerNotificationState === 'loading' && <p className="se-notification-panel__state" role="status">Loading notifications…</p>}
-          {customerNotificationState === 'error' && <div className="se-notification-panel__error" role="alert">
+          {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'loading' && <p className="se-notification-panel__state" role="status">Loading notifications…</p>}
+          {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'error' && <div className="se-notification-panel__error" role="alert">
             <p>{notificationError}</p>
             <button className="se-notification-panel__action" onClick={() => void loadNotifications()} type="button">Retry</button>
           </div>}
-          {notificationError && customerNotificationState === 'ready' && <p className="se-notification-panel__error-message" role="alert">{notificationError}</p>}
+          {notificationError && (variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <p className="se-notification-panel__error-message" role="alert">{notificationError}</p>}
           {customerNotificationState === 'signed-out' && <p className="se-notification-panel__state">Sign in to view notifications.</p>}
-          {customerNotificationState === 'unavailable' && <p className="se-notification-panel__state">Notifications are not available for this role in the React app yet.</p>}
-          {customerNotificationState === 'ready' && <>
-            {customerNotifications.length === 0
+          {variant.notifications !== 'superuser' && customerNotificationState === 'unavailable' && <p className="se-notification-panel__state">Notifications are not available for this role in the React app yet.</p>}
+          {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <>
+            {activeNotifications.length === 0
               ? <div className="se-notification-panel__empty"><strong>No notifications yet</strong><span>{isSupportAgent ? 'New tickets and customer or provider messages will appear here.' : isProviderAccount ? 'New booking requests and support replies will appear here.' : 'New booking, payment, and support updates will appear here.'}</span></div>
-              : <div className="se-notification-panel__list">{visibleNotifications.map((notification) => <button className={`se-notification-item${notification.isUnread ? ' is-unread' : ''}`} key={notification.id} onClick={() => markNotificationRead(notification)} type="button">
-                <p>{notification.text}</p>
-                <time dateTime={notification.createdAt || undefined}>{formatNotificationTime(notification.createdAt)}</time>
-              </button>)}</div>}
+              : <div className="se-notification-panel__list">{visibleNotifications.map((notification) => <article className={`se-notification-item${notification.isUnread ? ' is-unread' : ''}`} key={notification.id}>
+                <button className="se-notification-item__open" onClick={() => markNotificationRead(notification)} type="button"><p>{notification.text}</p><time dateTime={notification.createdAt || undefined}>{formatNotificationTime(notification.createdAt)}</time></button>
+                {variant.notifications === 'superuser' && notification.isUnread && <button className="se-notification-item__read" onClick={() => void saveSuperuserNotifications(notifications.map((item) => item.id === notification.id ? { ...item, read: true, isRead: true, isNew: false } : item))} type="button">Mark as Read</button>}
+              </article>)}</div>}
             {notificationUnreadCount > 0 && <button className="se-notification-panel__action" onClick={markAllNotificationsRead} type="button">Mark All as Read</button>}
-            {customerNotifications.length > 4 && <button className="se-notification-panel__action" onClick={() => setShowAllNotifications((shown) => !shown)} type="button">{showAllNotifications ? 'Show Recent' : 'View All Notifications'}</button>}
+            {variant.notifications === 'superuser' && activeNotifications.length > 0 && <button className="se-notification-panel__action" onClick={() => void saveSuperuserNotifications([])} type="button">Clear All</button>}
+            {activeNotifications.length > 4 && <button className="se-notification-panel__action" onClick={() => setShowAllNotifications((shown) => !shown)} type="button">{showAllNotifications ? 'Show Recent' : 'View All Notifications'}</button>}
           </>}
         </section>}
       </div>}
