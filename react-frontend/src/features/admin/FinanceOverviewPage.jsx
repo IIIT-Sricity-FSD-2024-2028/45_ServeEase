@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { AdminAccessGate } from './AdminAccessGate'
-import { AdminPageHeader } from './AdminPageHeader'
 import { listBookings } from './adminApi'
 import { money, show, useAdminData } from './useAdminData'
 import './admin.css'
@@ -29,7 +29,7 @@ function formatDate(value) {
 
 function formatRate(records, field) {
   const values = [...new Set(records.map((record) => numberOrNull(record[field])).filter((value) => value !== null))]
-  if (values.length === 0) return `${legacyRates[field]}% (legacy default)`
+  if (values.length === 0) return `${legacyRates[field]}%`
   return values.length === 1 ? `${values[0]}%` : `Varies (${values.length} recorded rates)`
 }
 
@@ -160,11 +160,13 @@ function hasAnyField(record, fields) {
   return fields.some((field) => record[field] !== null && record[field] !== undefined && record[field] !== '')
 }
 
-function FilteredTable({ title, records, columns, searchFields, searchPlaceholder, statusField, search, setSearch, status, setStatus, emptyMessage }) {
+function FilteredTable({ title, records, columns, searchFields, searchPlaceholder, statusField, search, setSearch, status, setStatus, emptyMessage, globalSearch }) {
   const statuses = [...new Set(records.map((record) => record[statusField]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)))
   const term = search.trim().toLocaleLowerCase()
+  const globalTerm = globalSearch.trim().toLocaleLowerCase()
   const visibleRows = records.filter((record) => {
-    const matchesSearch = !term || searchFields.some((field) => String(record[field] ?? '').toLocaleLowerCase().includes(term))
+    const matchesFields = (value) => !value || searchFields.some((field) => String(record[field] ?? '').toLocaleLowerCase().includes(value))
+    const matchesSearch = matchesFields(term) && matchesFields(globalTerm)
     const matchesStatus = !statusField || status === 'all' || String(record[statusField] || '') === status
     return matchesSearch && matchesStatus
   })
@@ -192,18 +194,23 @@ function FilteredTable({ title, records, columns, searchFields, searchPlaceholde
   )
 }
 
-function FinanceMetric({ icon, label, amount, tone, caption }) {
+function FinanceMetric({ icon, label, amount, tone }) {
   return <article className="admin-finance-stat">
     <span className={`admin-finance-icon admin-finance-icon--${tone}`} aria-hidden="true">{icon}</span>
     <strong>{amount === null ? 'Not available' : money(amount)}</strong>
     <p>{label}</p>
-    {caption && <small>{caption}</small>}
   </article>
 }
 
 export default function FinanceOverviewPage() {
   const { data, isLoading, error, reload } = useAdminData(listBookings)
   const [filters, setFilters] = useState({})
+  const [globalSearch, setGlobalSearch] = useState('')
+  useEffect(() => {
+    const onFinanceSearch = (event) => setGlobalSearch(String(event.detail || ''))
+    window.addEventListener('serveease-finance-search', onFinanceSearch)
+    return () => window.removeEventListener('serveease-finance-search', onFinanceSearch)
+  }, [])
   const bookings = useMemo(() => Array.isArray(data) ? data : [], [data])
   const transactions = useMemo(() => bookings.filter((booking) => hasAnyField(booking, ['paymentId', 'paymentStatus', 'paymentDate'])), [bookings])
   const financialRows = useMemo(() => bookings.map(reconcileBooking).filter(Boolean), [bookings])
@@ -244,7 +251,7 @@ export default function FinanceOverviewPage() {
       .map((value) => value ? new Date(value) : null)
       .filter((date) => date && !Number.isNaN(date.getTime()))
       .sort((left, right) => right.getTime() - left.getTime())[0]
-    return dates ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'short', timeStyle: 'short' }).format(dates) : 'Not available'
+    return dates ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'short', timeStyle: 'medium' }).format(dates) : 'Not available'
   }, [bookings])
 
   function updateFilter(key, value) {
@@ -304,8 +311,13 @@ export default function FinanceOverviewPage() {
   return (
     <AdminAccessGate>
       <section className="admin-page admin-finance-page">
-        <AdminPageHeader hero section="Finance & Revenue" title="Finance & Revenue" description="Monitor payments, provider earnings and platform financial activity." />
-        <p className="admin-note">Read-only figures use stored financial fields from GET /bookings. Missing ledger or payment fields are shown as Not available.</p>
+        <nav aria-label="Breadcrumb" className="admin-breadcrumb admin-finance-breadcrumb">
+          <Link to="/">Home</Link><span aria-hidden="true">›</span><Link to="/admin">Superuser</Link><span aria-hidden="true">›</span><strong>Finance &amp; Revenue</strong>
+        </nav>
+        <header className="admin-page-header admin-hero admin-finance-hero">
+          <h1>Finance &amp; Revenue</h1>
+          <p>Monitor payments, provider earnings and platform financial activity.</p>
+        </header>
 
         {isLoading && <LoadingState message="Loading booking finance data…" />}
         {!isLoading && error && <div className="admin-feedback admin-feedback--error"><ErrorState message={error} /><button className="admin-button" onClick={reload} type="button">Retry</button></div>}
@@ -313,11 +325,11 @@ export default function FinanceOverviewPage() {
 
         {!isLoading && !error && bookings.length > 0 && <>
           <section aria-label="Financial summary" className="admin-finance-stats">
-            <FinanceMetric caption="Captured customer totals less recorded refunds" icon="₹" label="Net Customer Collections" tone="green" amount={netCollections} />
-            <FinanceMetric caption="Service fees less provider-side commission, adjusted by recorded cancellation policy" icon="↗" label="Provider Net Earnings" tone="blue" amount={providerEarnings} />
-            <FinanceMetric caption="Customer platform fee plus provider commission, adjusted by cancellation policy" icon="◆" label="Total Platform Revenue" tone="purple" amount={platformRevenue} />
-            <FinanceMetric caption="Expected payout for eligible bookings not yet completed" icon="◷" label="Pending Payouts" tone="orange" amount={pendingPayout} />
-            <FinanceMetric caption="Sum of recorded refund amounts" icon="↻" label="Refunds Processed" tone="blue" amount={refundTotal} />
+            <FinanceMetric icon="₹" label="Net Customer Collections" tone="green" amount={netCollections} />
+            <FinanceMetric icon="↗" label="Provider Net Earnings" tone="blue" amount={providerEarnings} />
+            <FinanceMetric icon="◆" label="Total Platform Revenue" tone="purple" amount={platformRevenue} />
+            <FinanceMetric icon="◷" label="Pending Payouts" tone="orange" amount={pendingPayout} />
+            <FinanceMetric icon="↻" label="Refunds Processed" tone="blue" amount={refundTotal} />
           </section>
 
           <div className="admin-finance-overview">
@@ -325,8 +337,8 @@ export default function FinanceOverviewPage() {
               <h2>Financial Overview</h2>
               <div className="admin-finance-summary-grid">
                 <article><span>Customer Payment Transactions</span><strong>{transactions.length}</strong></article>
-                <article><span>Provider Net Earnings Records</span><strong>{earnings.length}</strong></article>
-                <article><span>Financial Source</span><strong>Booking records and legacy revenue model</strong></article>
+                <article><span>Provider Net Earnings</span><strong>{earnings.length}</strong></article>
+                <article><span>Financial Source</span><strong>Reconciled booking outcomes</strong></article>
                 <article><span>Last updated</span><strong>{latestRecordDate}</strong></article>
               </div>
             </section>
@@ -339,7 +351,9 @@ export default function FinanceOverviewPage() {
               <div className="admin-finance-total-rate"><span>Total Platform Revenue</span><strong>{(() => {
                 const platform = [...new Set(bookings.map((row) => numberOrNull(row.platformFeeRate)).filter((value) => value !== null))]
                 const provider = [...new Set(bookings.map((row) => numberOrNull(row.providerCommissionRate)).filter((value) => value !== null))]
-                return platform.length === 1 && provider.length === 1 ? `${platform[0] + provider[0]}% of Service Fee` : 'Not available'
+                const platformRate = platform.length === 0 ? legacyRates.platformFeeRate : platform.length === 1 ? platform[0] : null
+                const providerRate = provider.length === 0 ? legacyRates.providerCommissionRate : provider.length === 1 ? provider[0] : null
+                return platformRate !== null && providerRate !== null ? `${platformRate + providerRate}% of Service Fee` : 'Varies by booking'
               })()}</strong></div>
               <h3>Cancellation Policy</h3>
               <p>Provider cancellation: Full refund of amount paid.</p>
@@ -351,10 +365,10 @@ export default function FinanceOverviewPage() {
             </aside>
           </div>
 
-          <FilteredTable title={`Customer Payment Transactions`} records={transactions} columns={paymentColumns} searchFields={['paymentId', 'id', 'customerName', 'customerEmail', 'provider', 'providerId', 'paymentMethod']} searchPlaceholder="Search transaction, booking, customer, or provider…" statusField="paymentStatus" search={filters.paymentSearch || ''} setSearch={(value) => updateFilter('paymentSearch', value)} status={filters.paymentStatus || 'all'} setStatus={(value) => updateFilter('paymentStatus', value)} emptyMessage="No customer payment transaction records are available." />
-          <FilteredTable title="Provider Net Earnings" records={earnings} columns={earningsColumns} searchFields={['paymentId', 'provider', 'providerId', 'id', 'customerName', 'customerEmail']} searchPlaceholder="Search transaction, provider, booking, or customer…" statusField="payoutStatus" search={filters.earningsSearch || ''} setSearch={(value) => updateFilter('earningsSearch', value)} status={filters.earningsStatus || 'all'} setStatus={(value) => updateFilter('earningsStatus', value)} emptyMessage="No provider payout records are available." />
-          <FilteredTable title="Commission Ledger" records={ledger} columns={ledgerColumns} searchFields={['id', 'customerName', 'customerEmail', 'provider', 'providerId']} searchPlaceholder="Search booking, customer, or provider…" search={filters.ledgerSearch || ''} setSearch={(value) => updateFilter('ledgerSearch', value)} emptyMessage="No commission ledger records are available." />
-          <FilteredTable title="Refund Information" records={refunds} columns={refundColumns} searchFields={['paymentId', 'id', 'customerName', 'customerEmail', 'provider', 'providerId', 'cancellationPolicy']} searchPlaceholder="Search reference, booking, customer, or provider…" statusField="refundStatus" search={filters.refundSearch || ''} setSearch={(value) => updateFilter('refundSearch', value)} status={filters.refundStatus || 'all'} setStatus={(value) => updateFilter('refundStatus', value)} emptyMessage="No refund records are available." />
+          <FilteredTable title={`Customer Payment Transactions`} records={transactions} columns={paymentColumns} searchFields={['paymentId', 'id', 'customerName', 'customerEmail', 'provider', 'providerId', 'paymentMethod']} searchPlaceholder="Search transaction, booking, customer, or provider…" statusField="paymentStatus" search={filters.paymentSearch || ''} setSearch={(value) => updateFilter('paymentSearch', value)} status={filters.paymentStatus || 'all'} setStatus={(value) => updateFilter('paymentStatus', value)} emptyMessage="No customer payment transaction records are available." globalSearch={globalSearch} />
+          <FilteredTable title="Provider Net Earnings" records={earnings} columns={earningsColumns} searchFields={['paymentId', 'provider', 'providerId', 'id', 'customerName', 'customerEmail']} searchPlaceholder="Search transaction, provider, booking, or customer…" statusField="payoutStatus" search={filters.earningsSearch || ''} setSearch={(value) => updateFilter('earningsSearch', value)} status={filters.earningsStatus || 'all'} setStatus={(value) => updateFilter('earningsStatus', value)} emptyMessage="No provider payout records are available." globalSearch={globalSearch} />
+          <FilteredTable title="Commission Ledger" records={ledger} columns={ledgerColumns} searchFields={['id', 'customerName', 'customerEmail', 'provider', 'providerId']} searchPlaceholder="Search booking, customer, or provider…" search={filters.ledgerSearch || ''} setSearch={(value) => updateFilter('ledgerSearch', value)} emptyMessage="No commission ledger records are available." globalSearch={globalSearch} />
+          <FilteredTable title="Refund Information" records={refunds} columns={refundColumns} searchFields={['paymentId', 'id', 'customerName', 'customerEmail', 'provider', 'providerId', 'cancellationPolicy']} searchPlaceholder="Search reference, booking, customer, or provider…" statusField="refundStatus" search={filters.refundSearch || ''} setSearch={(value) => updateFilter('refundSearch', value)} status={filters.refundStatus || 'all'} setStatus={(value) => updateFilter('refundStatus', value)} emptyMessage="No refund records are available." globalSearch={globalSearch} />
 
           <section className="admin-panel admin-finance-tax-panel">
             <h2>Tax Record</h2>

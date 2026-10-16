@@ -1,48 +1,99 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminPageHeader } from './AdminPageHeader'
-import { getAdminTicket, listEscalatedTickets, submitAdminTicketDecision, saveAdminTicketRemarks } from './adminApi'
+import {
+  escalateAdminTicket,
+  getAdminTicket,
+  listAdminTickets,
+  resolveAdminTicket,
+  submitAdminTicketDecision,
+  updateAdminTicketStatus,
+} from './adminApi'
 import { show, useAdminData } from './useAdminData'
 import './admin.css'
 
-const decisions = [
-  'Refund Approved',
-  'Refund Rejected',
-  'Rework Scheduled',
-  'Provider Warning Issued',
-  'Provider Suspended',
-  'Ticket Rejected',
-  'No Action Required',
+const groups = [
+  { key: 'Escalated', title: 'Escalated Tickets', description: 'tickets requiring immediate attention', icon: '⚠', className: 'escalated' },
+  { key: 'Open', title: 'Open Tickets', description: 'tickets awaiting assignment', icon: '◷', className: 'open' },
+  { key: 'In Progress', title: 'In Progress Tickets', description: 'tickets being worked on', icon: '◉', className: 'progress' },
+  { key: 'Resolved', title: 'Resolved Tickets', description: 'tickets successfully resolved', icon: '✓', className: 'resolved' },
 ]
 
-function formatDate(value) {
-  if (!value) return 'Not available'
+function queueFor(status) {
+  if (status === 'Escalated' || status === 'Under Review') return 'Escalated'
+  if (status === 'Open' || status === 'Pending') return 'Open'
+  if (status === 'In Progress') return 'In Progress'
+  if (['Resolved', 'Resolved by Support', 'Rejected'].includes(status)) return 'Resolved'
+  return null
+}
+
+function formatDate(value, withTime = false) {
+  if (!value) return 'N/A'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? show(value) : new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return new Intl.DateTimeFormat('en-GB', withTime
+    ? { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+    : { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date)
+}
+
+function displayStatus(status) {
+  return status === 'Pending' ? 'Open' : status === 'Resolved by Support' ? 'Resolved' : status
+}
+
+function badgeTone(status) {
+  if (['Escalated', 'Under Review', 'Rejected'].includes(status)) return 'attention'
+  if (['Open', 'Pending'].includes(status)) return 'warning'
+  if (status === 'In Progress') return 'info'
+  return 'success'
+}
+
+function TicketMeta({ label, children }) {
+  return <div className="admin-escalated-meta"><span>{label}</span><strong>{show(children)}</strong></div>
+}
+
+function attachmentPreview(ticket) {
+  const url = ticket.attachmentUrl
+  if (!url || !/^(data:image\/|data:application\/pdf|https?:\/\/)/i.test(url)) return null
+  if (/^data:image\//i.test(url) || /\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(url)) {
+    return <img alt={ticket.attachmentName || 'Ticket attachment'} className="admin-ticket-preview-image" src={url} />
+  }
+  if (/^data:application\/pdf/i.test(url) || /\.pdf(\?.*)?$/i.test(url)) {
+    return <iframe className="admin-ticket-preview-pdf" src={url} title={ticket.attachmentName || 'Ticket attachment'} />
+  }
+  return <a className="admin-button admin-button--secondary" href={url} rel="noreferrer" target="_blank">Open attachment</a>
 }
 
 export default function AdminEscalatedTicketsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('ticket')
   const [query, setQuery] = useState('')
-  const [remarks, setRemarks] = useState('')
-  const [decision, setDecision] = useState(decisions[0])
+  const [solutionDraft, setSolutionDraft] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [actionError, setActionError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
-  const tickets = useAdminData(listEscalatedTickets)
+  const allTickets = useAdminData(listAdminTickets)
   const loadSelectedTicket = useCallback(() => selectedId ? getAdminTicket(selectedId) : Promise.resolve(null), [selectedId])
   const details = useAdminData(loadSelectedTicket)
-  const records = useMemo(() => Array.isArray(tickets.data) ? tickets.data : [], [tickets.data])
-  const queryText = query.trim().toLocaleLowerCase()
-  const filteredTickets = useMemo(() => records.filter((ticket) => [ticket.ticketId, ticket.subject, ticket.raisedByName, ticket.raisedByEmail,
-    ticket.providerName, ticket.relatedBookingId, ticket.ticketType, ticket.priority, ticket.status].some((value) => value !== null && value !== undefined && String(value).toLocaleLowerCase().includes(queryText))), [records, queryText])
+  const records = useMemo(() => Array.isArray(allTickets.data) ? allTickets.data : [], [allTickets.data])
   const ticket = details.data
-  const history = Array.isArray(ticket?.statusHistory) ? ticket.statusHistory : []
-  const isEditable = ticket && ['Escalated', 'Under Review'].includes(ticket.status)
+  const solution = solutionDraft && solutionDraft.ticketId === ticket?.ticketId
+    ? solutionDraft.value
+    : (ticket?.supportUpdate || ticket?.adminRemarks || '')
+  const statusHistory = Array.isArray(ticket?.statusHistory) ? ticket.statusHistory : []
+  const messages = Array.isArray(ticket?.messages) ? ticket.messages : []
+  const searchText = query.trim().toLocaleLowerCase()
+  const filteredTickets = useMemo(() => records.filter((record) => [
+    record.ticketId, record.subject, record.description, record.raisedByName, record.raisedByEmail,
+    record.providerName, record.customerName, record.relatedBookingId, record.ticketType,
+    record.priority, record.status,
+  ].some((value) => value !== null && value !== undefined && String(value).toLocaleLowerCase().includes(searchText))), [records, searchText])
+  const activeQueue = queueFor(ticket?.status)
+  const canResolveEscalated = ['Escalated', 'Under Review'].includes(ticket?.status)
+  const canStartOrEscalate = ['Open', 'Pending'].includes(ticket?.status)
+  const canResolveProgress = ticket?.status === 'In Progress'
 
   function selectTicket(id) {
     const next = new URLSearchParams(searchParams)
@@ -50,121 +101,190 @@ export default function AdminEscalatedTicketsPage() {
     setSearchParams(next)
     setActionError('')
     setSuccessMessage('')
+    setSolutionDraft(null)
   }
 
-  function clearTicket() {
+  const closeTicket = useCallback(() => {
     const next = new URLSearchParams(searchParams)
     next.delete('ticket')
     setSearchParams(next)
     setActionError('')
     setSuccessMessage('')
+    setSolutionDraft(null)
+  }, [searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (!selectedId) return undefined
+    const onKeyDown = (event) => { if (event.key === 'Escape') closeTicket() }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedId, closeTicket])
+
+  async function refreshData() {
+    await Promise.all([allTickets.reload(), details.reload()])
   }
 
-  async function reloadTicketData() {
-    await Promise.all([tickets.reload(), details.reload()])
-  }
-
-  async function saveRemarks(event) {
-    event.preventDefault()
-    if (!selectedId || isSubmitting || remarks.trim().length < 5) return
+  async function performAction(action, successText) {
+    if (!ticket || isSubmitting) return
     setIsSubmitting(true)
     setActionError('')
     setSuccessMessage('')
     try {
-      await saveAdminTicketRemarks(selectedId, remarks.trim())
-      setSuccessMessage('Admin remarks saved.')
-      setRemarks('')
-      await reloadTicketData()
+      await action()
+      setSuccessMessage(successText)
+      await refreshData()
     } catch (error) {
-      setActionError(error?.message || 'Unable to save admin remarks.')
+      setActionError(error?.message || 'Unable to update this ticket.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  async function submitDecision(event) {
-    event.preventDefault()
-    if (!selectedId || isSubmitting || remarks.trim().length < 10) return
-    setIsSubmitting(true)
-    setActionError('')
-    setSuccessMessage('')
-    try {
-      await submitAdminTicketDecision(selectedId, decision, remarks.trim())
-      setSuccessMessage(`Ticket decision recorded: ${decision}.`)
-      setRemarks('')
-      await reloadTicketData()
-    } catch (error) {
-      setActionError(error?.message || 'Unable to submit the final ticket decision.')
-    } finally {
-      setIsSubmitting(false)
-    }
+  async function startProgress() {
+    await performAction(() => updateAdminTicketStatus(ticket.ticketId, 'In Progress'), 'Ticket moved to In Progress.')
   }
+
+  async function escalateTicket() {
+    await performAction(() => escalateAdminTicket(ticket.ticketId, 'Escalated by the superuser for admin review.'), 'Ticket escalated for admin review.')
+  }
+
+  async function resolveTicket(event) {
+    event?.preventDefault()
+    if (solution.trim().length < 10 || solution.trim().length > 600) return
+    await performAction(async () => {
+      if (canResolveEscalated) await submitAdminTicketDecision(ticket.ticketId, 'No Action Required', solution.trim())
+      else await resolveAdminTicket(ticket.ticketId, solution.trim())
+    }, 'Ticket resolved successfully.')
+  }
+
+  async function resolveProgressTicket() {
+    const summary = window.prompt('Enter a resolution summary (at least 5 characters):', ticket.supportUpdate || '')
+    if (summary === null) return
+    if (summary.trim().length < 5 || summary.trim().length > 600) {
+      setActionError('Enter a resolution summary between 5 and 600 characters.')
+      return
+    }
+    setSolutionDraft({ ticketId: ticket.ticketId, value: summary.trim() })
+    await performAction(() => resolveAdminTicket(ticket.ticketId, summary.trim()), 'Ticket resolved successfully.')
+  }
+
+  const totals = useMemo(() => Object.fromEntries(groups.map((group) => [
+    group.key, records.filter((record) => queueFor(record.status) === group.key).length,
+  ])), [records])
 
   return (
     <AdminAccessGate>
-      <section className="admin-page">
-        <AdminPageHeader danger section="Escalated Tickets" title="Ticket Resolution Panel" description="Review escalated support tickets and record a supported final decision." />
-        <div className="admin-grid admin-ticket-stats">
-          <article className="admin-stat-card admin-stat-card--attention"><span>Escalated tickets<span>!</span></span><strong>{tickets.data ? records.length : tickets.error ? 'Not available' : '…'}</strong><p>Records returned by the admin escalations API</p></article>
-          <article className="admin-stat-card"><span>Under Review<span>◷</span></span><strong>{tickets.data ? records.filter((record) => record.status === 'Under Review').length : tickets.error ? 'Not available' : '…'}</strong><p>Escalations with admin review started</p></article>
+      <section className="admin-page admin-escalated-page">
+        <AdminPageHeader danger section="Escalated Tickets" title="Ticket Resolution Panel" description="Review escalated tickets, provider tickets, refund requests, and critical support cases requiring admin decision." hero />
+
+        <div className="admin-grid admin-escalated-stats">
+          {groups.map((group) => <article className={`admin-stat-card ${group.key === 'Escalated' ? 'admin-stat-card--attention' : ''}`} key={group.key}>
+            <span>{group.key === 'In Progress' ? group.key : `${group.key} Tickets`}<span>{group.icon}</span></span>
+            <strong>{allTickets.data ? totals[group.key] : allTickets.error ? 'N/A' : '…'}</strong>
+          </article>)}
         </div>
 
-        <label className="admin-form admin-ticket-search">Search tickets<input onChange={(event) => setQuery(event.target.value)} placeholder="Ticket ID, subject, requester, provider, booking, or category" type="search" value={query} /></label>
-        {tickets.isLoading && <LoadingState message="Loading escalated tickets…" />}
-        {!tickets.isLoading && tickets.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={tickets.error} /><button className="admin-button" onClick={tickets.reload} type="button">Retry</button></div>}
-        {!tickets.isLoading && !tickets.error && records.length === 0 && <EmptyState message="No escalated tickets are available." />}
-        {!tickets.isLoading && !tickets.error && records.length > 0 && filteredTickets.length === 0 && <EmptyState message="No tickets match this search." />}
+        <div className="admin-escalated-toolbar">
+          <label className="admin-form">Search tickets<input onChange={(event) => setQuery(event.target.value)} placeholder="Search ticket, customer, provider, or category..." type="search" value={query} /></label>
+          <button className="admin-button admin-button--secondary" disabled={allTickets.isLoading} onClick={allTickets.reload} type="button">Refresh</button>
+        </div>
 
-        {!tickets.isLoading && !tickets.error && (filteredTickets.length > 0 || selectedId) && <div className="admin-ticket-layout">
-          <section className="admin-panel admin-panel--compact">
-            <h2>Escalated Tickets ({filteredTickets.length})</h2>
-            {filteredTickets.length === 0 ? <EmptyState message="No other tickets match this search." /> : <div className="admin-ticket-list">{filteredTickets.map((record, index) => <button className="admin-ticket-card" key={record.ticketId ?? index} onClick={() => selectTicket(String(record.ticketId))} type="button">
-              <div className="admin-panel-heading"><strong>{show(record.ticketId)}</strong><StatusBadge tone={record.status === 'Escalated' ? 'neutral' : 'ready'}>{show(record.status)}</StatusBadge></div>
-              <p>{show(record.subject)}</p>
-              <small>{show(record.raisedByName)} · {show(record.raisedByType)} · {show(record.ticketType)}</small>
-              <small>Priority: {show(record.priority)} · Booking: {show(record.relatedBookingId)}</small>
-            </button>)}</div>}
-          </section>
+        {allTickets.isLoading && <LoadingState message="Loading tickets…" />}
+        {!allTickets.isLoading && allTickets.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={allTickets.error} /><button className="admin-button" onClick={allTickets.reload} type="button">Retry</button></div>}
+        {!allTickets.isLoading && !allTickets.error && records.length === 0 && <EmptyState message="There are no support tickets to display." />}
+        {!allTickets.isLoading && !allTickets.error && records.length > 0 && filteredTickets.length === 0 && <EmptyState message="No tickets match this search." />}
 
-          <section className="admin-panel admin-panel--compact">
-            <div className="admin-panel-heading"><h2>Ticket Details</h2>{selectedId && <button className="admin-button admin-button--secondary" onClick={clearTicket} type="button">Close</button>}</div>
-            {!selectedId && <EmptyState message="Select an escalated ticket to view details." />}
-            {selectedId && details.isLoading && <LoadingState message="Loading ticket details…" />}
-            {selectedId && !details.isLoading && details.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={details.error} /><button className="admin-button" onClick={details.reload} type="button">Retry</button></div>}
-            {selectedId && !details.isLoading && !details.error && !ticket && <EmptyState message="Ticket details are not available." />}
-            {ticket && !details.isLoading && <>
-              <div className="admin-ticket-title"><div><h3>{show(ticket.ticketId)}</h3><StatusBadge tone={ticket.status === 'Escalated' ? 'neutral' : 'ready'}>{show(ticket.status)}</StatusBadge></div><span>Priority: {show(ticket.priority)}</span></div>
-              {successMessage && <p className="admin-feedback" role="status">{successMessage}</p>}{actionError && <ErrorState message={actionError} />}
-              <dl className="admin-detail-grid">
-                <div><dt>Created</dt><dd>{formatDate(ticket.createdAt)}</dd></div><div><dt>Raised by</dt><dd>{show(ticket.raisedByName)} ({show(ticket.raisedByType)})</dd></div>
-                <div><dt>Requester email</dt><dd>{show(ticket.raisedByEmail)}</dd></div><div><dt>Requester phone</dt><dd>{show(ticket.raisedByPhone)}</dd></div>
-                <div><dt>Customer</dt><dd>{show(ticket.customerName)}</dd></div><div><dt>Provider</dt><dd>{show(ticket.providerName)}</dd></div>
-                <div><dt>Related booking</dt><dd>{show(ticket.relatedBookingId)}</dd></div><div><dt>Payment</dt><dd>{show(ticket.relatedPaymentId)}</dd></div>
-                <div><dt>Category</dt><dd>{show(ticket.ticketType)}</dd></div><div><dt>Escalated at</dt><dd>{formatDate(ticket.escalatedAt)}</dd></div>
-                <div><dt>Assigned support</dt><dd>{show(ticket.assignedSupportName)}</dd></div><div><dt>Attachment</dt><dd>{show(ticket.attachmentName)}</dd></div>
-                <div><dt>Escalation reason</dt><dd>{show(ticket.escalationReason)}</dd></div><div><dt>Support update</dt><dd>{show(ticket.supportUpdate)}</dd></div>
-                <div><dt>Admin remarks</dt><dd>{show(ticket.adminRemarks)}</dd></div><div><dt>Final decision</dt><dd>{show(ticket.finalDecision)}</dd></div>
-              </dl>
-              <h3>Subject and description</h3><div className="admin-ticket-description"><strong>{show(ticket.subject)}</strong><p>{show(ticket.description)}</p></div>
-              {Array.isArray(ticket.messages) && ticket.messages.length > 0 && <><h3>Conversation</h3><div className="admin-ticket-messages">{ticket.messages.map((message, index) => <article className="admin-ticket-message" key={message.id ?? index}><strong>{show(message.senderName || message.sender)}</strong><p>{show(message.message || message.text)}</p><small>{formatDate(message.createdAt || message.timestamp)}</small></article>)}</div></>}
-              <h3>Status History</h3>
-              {history.length > 0 ? <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Status</th><th>Note</th><th>Updated by</th><th>When</th></tr></thead><tbody>{history.map((entry, index) => <tr key={`${entry.updatedAt || entry.status}-${index}`}><td>{show(entry.status)}</td><td>{show(entry.note)}</td><td>{show(entry.updatedBy)}</td><td>{formatDate(entry.updatedAt)}</td></tr>)}</tbody></table></div> : <EmptyState message="No ticket status history is available." />}
-
-              {isEditable && <>
-                <form className="admin-form admin-ticket-action-form" onSubmit={saveRemarks}>
-                  <h3>Admin Remarks</h3><label>Operational remarks<textarea maxLength={1000} minLength={5} onChange={(event) => setRemarks(event.target.value)} value={remarks} /></label>
-                  <button className="admin-button admin-button--secondary" disabled={isSubmitting || remarks.trim().length < 5} type="submit">{isSubmitting ? 'Saving…' : 'Save remarks'}</button>
-                </form>
-                <form className="admin-form admin-ticket-action-form" onSubmit={submitDecision}>
-                  <h3>Final Decision</h3><label>Decision<select onChange={(event) => setDecision(event.target.value)} value={decision}>{decisions.map((item) => <option key={item}>{item}</option>)}</select></label>
-                  <label>Admin remarks (required, at least 10 characters)<textarea maxLength={1000} minLength={10} onChange={(event) => setRemarks(event.target.value)} required value={remarks} /></label>
-                  <button className="admin-button" disabled={isSubmitting || remarks.trim().length < 10} type="submit">{isSubmitting ? 'Submitting…' : 'Record final decision'}</button>
-                </form>
-              </>}
-            </>}
-          </section>
+        {!allTickets.isLoading && !allTickets.error && filteredTickets.length > 0 && <div className="admin-escalated-queues">
+          {groups.map((group) => {
+            const items = filteredTickets.filter((record) => queueFor(record.status) === group.key)
+            return <section className={`admin-escalated-queue admin-escalated-queue--${group.className}`} key={group.key}>
+              <div className="admin-escalated-queue-heading"><span aria-hidden="true">{group.icon}</span><div><h2>{group.title}</h2><p>{items.length} {group.description}</p></div></div>
+              <div className="admin-escalated-cards">
+                {items.length === 0 && <p className="admin-escalated-empty">No tickets found in this section.</p>}
+                {items.map((record, index) => <article className="admin-escalated-card" key={record.ticketId || index}>
+                  <div className="admin-escalated-card-main">
+                    <div className="admin-escalated-card-heading"><h3>{show(record.ticketId)}</h3><StatusBadge tone={badgeTone(record.status)}>{displayStatus(record.status)}</StatusBadge><StatusBadge tone={record.raisedByType === 'provider' ? 'info' : 'neutral'}>{record.raisedByType === 'provider' ? 'Provider' : 'Customer'}</StatusBadge></div>
+                    <p className="admin-escalated-subject">{show(record.subject)}</p>
+                    <div className="admin-escalated-compact-meta">
+                      <span>{record.raisedByType === 'provider' ? 'Provider' : 'Customer'}: {show(record.raisedByName)}</span>
+                      <span>Provider: {show(record.providerName || (record.raisedByType === 'provider' ? record.raisedByName : 'ServeEase Provider'))}</span>
+                      {record.customerName && <span>Related Customer: {record.customerName}</span>}
+                      <span>Booking: {show(record.relatedBookingId)}</span>
+                      <span>Created: {formatDate(record.createdAt)}</span>
+                    </div>
+                    <div className="admin-escalated-tags"><StatusBadge tone="warning">{show(record.ticketType)}</StatusBadge><StatusBadge tone="warning">{show(record.priority || 'Medium')}</StatusBadge>{record.service && <StatusBadge tone="neutral">{record.service}</StatusBadge>}</div>
+                  </div>
+                  <button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectTicket(record.ticketId)} type="button">◉ View Details</button>
+                </article>)}
+              </div>
+            </section>
+          })}
         </div>}
       </section>
+
+      {selectedId && <div className="admin-escalated-backdrop" onClick={(event) => { if (event.target === event.currentTarget) closeTicket() }}>
+        <section aria-labelledby="admin-ticket-modal-title" aria-modal="true" className={`admin-escalated-modal admin-escalated-modal--${activeQueue === 'Resolved' ? 'resolved' : canResolveEscalated ? 'escalated' : canStartOrEscalate ? 'open' : 'progress'}`} role="dialog">
+          {details.isLoading && <LoadingState message="Loading ticket details…" />}
+          {!details.isLoading && details.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={details.error} /><button className="admin-button" onClick={details.reload} type="button">Retry</button></div>}
+          {!details.isLoading && !details.error && !ticket && <EmptyState message="Ticket details are not available." />}
+          {ticket && !details.isLoading && <>
+            <header className="admin-escalated-modal-header">
+              <h2 id="admin-ticket-modal-title">{show(ticket.ticketId)} — Ticket Details</h2>
+              <button aria-label="Close ticket details" className="admin-escalated-close" onClick={closeTicket} type="button">×</button>
+            </header>
+            <div className="admin-escalated-modal-body">
+              <StatusBadge tone={badgeTone(ticket.status)}>{displayStatus(ticket.status)}</StatusBadge>
+              {successMessage && <p className="admin-feedback" role="status">{successMessage}</p>}
+              {actionError && <div className="admin-feedback admin-feedback--error" role="alert">{actionError}</div>}
+
+              <section className="admin-escalated-detail-section">
+                <div className="admin-escalated-detail-grid">
+                  <TicketMeta label="Ticket ID:">{ticket.ticketId}</TicketMeta><TicketMeta label="Created:">{formatDate(ticket.createdAt)}</TicketMeta>
+                  <TicketMeta label="Booking Ref:">{ticket.relatedBookingId}</TicketMeta><TicketMeta label="Raised By:">{ticket.raisedByType}</TicketMeta>
+                  <TicketMeta label="Issue Category:">{ticket.ticketType}</TicketMeta><TicketMeta label="Service:">{ticket.service}</TicketMeta>
+                  <TicketMeta label="Priority:">{ticket.priority || 'Medium'}</TicketMeta><TicketMeta label="Status:">{displayStatus(ticket.status)}</TicketMeta>
+                </div>
+              </section>
+
+              <section className="admin-escalated-detail-section">
+                <h3>Contact Information</h3>
+                <div className="admin-escalated-detail-grid">
+                  <TicketMeta label="Requester Name:">{ticket.raisedByName}</TicketMeta><TicketMeta label="Provider:">{ticket.providerName || (ticket.raisedByType === 'provider' ? ticket.raisedByName : 'ServeEase Provider')}</TicketMeta>
+                  <TicketMeta label="Related Customer:">{ticket.customerName}</TicketMeta><TicketMeta label="Phone:">{ticket.raisedByPhone}</TicketMeta>
+                  <TicketMeta label="Email:">{ticket.raisedByEmail}</TicketMeta><TicketMeta label="Support Update:">{ticket.supportUpdate}</TicketMeta>
+                  <TicketMeta label="Support Investigation:">{ticket.supportRemarks}</TicketMeta><TicketMeta label="Escalation Reason:">{ticket.escalationReason}</TicketMeta>
+                  <TicketMeta label="Assigned Support:">{ticket.assignedSupportName}</TicketMeta><TicketMeta label="Escalated At:">{formatDate(ticket.escalatedAt, true)}</TicketMeta>
+                  <TicketMeta label="Attachment:">{ticket.attachmentName || (ticket.attachmentUrl ? 'Attached file' : 'No attachment')}</TicketMeta><TicketMeta label="Final Decision:">{ticket.finalDecision}</TicketMeta>
+                </div>
+                {ticket.attachmentUrl && <details className="admin-escalated-attachment"><summary>Preview attachment</summary>{attachmentPreview(ticket) || <p>Preview unavailable for this stored attachment.</p>}</details>}
+              </section>
+
+              <section className="admin-escalated-detail-section">
+                <h3>Description</h3>
+                <div className="admin-escalated-description"><p>{show(ticket.description)}</p>
+                  <div className="admin-escalated-timeline">
+                    {statusHistory.map((entry, index) => <article key={`${entry.updatedAt || entry.status}-${index}`}><strong>{show(entry.note || entry.status)}</strong><span>{show(entry.updatedBy)} · {formatDate(entry.updatedAt, true)}</span></article>)}
+                    {messages.map((message, index) => <article key={message.messageId || `message-${index}`}><strong>{show(message.sender || message.senderType)}</strong><span>{show(message.text)} · {formatDate(message.sentAt, true)}</span></article>)}
+                    {!statusHistory.length && !messages.length && <article><strong>Ticket received</strong><span>No support history has been recorded yet.</span></article>}
+                  </div>
+                </div>
+              </section>
+
+              {canResolveEscalated && <form className="admin-escalated-solution" onSubmit={resolveTicket}>
+                <h3>Solution</h3><textarea aria-label="Resolution solution" maxLength={600} onChange={(event) => setSolutionDraft({ ticketId: ticket.ticketId, value: event.target.value })} required value={solution} />
+                <div className="admin-escalated-counter">{solution.length} / 600</div>
+                <button className="admin-button admin-escalated-resolve" disabled={isSubmitting || solution.trim().length < 10} type="submit">{isSubmitting ? 'Resolving…' : '✓ Resolve Ticket'}</button>
+              </form>}
+
+              {canStartOrEscalate && <div className="admin-escalated-actions"><button className="admin-button" disabled={isSubmitting} onClick={startProgress} type="button">{isSubmitting ? 'Updating…' : 'Start Progress'}</button><button className="admin-button admin-button--secondary" disabled={isSubmitting} onClick={escalateTicket} type="button">Escalate Ticket</button></div>}
+              {canResolveProgress && <div className="admin-escalated-actions"><button className="admin-button admin-escalated-resolve" disabled={isSubmitting} onClick={resolveProgressTicket} type="button">{isSubmitting ? 'Resolving…' : '✓ Mark Resolved'}</button></div>}
+
+              {activeQueue === 'Resolved' && (ticket.adminRemarks || ticket.supportUpdate) && <section className="admin-escalated-detail-section"><h3>Solution</h3><div className="admin-escalated-description">{ticket.adminRemarks || ticket.supportUpdate}</div></section>}
+            </div>
+            {activeQueue === 'Resolved' && <footer className="admin-escalated-modal-footer"><button className="admin-button admin-button--secondary" onClick={closeTicket} type="button">Close</button></footer>}
+          </>}
+        </section>
+      </div>}
     </AdminAccessGate>
   )
 }
