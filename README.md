@@ -1,100 +1,135 @@
 # ServeEase – Service Provider Discovery & Booking Platform
 
-## Problem Statement
+## 📌 Problem Statement
 
-Customers often face difficulty in finding reliable service providers for non-retail services such as plumbing, electrical work, home cleaning, tutoring, and repairs. The process is usually unorganized, time-consuming, and lacks transparency in availability, pricing, and service tracking.
+Customers often face difficulty finding reliable service providers for non-retail services such as plumbing, electrical work, home cleaning, tutoring, and repairs. The process can be unorganized and time-consuming, with limited transparency about availability, pricing, and service status.
 
-ServeEase aims to provide a unified web-based platform where customers can discover service providers, book services online, and manage service requests efficiently, while service providers, customer support, and administrators manage operations and governance.
+ServeEase provides a web-based platform for discovering service providers, booking services, and managing service-related operations.
 
----
+## 👥 Current Actors
 
-## Identified Actors
+| Actor | Main responsibilities |
+|---|---|
+| Customer | Discover services, manage bookings and profile, view payment history, leave reviews, and raise support tickets |
+| Service Provider | Manage services and availability, handle bookings, update profile details, and track service-related information |
+| Employee | Handle customer and provider operations, verification, and support-ticket workflows according to assigned responsibilities |
+| Admin / Superuser | Oversee platform operations, bookings, finances, service categories, and escalated support tickets |
 
-- Customer  
-- Service Provider  
-- Customer Support  
-- Admin  
+## 🧩 Main Application Features
 
----
+| Area | Features |
+|---|---|
+| Authentication | Login, signup, password recovery, and account-status handling |
+| Service discovery | Browse services, search results, provider profiles, checkout, and booking confirmation |
+| Customer | Dashboard, bookings and history, profile, payment history, reviews, and support tickets |
+| Service provider | Dashboard, service management, availability, bookings, profile, and support |
+| Employee operations | Customer/provider operations, provider verification, and support workflows |
+| Admin / Superuser | User and provider operations, service categories, booking oversight, finance overview, and escalated tickets |
+| Shared support | Support tickets, ticket details, attachments, and notifications |
 
-## Planned Features for each Actor
+## 🛠️ Technology Stack
 
-### Customer 
+| Layer | Technology |
+|---|---|
+| Frontend | React, Vite, JavaScript, CSS |
+| Backend | NestJS, TypeScript, REST API |
+| API documentation | Swagger |
+| Development state storage | JSON file at `back-end/data/state.json` |
 
-1. **Account Management**  
-   Registration, login, and profile management
+The current development setup does not require a separate database server. Database design files are available in `Database/`.
 
-2. **Service Discovery**  
-   Search services and filter by category and location
+## 📂 Project Structure
 
-3. **Service Provider Viewing**  
-   View provider details including pricing, ratings, and availability
+```text
+45_ServeEase/
+├── Database/                  # Database schema and design documents
+├── Figma Designs/              # UI/UX design references
+├── back-end/
+│   ├── data/                   # Application state JSON
+│   ├── docs/                   # API documentation files
+│   ├── src/
+│   │   ├── common/
+│   │   ├── filters/
+│   │   ├── guards/
+│   │   ├── middleware/
+│   │   └── modules/            # Auth, bookings, catalog, tickets, etc.
+│   ├── uploads/                # Development upload fixtures
+│   └── package.json
+├── react-frontend/
+│   ├── public/                 # Static assets and images
+│   ├── src/
+│   │   ├── app/                # App setup and routes
+│   │   ├── components/         # Shared UI components
+│   │   ├── context/            # Authentication context
+│   │   ├── features/           # Customer, provider, employee, admin, etc.
+│   │   ├── layouts/
+│   │   ├── services/           # API client and request helpers
+│   │   └── styles/
+│   └── package.json
+├── front-end/                  # Earlier HTML/CSS/JavaScript frontend
+├── README.md
+└── SRS.pdf
+```
 
-4. **Service Booking**  
-   Select service provider, date, and time
+## 🚀 Project Setup
 
-5. **Booking Management**  
-   View booking status, notifications, booking history, cancellation and modifications
+**Requirements:** Node.js and npm.
 
-6. **Payment Processing**  
-   Make simulated online payments for booked services
-   
-7. **Feedback**  
-   Gives feedback and ratings
+Install backend dependencies:
 
-8. **Support Request Submission**  
-Raise service-related or payment-related issues and receive notifications
+```bash
+cd back-end
+npm install
+```
 
----
+In a separate terminal, install frontend dependencies:
 
-### Service Provider 
+```bash
+cd react-frontend
+npm install
+```
 
-1. **Provider Account Management**  
-   Registration,Verification, login, and provider profile management
+## ▶️ Run the Application
 
-2. **Service Management**  
-   Add and manage services including pricing, availability, and location
+Start the backend:
 
-3. **Booking Request Management**  
-   View booking requests from customers
+```bash
+cd back-end
+npm run dev
+```
 
-4. **Booking Decision Handling**  
-   Accept or reject service booking requests
+The backend normally runs at `http://localhost:3000`.
 
-5. **Service Completion Management**  
-   Update service status, view service records,receive notifications and track payments
+In another terminal, start the React frontend:
 
----
+```bash
+cd react-frontend
+npm run dev
+```
 
-### Customer Support
+Open the local URL shown by Vite, usually `http://localhost:5173`.
 
-1. **Support Ticket Management**  
-   View and track support requests
+📖 Swagger API documentation: `http://localhost:3000/api/docs` (while the backend is running).
 
-2. **Issue Resolution Handling**  
-   Handle booking-related and payment-related issues
+## 🧪 Testing
 
-3. **User Communication Management**  
-   Communicate with customers and service providers
+Run the available checks from the relevant directory.
 
-4. **Issue Escalation**  
-   Escalate unresolved issues to admin
+**Backend**
 
----
+```bash
+cd back-end
+npm test
+npm run build
+```
 
-### Admin
+**Frontend**
 
-1. **Administrative Authentication**  
-   Secure admin login
+```bash
+cd react-frontend
+npm test
+npm run lint
+npm run build
+```
 
-2. **User & Provider Management**  
-   View, approve, block, or remove customer and service provider accounts
-
-3. **Service Category Management**  
-   Add, update, or remove service categories
-
-4. **System Activity Monitoring**  
-   Monitor bookings, users, and overall platform activity
-
-5. **Platform Governance & Reporting**  
-   Enforce platform rules and view system reports
+The available commands are defined in each directory's `package.json`.
