@@ -9,6 +9,7 @@ import { BookingsRepository } from './bookings.repository';
 import { AvailabilityService } from '../availability/availability.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { CreateCustomerBookingDto } from './dto/create-customer-booking.dto';
+import { cancellationSettlement, priceBreakdown } from './booking-finance';
 
 export interface BookingRequestContext {
   role: string;
@@ -80,6 +81,7 @@ export class BookingsService {
 
     const providerId = canonicalProviderId(provider.ownerProviderId || provider.id);
     this.availabilityService.assertBookable(providerId, data.date, data.time);
+    const charges = priceBreakdown(price);
     return this.bookingsRepository.create({
       service: data.service.trim(),
       provider: provider.name,
@@ -87,9 +89,9 @@ export class BookingsService {
       date: data.date,
       time: data.time,
       address: data.address.trim(),
-      amount: price,
-      serviceFee: price,
-      customerTotal: price,
+      ...charges,
+      amount: charges.customerTotal,
+      payoutStatus: 'Pending',
       customerId: caller.userId,
       customerName: data.customerName || caller.userId || caller.email,
       customerPhone: data.customerPhone || '',
@@ -132,14 +134,9 @@ export class BookingsService {
     }
 
     const update: UpdateBookingDto = {
-      status: data.status,
+      ...this.statusSettlement(existing, data.status, 'Provider'),
       ...(data.stateVersion === undefined ? {} : { stateVersion: data.stateVersion }),
     };
-    if (data.status === 'Rejected' || data.status === 'Cancelled') {
-      update.cancellationActor = 'Provider';
-      update.cancelledAt = new Date().toISOString();
-    }
-    if (data.status === 'Completed') update.receivedDate = new Date().toISOString().slice(0, 10);
     return this.bookingsRepository.update(id, update)!;
   }
 
@@ -156,13 +153,16 @@ export class BookingsService {
     if (!transitions[caller.role]?.[data.status]?.includes(booking.status)) {
       throw new BadRequestException('This booking status transition is not allowed.');
     }
-    const update: UpdateBookingDto = { status: data.status };
-    if (data.status === 'Cancelled' || data.status === 'Rejected') {
-      update.cancellationActor = caller.role === 'customer' ? 'Customer' : 'Provider';
-      update.cancelledAt = new Date().toISOString();
+    return this.bookingsRepository.update(id, this.statusSettlement(booking, data.status, caller.role === 'customer' ? 'Customer' : 'Provider'))!;
+  }
+
+  private statusSettlement(booking: Booking, status: string, actor: string): UpdateBookingDto {
+    const now = new Date().toISOString();
+    if (status === 'Cancelled' || status === 'Rejected') {
+      return { status, cancellationActor: actor, cancelledAt: now, ...cancellationSettlement(booking, actor, now) };
     }
-    if (data.status === 'Completed') update.receivedDate = new Date().toISOString().slice(0, 10);
-    return this.bookingsRepository.update(id, update)!;
+    if (status === 'Completed') return { status, receivedDate: now.slice(0, 10), payoutStatus: 'Paid', payoutDate: now.slice(0, 10) };
+    return { status };
   }
 
   delete(id: string): Booking {

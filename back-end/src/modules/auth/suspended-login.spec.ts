@@ -32,12 +32,12 @@ describe('Suspended account login and sessions (HTTP)', () => {
   let app: INestApplication;
   const http = () => request(app.getHttpServer());
   const login = (body: Record<string, string>) => http().post('/api/auth/login').send({ password: PASSWORD, ...body });
-  const customerLogin = (password = PASSWORD) => login({ role: 'customer', email: 'asha@example.test', password });
-  const providerLogin = (password = PASSWORD) => login({ role: 'provider', email: 'pro@example.test', password });
+  const customerLogin = (password = PASSWORD) => login({ identifier: 'asha@example.test', password });
+  const providerLogin = (password = PASSWORD) => login({ identifier: 'PRO800', password });
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
-  const employee = async (body: Record<string, string>) => (await login({ role: 'employee', ...body })).body.data.token as string;
-  const co = () => employee({ employeeId: 'EMP-CO-8', department: 'Customer Operations' });
-  const po = () => employee({ employeeId: 'EMP-PO-8', department: 'Provider Operations' });
+  const employee = async (identifier: string) => (await login({ identifier })).body.data.token as string;
+  const co = () => employee('EMP-CO-8');
+  const po = () => employee('EMP-PO-8');
   const setCustomer = async (id: string, status: string, reason: string) => http().patch(`/api/employee/customer-operations/customers/${id}/status`).set(auth(await co())).send({ status, reason });
   const setProvider = async (id: string, status: string, reason: string) => http().patch(`/api/employee/provider-operations/providers/${id}/status`).set(auth(await po())).send({ status, reason });
 
@@ -70,7 +70,7 @@ describe('Suspended account login and sessions (HTTP)', () => {
   });
 
   it('rejects a live session with the structured 403 when the stored status turns suspended, then discards it', async () => {
-    const live = (await login({ role: 'customer', email: 'quiet@example.test' })).body.data.token as string;
+    const live = (await login({ identifier: 'quiet@example.test' })).body.data.token as string;
     const repository = app.get(StateRepository);
     const value = repository.findById('serveEaseData')!.value as { users: Array<Record<string, any>> };
     const record = value.users.find((user) => user.id === 'CUS801')!;
@@ -96,19 +96,19 @@ describe('Suspended account login and sessions (HTTP)', () => {
 
   it('reads the reason from the record only; caller-supplied reasons are refused or ignored', async () => {
     await setCustomer('CUS801', 'Blocked', 'Policy review');
-    const body = { role: 'customer', email: 'quiet@example.test', password: PASSWORD };
+    const body = { identifier: 'quiet@example.test', password: PASSWORD };
     expect((await http().post('/api/auth/login').send({ ...body, reason: 'forged' })).status).toBe(400);
     const real = await http().post('/api/auth/login').set('x-suspension-reason', 'forged').send(body);
     expect(real.status).toBe(403);
     expect(real.body.reason).toBe('Policy review');
   });
 
-  it('never reveals the suspension to a wrong password or a mismatched account type', async () => {
-    for (const response of [await customerLogin('Wrong@123'), await providerLogin('Wrong@123'), await login({ role: 'provider', email: 'asha@example.test' })]) {
+  it('never reveals the suspension to a wrong password or to a provider email', async () => {
+    for (const response of [await customerLogin('Wrong@123'), await providerLogin('Wrong@123'), await login({ identifier: 'pro@example.test' })]) {
       expect(response.status).toBe(401);
       expect(response.body.code).toBeUndefined();
       expect(response.body.reason).toBeUndefined();
-      expect(response.body.message).toBe('Invalid email, password, or account type.');
+      expect(response.body.message).toBe('Invalid credentials. Check your email or ServeEase ID and password.');
     }
   });
 
@@ -119,12 +119,12 @@ describe('Suspended account login and sessions (HTTP)', () => {
   });
 
   it('lets a reactivated account sign in afresh without reviving a session invalidated by suspension', async () => {
-    const stale = (await login({ role: 'provider', email: 'quietpro@example.test' })).body.data.token as string;
+    const stale = (await login({ identifier: 'PRO801' })).body.data.token as string;
     await setProvider('PRO801', 'Suspended', 'Second review');
     expect((await http().get('/api/auth/session').set(auth(stale))).status).toBe(401);
     await setProvider('PRO801', 'Active', 'Review closed');
     expect((await http().get('/api/auth/session').set(auth(stale))).status).toBe(401);
-    const fresh = await login({ role: 'provider', email: 'quietpro@example.test' });
+    const fresh = await login({ identifier: 'PRO801' });
     expect(fresh.status).toBe(201);
     expect((await http().get('/api/auth/session').set(auth(fresh.body.data.token))).status).toBe(200);
     expect((await setCustomer('CUS800', 'Active', 'Cleared')).status).toBe(200);

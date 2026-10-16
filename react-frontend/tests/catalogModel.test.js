@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { bookableServices, categoryProviders, filterProviders, formatSlot, resolveCategory, servicePrice, validateCustomerDetails, validatePayment } from '../src/features/discovery/catalogModel.js'
+import { bookableServices, categoryProviders, filterProviders, formatSlot, priceBounds, resolveCategory, serviceOptions, servicePrice, validateCustomerDetails, validatePayment } from '../src/features/discovery/catalogModel.js'
 
 const categories = [{ id: 'home-cleaning', name: 'Home Cleaning', subServices: ['Kitchen Cleaning'] }, { id: 'plumbing', name: 'Plumbing', subServices: ['Plumbing'] }]
 const providers = [
@@ -36,6 +36,26 @@ test('search, service type and price filters narrow the rows', () => {
   assert.deepEqual(filterProviders(rows, { query: 'kitchen', categories }).map((row) => row.id), ['fresh'])
   assert.deepEqual(filterProviders(rows, { service: 'Full Home Cleaning', categories }).map((row) => row.id), ['sparkle'])
   assert.deepEqual(filterProviders(rows, { maxPrice: 700, categories }).map((row) => row.id), ['fresh'])
+})
+
+test('the price slider spans the prices actually on offer', () => {
+  const rows = categoryProviders({ providers }, { categoryId: 'home-cleaning', cityId: 1 })
+  // 699 and 1200 -> a slider from 650 to 1200, not the hard-coded 0-10000 of the original page.
+  assert.deepEqual(priceBounds(rows), { min: 650, max: 1200 })
+  assert.deepEqual(priceBounds([]), { min: 0, max: 10000 })
+  // A single price still leaves a usable range.
+  assert.deepEqual(priceBounds([{ startingPrice: 500 }]), { min: 500, max: 550 })
+  // A listing with no usable price is never hidden by the price filter.
+  assert.deepEqual(filterProviders([{ id: 'none', startingPrice: null, serviceNames: ['X'] }], { maxPrice: 100, categories }).map((row) => row.id), ['none'])
+})
+
+test('the service dropdown lists what the listed providers really offer', () => {
+  const rows = categoryProviders({ providers }, { categoryId: 'home-cleaning', cityId: 1 })
+  // Sorted, deduped, and driven by the live listings: a provider's new service appears without a code change.
+  assert.deepEqual(serviceOptions(rows, categories[0]), ['Full Home Cleaning', 'Kitchen Cleaning'])
+  // The category's own sub-services are the fallback only while nothing is listed.
+  assert.deepEqual(serviceOptions([], categories[0]), ['Kitchen Cleaning'])
+  assert.deepEqual(serviceOptions([], null), [])
 })
 
 test('service price follows the backend precedence', () => {

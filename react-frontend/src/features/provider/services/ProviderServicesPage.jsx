@@ -6,22 +6,29 @@ import { catalogApi } from '../../../services/api'
 import { ProviderAvailabilityPanel } from '../availability/ProviderAvailabilityPanel'
 import '../providerPortal.css'
 
-const emptyService = { name: '', description: '', price: '', location: '' }
+const emptyService = { name: '', description: '', price: '' }
 
-function serviceFormData(service, category) {
+// A service is saved against the provider's own category and city, which is what puts it in the right
+// customer discovery page. Both come from the signed-in account, never from free text.
+function serviceFormData(service, { category, cityId, cityName }) {
   return {
     name: service.name.trim(),
-    category: category || 'General',
+    category,
     description: service.description.trim(),
     price: Number(service.price),
-    location: service.location.trim(),
+    // The provider's recorded city is the service location; the form does not ask for one.
+    location: cityName || '',
+    ...(Number(cityId) > 0 ? { cityId: Number(cityId) } : {}),
+    ...(cityName ? { cityName } : {}),
   }
 }
 
 export function ProviderServicesPage() {
   const { currentUser, isAuthenticated, role } = useAuth()
   const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
-  const category = currentUser?.category || currentUser?.serviceCategory
+  const category = currentUser?.serviceType || currentUser?.category || currentUser?.serviceCategory
+  const cityName = currentUser?.cityName || currentUser?.location || ''
+  const serviceContext = { category, cityId: currentUser?.cityId, cityName }
   const [services, setServices] = useState([])
   const [isLoading, setIsLoading] = useState(Boolean(providerId))
   const [error, setError] = useState('')
@@ -68,19 +75,19 @@ export function ProviderServicesPage() {
 
   const openEdit = (service) => {
     setError('')
-    setForm({ name: service.name || '', description: service.description || '', price: String(service.price ?? ''), location: service.location || '' })
+    setForm({ name: service.name || '', description: service.description || '', price: String(service.price ?? '') })
     setEditingService(service)
   }
 
   const saveService = async (event) => {
     event.preventDefault()
-    if (!form.name.trim() || !form.description.trim() || !form.location.trim() || Number(form.price) <= 0) {
-      setError('Enter a name, description, location, and a price greater than zero.')
+    if (!form.name.trim() || !form.description.trim() || Number(form.price) <= 0) {
+      setError('Enter a name, a description, and a price greater than zero.')
       return
     }
     setIsSaving(true)
     setError('')
-    const payload = serviceFormData(form, category)
+    const payload = serviceFormData(form, serviceContext)
     try {
       if (editingService.isNew) {
         const created = await catalogApi.createProviderService(providerId, payload)
@@ -120,6 +127,10 @@ export function ProviderServicesPage() {
     return <section className="provider-portal"><div className="panel-card ops-state ops-state--error">Your provider profile could not be identified.</div></section>
   }
 
+  if (!category) {
+    return <section className="provider-portal"><div className="panel-card ops-state ops-state--error">Your account has no service category recorded, so services cannot be published to customers. Contact ServeEase Support.</div></section>
+  }
+
   return (
     <section className="provider-portal">
       <div className="breadcrumb-row"><Link to="/provider/dashboard">Provider Dashboard</Link> &nbsp;›&nbsp; <strong>Manage Services &amp; Availability</strong></div>
@@ -144,9 +155,9 @@ export function ProviderServicesPage() {
             <input id="providerServiceName" maxLength="120" onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="Enter service name" required value={form.name} />
             <label htmlFor="providerServiceDescription">Service Description</label>
             <textarea id="providerServiceDescription" maxLength="1000" onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="Enter service description" required value={form.description} />
-            <div className="two-col-form"><div><label htmlFor="providerServicePrice">Price (₹)</label><input id="providerServicePrice" min="1" onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} placeholder="799" required type="number" value={form.price} /></div></div>
-            <label htmlFor="providerServiceLocation">Service Location</label>
-            <input id="providerServiceLocation" maxLength="120" onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} placeholder="Enter service city" required value={form.location} />
+            <label htmlFor="providerServicePrice">Price (₹)</label>
+            <input id="providerServicePrice" min="1" onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} placeholder="799" required type="number" value={form.price} />
+            {cityName && <p className="provider-modal-note">Offered in {cityName}, the city recorded on your provider account.</p>}
             <small className="error" id="providerServiceError" role="alert">{error}</small>
             <div className="provider-modal-actions"><button className="btn btn-primary" disabled={isSaving} type="submit">{isSaving ? 'Saving…' : 'Save Changes'}</button><button className="secondary-btn" disabled={isSaving} onClick={closeModal} type="button">Cancel</button></div>
           </form>

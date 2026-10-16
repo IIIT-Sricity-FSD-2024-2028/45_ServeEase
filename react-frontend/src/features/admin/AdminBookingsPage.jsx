@@ -6,6 +6,7 @@ import { AdminAccessGate } from './AdminAccessGate'
 import { AdminPageHeader } from './AdminPageHeader'
 import { getBooking, listBookings, listEscalatedTickets } from './adminApi'
 import { money, show, useAdminData } from './useAdminData'
+import { settleBooking } from '../finance/revenueModel'
 import './admin.css'
 
 const standardBookingGroups = [
@@ -89,7 +90,7 @@ export default function AdminBookingsPage() {
                 <td><strong>{show(booking.id)}</strong></td><td>{show(booking.service || booking.category)}</td>
                 <td>{show(booking.customerName || booking.customerEmail || booking.customerId)}</td><td>{show(booking.provider || booking.providerId)}</td>
                 <td>{formatDate(booking.date)}</td><td><StatusBadge tone={booking.status === 'Completed' ? 'ready' : 'neutral'}>{show(booking.status)}</StatusBadge></td>
-                <td>{money(booking.amount)}</td><td><button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectBooking(String(booking.id))} type="button">View details</button></td>
+                <td>{money(settleBooking(booking).customerTotal)}</td><td><button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectBooking(String(booking.id))} type="button">View details</button></td>
               </tr>)}</tbody>
             </table></div>}
           </section>
@@ -108,8 +109,10 @@ export default function AdminBookingsPage() {
               'Service date': formatDate(selectedBooking.data.date),
               'Service time': selectedBooking.data.time,
               Status: selectedBooking.data.status,
-              Amount: money(selectedBooking.data.amount),
-              'Payment status': selectedBooking.data.paymentStatus,
+              ...(() => {
+                const settled = settleBooking(selectedBooking.data)
+                return { 'Service fee': money(settled.serviceFee), 'Customer total': money(settled.customerTotal), 'Payment status': settled.paymentStatus }
+              })(),
               'Payment method': selectedBooking.data.paymentMethod,
               Customer: selectedBooking.data.customerName,
               'Customer email': selectedBooking.data.customerEmail,

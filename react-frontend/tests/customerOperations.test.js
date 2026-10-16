@@ -165,10 +165,10 @@ test('sends the supported customer mutations to the real endpoints with the sess
 test('payment statistics count Paid and Refunded payments and subtract refunds', async () => {
   const { summarizePayments } = await import('../src/features/customer/customerOperations.js')
   const result = summarizePayments([
-    { paymentStatus: 'Paid', customerTotal: 688.85 },
-    { paymentStatus: 'Refunded', customerTotal: 1033.85, refundAmount: 629.3 },
-    { paymentStatus: 'Refunded', customerTotal: 918.85, refundAmount: 799 },
-    { paymentStatus: 'Successful', customerTotal: 100 },
+    { status: 'Completed', serviceFee: 500 },
+    { status: 'Cancelled', serviceFee: 500, cancellationActor: 'Customer', cancellationPolicy: 'CUSTOMER_CANCEL_24H_TO_3H' },
+    { status: 'Cancelled', serviceFee: 500, cancellationActor: 'Provider' },
+    { status: 'Pending', serviceFee: 100 },
   ])
-  assert.deepEqual(result, { totalPaid: 1313.25, successful: 2, refunded: 1428.3 })
+  assert.deepEqual(result, { totalPaid: 915, successful: 2, refunded: 925 })
 })

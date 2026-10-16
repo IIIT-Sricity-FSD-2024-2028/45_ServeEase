@@ -22,12 +22,7 @@ describe('AuthService employee sessions', () => {
       password: 'Support@123',
     }]);
 
-    const { token, user } = service.login({
-      role: 'employee',
-      employeeId: 'EMP-SUP-002',
-      department: 'Support',
-      password: 'Support@123',
-    });
+    const { token, user } = service.login({ identifier: 'EMP-SUP-002', password: 'Support@123' });
 
     expect(user).toMatchObject({ id: 'EMP-SUP-002', role: 'support', email: 'support@example.com' });
     expect(service.sessionUser(token)).toMatchObject({ id: 'EMP-SUP-002', role: 'support' });
@@ -36,7 +31,7 @@ describe('AuthService employee sessions', () => {
 
   it.each(['Customer Operations', 'Provider Operations', 'Support'])('keeps the %s department through login, session restore and principal', (department) => {
     const service = serviceWith([{ employeeId: 'EMP-1', name: 'Employee One', department, password: 'Pass@123' }]);
-    const { token, user } = service.login({ role: 'employee', employeeId: 'emp-1', department, password: 'Pass@123' });
+    const { token, user } = service.login({ identifier: 'emp-1', password: 'Pass@123' });
 
     expect(user).toMatchObject({ id: 'EMP-1', role: 'support', department });
     expect(user).not.toHaveProperty('password');
@@ -45,18 +40,21 @@ describe('AuthService employee sessions', () => {
     expect(service.principal(token)).toMatchObject({ userId: 'EMP-1', role: 'support', department });
   });
 
-  it('rejects a login whose department does not match the stored record', () => {
+  // The client used to send the department and have it matched against the record. It no longer can, so the
+  // department the session carries is whatever the record says and cannot be steered from the request.
+  it('takes the department from the stored record, not from the request', () => {
     const service = serviceWith([{ employeeId: 'EMP-1', name: 'Employee One', department: 'Customer Operations', password: 'Pass@123' }]);
-    expect(() => service.login({ role: 'employee', employeeId: 'EMP-1', department: 'Support', password: 'Pass@123' })).toThrow(UnauthorizedException);
+    const { token } = service.login({ identifier: 'EMP-1', password: 'Pass@123' });
+    expect(service.principal(token).department).toBe('Customer Operations');
   });
 
   it('refuses unsupported departments at login and drops them on restore', () => {
     const employees = [{ employeeId: 'EMP-1', name: 'Employee One', department: 'Finance', password: 'Pass@123' }];
     const service = serviceWith(employees);
-    expect(() => service.login({ role: 'employee', employeeId: 'EMP-1', department: 'Finance', password: 'Pass@123' })).toThrow('This employee department is not supported.');
+    expect(() => service.login({ identifier: 'EMP-1', password: 'Pass@123' })).toThrow('This employee department is not supported.');
 
     employees[0].department = 'Support';
-    const { token } = service.login({ role: 'employee', employeeId: 'EMP-1', department: 'Support', password: 'Pass@123' });
+    const { token } = service.login({ identifier: 'EMP-1', password: 'Pass@123' });
     employees[0].department = 'Finance';
     expect(service.principal(token).department).toBeNull();
     expect(service.sessionUser(token)).toMatchObject({ department: null });
@@ -64,7 +62,7 @@ describe('AuthService employee sessions', () => {
 
   it('invalidates the session on logout', () => {
     const service = serviceWith([{ employeeId: 'EMP-1', name: 'Employee One', department: 'Support', password: 'Pass@123' }]);
-    const { token } = service.login({ role: 'employee', employeeId: 'EMP-1', department: 'Support', password: 'Pass@123' });
+    const { token } = service.login({ identifier: 'EMP-1', password: 'Pass@123' });
     service.logout(token);
     expect(() => service.sessionUser(token)).toThrow(UnauthorizedException);
   });
@@ -75,13 +73,71 @@ describe('AuthService employee sessions', () => {
       { id: 'PRO1', role: 'provider', email: 'p@example.test', password: 'Pass@123', providerCatalogId: 'listing-1' },
       { id: 'SU1', role: 'superuser', email: 's@example.test', password: 'Pass@123' },
     ]);
-    const customer = service.login({ role: 'customer', email: 'c@example.test', password: 'Pass@123' });
-    const provider = service.login({ role: 'provider', email: 'p@example.test', password: 'Pass@123' });
-    const superuser = service.login({ role: 'superuser', email: 's@example.test', password: 'Pass@123' });
+    const customer = service.login({ identifier: 'c@example.test', password: 'Pass@123' });
+    const provider = service.login({ identifier: 'PRO1', password: 'Pass@123' });
+    const superuser = service.login({ identifier: 's@example.test', password: 'Pass@123' });
     expect(service.principal(customer.token)).toEqual({ userId: 'CUS1', role: 'customer', email: 'c@example.test', providerCatalogId: undefined, department: undefined });
     expect(service.principal(provider.token)).toMatchObject({ role: 'provider', providerCatalogId: 'listing-1', department: undefined });
     expect(service.principal(superuser.token)).toMatchObject({ role: 'superuser', department: undefined });
-    expect(() => service.login({ role: 'customer', email: 'p@example.test', password: 'Pass@123' })).toThrow(UnauthorizedException);
+  });
+});
+
+describe('AuthService identifier resolution', () => {
+  const accounts = (): Record<string, any>[] => [
+    { id: 'CUS1', role: 'customer', email: 'shared@example.test', password: 'Cus@1234' },
+    { id: 'PRO9', role: 'provider', email: 'shared@example.test', password: 'Pro@1234' },
+    { id: 'SUR001', role: 'superuser', email: 'super@example.test', password: 'Sup@1234' },
+    { id: 'SUP001', role: 'support', email: 'stub@example.test', password: 'Stub@123' },
+  ];
+
+  // The whole point of splitting the namespaces: the provider is addressed by PRO9 and the customer by the
+  // email, so one person may hold both accounts on one email and each identifier still resolves exactly one.
+  it('resolves a customer and a provider that share one email by their own identifiers', () => {
+    const service = serviceWith([], accounts());
+    expect(service.login({ identifier: 'shared@example.test', password: 'Cus@1234' }).user).toMatchObject({ id: 'CUS1', role: 'customer' });
+    expect(service.login({ identifier: 'PRO9', password: 'Pro@1234' }).user).toMatchObject({ id: 'PRO9', role: 'provider' });
+  });
+
+  it('does not reach a provider by email, even with the right password', () => {
+    const service = serviceWith([], accounts());
+    expect(() => service.login({ identifier: 'shared@example.test', password: 'Pro@1234' })).toThrow(UnauthorizedException);
+  });
+
+  it('resolves the superuser by email or by id', () => {
+    const service = serviceWith([], accounts());
+    expect(service.login({ identifier: 'super@example.test', password: 'Sup@1234' }).user).toMatchObject({ id: 'SUR001', role: 'superuser' });
+    expect(service.login({ identifier: 'sur001', password: 'Sup@1234' }).user).toMatchObject({ id: 'SUR001', role: 'superuser' });
+  });
+
+  // SUP001 is a legacy stub in users with no department. A session on it would authenticate into no workspace.
+  it('refuses the legacy support stub by either id or email', () => {
+    const service = serviceWith([], accounts());
+    expect(() => service.login({ identifier: 'SUP001', password: 'Stub@123' })).toThrow(UnauthorizedException);
+    expect(() => service.login({ identifier: 'stub@example.test', password: 'Stub@123' })).toThrow(UnauthorizedException);
+  });
+
+  it('gives the same message to an unknown identifier, a wrong password and a blank identifier', () => {
+    const service = serviceWith([], accounts());
+    const message = 'Invalid credentials. Check your email or ServeEase ID and password.';
+    expect(() => service.login({ identifier: 'nobody@example.test', password: 'Cus@1234' })).toThrow(message);
+    expect(() => service.login({ identifier: 'NOSUCHID', password: 'Cus@1234' })).toThrow(message);
+    expect(() => service.login({ identifier: 'shared@example.test', password: 'Wrong@123' })).toThrow(message);
+    expect(() => service.login({ identifier: '   ', password: 'Cus@1234' })).toThrow(message);
+  });
+
+  it('upgrades a plaintext password to a hash on the id branch as well as the email branch', () => {
+    const users = accounts();
+    const service = serviceWith([], users);
+    service.login({ identifier: 'PRO9', password: 'Pro@1234' });
+    service.login({ identifier: 'shared@example.test', password: 'Cus@1234' });
+    const provider = users.find((u) => u.id === 'PRO9')!;
+    const customer = users.find((u) => u.id === 'CUS1')!;
+    expect(provider).not.toHaveProperty('password');
+    expect(customer).not.toHaveProperty('password');
+    expect(provider.passwordHash).toEqual(expect.any(String));
+    expect(customer.passwordHash).toEqual(expect.any(String));
+    // The upgraded hash still verifies on the next login.
+    expect(service.login({ identifier: 'PRO9', password: 'Pro@1234' }).user).toMatchObject({ id: 'PRO9' });
   });
 });
 
@@ -101,7 +157,7 @@ describe('AuthService provider profile updates', () => {
 
   it('updates only the signed-in provider and keeps their listing name in step', () => {
     const { service, value, state } = providerService();
-    const { token } = service.login({ role: 'provider', email: 'p@example.com', password: 'Pass@1234' });
+    const { token } = service.login({ identifier: 'PRO001', password: 'Pass@1234' });
     const updated = service.updateProviderProfile(token, { organisationName: 'New Org', phone: '9000000009', cityId: 2, ifsc: 'hdfc0001234', accountNumber: '123456789012' });
     expect(updated).toMatchObject({ id: 'PRO001', organisationName: 'New Org', phone: '9000000009', cityName: 'Bangalore', ifsc: 'HDFC0001234', accountNumber: '123456789012' });
     expect(updated).not.toHaveProperty('passwordHash');
@@ -113,7 +169,7 @@ describe('AuthService provider profile updates', () => {
 
   it('shows the original sample bank details until the provider saves their own', () => {
     const { service } = providerService();
-    const { token, user } = service.login({ role: 'provider', email: 'p@example.com', password: 'Pass@1234' });
+    const { token, user } = service.login({ identifier: 'PRO001', password: 'Pass@1234' });
     expect(user).toMatchObject({ bankName: 'HDFC Bank', accountHolder: 'Old Org', accountNumber: 'XXXXXX1129', ifsc: 'HDFC0001234' });
     expect(service.updateProviderProfile(token, { bankName: 'SBI', accountHolder: 'Pro One', accountNumber: '123456789', ifsc: 'sbin0001234' })).toMatchObject({ bankName: 'SBI', accountHolder: 'Pro One', accountNumber: '123456789', ifsc: 'SBIN0001234' });
     expect(service.sessionUser(token)).toMatchObject({ bankName: 'SBI', accountNumber: '123456789' });
@@ -121,9 +177,53 @@ describe('AuthService provider profile updates', () => {
 
   it('rejects a phone number that belongs to another account and non-provider sessions', () => {
     const { service } = providerService();
-    const provider = service.login({ role: 'provider', email: 'p@example.com', password: 'Pass@1234' });
+    const provider = service.login({ identifier: 'PRO001', password: 'Pass@1234' });
     expect(() => service.updateProviderProfile(provider.token, { phone: '9000000002' })).toThrow('Phone number already exists.');
-    const customer = service.login({ role: 'customer', email: 'c@example.com', password: 'Pass@1234' });
+    const customer = service.login({ identifier: 'c@example.com', password: 'Pass@1234' });
     expect(() => service.updateProviderProfile(customer.token, { fullName: 'Hacker' })).toThrow('Only providers');
+  });
+});
+
+describe('AuthService customer registration', () => {
+  it('records the new customer as Active with an unambiguous registration date', () => {
+    const users: Record<string, unknown>[] = [];
+    const service = serviceWith([], users);
+
+    const { user } = service.register({
+      role: 'customer', fullName: '  Asha Rao ', email: 'Asha@Example.test', phone: '9000000001', password: 'Pass@1234',
+    } as never);
+
+    const stored = users.find((item) => item.email === 'asha@example.test')!;
+    expect(user).toMatchObject({ role: 'customer', fullName: 'Asha Rao' });
+    // Customer Operations counts and shows this status; without it the account read as "N/A".
+    expect(stored).toMatchObject({ accountStatus: 'Active', status: 'Active' });
+    // ISO, so the date cannot be read as month-first wherever the server happens to run.
+    expect(stored.registrationDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(stored).not.toHaveProperty('location');
+  });
+
+  // A provider is free to book services, so the email and phone on their provider account must not block the
+  // customer account they register for themselves. A second account of the same role still conflicts.
+  it('allows a customer on an email and phone a provider already uses, but not a second customer', () => {
+    const users: Record<string, unknown>[] = [
+      { id: 'PRO001', role: 'provider', email: 'both@example.test', phone: '9000000001', password: 'Pass@1234' },
+    ];
+    const service = serviceWith([], users);
+    const details = { role: 'customer', fullName: 'Asha Rao', email: 'both@example.test', phone: '9000000001', password: 'Pass@1234' };
+
+    expect(service.register(details as never).user).toMatchObject({ role: 'customer', email: 'both@example.test' });
+    expect(() => service.register(details as never)).toThrow('Email already exists.');
+    expect(() => service.register({ ...details, email: 'other@example.test' } as never)).toThrow('Phone number already exists.');
+  });
+
+  it('refuses a second provider on an email a provider already uses', () => {
+    const users: Record<string, unknown>[] = [
+      { id: 'PRO001', role: 'provider', email: 'both@example.test', phone: '9000000001', password: 'Pass@1234' },
+    ];
+    const service = serviceWith([], users);
+    expect(() => service.register({
+      role: 'provider', fullName: 'Pro Two', email: 'both@example.test', phone: '9000000002', password: 'Pass@1234',
+      organisationName: 'Org', serviceType: 'Plumbing', experience: 2, cityId: 1, address: '1 Example Road', idProofType: 'Aadhaar',
+    } as never)).toThrow('Email already exists.');
   });
 });

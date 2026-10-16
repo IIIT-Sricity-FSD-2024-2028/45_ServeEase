@@ -1,5 +1,6 @@
 // Shared customer-operations logic ported from front-end/JavaScript/customer.js and tickets.js.
 // Everything here works on real API records; nothing fills in values the backend did not send.
+import { roundCurrency, settleBooking } from '../finance/revenueModel.js'
 
 export const customerTicketTypes = [
   'Poor Service Quality', 'Provider Not Arrived', 'Late Arrival', 'Overcharging', 'Misbehavior', 'Payment Issue',
@@ -154,26 +155,24 @@ export function filterTickets(tickets, term) {
     .join(' ').toLowerCase().includes(query))
 }
 
-export const bookingTotal = (booking) => booking.customerTotal ?? booking.amount
+export const bookingTotal = (booking) => {
+  const settled = settleBooking(booking)
+  return settled.financialsAvailable ? settled.customerTotal : undefined
+}
 
-// Payment History statistics. Every payment is Paid or Refunded; money returned to the customer is subtracted,
+// Payment History statistics over settled bookings. Money returned to the customer is subtracted,
 // so Total Payments Made + Refunded Amount adds back up to what was charged.
 export function summarizePayments(payments) {
-  const round = (value) => Math.round((value + Number.EPSILON) * 100) / 100
-  const number = (value) => (value === undefined || value === null || value === '' || !Number.isFinite(Number(value)) ? null : Number(value))
   let charged = 0
   let refunded = 0
   let successful = 0
-  payments.forEach((payment) => {
-    const total = number(payment.customerTotal ?? payment.amount)
-    const refundedTag = paymentTag(payment.paymentStatus) === 'Refunded'
-    if (!refundedTag) successful += 1
-    if (total == null) return
-    const refund = Math.min(number(payment.refundAmount) ?? (refundedTag ? total : 0), total)
-    charged += total
-    refunded += refund
+  payments.map(settleBooking).forEach((payment) => {
+    if (payment.paymentStatus !== 'Refunded') successful += 1
+    if (!payment.financialsAvailable) return
+    charged += payment.customerTotal
+    refunded += payment.refundAmount
   })
-  return { totalPaid: round(charged - refunded), successful, refunded: round(refunded) }
+  return { totalPaid: roundCurrency(charged - refunded), successful, refunded: roundCurrency(refunded) }
 }
 
 const maxAttachmentSize = 5000 * 1024

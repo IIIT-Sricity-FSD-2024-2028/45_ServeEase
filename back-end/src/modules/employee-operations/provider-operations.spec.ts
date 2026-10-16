@@ -89,8 +89,8 @@ describe('Provider Operations workspace', () => {
     const providers = new ProviderOperationsService(state, { findAll: () => bookings } as never, { findAllForSupport: () => tickets } as never, catalog as never, availability as never, auth, new ProviderDocumentsService(state));
     const customers = new EmployeeOperationsService(state, { findAll: () => bookings } as never, { findAllForSupport: () => tickets } as never, auth);
     const controller = new EmployeeOperationsController(customers, providers);
-    const employee = (employeeId: string, department: string) => auth.login({ role: 'employee', employeeId, department, password: PASSWORD }).token;
-    const login = (role: string, email: string) => auth.login({ role, email, password: PASSWORD }).token;
+    const employee = (employeeId: string) => auth.login({ identifier: employeeId, password: PASSWORD }).token;
+    const login = (identifier: string) => auth.login({ identifier, password: PASSWORD }).token;
 
     const guarded = (method: string, token: string, headers: Record<string, string> = {}) => {
       const request = { headers: { ...headers, authorization: `Bearer ${token}` } } as Record<string, any>;
@@ -116,7 +116,7 @@ describe('Provider Operations workspace', () => {
 
   it('lists every provider with the original page\'s statuses and counts, without credentials or private fields', () => {
     const { overview, employee } = server();
-    const result = overview(employee('EMP-PO-9', 'Provider Operations'));
+    const result = overview(employee('EMP-PO-9'));
     const byName = Object.fromEntries(result.providers.map((provider) => [provider.fullName, provider]));
     expect(byName['Pending One']).toMatchObject({ id: 'PROPEND1', accountStatus: 'Under Verification', verificationStatus: 'Pending', documentCount: 2, serviceCount: 0, location: 'Chennai', sharedId: false });
     expect(byName['Active Pro']).toMatchObject({ accountStatus: 'Active', verificationStatus: 'Verified', serviceCount: 2 });
@@ -128,10 +128,10 @@ describe('Provider Operations workspace', () => {
 
   it('returns one provider with documents (metadata only), services, bookings, availability, tickets and history', () => {
     const { detail, employee } = server();
-    const token = employee('EMP-PO-9', 'Provider Operations');
+    const token = employee('EMP-PO-9');
     const active = detail(token, 'PROACT');
     expect(active.services.map((service) => service.name)).toEqual(['Tap Repair', 'Pipe Fitting']);
-    expect(active.bookings).toEqual([{ id: 'BOOK-1', customer: 'Asha', service: 'Tap Repair', date: '2026-10-20', time: '09:00-12:00', status: 'Pending', paymentStatus: 'Pending' }]);
+    expect(active.bookings).toEqual([{ id: 'BOOK-1', customer: 'Asha', service: 'Tap Repair', date: '2026-10-20', time: '09:00-12:00', status: 'Pending', paymentStatus: 'Paid' }]);
     expect(active.availability).toEqual({ monday: ['09:00-12:00'], tuesday: [] });
     expect(active.tickets.map((ticket) => ticket.ticketId)).toEqual(['TKT-P1']);
     expect(active.history[0]).toEqual({ dateTime: '25-08-2026 01:14 AM', action: 'Provider activated', previousStatus: 'Suspended', newStatus: 'Active', reason: 'ok', remarks: null, performedBy: 'super@example.test' });
@@ -148,7 +148,7 @@ describe('Provider Operations workspace', () => {
 
   it('handles invalid, missing and shared provider ids', () => {
     const { detail, employee } = server();
-    const token = employee('EMP-PO-9', 'Provider Operations');
+    const token = employee('EMP-PO-9');
     expect(() => detail(token, '../PROACT')).toThrow(BadRequestException);
     expect(() => detail(token, 'PRO404')).toThrow(NotFoundException);
     expect(() => detail(token, 'CUS900')).toThrow(NotFoundException);
@@ -159,7 +159,7 @@ describe('Provider Operations workspace', () => {
 
   it('approves a pending verification, persists it to the account and its approval request, and survives a restart', () => {
     const first = server();
-    const token = first.employee('EMP-PO-9', 'Provider Operations');
+    const token = first.employee('EMP-PO-9');
     const before = { ...first.record('PROPEND1') };
     const result = first.decide(token, 'PROPEND1', { decision: 'approve', remarks: 'Documents match registration' });
     expect(result.provider).toMatchObject({ id: 'PROPEND1', accountStatus: 'Active', verificationStatus: 'Verified', adminRemarks: 'Documents match registration', rejectionReason: null });
@@ -176,13 +176,13 @@ describe('Provider Operations workspace', () => {
     const onDisk = JSON.parse(readFileSync(stateFile, 'utf8')) as Array<{ key: string; value: { users: Record<string, any>[] } }>;
     expect(onDisk.find((entry) => entry.key === 'serveEaseData')!.value.users.find((user) => user.id === 'PROPEND1')).toMatchObject({ accountStatus: 'Active', role: 'provider' });
     const restarted = server();
-    expect(restarted.detail(restarted.employee('EMP-PO-9', 'Provider Operations'), 'PROPEND1').provider.accountStatus).toBe('Active');
-    expect(restarted.login('provider', 'pending1@example.test')).toEqual(expect.any(String));
+    expect(restarted.detail(restarted.employee('EMP-PO-9'), 'PROPEND1').provider.accountStatus).toBe('Active');
+    expect(restarted.login('PROPEND1')).toEqual(expect.any(String));
   });
 
   it('rejects with a required reason and refuses repeated or stale decisions without changing state', () => {
     const { decide, record, employee } = server();
-    const token = employee('EMP-PO-9', 'Provider Operations');
+    const token = employee('EMP-PO-9');
     expect(() => decide(token, 'PROPEND1', { decision: 'reject', reason: '     ' })).toThrow('A rejection reason of at least 5 characters is required.');
     const rejected = decide(token, 'PROPEND1', { decision: 'reject', reason: 'Address proof is unreadable', remarks: 'Asked to resubmit' });
     expect(rejected.provider).toMatchObject({ accountStatus: 'Verification Rejected', verificationStatus: 'Rejected', rejectionReason: 'Address proof is unreadable' });
@@ -199,20 +199,20 @@ describe('Provider Operations workspace', () => {
 
   it('will not approve a provider with no recorded documents', () => {
     const { decide, record, employee } = server();
-    expect(() => decide(employee('EMP-PO-9', 'Provider Operations'), 'PROPEND2', { decision: 'approve' })).toThrow('No verification documents are recorded');
+    expect(() => decide(employee('EMP-PO-9'), 'PROPEND2', { decision: 'approve' })).toThrow('No verification documents are recorded');
     expect(record('PROPEND2').accountStatus).toBe('Under Verification');
   });
 
   it('lets a superuser decide, recorded as the superuser', () => {
     const { decide, record, login } = server();
-    decide(login('superuser', 'super@example.test'), 'PROPEND1', { decision: 'approve' });
+    decide(login('super@example.test'), 'PROPEND1', { decision: 'approve' });
     expect(record('PROPEND1').statusHistory[0]).toMatchObject({ performedBy: 'Superuser', performedById: 'SU900' });
   });
 
   it('denies Customer Operations, Support, customers and providers on every Provider Operations endpoint, even with spoofed headers', () => {
     const { overview, detail, decide, record, employee, login } = server();
     const spoof = { role: 'admin', department: 'Provider Operations', 'user-id': 'SU900' };
-    for (const token of [employee('EMP-CO-9', 'Customer Operations'), employee('EMP-SUP-9', 'Support'), login('customer', 'customer@example.test'), login('provider', 'active@example.test')]) {
+    for (const token of [employee('EMP-CO-9'), employee('EMP-SUP-9'), login('customer@example.test'), login('PROACT')]) {
       expect(denied(() => overview(token))).toBe(true);
       expect(denied(() => detail(token, 'PROPEND1'))).toBe(true);
       expect(denied(() => decide(token, 'PROPEND1', { decision: 'approve' }))).toBe(true);

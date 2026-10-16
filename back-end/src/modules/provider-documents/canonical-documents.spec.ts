@@ -96,8 +96,8 @@ describe('Canonical provider documents (HTTP)', () => {
   const http = () => request(app.getHttpServer());
   const auth = (tok?: string) => (tok ? { Authorization: `Bearer ${tok}` } : {});
   const token = async (body: Record<string, string>) => (await http().post('/api/auth/login').send({ password: PASSWORD, ...body })).body.data?.token as string;
-  const po = () => token({ role: 'employee', employeeId: 'EMP-PO-9', department: 'Provider Operations' });
-  const su = () => token({ role: 'superuser', email: 'super@example.test' });
+  const po = () => token({ identifier: 'EMP-PO-9' });
+  const su = () => token({ identifier: 'super@example.test' });
   const binary = (call: any) => call.buffer(true).parse((response: NodeJS.ReadableStream, done: (error: Error | null, body: Buffer) => void) => { const chunks: Buffer[] = []; response.on('data', (chunk: Buffer) => chunks.push(chunk)); response.on('end', () => done(null, Buffer.concat(chunks))); });
   const preview = (tok: string | undefined, providerId: string, documentId: string) => binary(http().get(`/api/employee/provider-operations/providers/${providerId}/documents/${documentId}/preview`).set(auth(tok)));
   const json = (response: { body: Buffer }) => JSON.parse(response.body.toString());
@@ -250,7 +250,7 @@ describe('Canonical provider documents (HTTP)', () => {
   });
 
   it('lets only superusers run migrations', async () => {
-    for (const tok of [await po(), await token({ role: 'employee', employeeId: 'EMP-CO-9', department: 'Customer Operations' }), await token({ role: 'provider', email: 'legacy@example.test' }), await token({ role: 'customer', email: 'customer@example.test' }), undefined]) {
+    for (const tok of [await po(), await token({ identifier: 'EMP-CO-9' }), await token({ identifier: 'PROLEG' }), await token({ identifier: 'customer@example.test' }), undefined]) {
       expect((await migrate(tok, true)).status).toBe(403);
     }
     expect(existsSync(documents)).toBe(false);
@@ -263,7 +263,7 @@ describe('Canonical provider documents (HTTP)', () => {
     expect((await importAs(path, tok, PDF, 'homecleaning 4.jpg.jpeg', 'image/jpeg')).status).toBe(400); // bytes are a PDF
     expect((await importAs('/api/employee/provider-operations/providers/PROLOCAL/documents/DOC-PROLOCAL-2/browser-import', tok, JPEG, 'bill.pdf', 'image/jpeg')).status).toBe(400);
     expect((await importAs('/api/employee/provider-operations/providers/PROLEG/documents/DOC-PROLEG-1/browser-import', tok, JPEG, 'pan card.jpeg', 'image/jpeg')).status).toBe(409); // not a browser record
-    for (const other of [await token({ role: 'employee', employeeId: 'EMP-CO-9', department: 'Customer Operations' }), await token({ role: 'customer', email: 'customer@example.test' }), undefined]) {
+    for (const other of [await token({ identifier: 'EMP-CO-9' }), await token({ identifier: 'customer@example.test' }), undefined]) {
       expect((await importAs(path, other, JPEG, 'homecleaning 4.jpg.jpeg', 'image/jpeg')).status).toBe(403);
     }
 
@@ -280,13 +280,13 @@ describe('Canonical provider documents (HTTP)', () => {
   });
 
   it('gives providers their own documents only, including their own browser import', async () => {
-    const owner = await token({ role: 'provider', email: 'local@example.test' });
+    const owner = await token({ identifier: 'PROLOCAL' });
     const ownList = await http().get('/api/provider/verification-documents').set(auth(owner));
     expect(ownList.body.data.map((item: Record<string, string>) => item.documentId)).toEqual(['DOC-PROLOCAL-1', 'DOC-PROLOCAL-2']);
     expect((await importAs('/api/provider/verification-documents/DOC-PROLOCAL-1/browser-import', owner, JPEG, 'homecleaning 4.jpg.jpeg', 'image/jpeg')).status).toBe(201);
     const own = await binary(http().get('/api/provider/verification-documents/DOC-PROLOCAL-1/file').set(auth(owner)));
     expect([own.status, (own.body as Buffer).equals(JPEG)]).toEqual([200, true]);
-    const stranger = await token({ role: 'provider', email: 'legacy@example.test' });
+    const stranger = await token({ identifier: 'PROLEG' });
     expect((await binary(http().get('/api/provider/verification-documents/DOC-PROLOCAL-1/file').set(auth(stranger)))).status).toBe(404);
     expect((await importAs('/api/provider/verification-documents/DOC-PROLOCAL-1/browser-import', stranger, JPEG, 'homecleaning 4.jpg.jpeg', 'image/jpeg')).status).toBe(404);
     expect((await binary(http().get('/api/provider/verification-documents/DOC-PROLOCAL-1/file').set(auth(await po())))).status).toBe(403);
@@ -294,7 +294,7 @@ describe('Canonical provider documents (HTTP)', () => {
 
   it('refuses previews to other departments, roles and spoofed headers', async () => {
     await migrate(await su(), true);
-    for (const tok of [await token({ role: 'employee', employeeId: 'EMP-CO-9', department: 'Customer Operations' }), await token({ role: 'employee', employeeId: 'EMP-SUP-9', department: 'Support' }), await token({ role: 'customer', email: 'customer@example.test' }), await token({ role: 'provider', email: 'legacy@example.test' }), undefined]) {
+    for (const tok of [await token({ identifier: 'EMP-CO-9' }), await token({ identifier: 'EMP-SUP-9' }), await token({ identifier: 'customer@example.test' }), await token({ identifier: 'PROLEG' }), undefined]) {
       expect((await preview(tok, 'PROLEG', 'DOC-PROLEG-1').set({ role: 'admin', department: 'Provider Operations' })).status).toBe(403);
       expect((await http().get('/api/employee/provider-operations/providers/PROLEG/documents').set(auth(tok))).status).toBe(403);
     }

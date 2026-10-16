@@ -4,7 +4,7 @@ import { ReviewRating } from '../../reviews/ReviewParts'
 
 // "Past Booking History" table (.table-card / .data-table) from my-bookings.html.
 export function BookingHistory({ bookings, emptyLabel, reviews = {}, onRate, onViewDetails, onRaiseTicket }) {
-  return <div className="table-card">
+  return <div className="table-card table-scroll">
     <table className="data-table">
       <thead><tr>
         <th scope="col">Service</th><th scope="col">Provider</th><th scope="col">Date</th><th scope="col">Amount Paid</th>

@@ -7,6 +7,25 @@ export function display(value) {
   return value === undefined || value === null || String(value).trim() === '' ? NOT_AVAILABLE : String(value)
 }
 
+const MONTHS = { jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11 }
+const pad = (value) => String(value).padStart(2, '0')
+
+// api.js ServeEaseDate.formatDate(): DD-MM-YYYY from ISO, DD/MM/YYYY, "12 March 2026" or any Date-parsable value.
+export function formatDate(value) {
+  const textValue = String(value ?? '').trim()
+  if (!textValue) return display(null)
+  let parts = null
+  let match = textValue.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (match) parts = [match[3], match[2], match[1]]
+  if (!parts && (match = textValue.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/))) parts = [match[1], match[2], match[3]]
+  if (!parts && (match = textValue.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/)) && MONTHS[match[2].toLowerCase()] !== undefined) parts = [match[1], MONTHS[match[2].toLowerCase()] + 1, match[3]]
+  if (!parts) {
+    const parsed = new Date(textValue)
+    if (!Number.isNaN(parsed.getTime())) parts = [parsed.getDate(), parsed.getMonth() + 1, parsed.getFullYear()]
+  }
+  return parts ? `${pad(parts[0])}-${pad(parts[1])}-${parts[2]}` : textValue
+}
+
 export function chipClass(value) {
   return String(value || 'not recorded').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-')
 }
@@ -23,27 +42,32 @@ export function customerStats(overview) {
   }
 }
 
-// filteredCustomers(): status filter ("N/A" = no recorded status) and free-text search.
+// filteredCustomers(): status filter ("N/A" = no recorded status) and free-text search. Customers do not
+// record a location anywhere in ServeEase (sign-up never asks for one), so it is not a searchable field.
 export function filterCustomers(customers, { status = 'all', query = '' } = {}) {
   const term = query.trim().toLowerCase()
   return customers.filter((customer) => {
     if (status !== 'all' && display(customer.status) !== status) return false
     if (!term) return true
-    return [customer.id, customer.fullName, customer.email, customer.phone, customer.location, display(customer.status)]
+    return [customer.id, customer.fullName, customer.email, customer.phone, display(customer.status)]
       .join(' ').toLowerCase().includes(term)
   })
 }
 
-const activeBookingStatuses = ['pending', 'requested', 'accepted', 'upcoming']
+// A booking is always in exactly one of these three groups, so the counts add back up to the total.
+const upcomingBookingStatuses = ['pending', 'accepted']
+const closedBookingStatuses = ['cancelled', 'rejected']
 const openTicketStatuses = ['open', 'pending', 'in progress', 'escalated', 'under review']
 
-// customer-operations-detail.js renderStats()
+// customer-operations-detail.js renderStats(), over the booking statuses the backend actually stores
+// (Pending, Accepted, Completed, Cancelled, Rejected): total = upcoming + completed + cancelled.
 export function customerDetailStats(bookings, tickets) {
-  const status = (value) => String(value || '').toLowerCase()
+  const status = (value) => String(value || '').toLowerCase().trim()
   return {
     total: bookings.length,
-    active: bookings.filter((booking) => activeBookingStatuses.includes(status(booking.status))).length,
+    upcoming: bookings.filter((booking) => upcomingBookingStatuses.includes(status(booking.status))).length,
     completed: bookings.filter((booking) => status(booking.status) === 'completed').length,
+    cancelled: bookings.filter((booking) => closedBookingStatuses.includes(status(booking.status))).length,
     openTickets: tickets.filter((ticket) => openTicketStatuses.includes(status(ticket.status))).length,
   }
 }

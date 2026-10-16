@@ -29,6 +29,7 @@ import EmployeeProviderDetailPage from '../features/employee/EmployeeProviderDet
 import EmployeeProviderVerificationPage from '../features/employee/EmployeeProviderVerificationPage'
 import UnsupportedDepartmentPage from '../features/employee/UnsupportedDepartmentPage'
 import { destinationFor } from './destinations'
+import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage'
 import { LoginPage } from '../features/auth/LoginPage'
 import { SignupPage } from '../features/auth/SignupPage'
 import { BookingFormPage, CheckoutPage, ConfirmationPage, ProviderDetailsPage, ServicesPage } from '../features/discovery/DiscoveryPages'
@@ -55,6 +56,7 @@ export function AppRoutes() {
     <Route element={<PublicLayout />}>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/contact-support" element={<ContactSupportPage />} />
       <Route path="/not-found" element={<NotFound />} />
     </Route>

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { bookingsApi } from '../../../services/api'
 import { InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
 import { ReviewRating } from '../../reviews/ReviewParts'
-import { bookingTotal, formatDisplayDate, formatDisplayDateTime, formatPrice, hasValue, paymentTag, statusPillClass, transactionId } from '../customerOperations'
+import { formatDisplayDate, formatDisplayDateTime, formatPrice, hasValue, paymentTag, statusPillClass, transactionId } from '../customerOperations'
+import { settleBooking } from '../../finance/revenueModel'
+import { PaymentMethod } from '../../finance/PaymentMethod'
 
 // openBookingModal() from customer.js. The booking is re-read with GET /bookings/:id so a deep link or
 // refresh shows the server copy (the API answers 404 for bookings that are not the caller's). The
@@ -20,7 +22,8 @@ export function BookingDetailsModal({ bookingId, fallback, review, onClose }) {
   }, [attempt, bookingId])
 
   const loaded = result.id === bookingId
-  const booking = (loaded && result.booking) || (!loaded ? fallback : null)
+  const record = (loaded && result.booking) || (!loaded ? fallback : null)
+  const booking = record ? settleBooking(record) : null
 
   return <OpsModal className="booking-details-modal" labelId="booking-details-title" onClose={onClose} title="Booking Details">
     {!booking && <LoadState error={result.error} loadingText="Loading booking details…" onRetry={() => setAttempt((count) => count + 1)} state={loaded ? 'error' : 'loading'} />}
@@ -34,9 +37,11 @@ export function BookingDetailsModal({ bookingId, fallback, review, onClose }) {
         {hasValue(booking.cancelledAt) && <InfoRow label="Cancelled On:">{formatDisplayDateTime(booking.cancelledAt)}</InfoRow>}
         {hasValue(booking.cancellationActor) && <InfoRow label="Cancelled By:">{booking.cancellationActor}</InfoRow>}
         {hasValue(booking.cancellationReason) && <InfoRow label="Cancellation Reason:">{booking.cancellationReason}</InfoRow>}
-        {hasValue(booking.cancellationPolicy) && <InfoRow label="Cancellation Policy:">{booking.cancellationPolicy}</InfoRow>}
-        {hasValue(booking.refundAmount) && <InfoRow label="Refund Amount:">{formatPrice(booking.refundAmount)}</InfoRow>}
-        {hasValue(booking.refundStatus) && <InfoRow label="Refund Status:">{booking.refundStatus}</InfoRow>}
+        {hasValue(booking.cancellationPolicy) && <>
+          <InfoRow label="Cancellation Policy:">{booking.cancellationPolicyLabel}</InfoRow>
+          <InfoRow label="Refund Amount:">{formatPrice(booking.refundAmount)}</InfoRow>
+          <InfoRow label="Refund Status:">{booking.refundStatus}</InfoRow>
+        </>}
       </div>
       <div className="info-box"><strong>Date &amp; Time</strong>
         <InfoRow label="Date:">{formatDisplayDate(booking.date)}</InfoRow>
@@ -44,9 +49,14 @@ export function BookingDetailsModal({ bookingId, fallback, review, onClose }) {
       </div>
       <div className="info-box"><strong>Service Address</strong><div>{booking.address || 'Not provided'}</div></div>
       <div className="info-box"><strong>Payment</strong>
-        <InfoRow label="Total Amount:">{formatPrice(bookingTotal(booking))}</InfoRow>
+        {booking.financialsAvailable && <>
+          <InfoRow label="Service Fee:">{formatPrice(booking.serviceFee)}</InfoRow>
+          <InfoRow label={`Tax (${booking.taxRate}%):`}>{formatPrice(booking.taxAmount)}</InfoRow>
+          <InfoRow label={`Platform Fee (${booking.platformFeeRate}%):`}>{formatPrice(booking.platformFeeAmount)}</InfoRow>
+        </>}
+        <InfoRow label="Total Amount:">{formatPrice(booking.customerTotal)}</InfoRow>
         <InfoRow label="Payment Status:"><span className={`status-pill ${statusPillClass(paymentTag(booking.paymentStatus))}`}>{paymentTag(booking.paymentStatus)}</span></InfoRow>
-        {hasValue(booking.paymentMethod) && <InfoRow label="Payment Method:">{booking.paymentMethod}</InfoRow>}
+        <InfoRow label="Payment Method:"><PaymentMethod value={booking.paymentMethod} /></InfoRow>
         <InfoRow label="Transaction ID:">{transactionId(booking)}</InfoRow>
         {hasValue(booking.paymentDate) && <InfoRow label="Payment Date:">{formatDisplayDate(booking.paymentDate)}</InfoRow>}
       </div>

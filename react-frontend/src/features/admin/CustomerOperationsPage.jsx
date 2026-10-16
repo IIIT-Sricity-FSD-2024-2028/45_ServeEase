@@ -120,7 +120,7 @@ export default function CustomerOperationsPage() {
             {!accounts.isLoading && !accounts.error && customers.length === 0 && <EmptyState message="No customer accounts are available." />}
             {!accounts.isLoading && !accounts.error && customers.length > 0 && visibleCustomers.length === 0 && <EmptyState message="No customers match this search or status." />}
             {!accounts.isLoading && !accounts.error && visibleCustomers.length > 0 && <div className="admin-table-wrap"><table className="admin-table">
-              <thead><tr><th>Customer ID</th><th>Customer Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Registration Date</th><th>Bookings</th><th>Last Booking</th><th>Status</th><th>Action</th></tr></thead>
+              <thead><tr><th>Customer ID</th><th>Customer Name</th><th>Email</th><th>Phone</th><th>Registration Date</th><th>Bookings</th><th>Last Booking</th><th>Status</th><th>Action</th></tr></thead>
               <tbody>{visibleCustomers.map((customer, index) => {
                 const relatedBookings = bookingsForCustomer(bookings, customer)
                 const last = relatedBookings.reduce((latest, booking) => {
@@ -128,7 +128,7 @@ export default function CustomerOperationsPage() {
                   return date && (!latest || Date.parse(date) > Date.parse(latest)) ? date : latest
                 }, null)
                 return <tr key={customer.id ?? `${customer.email || customer.fullName || index}`}>
-                  <td>{show(customer.id)}</td><td>{show(customer.fullName)}</td><td>{show(customer.email)}</td><td>{show(customer.phone)}</td><td>{show(customer.location)}</td>
+                  <td>{show(customer.id)}</td><td>{show(customer.fullName)}</td><td>{show(customer.email)}</td><td>{show(customer.phone)}</td>
                   <td>{formatDate(customer.registrationDate)}</td><td>{bookingsData.data ? relatedBookings.length : 'Not available'}</td><td>{bookingsData.data ? formatDate(last) : 'Not available'}</td>
                   <td><StatusBadge tone={customer.status === 'Active' ? 'ready' : 'neutral'}>{show(customer.status)}</StatusBadge></td>
                   <td><button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectCustomer(String(customer.id))} type="button">View</button></td>
@@ -147,8 +147,8 @@ export default function CustomerOperationsPage() {
               {successMessage && <p className="admin-feedback" role="status">{successMessage}</p>}{actionError && <ErrorState message={actionError} />}
               <dl className="admin-detail-grid">
                 <div><dt>Customer ID</dt><dd>{show(details.id)}</dd></div><div><dt>Email</dt><dd>{show(details.email)}</dd></div>
-                <div><dt>Phone</dt><dd>{show(details.phone)}</dd></div><div><dt>Location</dt><dd>{show(details.location)}</dd></div>
-                <div><dt>Registration date</dt><dd>{formatDate(details.registrationDate)}</dd></div><div><dt>Status</dt><dd>{show(details.status)}</dd></div>
+                <div><dt>Phone</dt><dd>{show(details.phone)}</dd></div><div><dt>Registration date</dt><dd>{formatDate(details.registrationDate)}</dd></div>
+                <div><dt>Status</dt><dd>{show(details.status)}</dd></div>
                 <div><dt>Booking count</dt><dd>{bookingsData.data ? customerBookings.length : 'Not available'}</dd></div><div><dt>Last booking</dt><dd>{bookingsData.data ? formatDate(lastBooking) : 'Not available'}</dd></div>
               </dl>
               {!statusFormOpen && <button className="admin-button" onClick={() => { setStatusFormOpen(true); setStatusReason(''); setStatusRemarks('') }} type="button">{details.status === 'Blocked' ? 'Activate customer' : 'Block customer'}</button>}

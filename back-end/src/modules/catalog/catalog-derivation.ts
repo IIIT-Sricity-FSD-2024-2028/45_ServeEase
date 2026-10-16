@@ -103,12 +103,56 @@ function overlay(listing: CatalogProvider, account: Account): CatalogProvider {
     ...listing,
     // The provider edits the organisation name on their account; customers see it on the listing.
     name: String(account.organisationName || '').trim() || listing.name,
+    // Seed listings carry no owner id, so everything keyed on a provider (availability above all) was keyed
+    // on the listing id while the provider's own pages used their account id, and the two never met. The
+    // resolved owner is named on the listing so one provider has one identity everywhere.
+    ownerProviderId: String(account.id),
+    ownerProviderEmail: lower(account.email) || listing.ownerProviderEmail,
     accountStatus: status,
     approvalStatus: String(account.approvalStatus || status),
     verificationStatus: account.verificationStatus || providerVerificationStatus(status) || undefined,
     // A pending, rejected or otherwise unverified account is never presented as verified; a suspended one
     // stays verified but is hidden and refused through its account status.
     verified: live ? listing.verified : false,
+  } as CatalogProvider;
+}
+
+// One listing's active services, taken from the provider's saved service records: the records a customer can
+// actually book in that listing's category and city. Returned in record order, one entry per service name.
+function listingServices(listing: CatalogProvider, account: Account, records: Account[], categories: CatalogCategory[]): Account[] {
+  const seen = new Set<string>();
+  const services: Account[] = [];
+  records.forEach((service) => {
+    const price = Number(service?.price);
+    if (!service?.name || !Number.isFinite(price) || price <= 0) return;
+    if (String(service.status ?? 'Active') === 'Inactive' || service.isActive === false) return;
+    const category = categoryId(service.category || account.serviceType, categories) || listing.category;
+    if (category !== listing.category) return;
+    const cityId = Number(service.cityId ?? account.cityId);
+    const listingCity = Number(listing.cityId);
+    if (Number.isInteger(cityId) && cityId > 0 && Number.isInteger(listingCity) && listingCity > 0 && cityId !== listingCity) return;
+    const name = String(service.name).trim();
+    const key = lower(name);
+    if (!name || seen.has(key)) return;
+    seen.add(key);
+    services.push({ id: service.id, name, category: service.category || category, description: service.description, duration: service.duration, price, status: 'Active' });
+  });
+  return services;
+}
+
+// A listing shows what the provider currently offers, not the service list a front end last synced: the saved
+// records decide its services, prices and starting price, so adding, renaming, repricing or deactivating a
+// service in Manage Services shows on the customer pages at once. A listing left with no active service has
+// nothing to book and drops out of discovery, which is what the provider asked for by deactivating them all.
+function withRecordedServices(listing: CatalogProvider, account: Account, records: Account[], categories: CatalogCategory[]): CatalogProvider {
+  if (!records.length) return listing;
+  const services = listingServices(listing, account, records, categories);
+  return {
+    ...listing,
+    subServices: services.map((service) => String(service.name)),
+    servicePricing: Object.fromEntries(services.map((service) => [service.name, service.price])),
+    services,
+    startingPrice: services.length ? Math.min(...services.map((service) => Number(service.price))) : listing.startingPrice,
   } as CatalogProvider;
 }
 
@@ -175,10 +219,15 @@ function derivedListings({ users, categories, providers, servicesFor }: Derivati
 
 export function catalogView(input: DerivationInput): CatalogProvider[] {
   const accounts = input.users.filter((account) => account?.role === 'provider');
+  const shared = (account: Account) => accounts.filter((candidate) => String(candidate.id) === String(account.id)).length > 1;
   const synced = input.providers.map((listing) => {
     // Seed providers carry no owner id on their listing; their account names the listing as its providerCatalogId.
     const account = listingOwner(listing, accounts);
-    return account ? overlay(listing, account) : listing;
+    if (!account) return listing;
+    // Records are authoritative except for a legacy id shared by two accounts, whose id-keyed records
+    // cannot be told apart (the same rule accountServices() applies).
+    const records = shared(account) ? [] : input.servicesFor(String(account.id));
+    return withRecordedServices(overlay(listing, account), account, records, input.categories);
   });
   // An active provider's own submitted profile photo is shown on their listing unless the listing already
   // carries one; it is served by the public photo route, never from the private document store directly.

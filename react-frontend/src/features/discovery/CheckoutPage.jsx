@@ -4,11 +4,11 @@ import { useAuth } from '../../context/useAuth'
 import { availabilityApi, bookingsApi, catalogApi } from '../../services/api'
 import { availabilityProviderId, bookableServices, formatCurrency, formatDisplayDate, paymentMethodLabel, validateCustomerDetails, validatePayment } from './catalogModel'
 import { readJourney, saveJourney } from './journeyState'
+import { CANCELLATION_POLICY_LINES, priceBreakdown } from '../finance/revenueModel'
 import './journey.css'
 
 const UPI_APPS = ['Google Pay', 'PhonePe', 'Paytm', 'BHIM', 'Amazon Pay', 'Navi', 'MobiKwik', 'CRED', 'WhatsApp Pay', 'Airtel Payments Bank', 'Freecharge', 'super.money']
 const BANKS = ['State Bank of India', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Kotak Mahindra Bank', 'Bank of Baroda', 'Punjab National Bank', 'Canara Bank', 'Union Bank of India', 'IndusInd Bank', 'IDFC FIRST Bank', 'Yes Bank', 'Federal Bank', 'AU Small Finance Bank', 'RBL Bank']
-const POLICY = ['Provider cancellation: Full refund of amount paid.', 'Customer cancellation:', 'More than 24 hours: 100% Service Fee Refund', '24 hours to 3 hours: 70% Service Fee Refund', 'Less than 3 hours: No Service Fee Refund']
 const PAYMENT_OPTIONS = [['card', '💳 Credit / Debit Card'], ['upi', '📱 UPI'], ['netbanking', '🏦 Net Banking']]
 
 const formatCard = (value) => value.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
@@ -134,7 +134,8 @@ export function CheckoutPage() {
     </div></div>
   }
 
-  const total = service.price
+  const charges = priceBreakdown(Number(service.price))
+  const total = charges.customerTotal
   const input = (name, props) => <input ref={(node) => { fieldRefs.current[name] = node }} {...props} />
 
   return <div className="se-journey journey-in-shell"><div className="checkout-page">
@@ -205,7 +206,7 @@ export function CheckoutPage() {
               </select>
             </>}
           </div>
-          <p className="checkout-fee-note">Payment details are checked here only. No charge is made; the booking is created with payment status Pending.</p>
+          <p className="checkout-fee-note">Payment details are checked here only. No real charge is made; the booking is recorded as Paid for the total payable.</p>
           <small className="error" role="alert">{errors.payment}</small>
         </div>
       </div>
@@ -213,9 +214,11 @@ export function CheckoutPage() {
       <aside className="checkout-sidebar">
         <div className="checkout-side-card">
           <h2>Pricing Breakdown</h2>
-          <div className="checkout-info-row"><span>Service Fee</span><strong>{formatCurrency(service.price)}</strong></div>
+          <div className="checkout-info-row"><span>Service Fee</span><strong>{formatCurrency(charges.serviceFee)}</strong></div>
+          <div className="checkout-info-row"><span>Tax ({charges.taxRate}%)</span><strong>{formatCurrency(charges.taxAmount)}</strong></div>
+          <div className="checkout-info-row"><span>Platform Fee ({charges.platformFeeRate}%)</span><strong>{formatCurrency(charges.platformFeeAmount)}</strong></div>
           <div className="checkout-total-row"><span>Total Payable</span><strong>{formatCurrency(total)}</strong></div>
-          <p className="checkout-fee-note">The booking service records the service fee as the booking total; no tax or platform fee is added.</p>
+          <p className="checkout-fee-note">Tax and platform fee are calculated on the service fee.</p>
         </div>
         <div className="checkout-side-card">
           <h2>Confirm Your Booking</h2>
@@ -234,7 +237,7 @@ export function CheckoutPage() {
             <li>Verified Service Providers</li>
             <li>24/7 Customer Support Available</li>
           </ul>
-          <div className="cancellation-policy-copy"><strong>Cancellation Policy</strong>{POLICY.map((line) => <span key={line}>{line}</span>)}</div>
+          <div className="cancellation-policy-copy"><strong>Cancellation Policy</strong>{CANCELLATION_POLICY_LINES.map((line) => <span key={line}>{line}</span>)}</div>
         </div>
       </aside>
     </section>

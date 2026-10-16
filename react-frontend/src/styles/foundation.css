@@ -19,6 +19,13 @@ a { color: inherit; }
 /* front-end .dashboard-page: customer pages keep the footer below the fold on short pages. */
 .app-main.app-main--bare { width: 100%; padding: 0; }
 .app-main--customer { min-height: calc(100vh - 76px); }
+/* Record tables cap at roughly 7-10 rows (fewer on a short screen) and scroll inside their own card, so a
+   growing table never stretches the page. Column headers stay pinned while the body scrolls. Superuser
+   pages keep their own table rules. */
+:root { --table-scroll-max: min(62vh, 500px); }
+.table-scroll { max-height: var(--table-scroll-max); overflow: auto; overscroll-behavior: contain; }
+.table-scroll thead th { position: sticky; top: 0; z-index: 1; background: #fff; }
+
 .foundation-card { max-width: 640px; margin: 0 auto; padding: 40px; background: #fff; border: 1px solid #dde4ea; border-radius: 16px; box-shadow: 0 10px 30px rgb(23 33 43 / 6%); }
 .foundation-card h1 { margin: 18px 0 12px; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.05; }
 .foundation-card p { color: #637381; line-height: 1.6; }

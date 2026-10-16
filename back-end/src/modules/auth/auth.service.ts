@@ -10,6 +10,9 @@ import { LoginDto, RegisterDto, UpdateProviderProfileDto } from './auth.dto';
 type Account = Record<string, any>;
 type Session = { userId: string; role: string; expiresAt: number };
 const STATE_KEY = 'serveEaseData';
+// One message for every rejected login, so a failure never reveals whether the identifier exists, which kind
+// of account it is, or which half of the credential was wrong.
+const INVALID_LOGIN = 'Invalid credentials. Check your email or ServeEase ID and password.';
 const cities: Record<number, string> = { 1: 'Chennai', 2: 'Bangalore', 3: 'Hyderabad', 4: 'Delhi', 5: 'Mumbai' };
 
 @Injectable()
@@ -17,36 +20,68 @@ export class AuthService {
   private readonly sessions = new Map<string, Session>();
   constructor(private readonly state: StateRepository) {}
 
+  // Login takes an identifier and a password, and nothing else. An email addresses a self-registered
+  // consumer identity; an id addresses an identity ServeEase issued. Emails contain an @ and issued ids do
+  // not, so the two namespaces cannot overlap and one email may hold both a customer and a provider account.
   login(input: LoginDto) {
-    if (input.role === 'employee') return this.loginEmployee(input);
-    const data = this.data();
-    const email = String(input.email || '').toLowerCase();
-    const user = (data.users || []).find((item: Account) => String(item.email || '').toLowerCase() === email);
-    if (!user || user.role !== input.role || !this.verifyPassword(input.password, user)) throw new UnauthorizedException('Invalid email, password, or account type.');
-    // Checked only after the password, so the suspension is never disclosed to someone without it.
-    this.assertNotSuspended(user);
-    if (user.password && !user.passwordHash) { user.passwordHash = this.hash(input.password); delete user.password; this.save(data); }
-    return this.issue(user);
+    const identifier = String(input.identifier || '').trim();
+    if (!identifier) throw new UnauthorizedException(INVALID_LOGIN);
+    return identifier.includes('@') ? this.loginByEmail(identifier, input.password) : this.loginById(identifier, input.password);
   }
 
-  private loginEmployee(input: LoginDto) {
-    const employeeId = String(input.employeeId || '').trim().toUpperCase();
+  // Providers and the legacy support stubs are reached by their issued id, never by email. That exclusion is
+  // what keeps this lookup single-valued once one email may hold a customer and a provider account at once.
+  private loginByEmail(identifier: string, password: string) {
+    const data = this.data();
+    const email = identifier.toLowerCase();
+    const user = (data.users || []).find((item: Account) => String(item.email || '').trim().toLowerCase() === email && (item.role === 'customer' || item.role === 'superuser'));
+    if (!user || !this.verifyPassword(password, user)) throw new UnauthorizedException(INVALID_LOGIN);
+    return this.completeLogin(user, password, data);
+  }
+
+  private loginById(identifier: string, password: string) {
+    const id = identifier.toUpperCase();
     const employeeState = this.state.findById('serveEaseEmployeeModuleData')?.value as { employees?: Account[] } | undefined;
-    const employee = employeeState?.employees?.find((item) => String(item.employeeId || '').toUpperCase() === employeeId);
-    if (!employee || employee.department !== input.department || !this.verifyPassword(input.password, employee)) throw new UnauthorizedException('Invalid employee ID, password, or department.');
-    const department = employeeDepartment(employee.department);
-    if (!department) throw new UnauthorizedException('This employee department is not supported.');
-    if (employee.password && !employee.passwordHash) { employee.passwordHash = this.hash(input.password); delete employee.password; this.state.update('serveEaseEmployeeModuleData', { value: employeeState as Record<string, unknown> }); }
+    const employee = employeeState?.employees?.find((item) => String(item.employeeId || '').toUpperCase() === id);
+    if (employee) return this.loginEmployee(employee, employeeState!, password);
+    const data = this.data();
+    // Only an operational account answers to an id. Role 'support' rows in users are legacy stubs carrying no
+    // department, so they are excluded here: a session on one would authenticate into an empty workspace.
+    const user = (data.users || []).find((item: Account) => String(item.id || '').toUpperCase() === id && (item.role === 'provider' || item.role === 'superuser'));
+    if (!user || !this.verifyPassword(password, user)) throw new UnauthorizedException(INVALID_LOGIN);
+    return this.completeLogin(user, password, data);
+  }
+
+  // The department is read from the stored employee record alone; the client no longer supplies it and so can
+  // no longer influence which workspace it is matched against.
+  private loginEmployee(employee: Account, employeeState: { employees?: Account[] }, password: string) {
+    if (!this.verifyPassword(password, employee)) throw new UnauthorizedException(INVALID_LOGIN);
+    if (!employeeDepartment(employee.department)) throw new UnauthorizedException('This employee department is not supported.');
+    if (employee.password && !employee.passwordHash) { employee.passwordHash = this.hash(password); delete employee.password; this.state.update('serveEaseEmployeeModuleData', { value: employeeState as Record<string, unknown> }); }
     return this.issue(this.employeeAccount(employee));
+  }
+
+  private completeLogin(user: Account, password: string, data: Record<string, any>) {
+    // Checked only after the password, so the suspension is never disclosed to someone without it.
+    this.assertNotSuspended(user);
+    if (user.password && !user.passwordHash) { user.passwordHash = this.hash(password); delete user.password; this.save(data); }
+    return this.issue(user);
   }
 
   register(input: RegisterDto) {
     const data = this.data(); const users: Account[] = data.users || (data.users = []);
-    if (users.some((u) => String(u.email || '').toLowerCase() === input.email.toLowerCase())) throw new ConflictException('Email already exists.');
-    if (users.some((u) => String(u.phone || '') === input.phone)) throw new ConflictException('Phone number already exists.');
+    // Uniqueness is per role, not global: a provider is free to book services, so the same person may register
+    // a customer account on the email and phone their provider account already uses. Two accounts of the same
+    // role on one email stay rejected.
+    const sameRole = users.filter((u) => u.role === input.role);
+    const email = input.email.trim().toLowerCase();
+    if (sameRole.some((u) => String(u.email || '').trim().toLowerCase() === email)) throw new ConflictException('Email already exists.');
+    if (sameRole.some((u) => String(u.phone || '') === input.phone)) throw new ConflictException('Phone number already exists.');
     if (input.role === 'provider' && (!input.organisationName || !input.serviceType || input.experience === undefined || !input.cityId || !input.address || !input.idProofType)) throw new ConflictException('Complete all provider registration fields.');
     const id = this.nextId(input.role, users);
-    const user: Account = { id, role: input.role, fullName: input.fullName.trim(), email: input.email.toLowerCase(), phone: input.phone, passwordHash: this.hash(input.password), registrationDate: new Date().toLocaleDateString('en-GB') };
+    const user: Account = { id, role: input.role, fullName: input.fullName.trim(), email, phone: input.phone, passwordHash: this.hash(input.password), registrationDate: new Date().toISOString().slice(0, 10) };
+    // A customer account starts Active and records it, so Customer Operations counts and shows it like every other account.
+    if (input.role === 'customer') Object.assign(user, { accountStatus: 'Active', status: 'Active' });
     if (input.role === 'provider') Object.assign(user, { organisationName: input.organisationName, serviceType: input.serviceType, experience: input.experience, cityId: input.cityId, cityName: cities[input.cityId!] || '', location: cities[input.cityId!] || '', address: input.address, idProofType: input.idProofType, documents: (input.documents || []).map((document, index) => ({ ...document, documentId: `DOC-${id}-${index + 1}` })), approvalStatus: 'Pending Approval', verificationStatus: 'Pending', accountStatus: 'Under Verification', status: 'Under Verification' });
     const services = input.role === 'provider' ? this.initialServices(data, input, user) : [];
     users.push(user); this.save(data);
@@ -67,8 +102,10 @@ export class AuthService {
     const names = new Map<string, string>((Array.isArray(category.subServices) ? category.subServices : []).map((name: string) => [slug(name), String(name)] as [string, string]));
     const seen = new Set<string>();
     return requested.map((service, index) => {
-      const name = names.get(slug(service.name));
-      if (!name) throw new BadRequestException(`"${service.name}" is not a ${category.name} service.`);
+      // A listed sub-service keeps the catalog's spelling; the registration form's "Other" sends a service the
+      // category does not list yet, which the provider names themselves.
+      const name = names.get(slug(service.name)) || String(service.name ?? '').trim();
+      if (!slug(name)) throw new BadRequestException('Every service you offer needs a name.');
       if (seen.has(slug(name))) throw new BadRequestException(`"${name}" is listed more than once.`);
       seen.add(slug(name));
       return { id: `SVC${String(index + 1).padStart(3, '0')}`, name, category: input.serviceType, description: `${name} offered by ${user.organisationName}`, price: service.price, cityId: user.cityId, cityName: user.cityName, location: user.cityName, status: 'Active', isActive: true, updatedAt: new Date().toISOString() };

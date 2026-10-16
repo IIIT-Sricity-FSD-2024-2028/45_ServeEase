@@ -96,6 +96,8 @@ function BookingCard({ provider, services, cityParam }) {
     <section className="availability-section" aria-labelledby="availableDatesHeading">
       <h3 id="availableDatesHeading">Available Dates</h3>
       <div className="availability-date-list" role="listbox" aria-label="Available booking dates">
+        {/* Availability is only ever what the provider published, so an empty schedule says so plainly. */}
+        {!datesWithSlots.length && <p className="availability-empty-slots">This provider has not published any available times for the next few days.</p>}
         {datesWithSlots.map((item) => {
           const parts = dateParts(item)
           const isSelected = item.date === selectedDate

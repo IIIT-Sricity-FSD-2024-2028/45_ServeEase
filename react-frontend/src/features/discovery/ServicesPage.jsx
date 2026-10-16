@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { availabilityApi } from '../../services/api'
-import { MAX_PRICE, PRICE_STEP, categoryProviders, filterProviders, resolveCategory } from './catalogModel'
+import { PRICE_STEP, categoryProviders, filterProviders, formatCurrency, priceBounds, resolveCategory, serviceOptions } from './catalogModel'
 import { DiscoveryResults } from './DiscoveryResults'
 import { PublicJourneyShell } from './PublicJourneyShell'
 import { useCatalog } from './useCatalog'
@@ -22,7 +22,6 @@ export function ServicesPage() {
   const category = resolveCategory(categories, categoryParam)
   const query = params.get('q') || ''
   const service = params.get('service') || 'all'
-  const maxPrice = Math.min(MAX_PRICE, Math.max(0, Number(params.get('maxPrice')) || MAX_PRICE))
   const [todayAvailability, setTodayAvailability] = useState({})
 
   function setParam(key, value, fallback, replace = false) {
@@ -49,12 +48,14 @@ export function ServicesPage() {
     () => (catalog.data && !unknownCategory ? categoryProviders(catalog.data, { categoryId: category?.id, cityId: city.id }) : []),
     [catalog.data, category, city.id, unknownCategory],
   )
+  // The slider follows the prices on offer, and an out-of-range or missing value means "no limit".
+  const bounds = useMemo(() => priceBounds(allRows), [allRows])
+  const requestedPrice = Number(params.get('maxPrice'))
+  const maxPrice = params.get('maxPrice') === null || !Number.isFinite(requestedPrice)
+    ? bounds.max
+    : Math.min(bounds.max, Math.max(bounds.min, requestedPrice))
   const rows = useMemo(() => filterProviders(allRows, { query, service, maxPrice, categories }), [allRows, query, service, maxPrice, categories])
-  const serviceOptions = useMemo(() => {
-    const names = new Set(category?.subServices || [])
-    allRows.forEach((row) => row.serviceNames.forEach((name) => names.add(name)))
-    return [...names]
-  }, [allRows, category])
+  const services = useMemo(() => serviceOptions(allRows, category), [allRows, category])
 
   // Providers with a live schedule: replace the catalog's static availableToday flag with the
   // availability API result (initCategoryServicesPage → loadTodayAvailability in the original).
@@ -111,18 +112,18 @@ export function ServicesPage() {
 
           <div className="filter-block">
             <label htmlFor="serviceTypeFilter">Service Type</label>
-            <select id="serviceTypeFilter" value={serviceOptions.includes(service) ? service : 'all'} onChange={(event) => setParam('service', event.target.value, 'all')}>
+            <select id="serviceTypeFilter" value={services.includes(service) ? service : 'all'} onChange={(event) => setParam('service', event.target.value, 'all')}>
               <option value="all">All {category ? `${category.name} ` : ''}Services</option>
-              {serviceOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+              {services.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </div>
 
           <div className="filter-block">
             <label htmlFor="priceFilter">Price Range</label>
-            <input type="range" id="priceFilter" min="0" max={MAX_PRICE} step={PRICE_STEP} value={maxPrice} onChange={(event) => setParam('maxPrice', Number(event.target.value), MAX_PRICE, true)} />
+            <input type="range" id="priceFilter" min={bounds.min} max={bounds.max} step={PRICE_STEP} value={maxPrice} onChange={(event) => setParam('maxPrice', Number(event.target.value), bounds.max, true)} />
             <div className="range-row">
-              <span>₹0</span>
-              <span>₹{maxPrice}</span>
+              <span>{formatCurrency(bounds.min)}</span>
+              <span>{maxPrice >= bounds.max ? `Up to ${formatCurrency(bounds.max)}` : formatCurrency(maxPrice)}</span>
             </div>
           </div>
         </aside>

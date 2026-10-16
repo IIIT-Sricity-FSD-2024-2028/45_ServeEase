@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { bookingsApi, ticketsApi } from '../../services/api'
 import { buildSupportNotifications, readSupportNotificationIds, saveSupportNotificationIds } from '../../features/support/supportNotifications'
+import { buildProviderNotifications, readProviderNotificationIds, saveProviderNotificationIds } from '../../features/provider/providerNotifications'
 import { applyProviderSearch, providerSearchPlaceholders } from './providerSearch'
 import './Navbar.css'
 
 // Authenticated dashboard topbar reconstructed from the original front-end pages:
 // customer  -> customer-dashboard.html, my-bookings.html, booking-checkout.html, ...
-// provider  -> provider-*.html (provider-topbar: static brand, no notification bell)
+// provider  -> provider-*.html (provider-topbar), with the same notification bell and panel the other
+//              signed-in actors use, over the provider's own bookings and support tickets
 // support   -> support-dashboard.html (support-topbar)
 // superuser -> superuser-*.html (superuser-topbar)
 // The original topbar is brand + search + actions only; page navigation lives in the page bodies.
@@ -30,7 +32,7 @@ const topbarVariants = {
   },
   provider: {
     brandLinksHome: false,
-    notifications: null,
+    notifications: 'provider',
     profileCard: null,
     profileLinks: () => [
       { label: 'My Profile', to: '/provider/account' },
@@ -179,7 +181,8 @@ export function Navbar({ area = 'ServeEase' }) {
   const isProfileOpen = openMenu === 'profile'
   const isNotificationsOpen = openMenu === 'notifications'
   const isSupportAgent = variant?.notifications === 'support' && currentUser?.role === 'support'
-  const customerNotificationIdentity = currentUser?.role === 'customer' || isSupportAgent
+  const isProviderAccount = variant?.notifications === 'provider' && currentUser?.role === 'provider'
+  const customerNotificationIdentity = currentUser?.role === 'customer' || isSupportAgent || isProviderAccount
     ? String(currentUser.userId || currentUser.email || '')
     : ''
   const customerNotifications = notificationOwnerKey === customerNotificationIdentity ? notifications : []
@@ -216,6 +219,23 @@ export function Navbar({ area = 'ServeEase' }) {
         const tickets = await ticketsApi.listForSupport()
         if (requestId !== notificationRequestRef.current) return
         setNotifications(buildSupportNotifications(Array.isArray(tickets) ? tickets : [], currentUser))
+        setNotificationOwnerKey(ownerKey)
+        setNotificationState('ready')
+      } catch (error) {
+        if (requestId !== notificationRequestRef.current || silent) return
+        setNotificationError(error.message || 'Notifications could not be loaded.')
+        setNotificationState('error')
+      }
+      return
+    }
+    if (isProviderAccount) {
+      const requestId = ++notificationRequestRef.current
+      const ownerKey = String(currentUser.userId || currentUser.email || '')
+      if (!silent) { setNotificationOwnerKey(ownerKey); setNotificationState('loading'); setNotificationError('') }
+      try {
+        const [bookingRecords, ticketRecords] = await Promise.all([bookingsApi.listForProvider(), ticketsApi.listProvider()])
+        if (requestId !== notificationRequestRef.current) return
+        setNotifications(buildProviderNotifications(bookingRecords, ticketRecords, currentUser))
         setNotificationOwnerKey(ownerKey)
         setNotificationState('ready')
       } catch (error) {
@@ -263,21 +283,23 @@ export function Navbar({ area = 'ServeEase' }) {
     void loadNotifications()
   }
 
-  // The support bell shows a live unread count, so the queue is checked in the background while signed in.
+  // The support and provider bells show a live unread count, so new work is checked for in the background.
   useEffect(() => {
-    if (!isSupportAgent) return undefined
+    if (!isSupportAgent && !isProviderAccount) return undefined
     const first = window.setTimeout(() => void loadNotifications(true), 0)
     const timer = window.setInterval(() => void loadNotifications(true), 30000)
     return () => { window.clearTimeout(first); window.clearInterval(timer) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSupportAgent, currentUser?.userId])
+  }, [isSupportAgent, isProviderAccount, currentUser?.userId])
 
   function toggleProfile() {
     setOpenMenu(isProfileOpen ? null : 'profile')
   }
 
-  const readIdsFor = () => (isSupportAgent ? readSupportNotificationIds(currentUser) : readNotificationIds(currentUser))
-  const saveReadIds = (ids) => (isSupportAgent ? saveSupportNotificationIds(currentUser, ids) : localStorage.setItem(notificationReadKey(currentUser), JSON.stringify([...ids])))
+  const readIdsFor = () => (isSupportAgent ? readSupportNotificationIds(currentUser) : isProviderAccount ? readProviderNotificationIds(currentUser) : readNotificationIds(currentUser))
+  const saveReadIds = (ids) => (isSupportAgent ? saveSupportNotificationIds(currentUser, ids)
+    : isProviderAccount ? saveProviderNotificationIds(currentUser, ids)
+    : localStorage.setItem(notificationReadKey(currentUser), JSON.stringify([...ids])))
 
   function markNotificationRead(notification) {
     try {
@@ -344,7 +366,7 @@ export function Navbar({ area = 'ServeEase' }) {
         >
           {variant.notifications === 'superuser'
             ? <span aria-hidden="true" className="se-topbar__alert-symbol">!</span>
-            : <span aria-hidden="true">🔔</span>}
+            : <svg aria-hidden="true" className="se-topbar__bell" focusable="false" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v3.2l-1.3 2.6A1 1 0 0 0 5.6 16h12.8a1 1 0 0 0 .9-1.2L18 12.2V9a6 6 0 0 0-6-6Z" /><path d="M9.5 18.5a2.5 2.5 0 0 0 5 0" /></svg>}
           {notificationUnreadCount > 0 && <span className="se-topbar__count">{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}</span>}
         </button>
         {isNotificationsOpen && <section aria-label="Notifications" className="se-notification-panel" id="se-topbar-notification-panel">
@@ -362,7 +384,7 @@ export function Navbar({ area = 'ServeEase' }) {
           {customerNotificationState === 'unavailable' && <p className="se-notification-panel__state">Notifications are not available for this role in the React app yet.</p>}
           {customerNotificationState === 'ready' && <>
             {customerNotifications.length === 0
-              ? <div className="se-notification-panel__empty"><strong>No notifications yet</strong><span>{isSupportAgent ? 'New tickets and customer or provider messages will appear here.' : 'New booking, payment, and support updates will appear here.'}</span></div>
+              ? <div className="se-notification-panel__empty"><strong>No notifications yet</strong><span>{isSupportAgent ? 'New tickets and customer or provider messages will appear here.' : isProviderAccount ? 'New booking requests and support replies will appear here.' : 'New booking, payment, and support updates will appear here.'}</span></div>
               : <div className="se-notification-panel__list">{visibleNotifications.map((notification) => <button className={`se-notification-item${notification.isUnread ? ' is-unread' : ''}`} key={notification.id} onClick={() => markNotificationRead(notification)} type="button">
                 <p>{notification.text}</p>
                 <time dateTime={notification.createdAt || undefined}>{formatNotificationTime(notification.createdAt)}</time>

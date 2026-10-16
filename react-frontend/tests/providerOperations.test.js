@@ -100,13 +100,17 @@ test('the list page renders the original cards, tables, disabled suspend actions
 
 test('the detail page shows every original section in order with real data and empty states', () => {
   const html = render(ProviderDetailSections, { data: detail, onPreview: noop })
+  // Record tables scroll inside their card instead of stretching the page, and a date keeps its time on one line.
+  for (const match of html.matchAll(/class="provider-operations-table-wrap[^"]*"/g)) assert.match(match[0], /table-scroll/)
+  assert.match(html, /class="provider-operations-cell-nowrap">20-10-2026 · 09:00-12:00</)
   const headings = [...html.matchAll(/<h2 id="[^"]+">([^<]+)<\/h2>/g)].map((match) => match[1])
   assert.deepEqual(headings, ['Provider Information', 'Provider Verification', 'Provider Services', 'Provider Booking Activity', 'Availability Overview', 'Provider Support Context', 'Account Status History'])
   assert.match(html, /<span>Provider ID :<\/span><strong>PRO1<\/strong>/)
   assert.match(html, /<span>Registration Date :<\/span><strong>14-10-2026<\/strong>/)
   assert.match(html, /<span>Experience :<\/span><strong>4 yrs<\/strong>/)
   assert.match(html, /<span>Total Bookings<\/span><\/div><strong>2<\/strong>/)
-  assert.match(html, /<span>Active \/ Upcoming Bookings<\/span><\/div><strong>1<\/strong>/)
+  assert.match(html, /<span>Upcoming<\/span><\/div><strong>1<\/strong>/)
+  assert.match(html, /<span>Cancelled<\/span><\/div><strong>0<\/strong>/)
   assert.match(html, /<span>Active Services<\/span><\/div><strong>1<\/strong>/)
   assert.match(html, /<strong>ID Proof - Aadhaar<\/strong>/)
   assert.match(html, /title="Not submitted">Not submitted</)
@@ -152,7 +156,7 @@ test('the Provider Verification section appears only when there is something to 
 })
 
 test('detail helpers count bookings and services the original way', () => {
-  assert.deepEqual(providerDetailStats(detail.services, detail.bookings), { total: 2, active: 1, completed: 1, activeServices: 1 })
+  assert.deepEqual(providerDetailStats(detail.services, detail.bookings), { total: 2, upcoming: 1, completed: 1, cancelled: 0, activeServices: 1 })
   assert.deepEqual(availabilityRows({ sunday: [], monday: ['09:00-12:00'] }), [{ label: 'Monday', value: '09:00-12:00', available: true }, { label: 'Sunday', value: 'Unavailable', available: false }])
   assert.deepEqual(availabilityRows(null), [])
 })

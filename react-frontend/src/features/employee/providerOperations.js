@@ -1,28 +1,9 @@
 // Logic for the Provider Operations pages (front-end/JavaScript/provider-operations.js,
 // provider-operations-detail.js, provider-verification-review.js) applied to the API responses of
 // /employee/provider-operations/*. Account and verification statuses arrive already normalised by the server.
-import { display } from './employeeOperations.js'
+import { display, formatDate } from './employeeOperations.js'
 
-export { display }
-
-const MONTHS = { jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11 }
-const pad = (value) => String(value).padStart(2, '0')
-
-// api.js ServeEaseDate.formatDate(): DD-MM-YYYY from ISO, DD/MM/YYYY, "12 March 2026" or any Date-parsable value.
-export function formatDate(value) {
-  const textValue = String(value ?? '').trim()
-  if (!textValue) return display(null)
-  let parts = null
-  let match = textValue.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
-  if (match) parts = [match[3], match[2], match[1]]
-  if (!parts && (match = textValue.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/))) parts = [match[1], match[2], match[3]]
-  if (!parts && (match = textValue.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/)) && MONTHS[match[2].toLowerCase()] !== undefined) parts = [match[1], MONTHS[match[2].toLowerCase()] + 1, match[3]]
-  if (!parts) {
-    const parsed = new Date(textValue)
-    if (!Number.isNaN(parsed.getTime())) parts = [parsed.getDate(), parsed.getMonth() + 1, parsed.getFullYear()]
-  }
-  return parts ? `${pad(parts[0])}-${pad(parts[1])}-${parts[2]}` : textValue
-}
+export { display, formatDate }
 
 export function formatPrice(value) {
   const amount = Number(value)
@@ -87,15 +68,18 @@ export function providerPath(provider, page = '') {
   return provider.sharedId && provider.providerCatalogId ? `${base}?listing=${encodeURIComponent(provider.providerCatalogId)}` : base
 }
 
-const activeBookingStatuses = ['pending', 'accepted', 'requested', 'upcoming']
+// The same three booking groups Customer Operations counts, over the statuses the backend stores.
+const upcomingBookingStatuses = ['pending', 'accepted']
+const closedBookingStatuses = ['cancelled', 'rejected']
 
-// provider-operations-detail.js renderStats().
+// provider-operations-detail.js renderStats(): total = upcoming + completed + cancelled.
 export function providerDetailStats(services = [], bookings = []) {
   const key = (value) => String(value ?? '').trim().toLowerCase()
   return {
     total: bookings.length,
-    active: bookings.filter((booking) => activeBookingStatuses.includes(key(booking.status))).length,
+    upcoming: bookings.filter((booking) => upcomingBookingStatuses.includes(key(booking.status))).length,
     completed: bookings.filter((booking) => key(booking.status) === 'completed').length,
+    cancelled: bookings.filter((booking) => closedBookingStatuses.includes(key(booking.status))).length,
     activeServices: services.filter((service) => ['active', 'verified'].includes(key(service.status))).length,
   }
 }
