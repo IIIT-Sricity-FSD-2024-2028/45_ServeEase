@@ -42,6 +42,24 @@ export class EmployeeOperationsService {
     };
   }
 
+  // Compact, department-scoped data for the Customer Operations notification bell. This deliberately
+  // exposes only customer signups and customer-raised ticket work, never the Support queue.
+  customerNotificationFeed() {
+    return {
+      customers: this.accounts('customer').map((account) => this.customerSummary(account)),
+      tickets: this.tickets.findAllForSupport()
+        .filter((ticket) => ticket.raisedByType === 'customer')
+        .map((ticket) => ({
+          ticketId: ticket.ticketId,
+          customerId: text(ticket.customerId || ticket.raisedById),
+          subject: ticket.subject,
+          status: ticket.status,
+          createdAt: ticket.createdAt,
+          updatedAt: ticket.updatedAt,
+        })),
+    };
+  }
+
   customerDetail(id: string) {
     const account = this.accounts('customer').find((item) => String(item.id) === id);
     if (!account) throw new NotFoundException(`Customer with id "${id}" was not found.`);

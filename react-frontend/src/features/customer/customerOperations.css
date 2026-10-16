@@ -46,6 +46,8 @@
 .customer-ops .gradient-panel { background: linear-gradient(90deg, #2563eb, #a21caf); color: #fff; }
 .customer-ops .gradient-panel h2 { margin-bottom: 10px; }
 .customer-ops .gradient-panel p { margin-bottom: 10px; color: #f3f4f6; }
+.customer-ops .help-panel { align-self: start; display: flex; flex-direction: column; min-height: 240px; }
+.customer-ops .help-panel .btn { align-self: flex-start; margin-top: auto; }
 .customer-ops .dashboard-two-column,
 .customer-ops .support-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 24px; }
 .customer-ops .ops-state { margin-bottom: 24px; }

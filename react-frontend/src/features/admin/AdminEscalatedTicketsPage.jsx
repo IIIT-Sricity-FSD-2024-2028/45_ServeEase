@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
-import { StatusBadge } from '../../components/common/StatusBadge'
 import { AdminAccessGate } from './AdminAccessGate'
+import { AdminChip } from './AdminChip'
 import { AdminPageHeader } from './AdminPageHeader'
 import {
   escalateAdminTicket,
@@ -12,14 +12,17 @@ import {
   submitAdminTicketDecision,
   updateAdminTicketStatus,
 } from './adminApi'
+import { matchesAdminSearch, useAdminSearch } from './adminSearch'
+import { addSuperuserNotification } from './superuserNotifications'
 import { show, useAdminData } from './useAdminData'
+import { API_BASE_URL } from '../../services/apiBase'
 import './admin.css'
 
 const groups = [
-  { key: 'Escalated', title: 'Escalated Tickets', description: 'tickets requiring immediate attention', icon: '⚠', className: 'escalated' },
-  { key: 'Open', title: 'Open Tickets', description: 'tickets awaiting assignment', icon: '◷', className: 'open' },
-  { key: 'In Progress', title: 'In Progress Tickets', description: 'tickets being worked on', icon: '◉', className: 'progress' },
-  { key: 'Resolved', title: 'Resolved Tickets', description: 'tickets successfully resolved', icon: '✓', className: 'resolved' },
+  { key: 'Escalated', title: 'Escalated Tickets', stat: 'Escalated Tickets', description: 'tickets requiring immediate attention', icon: '⚠', className: 'escalated' },
+  { key: 'Open', title: 'Open Tickets', stat: 'Open Tickets', description: 'tickets awaiting assignment', icon: '◔', className: 'open' },
+  { key: 'In Progress', title: 'In Progress Tickets', stat: 'In Progress', description: 'tickets being worked on', icon: '◉', className: 'progress' },
+  { key: 'Resolved', title: 'Resolved Tickets', stat: 'Resolved', description: 'tickets successfully resolved', icon: '✓', className: 'resolved' },
 ]
 
 function queueFor(status) {
@@ -43,33 +46,30 @@ function displayStatus(status) {
   return status === 'Pending' ? 'Open' : status === 'Resolved by Support' ? 'Resolved' : status
 }
 
-function badgeTone(status) {
-  if (['Escalated', 'Under Review', 'Rejected'].includes(status)) return 'attention'
-  if (['Open', 'Pending'].includes(status)) return 'warning'
-  if (status === 'In Progress') return 'info'
-  return 'success'
-}
-
 function TicketMeta({ label, children }) {
   return <div className="admin-escalated-meta"><span>{label}</span><strong>{show(children)}</strong></div>
 }
 
-function attachmentPreview(ticket) {
-  const url = ticket.attachmentUrl
-  if (!url || !/^(data:image\/|data:application\/pdf|https?:\/\/)/i.test(url)) return null
-  if (/^data:image\//i.test(url) || /\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(url)) {
-    return <img alt={ticket.attachmentName || 'Ticket attachment'} className="admin-ticket-preview-image" src={url} />
-  }
-  if (/^data:application\/pdf/i.test(url) || /\.pdf(\?.*)?$/i.test(url)) {
-    return <iframe className="admin-ticket-preview-pdf" src={url} title={ticket.attachmentName || 'Ticket attachment'} />
-  }
-  return <a className="admin-button admin-button--secondary" href={url} rel="noreferrer" target="_blank">Open attachment</a>
+function attachmentUrl(value) {
+  const url = String(value || '').trim()
+  if (!url) return ''
+  if (/^(data:|https?:\/\/)/i.test(url)) return url
+  return `${new URL(API_BASE_URL).origin}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
+function attachmentDetails(ticket) {
+  const href = attachmentUrl(ticket.attachmentUrl)
+  if (!href) return null
+  const name = ticket.attachmentName || decodeURIComponent(href.split('/').pop().split('?')[0]) || 'Attached file'
+  const type = String(ticket.attachmentType || '').toLowerCase()
+  const image = type.startsWith('image/') || /\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(href) || /^data:image\//i.test(href)
+  const pdf = type === 'application/pdf' || /\.pdf(\?.*)?$/i.test(href) || /^data:application\/pdf/i.test(href)
+  return { href, name, canPreview: image || pdf, image, pdf }
 }
 
 export default function AdminEscalatedTicketsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('ticket')
-  const [query, setQuery] = useState('')
   const [solutionDraft, setSolutionDraft] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -84,12 +84,12 @@ export default function AdminEscalatedTicketsPage() {
     : (ticket?.supportUpdate || ticket?.adminRemarks || '')
   const statusHistory = Array.isArray(ticket?.statusHistory) ? ticket.statusHistory : []
   const messages = Array.isArray(ticket?.messages) ? ticket.messages : []
-  const searchText = query.trim().toLocaleLowerCase()
-  const filteredTickets = useMemo(() => records.filter((record) => [
+  const searchTerm = useAdminSearch('/admin/escalated-tickets')
+  const filteredTickets = useMemo(() => records.filter((record) => matchesAdminSearch([
     record.ticketId, record.subject, record.description, record.raisedByName, record.raisedByEmail,
     record.providerName, record.customerName, record.relatedBookingId, record.ticketType,
-    record.priority, record.status,
-  ].some((value) => value !== null && value !== undefined && String(value).toLocaleLowerCase().includes(searchText))), [records, searchText])
+    record.priority, record.status, record.service, record.raisedByType, record.supportRemarks,
+  ], searchTerm)), [records, searchTerm])
   const activeQueue = queueFor(ticket?.status)
   const canResolveEscalated = ['Escalated', 'Under Review'].includes(ticket?.status)
   const canStartOrEscalate = ['Open', 'Pending'].includes(ticket?.status)
@@ -124,7 +124,8 @@ export default function AdminEscalatedTicketsPage() {
     await Promise.all([allTickets.reload(), details.reload()])
   }
 
-  async function performAction(action, successText) {
+  // superuser.js updateTicketStatus() / resolveEscalatedTicket() also post a superuser notification.
+  async function performAction(action, successText, notification) {
     if (!ticket || isSubmitting) return
     setIsSubmitting(true)
     setActionError('')
@@ -132,6 +133,10 @@ export default function AdminEscalatedTicketsPage() {
     try {
       await action()
       setSuccessMessage(successText)
+      if (notification) {
+        await addSuperuserNotification({ ticketId: ticket.ticketId, referenceId: ticket.ticketId, actionPage: '/admin/escalated-tickets', ...notification })
+          .catch(() => null)
+      }
       await refreshData()
     } catch (error) {
       setActionError(error?.message || 'Unable to update this ticket.')
@@ -141,11 +146,13 @@ export default function AdminEscalatedTicketsPage() {
   }
 
   async function startProgress() {
-    await performAction(() => updateAdminTicketStatus(ticket.ticketId, 'In Progress'), 'Ticket moved to In Progress.')
+    await performAction(() => updateAdminTicketStatus(ticket.ticketId, 'In Progress'), 'Ticket moved to In Progress.',
+      { kind: 'ticket-in-progress', text: `${ticket.ticketId} moved to In Progress`, type: 'red' })
   }
 
   async function escalateTicket() {
-    await performAction(() => escalateAdminTicket(ticket.ticketId, 'Escalated by the superuser for admin review.'), 'Ticket escalated for admin review.')
+    await performAction(() => escalateAdminTicket(ticket.ticketId, 'Escalated by the superuser for admin review.'), 'Ticket escalated for admin review.',
+      { kind: 'ticket-escalated', text: `${ticket.ticketId} moved to Escalated`, type: 'red' })
   }
 
   async function resolveTicket(event) {
@@ -154,7 +161,7 @@ export default function AdminEscalatedTicketsPage() {
     await performAction(async () => {
       if (canResolveEscalated) await submitAdminTicketDecision(ticket.ticketId, 'No Action Required', solution.trim())
       else await resolveAdminTicket(ticket.ticketId, solution.trim())
-    }, 'Ticket resolved successfully.')
+    }, 'Ticket resolved successfully.', { kind: 'ticket-resolved', text: `${ticket.ticketId} resolved by superuser`, type: 'blue' })
   }
 
   async function resolveProgressTicket() {
@@ -165,7 +172,8 @@ export default function AdminEscalatedTicketsPage() {
       return
     }
     setSolutionDraft({ ticketId: ticket.ticketId, value: summary.trim() })
-    await performAction(() => resolveAdminTicket(ticket.ticketId, summary.trim()), 'Ticket resolved successfully.')
+    await performAction(() => resolveAdminTicket(ticket.ticketId, summary.trim()), 'Ticket resolved successfully.',
+      { kind: 'ticket-resolved', text: `${ticket.ticketId} moved to Resolved`, type: 'blue' })
   }
 
   const totals = useMemo(() => Object.fromEntries(groups.map((group) => [
@@ -178,15 +186,10 @@ export default function AdminEscalatedTicketsPage() {
         <AdminPageHeader danger section="Escalated Tickets" title="Ticket Resolution Panel" description="Review escalated tickets, provider tickets, refund requests, and critical support cases requiring admin decision." hero />
 
         <div className="admin-grid admin-escalated-stats">
-          {groups.map((group) => <article className={`admin-stat-card ${group.key === 'Escalated' ? 'admin-stat-card--attention' : ''}`} key={group.key}>
-            <span>{group.key === 'In Progress' ? group.key : `${group.key} Tickets`}<span>{group.icon}</span></span>
+          {groups.map((group) => <article className="admin-stat-card" key={group.key}>
+            <span>{group.stat}<span>{group.icon}</span></span>
             <strong>{allTickets.data ? totals[group.key] : allTickets.error ? 'N/A' : '…'}</strong>
           </article>)}
-        </div>
-
-        <div className="admin-escalated-toolbar">
-          <label className="admin-form">Search tickets<input onChange={(event) => setQuery(event.target.value)} placeholder="Search ticket, customer, provider, or category..." type="search" value={query} /></label>
-          <button className="admin-button admin-button--secondary" disabled={allTickets.isLoading} onClick={allTickets.reload} type="button">Refresh</button>
         </div>
 
         {allTickets.isLoading && <LoadingState message="Loading tickets…" />}
@@ -200,19 +203,19 @@ export default function AdminEscalatedTicketsPage() {
             return <section className={`admin-escalated-queue admin-escalated-queue--${group.className}`} key={group.key}>
               <div className="admin-escalated-queue-heading"><span aria-hidden="true">{group.icon}</span><div><h2>{group.title}</h2><p>{items.length} {group.description}</p></div></div>
               <div className="admin-escalated-cards">
-                {items.length === 0 && <p className="admin-escalated-empty">No tickets found in this section.</p>}
+                {items.length === 0 && <div className="admin-empty-card">No tickets found in this section.</div>}
                 {items.map((record, index) => <article className="admin-escalated-card" key={record.ticketId || index}>
                   <div className="admin-escalated-card-main">
-                    <div className="admin-escalated-card-heading"><h3>{show(record.ticketId)}</h3><StatusBadge tone={badgeTone(record.status)}>{displayStatus(record.status)}</StatusBadge><StatusBadge tone={record.raisedByType === 'provider' ? 'info' : 'neutral'}>{record.raisedByType === 'provider' ? 'Provider' : 'Customer'}</StatusBadge></div>
+                    <div className="admin-escalated-card-heading"><h3>{show(record.ticketId)}</h3><AdminChip>{displayStatus(record.status)}</AdminChip><AdminChip>{record.raisedByType === 'provider' ? 'Provider' : 'Customer'}</AdminChip></div>
                     <p className="admin-escalated-subject">{show(record.subject)}</p>
                     <div className="admin-escalated-compact-meta">
                       <span>{record.raisedByType === 'provider' ? 'Provider' : 'Customer'}: {show(record.raisedByName)}</span>
-                      <span>Provider: {show(record.providerName || (record.raisedByType === 'provider' ? record.raisedByName : 'ServeEase Provider'))}</span>
+                      <span>Provider: {show(record.providerName)}</span>
                       {record.customerName && <span>Related Customer: {record.customerName}</span>}
                       <span>Booking: {show(record.relatedBookingId)}</span>
                       <span>Created: {formatDate(record.createdAt)}</span>
                     </div>
-                    <div className="admin-escalated-tags"><StatusBadge tone="warning">{show(record.ticketType)}</StatusBadge><StatusBadge tone="warning">{show(record.priority || 'Medium')}</StatusBadge>{record.service && <StatusBadge tone="neutral">{record.service}</StatusBadge>}</div>
+                    <div className="admin-escalated-tags"><AdminChip tone="warning">{show(record.ticketType)}</AdminChip><AdminChip tone="pending">{show(record.priority || 'Medium')}</AdminChip>{record.service && <AdminChip tone="completed">{record.service}</AdminChip>}{attachmentUrl(record.attachmentUrl) && <AdminChip tone="refunded">📎 Attachment</AdminChip>}</div>
                   </div>
                   <button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectTicket(record.ticketId)} type="button">◉ View Details</button>
                 </article>)}
@@ -220,6 +223,7 @@ export default function AdminEscalatedTicketsPage() {
             </section>
           })}
         </div>}
+        <div className="admin-category-back"><Link className="admin-button admin-button--secondary" to="/admin">‹ Back to Dashboard</Link></div>
       </section>
 
       {selectedId && <div className="admin-escalated-backdrop" onClick={(event) => { if (event.target === event.currentTarget) closeTicket() }}>
@@ -229,11 +233,11 @@ export default function AdminEscalatedTicketsPage() {
           {!details.isLoading && !details.error && !ticket && <EmptyState message="Ticket details are not available." />}
           {ticket && !details.isLoading && <>
             <header className="admin-escalated-modal-header">
-              <h2 id="admin-ticket-modal-title">{show(ticket.ticketId)} — Ticket Details</h2>
+              <h2 aria-label={`${ticket.ticketId} ticket details`} id="admin-ticket-modal-title">{show(ticket.ticketId)}</h2>
               <button aria-label="Close ticket details" className="admin-escalated-close" onClick={closeTicket} type="button">×</button>
             </header>
             <div className="admin-escalated-modal-body">
-              <StatusBadge tone={badgeTone(ticket.status)}>{displayStatus(ticket.status)}</StatusBadge>
+              <AdminChip>{displayStatus(ticket.status)}</AdminChip>
               {successMessage && <p className="admin-feedback" role="status">{successMessage}</p>}
               {actionError && <div className="admin-feedback admin-feedback--error" role="alert">{actionError}</div>}
 
@@ -249,14 +253,14 @@ export default function AdminEscalatedTicketsPage() {
               <section className="admin-escalated-detail-section">
                 <h3>Contact Information</h3>
                 <div className="admin-escalated-detail-grid">
-                  <TicketMeta label="Requester Name:">{ticket.raisedByName}</TicketMeta><TicketMeta label="Provider:">{ticket.providerName || (ticket.raisedByType === 'provider' ? ticket.raisedByName : 'ServeEase Provider')}</TicketMeta>
+                  <TicketMeta label="Requester Name:">{ticket.raisedByName}</TicketMeta><TicketMeta label="Provider:">{ticket.providerName}</TicketMeta>
                   <TicketMeta label="Related Customer:">{ticket.customerName}</TicketMeta><TicketMeta label="Phone:">{ticket.raisedByPhone}</TicketMeta>
                   <TicketMeta label="Email:">{ticket.raisedByEmail}</TicketMeta><TicketMeta label="Support Update:">{ticket.supportUpdate}</TicketMeta>
                   <TicketMeta label="Support Investigation:">{ticket.supportRemarks}</TicketMeta><TicketMeta label="Escalation Reason:">{ticket.escalationReason}</TicketMeta>
                   <TicketMeta label="Assigned Support:">{ticket.assignedSupportName}</TicketMeta><TicketMeta label="Escalated At:">{formatDate(ticket.escalatedAt, true)}</TicketMeta>
-                  <TicketMeta label="Attachment:">{ticket.attachmentName || (ticket.attachmentUrl ? 'Attached file' : 'No attachment')}</TicketMeta><TicketMeta label="Final Decision:">{ticket.finalDecision}</TicketMeta>
+                  <TicketMeta label="Attachment:">{attachmentDetails(ticket)?.name || 'No attachment'}</TicketMeta><TicketMeta label="Final Decision:">{ticket.finalDecision}</TicketMeta>
                 </div>
-                {ticket.attachmentUrl && <details className="admin-escalated-attachment"><summary>Preview attachment</summary>{attachmentPreview(ticket) || <p>Preview unavailable for this stored attachment.</p>}</details>}
+                {attachmentDetails(ticket) && <TicketAttachment attachment={attachmentDetails(ticket)} />}
               </section>
 
               <section className="admin-escalated-detail-section">
@@ -287,4 +291,17 @@ export default function AdminEscalatedTicketsPage() {
       </div>}
     </AdminAccessGate>
   )
+}
+
+function TicketAttachment({ attachment }) {
+  const [previewOpen, setPreviewOpen] = useState(false)
+  return <div className="admin-escalated-attachment">
+    <div className="admin-escalated-attachment-bar"><span aria-hidden="true">📎</span><strong>{attachment.name}</strong><div>
+      {attachment.canPreview && <button className="admin-button admin-button--secondary admin-button--small" onClick={() => setPreviewOpen((open) => !open)} type="button">{previewOpen ? 'Hide preview' : 'Preview'}</button>}
+      <a className="admin-button admin-button--secondary admin-button--small" href={attachment.href} rel="noreferrer" target="_blank">Open</a>
+      <a className="admin-button admin-button--secondary admin-button--small" download href={attachment.href}>Download</a>
+    </div></div>
+    {previewOpen && attachment.image && <img alt={attachment.name} className="admin-ticket-preview-image" src={attachment.href} />}
+    {previewOpen && attachment.pdf && <iframe className="admin-ticket-preview-pdf" src={attachment.href} title={attachment.name} />}
+  </div>
 }

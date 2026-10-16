@@ -125,7 +125,7 @@ export function ProviderAccountPage() {
           <Field error={errors.personal.fullName} id="providerFullNameInput" label="Name"><input className="provider-edit-input" id="providerFullNameInput" name="fullName" onChange={setter(setPersonal)} type="text" value={personal.fullName} /></Field>
           {user.organisationName !== undefined && <Field error={errors.personal.organisationName} id="providerOrgNameInput" label="Organisation Name"><input className="provider-edit-input" id="providerOrgNameInput" name="organisationName" onChange={setter(setPersonal)} type="text" value={personal.organisationName} /></Field>}
           {/* The provider signs in with this id, not with their email, so the profile has to state it. */}
-          <Info label="Provider ID (your sign-in)" value={user.id} />
+          <Info label="Provider ID" value={user.id} />
           <Info label="Email" value={user.email} />
           <Field error={errors.personal.phone} id="providerPhoneInput" label="Phone"><input className="provider-edit-input" id="providerPhoneInput" inputMode="numeric" name="phone" onChange={setter(setPersonal)} type="text" value={personal.phone} /></Field>
           <Field error={errors.personal.cityId} id="providerLocationInput" label="Location"><select className="provider-edit-input" id="providerLocationInput" name="cityId" onChange={setter(setPersonal)} value={personal.cityId}><option value="">Select provider city</option>{supportedCities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></Field>

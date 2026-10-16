@@ -23,6 +23,14 @@ function announceSuspension(error) {
   window.dispatchEvent(new CustomEvent(SUSPENDED_EVENT, { detail: { kind: suspendedKind(error), reason: error.reason || '' } }))
 }
 
+// api.js responseMetrics: round-trip time of every completed API request in this tab, shown on the superuser
+// dashboard as "Average Platform Response Time".
+const responseMetrics = { count: 0, totalMs: 0 }
+
+export function getResponseMetrics() {
+  return { count: responseMetrics.count, totalMs: responseMetrics.totalMs, averageMs: responseMetrics.count ? responseMetrics.totalMs / responseMetrics.count : null }
+}
+
 export async function apiRequest(path, options = {}) {
   const activeSession = session()
   const headers = new Headers(options.headers)
@@ -34,11 +42,14 @@ export async function apiRequest(path, options = {}) {
 
   const requestUrl = `${API_BASE_URL}${path}`
   let response
+  const startedAt = Date.now()
   try {
     response = await fetch(requestUrl, { ...options, headers })
   } catch (error) {
     throw new Error(`Request to ${requestUrl} could not be completed: ${error.message}`, { cause: error })
   }
+  responseMetrics.count += 1
+  responseMetrics.totalMs += Math.max(0, Date.now() - startedAt)
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
     const message = Array.isArray(payload?.message) ? payload.message.join(' ') : payload?.message

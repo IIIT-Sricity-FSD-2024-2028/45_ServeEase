@@ -2,7 +2,6 @@ import { useEffect, useReducer, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { employeeOperationsApi } from '../../services/api'
-import { Breadcrumb } from './EmployeeOpsParts'
 import { initialStatusChange, statusChangeReducer } from './employeeOperations'
 import { Chip, LoadState, ProviderStatusModal } from './ProviderOpsParts'
 import { countLabel, display, filterProviders, formatDate, formatExperience, isPendingVerification, providerPath, providerStats, providerStatusAction, providerStatusError, providerStatusNotice, statusOptions } from './providerOperations'
@@ -118,9 +117,15 @@ export default function EmployeeProviderOperationsPage() {
     if (value && value !== 'all') next.set(key, value); else next.delete(key)
     return next
   }, { replace: true })
+  useEffect(() => {
+    const search = (event) => setParam('q', String(event.detail || ''))
+    window.addEventListener('serveease-operations-search', search)
+    return () => window.removeEventListener('serveease-operations-search', search)
+    // setParam is intentionally local; this listener only mounts with this workspace.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return <div className="provider-ops provider-ops--list">
-    <Breadcrumb items={[['Home', '/'], ['Employee'], ['Provider Operations']]} />
     <section aria-labelledby="provider-operations-title" className="provider-operations-hero">
       <h1 id="provider-operations-title">Provider Operations</h1>
       <p>Internal provider management, verification and operational visibility for ServeEase.</p>

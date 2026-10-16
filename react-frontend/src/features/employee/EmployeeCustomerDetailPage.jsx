@@ -47,7 +47,7 @@ export default function EmployeeCustomerDetailPage() {
   }
 
   return <div className="employee-ops">
-    <Breadcrumb items={[['Home', '/'], ['Employee'], ['Customer Operations', '/employee/customer-operations'], ['Customer Profile']]} />
+    <Breadcrumb items={[['Customer Operations', '/employee/customer-operations'], ['Customer Profile']]} />
     <Link className="back-link" to="/employee/customer-operations">← Back to Customer Operations</Link>
     <section aria-labelledby="customer-detail-title" className="ops-hero ops-hero--detail">
       <h1 id="customer-detail-title">Customer Profile</h1>

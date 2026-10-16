@@ -4,13 +4,13 @@ import '../../features/home/homePage.css'
 // Customer and public pages use the footer of front-end/customer-dashboard.html (same markup and look as the
 // home page footer, styled by homePage.css). Provider and employee areas keep the compact footer.
 export function Footer({ area }) {
-  // provider-*.html carry the same footer as the customer pages; the customer-only links go to their provider/public equivalents.
+  // provider-*.html carry the same footer look as the customer pages, but providers stay inside the portal:
+  // no links lead to the public home page (its /# sections) or to public pages that link back to it.
   if (area === 'Provider') {
     return <footer className="home-footer customer-footer">
       <div className="home-container home-footer-grid">
-        <div><h4>Company</h4><a href="/#about-us">About Us</a></div>
-        <div><h4>Support</h4><Link to="/contact-support">Contact Support</Link><Link to="/provider/bookings">Track Booking</Link></div>
-        <div><h4>Legal</h4><a href="/#terms-and-conditions">Terms &amp; Conditions</a><a href="/#privacy-policy">Privacy Policy</a><a href="/#cancellation-policy">Cancellation Policy</a></div>
+        <div><h4>Provider</h4><Link to="/provider/dashboard">Dashboard</Link><Link to="/provider/account">My Profile</Link></div>
+        <div><h4>Support</h4><Link to="/provider/support">Contact Support</Link><Link to="/provider/bookings">Track Booking</Link></div>
       </div>
       <div className="home-container home-footer-bottom-row"><p>© 2026 ServeEase. All rights reserved.</p><div className="home-footer-socials"><span>f</span><span>𝕏</span><span>in</span></div></div>
     </footer>

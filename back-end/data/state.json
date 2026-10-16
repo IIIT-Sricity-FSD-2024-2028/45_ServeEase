@@ -57,12 +57,36 @@
       },
       "notifications": [
         {
+          "id": "AN-escalated-TICKET-2026-039844",
+          "eventId": "ticket-escalated:TICKET-2026-039844:superuser",
+          "ticketId": "TICKET-2026-039844",
+          "text": "Support escalated ticket - TICKET-2026-039844",
+          "type": "red",
+          "createdAt": "2026-10-15T19:23:15.347Z",
+          "read": true,
+          "isRead": true,
+          "isNew": false,
+          "actionPage": "/admin/escalated-tickets"
+        },
+        {
+          "id": "AN-escalated-TICKET-2026-2105",
+          "eventId": "ticket-escalated:TICKET-2026-2105:superuser",
+          "ticketId": "TICKET-2026-2105",
+          "text": "Support escalated ticket - TICKET-2026-2105",
+          "type": "red",
+          "createdAt": "2026-10-15T19:19:52.474Z",
+          "read": true,
+          "isRead": true,
+          "isNew": false,
+          "actionPage": "/admin/escalated-tickets"
+        },
+        {
           "id": "AN-escalated-TICKET-MT7FTLLR-355",
           "eventId": "red:TICKET-MT7FTLLR-355:superuser",
           "createdAt": "2026-09-03T09:03:48.161Z",
-          "read": false,
-          "isRead": false,
-          "isNew": true,
+          "read": true,
+          "isRead": true,
+          "isNew": false,
           "actionPage": "superuser-escalated-tickets.html",
           "text": "Support escalated ticket - TICKET-MT7FTLLR-355",
           "type": "red",
@@ -73,9 +97,9 @@
           "id": "AN-escalated-PT-20260624-1001",
           "eventId": "red:PT-20260624-1001:superuser",
           "createdAt": "2026-09-03T09:03:48.161Z",
-          "read": false,
-          "isRead": false,
-          "isNew": true,
+          "read": true,
+          "isRead": true,
+          "isNew": false,
           "actionPage": "superuser-escalated-tickets.html",
           "text": "Support escalated ticket - PT-20260624-1001",
           "type": "red",
@@ -3615,7 +3639,7 @@
         }
       ]
     },
-    "updatedAt": "2026-09-04T08:50:41.468Z"
+    "updatedAt": "2026-10-16T21:25:19.395Z"
   },
   {
     "key": "serveEaseData",
@@ -11874,39 +11898,6 @@
           "providerCatalogId": "hemanth-sevices-painting-1",
           "registrationDate": "2023-01-05",
           "accountStatus": "Active"
-        },
-        {
-          "id": "PRO-CAT-004",
-          "role": "provider",
-          "fullName": "Cleanpro Services",
-          "organisationName": "Cleanpro Services",
-          "email": "cleanpro-services-home-cleaning-1@serveease.com",
-          "phone": "9123456780",
-          "serviceType": "Home Cleaning",
-          "experience": 8,
-          "cityId": 2,
-          "cityName": "Bangalore",
-          "location": "Bangalore",
-          "address": "Bangalore",
-          "providerCatalogId": "cleanpro-services-home-cleaning-1",
-          "registrationDate": "2025-03-03",
-          "accountStatus": "Active",
-          "passwordHash": "cdeaa5cee24926b63d961fc5823c15d8:c6e8e8287af4aec2c6c4f3580cf7bfa83279590e0019e58ae451bd0898dd63a5c69d5e3cba72fbf8f72dc51b0846405173c3859f9e7ad16d9b3af8c61a897dc5",
-          "bankName": "HDFC Bank",
-          "accountHolder": "Cleanpro Services",
-          "accountNumber": "123456789012",
-          "ifsc": "HDFC0001234",
-          "documents": [
-            {
-              "documentId": "DOC-PRO-CAT-004-PHOTO",
-              "documentType": "Profile Photo",
-              "documentName": "homecleaning 4.jpg.jpeg",
-              "documentUrl": "",
-              "required": false,
-              "documentStatus": "Uploaded",
-              "rejectionReason": ""
-            }
-          ]
         },
         {
           "id": "PRO133",
@@ -21688,6 +21679,41 @@
           "provider": "Cleanpro Services",
           "providerId": "PRO001",
           "date": "2026-10-17",
+          "time": "18:30-20:30",
+          "address": "741258",
+          "serviceFee": 799,
+          "taxRate": 10,
+          "taxAmount": 79.9,
+          "platformFeeRate": 5,
+          "platformFeeAmount": 39.95,
+          "customerTotal": 918.85,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "providerPayoutAmount": 719.1,
+          "platformRevenueAmount": 119.85,
+          "amount": 918.85,
+          "payoutStatus": "Pending",
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "customerPhone": "9876543210",
+          "customerEmail": "user@serveease.com",
+          "status": "Pending",
+          "category": "home-cleaning",
+          "paymentStatus": "Paid",
+          "paymentMethod": "Net Banking - Canara Bank",
+          "id": "BOOK-20261017-0201-0018",
+          "createdAt": "2026-10-16T20:31:32.064Z",
+          "paymentDate": "2026-10-16",
+          "paymentId": "TXN-20261017-0201-0018",
+          "statusUpdatedAt": "2026-10-16T20:31:32.064Z",
+          "stateVersion": 1
+        },
+        {
+          "service": "Kitchen Cleaning",
+          "provider": "Cleanpro Services",
+          "providerId": "PRO001",
+          "date": "2026-10-17",
           "time": "09:00-11:00",
           "address": "147856",
           "serviceFee": 799,
@@ -22303,7 +22329,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-16T15:12:34.997Z"
+    "updatedAt": "2026-10-16T20:31:32.065Z"
   },
   {
     "key": "serveEaseEmployeeModuleData",
@@ -23445,64 +23471,6 @@
           "resolvedBy": "Support"
         },
         {
-          "ticketId": "PT-20261016-941777",
-          "raisedByType": "provider",
-          "raisedById": "PRO-CAT-004",
-          "raisedByName": "Cleanpro Services",
-          "raisedByEmail": "cleanpro-services-home-cleaning-1@serveease.com",
-          "raisedByPhone": "",
-          "providerId": "PRO-CAT-004",
-          "providerName": "Cleanpro Services",
-          "customerName": "",
-          "ticketType": "Payment Not Received",
-          "subject": "Payout missing",
-          "description": "My payout for the last booking has not arrived.",
-          "priority": "Medium",
-          "status": "In Progress",
-          "escalationReason": "",
-          "assignedSupportId": "SUP001",
-          "assignedSupportName": "Priya Sharma",
-          "createdAt": "2026-10-16T09:27:12.161Z",
-          "updatedAt": "2026-10-16T09:27:46.124Z",
-          "statusHistory": [
-            {
-              "status": "In Progress",
-              "note": "Support moved ticket to In Progress.",
-              "updatedBy": "Support",
-              "updatedAt": "2026-10-16T09:27:42.311Z"
-            },
-            {
-              "status": "Pending",
-              "note": "Support update shared with the user.",
-              "updatedBy": "Support",
-              "updatedAt": "2026-10-16T09:27:41.637Z"
-            },
-            {
-              "status": "Pending",
-              "note": "Ticket created by provider.",
-              "updatedBy": "Provider",
-              "updatedAt": "2026-10-16T09:27:12.161Z"
-            }
-          ],
-          "supportUpdate": "Payout was released on the 16th; please check your bank.",
-          "messages": [
-            {
-              "messageId": "MSG-1",
-              "senderType": "agent",
-              "sender": "Priya Sharma",
-              "text": "Payout was released on the 16th; please check your bank.",
-              "sentAt": "2026-10-16T09:27:41.637Z"
-            },
-            {
-              "messageId": "MSG-2",
-              "senderType": "provider",
-              "sender": "Cleanpro Services",
-              "text": "Please confirm the payout date.",
-              "sentAt": "2026-10-16T09:27:46.124Z"
-            }
-          ]
-        },
-        {
           "ticketId": "TKT-20261016-941776",
           "raisedByType": "customer",
           "raisedById": "CUS001",
@@ -23590,64 +23558,6 @@
           "supportUpdate": "We refunded the duplicate payment; it reaches you in 3 days.",
           "resolvedAt": "2026-10-16T09:27:35.093Z",
           "resolvedBy": "Support"
-        },
-        {
-          "ticketId": "PT-20261016-941775",
-          "raisedByType": "provider",
-          "raisedById": "PRO-CAT-004",
-          "raisedByName": "Cleanpro Services",
-          "raisedByEmail": "cleanpro-services-home-cleaning-1@serveease.com",
-          "raisedByPhone": "",
-          "providerId": "PRO-CAT-004",
-          "providerName": "Cleanpro Services",
-          "customerName": "",
-          "ticketType": "Payment Not Received",
-          "subject": "Payout missing",
-          "description": "My payout for the last booking has not arrived.",
-          "priority": "Medium",
-          "status": "In Progress",
-          "escalationReason": "",
-          "assignedSupportId": "SUP001",
-          "assignedSupportName": "Priya Sharma",
-          "createdAt": "2026-10-16T09:25:53.800Z",
-          "updatedAt": "2026-10-16T09:26:27.720Z",
-          "statusHistory": [
-            {
-              "status": "In Progress",
-              "note": "Support moved ticket to In Progress.",
-              "updatedBy": "Support",
-              "updatedAt": "2026-10-16T09:26:23.920Z"
-            },
-            {
-              "status": "Pending",
-              "note": "Support update shared with the user.",
-              "updatedBy": "Support",
-              "updatedAt": "2026-10-16T09:26:23.241Z"
-            },
-            {
-              "status": "Pending",
-              "note": "Ticket created by provider.",
-              "updatedBy": "Provider",
-              "updatedAt": "2026-10-16T09:25:53.800Z"
-            }
-          ],
-          "supportUpdate": "Payout was released on the 16th; please check your bank.",
-          "messages": [
-            {
-              "messageId": "MSG-1",
-              "senderType": "agent",
-              "sender": "Priya Sharma",
-              "text": "Payout was released on the 16th; please check your bank.",
-              "sentAt": "2026-10-16T09:26:23.241Z"
-            },
-            {
-              "messageId": "MSG-2",
-              "senderType": "provider",
-              "sender": "Cleanpro Services",
-              "text": "Please confirm the payout date.",
-              "sentAt": "2026-10-16T09:26:27.720Z"
-            }
-          ]
         },
         {
           "ticketId": "TKT-20261016-941774",
@@ -23739,64 +23649,6 @@
           "resolvedBy": "Support"
         },
         {
-          "ticketId": "PT-20261016-941773",
-          "raisedByType": "provider",
-          "raisedById": "PRO-CAT-004",
-          "raisedByName": "Cleanpro Services",
-          "raisedByEmail": "cleanpro-services-home-cleaning-1@serveease.com",
-          "raisedByPhone": "",
-          "providerId": "PRO-CAT-004",
-          "providerName": "Cleanpro Services",
-          "customerName": "",
-          "ticketType": "Payment Not Received",
-          "subject": "Payout missing",
-          "description": "My payout for the last booking has not arrived.",
-          "priority": "Medium",
-          "status": "In Progress",
-          "escalationReason": "",
-          "assignedSupportId": "SUP001",
-          "assignedSupportName": "Priya Sharma",
-          "createdAt": "2026-10-16T09:25:09.605Z",
-          "updatedAt": "2026-10-16T09:25:43.364Z",
-          "statusHistory": [
-            {
-              "status": "In Progress",
-              "note": "Support moved ticket to In Progress.",
-              "updatedBy": "Support",
-              "updatedAt": "2026-10-16T09:25:39.695Z"
-            },
-            {
-              "status": "Pending",
-              "note": "Support update shared with the user.",
-              "updatedBy": "Support",
-              "updatedAt": "2026-10-16T09:25:39.029Z"
-            },
-            {
-              "status": "Pending",
-              "note": "Ticket created by provider.",
-              "updatedBy": "Provider",
-              "updatedAt": "2026-10-16T09:25:09.605Z"
-            }
-          ],
-          "supportUpdate": "Payout was released on the 16th; please check your bank.",
-          "messages": [
-            {
-              "messageId": "MSG-1",
-              "senderType": "agent",
-              "sender": "Priya Sharma",
-              "text": "Payout was released on the 16th; please check your bank.",
-              "sentAt": "2026-10-16T09:25:39.029Z"
-            },
-            {
-              "messageId": "MSG-2",
-              "senderType": "provider",
-              "sender": "Cleanpro Services",
-              "text": "Please confirm the payout date.",
-              "sentAt": "2026-10-16T09:25:43.364Z"
-            }
-          ]
-        },
-        {
           "ticketId": "TKT-20261016-941772",
           "raisedByType": "customer",
           "raisedById": "CUS001",
@@ -23884,35 +23736,6 @@
           "supportUpdate": "We refunded the duplicate payment; it reaches you in 3 days.",
           "resolvedAt": "2026-10-16T09:25:32.696Z",
           "resolvedBy": "Support"
-        },
-        {
-          "ticketId": "PT-20261016-941771",
-          "raisedByType": "provider",
-          "raisedById": "PRO-CAT-004",
-          "raisedByName": "Cleanpro Services",
-          "raisedByEmail": "cleanpro-services-home-cleaning-1@serveease.com",
-          "raisedByPhone": "",
-          "providerId": "PRO-CAT-004",
-          "providerName": "Cleanpro Services",
-          "customerName": "",
-          "ticketType": "Payment Not Received",
-          "subject": "Payout missing",
-          "description": "My payout for the last booking has not arrived.",
-          "priority": "Medium",
-          "status": "Pending",
-          "escalationReason": "",
-          "assignedSupportId": "SUP001",
-          "assignedSupportName": "Priya Sharma",
-          "createdAt": "2026-10-16T09:23:48.690Z",
-          "updatedAt": "2026-10-16T09:23:48.690Z",
-          "statusHistory": [
-            {
-              "status": "Pending",
-              "note": "Ticket created by provider.",
-              "updatedBy": "Provider",
-              "updatedAt": "2026-10-16T09:23:48.690Z"
-            }
-          ]
         },
         {
           "ticketId": "TKT-20261016-941770",
@@ -26724,41 +26547,6 @@
               "at": "2026-10-16T16:51:56.782Z",
               "action": "uploaded",
               "actor": "Provider (PRO147)"
-            }
-          ]
-        },
-        {
-          "documentId": "DOC-PRO-CAT-004-PHOTO",
-          "providerAccountId": "PRO-CAT-004",
-          "ownerEmail": "cleanpro-services-home-cleaning-1@serveease.com",
-          "providerListingId": "cleanpro-services-home-cleaning-1",
-          "documentType": "Profile Photo",
-          "verificationStatus": "Uploaded",
-          "originalFilename": "homecleaning 4.jpg.jpeg",
-          "mimeType": "image/jpeg",
-          "size": 55503,
-          "sha256": "3cf6e08c387e7df44c261627aba847603055d3a41d4ccfa812d85f13c39143d1",
-          "storageKey": "3cf6e08c387e7df44c261627aba847603055d3a41d4ccfa812d85f13c39143d1.jpg",
-          "source": "secure-upload",
-          "sourceReference": null,
-          "recordOrigin": "account",
-          "createdAt": "2026-10-16T07:21:16.604Z",
-          "updatedAt": "2026-10-16T17:00:12.263Z",
-          "history": [
-            {
-              "at": "2026-10-16T17:00:12.263Z",
-              "action": "profile-photo-replaced",
-              "actor": "Provider (PRO-CAT-004)"
-            },
-            {
-              "at": "2026-10-16T07:21:18.467Z",
-              "action": "profile-photo-replaced",
-              "actor": "Provider (PRO-CAT-004)"
-            },
-            {
-              "at": "2026-10-16T07:21:16.604Z",
-              "action": "profile-photo-replaced",
-              "actor": "Provider (PRO-CAT-004)"
             }
           ]
         }
