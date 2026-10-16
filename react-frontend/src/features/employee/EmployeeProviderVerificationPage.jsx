@@ -97,7 +97,7 @@ export default function EmployeeProviderVerificationPage() {
       : `${display(provider.organisationName || provider.fullName)} has no pending verification request.`
 
   return <div className="provider-ops provider-ops--review">
-    <Breadcrumb items={[['Home', '/'], ['Employee'], ['Provider Operations', '/employee/provider-operations'], ['Verification Review']]} />
+    <Breadcrumb items={[['Provider Operations', '/employee/provider-operations'], ['Verification Review']]} />
     <section aria-labelledby="provider-review-title" className="provider-operations-hero">
       <h1 id="provider-review-title">Provider Verification Review</h1>
       <p>{hero}</p>

@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
-import { StatusBadge } from '../../components/common/StatusBadge'
 import { AdminAccessGate } from './AdminAccessGate'
+import { AdminChip } from './AdminChip'
 import { AdminNotifications } from './AdminNotifications'
 import { AdminPageHeader } from './AdminPageHeader'
-import { getCustomerAccount, listCustomerAccounts, listEscalatedTickets, updateCustomerAccountStatus } from './adminApi'
-import { show, useAdminData, useSuperuserModuleData } from './useAdminData'
+import { getCustomerAccount, listCustomerAccounts, updateCustomerAccountStatus } from './adminApi'
+import { matchesAdminSearch, useAdminSearch } from './adminSearch'
+import { show, useAdminData } from './useAdminData'
 import './admin.css'
 
 function formatDate(value) {
@@ -28,18 +29,17 @@ export default function CustomerOperationsPage() {
   const [successMessage, setSuccessMessage] = useState('')
 
   const accounts = useAdminData(listCustomerAccounts)
-  const tickets = useAdminData(listEscalatedTickets)
-  const moduleState = useSuperuserModuleData()
+  const topbarSearch = useAdminSearch('/admin/customers')
   const loadSelectedCustomer = useCallback(() => selectedId ? getCustomerAccount(selectedId) : Promise.resolve(null), [selectedId])
   const detailsData = useAdminData(loadSelectedCustomer)
   const customers = useMemo(() => Array.isArray(accounts.data?.customers) ? accounts.data.customers : [], [accounts.data])
-  const queryText = query.trim().toLocaleLowerCase()
+  // superuser.js refreshManagementTables(): the topbar search and the table search both narrow the list.
+  const searchTerm = [topbarSearch, query].filter((value) => value.trim()).join(' ')
   const visibleCustomers = useMemo(() => customers.filter((customer) => {
-    const matchesQuery = [customer.fullName, customer.name, customer.email, customer.phone, customer.phoneNumber, customer.id]
-      .some((value) => value !== null && value !== undefined && String(value).toLocaleLowerCase().includes(queryText))
     const status = customer.status || customer.accountStatus || 'Active'
-    return matchesQuery && (statusFilter === 'all' || String(status).toLocaleLowerCase() === statusFilter)
-  }), [customers, queryText, statusFilter])
+    return matchesAdminSearch([customer.fullName, customer.name, customer.email, customer.phone, customer.phoneNumber, customer.id, status], searchTerm)
+      && (statusFilter === 'all' || String(status).toLocaleLowerCase() === statusFilter)
+  }), [customers, searchTerm, statusFilter])
   const displayedCustomers = showAll ? visibleCustomers : visibleCustomers.slice(0, 10)
   const details = detailsData.data?.customer
 
@@ -102,7 +102,7 @@ export default function CustomerOperationsPage() {
         <div className="admin-operations-layout admin-user-management-layout">
           <section className="admin-panel admin-panel--compact">
             <div className="admin-panel-heading">
-              <h2>Customers ({accounts.data?.totals?.customers ?? (accounts.data ? customers.length : 'Not available')})</h2>
+              <h2>Customers ({accounts.data ? visibleCustomers.length : 'Not available'})</h2>
               <div className="admin-operations-filters">
                 <label className="admin-sr-only" htmlFor="admin-customer-search">Search customers</label>
                 <input className="admin-control" id="admin-customer-search" onChange={(event) => { setQuery(event.target.value); setShowAll(false) }} placeholder="Search customers" type="search" value={query} />
@@ -125,8 +125,8 @@ export default function CustomerOperationsPage() {
                   return <tr key={customer.id ?? `${customer.email || customer.fullName || index}`}>
                     <td>{show(customer.fullName || customer.name)}</td><td>{show(customer.email)}</td><td>{show(customer.phone || customer.phoneNumber)}</td>
                     <td>{formatDate(customer.registrationDate || customer.createdAt)}</td>
-                    <td><StatusBadge tone={status === 'Active' ? 'ready' : 'neutral'}>{show(status)}</StatusBadge></td>
-                    <td><button aria-label={`View ${customer.fullName || customer.name || 'customer'} details`} className="admin-button admin-button--secondary admin-button--small" onClick={() => selectCustomer(String(customer.id))} type="button">◉</button></td>
+                    <td><AdminChip>{show(status)}</AdminChip></td>
+                    <td><button aria-label={`View ${customer.fullName || customer.name || 'customer'} details`} className="admin-inline-action" onClick={() => selectCustomer(String(customer.id))} type="button">◉</button></td>
                   </tr>
                 })}</tbody>
               </table></div>
@@ -134,7 +134,7 @@ export default function CustomerOperationsPage() {
             </>}
           </section>
 
-          <AdminNotifications moduleState={moduleState} tickets={tickets.data} ticketsLoading={tickets.isLoading} ticketsError={tickets.error} onRetryTickets={tickets.reload} />
+          <AdminNotifications />
         </div>
         <div className="admin-user-return"><Link className="admin-button admin-button--secondary" to="/admin">‹ Return to Dashboard</Link></div>
       </section>
@@ -155,7 +155,7 @@ export default function CustomerOperationsPage() {
               <h3>Registration Information</h3>
               <div className="admin-user-detail-card"><span>Registration Date</span><strong>{formatDate(details.registrationDate || details.createdAt)}</strong></div>
               <h3>Account Status</h3>
-              <div className="admin-user-detail-card"><span>Current Status:</span><StatusBadge tone={currentStatus === 'Active' ? 'ready' : 'neutral'}>{show(currentStatus)}</StatusBadge></div>
+              <div className="admin-user-detail-card"><span>Current Status:</span><AdminChip>{show(currentStatus)}</AdminChip></div>
               <h3>Actions</h3>
               <form className="admin-user-action-form" onSubmit={submitStatusChange}>
                 <label htmlFor="admin-customer-status-reason">Reason for {blocked ? 'Activate' : 'Suspend'} Customer *</label>
@@ -163,7 +163,7 @@ export default function CustomerOperationsPage() {
                 <span className="admin-user-character-count">{statusReason.length} / 200</span>
                 <label htmlFor="admin-customer-status-remarks">Admin Remarks (optional)</label>
                 <textarea id="admin-customer-status-remarks" maxLength={200} onChange={(event) => setStatusRemarks(event.target.value)} placeholder="Optional operational remarks" value={statusRemarks} />
-                <button className={`admin-user-status-button${blocked ? ' admin-user-status-button--active' : ''}`} disabled={isSubmitting || statusReason.trim().length < 5} type="submit">{isSubmitting ? 'Saving…' : blocked ? '◉ Activate Customer' : '⊘ Suspend Customer'}</button>
+                <button className={`admin-user-status-button${blocked ? ' admin-user-status-button--active' : ''}`} disabled={isSubmitting || statusReason.trim().length < 5} type="submit">{isSubmitting ? 'Saving…' : blocked ? '◎ Activate Customer' : '⊘ Suspend Customer'}</button>
               </form>
             </div>
             <footer className="admin-user-modal-footer"><button className="admin-button admin-button--secondary admin-button--full" onClick={closeDetails} type="button">Close</button></footer>

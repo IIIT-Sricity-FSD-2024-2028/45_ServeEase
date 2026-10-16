@@ -58,6 +58,24 @@ export class ProviderOperationsService {
     };
   }
 
+  // Compact, department-scoped data for the Provider Operations notification bell. It contains provider
+  // onboarding/verification work and provider-raised tickets only, not the Support department's full queue.
+  providerNotificationFeed() {
+    return {
+      providers: this.overview().providers,
+      tickets: this.tickets.findAllForSupport()
+        .filter((ticket) => ticket.raisedByType === 'provider')
+        .map((ticket) => ({
+          ticketId: ticket.ticketId,
+          providerId: text(ticket.providerId || ticket.raisedById),
+          subject: ticket.subject,
+          status: ticket.status,
+          createdAt: ticket.createdAt,
+          updatedAt: ticket.updatedAt,
+        })),
+    };
+  }
+
   detail(id: string, listing?: string) {
     const account = this.find(id, listing);
     const email = lower(account.email);

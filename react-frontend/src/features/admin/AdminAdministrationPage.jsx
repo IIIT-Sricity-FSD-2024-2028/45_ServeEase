@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
 import { getEmployeeModuleData, saveEmployeeModuleData } from './adminApi'
+import { matchesAdminSearch, useAdminSearch } from './adminSearch'
 import { show, useAdminData } from './useAdminData'
 import './admin.css'
 
@@ -100,11 +101,13 @@ export default function AdminAdministrationPage() {
   const moduleData = moduleState.data?.value || {}
   const employeeRecords = moduleState.data?.value?.employees
   const employees = useMemo(() => Array.isArray(employeeRecords) ? employeeRecords : [], [employeeRecords])
-  const visibleEmployees = useMemo(() => activeDepartment === 'All'
+  const searchTerm = useAdminSearch('/admin/administration')
+  const visibleEmployees = useMemo(() => (activeDepartment === 'All'
     ? employees
     : activeDepartment === 'Other'
       ? employees.filter((employee) => !departments.some((department) => department.name === employee.department))
-      : employees.filter((employee) => employee.department === activeDepartment), [activeDepartment, employees])
+      : employees.filter((employee) => employee.department === activeDepartment))
+    .filter((employee) => matchesAdminSearch([employee.employeeId, employee.name, employee.email, employee.department, employee.permissions], searchTerm)), [activeDepartment, employees, searchTerm])
   const hasOtherDepartment = employees.some((employee) => !departments.some((department) => department.name === employee.department))
   const departmentTabs = [
     { name: 'All', count: employees.length },

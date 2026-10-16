@@ -1,14 +1,18 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
+import { getResponseMetrics } from '../../services/apiClient'
+import { formatDisplayDateTime } from '../customer/customerOperations'
 import { AdminAccessGate } from './AdminAccessGate'
+import { AdminChip } from './AdminChip'
 import { AdminNotifications } from './AdminNotifications'
 import { AdminPageHeader } from './AdminPageHeader'
-import { listBookings, listCatalog, listCustomerAccounts, listEscalatedTickets, listProviderAccounts, listVerificationRequests } from './adminApi'
+import { listActivities, listBookings, listCatalog, listCustomerAccounts, listProviderAccounts, listVerificationRequests } from './adminApi'
 import { money, show, useAdminData, useSuperuserModuleData } from './useAdminData'
 import './admin.css'
 
 const actions = [
-  { title: '♟ User Management', path: '/admin/customers' },
+  { title: '👥 User Management', path: '/admin/customers' },
   { title: 'Administration', path: '/admin/administration' },
   { title: 'Provider Verification', path: '/admin/verification' },
   { title: '⚙ Service Categories', path: '/admin/categories' },
@@ -34,8 +38,9 @@ function displayDate(value) {
   return date ? new Intl.DateTimeFormat('en-GB').format(date) : 'Not available'
 }
 
+// superuser.js dashboardBookingTrend(): bookings grouped by the month they were created.
 function bookingDate(booking) {
-  return booking.date || booking.bookingDate || booking.serviceDate || booking.createdAt
+  return booking.createdAt || booking.createdDate || booking.date || booking.serviceDate || booking.bookingDate
 }
 
 function bookingTrend(bookings) {
@@ -46,7 +51,22 @@ function bookingTrend(bookings) {
     const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0')
     months.set(key, (months.get(key) || 0) + 1)
   })
-  return Array.from(months.entries()).sort(([left], [right]) => left.localeCompare(right)).slice(-8)
+  return Array.from(months.entries()).sort(([left], [right]) => left.localeCompare(right)).map(([key, count]) => {
+    const [year, month] = key.split('-').map(Number)
+    return { key, count, label: new Date(year, month - 1, 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) }
+  })
+}
+
+// superuser.js formatRelativeTime()
+function relativeTime(value) {
+  const date = parseDate(value)
+  if (!date) return ''
+  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000))
+  if (minutes < 1) return 'Just now'
+  if (minutes < 60) return minutes + ' minutes ago'
+  if (minutes < 1440) return Math.floor(minutes / 60) + ' hours ago'
+  if (minutes < 10080) return Math.floor(minutes / 1440) + ' days ago'
+  return formatDisplayDateTime(value)
 }
 
 function categoryName(booking) {
@@ -98,8 +118,8 @@ function pieGradient(groups) {
 }
 
 function Metric({ label, value, caption, attention = false, isLoading, error, onRetry }) {
-  return <article className={'admin-stat-card' + (attention ? ' admin-stat-card--attention' : '')}>
-    <span>{label}<span>SE</span></span>
+  return <article className={'admin-stat-card admin-hub-stat' + (attention ? ' admin-stat-card--attention' : '')}>
+    <span><span />{label}</span>
     <strong>{isLoading ? '…' : error ? 'Unavailable' : value}</strong>
     <p>{caption}</p>
     {error && <button className="admin-button admin-button--secondary admin-button--small" onClick={onRetry} type="button">Retry</button>}
@@ -112,22 +132,21 @@ function MonthlyBookingsChart({ bookings, isLoading, error, reload }) {
   if (error) return <div className="admin-feedback admin-feedback--error"><ErrorState message={error} /><button className="admin-button" onClick={reload} type="button">Retry</button></div>
   if (!points.length) return <EmptyState message="No booking data available." />
 
-  const maximum = Math.max(1, ...points.map(([, count]) => count))
-  const coordinates = points.map(([, count], index) => {
-    const x = points.length === 1 ? 400 : 38 + (index * 724) / (points.length - 1)
-    const y = 184 - (count / maximum) * 140
-    return { x, y, count }
-  })
-  const line = coordinates.map((point) => point.x + ',' + point.y).join(' ')
+  // superuser.js renderLineChart(): 640x220 drawing, the count of each month shown on hover.
+  const maximum = Math.max(...points.map((point) => point.count)) * 1.1 || 1
+  const stepX = points.length === 1 ? 0 : (640 - 50) / (points.length - 1)
+  const coordinates = points.map((point, index) => ({ ...point, x: 25 + index * stepX, y: 195 - (point.count / maximum) * 175 }))
+  const path = coordinates.map((point, index) => (index === 0 ? 'M' : 'L') + point.x + ' ' + point.y).join(' ')
 
   return <div className="admin-line-chart">
-    <svg aria-label="Monthly booking trend" role="img" viewBox="0 0 800 230" preserveAspectRatio="none">
-      {[50, 100, 150, 190].map((y) => <line key={y} x1="28" x2="775" y1={y} y2={y} />)}
-      <polyline points={line} />
-      {coordinates.map((point, index) => <g key={points[index][0]}>
-        <circle cx={point.x} cy={point.y} r="5" />
-        <text className="admin-chart-value" x={point.x} y={point.y - 12}>{point.count}</text>
-        <text className="admin-chart-label" x={point.x} y="218">{points[index][0].slice(5)}/{points[index][0].slice(0, 4)}</text>
+    <svg aria-label="Monthly booking trend" role="img" viewBox="0 0 640 220" preserveAspectRatio="none">
+      <path d={path} />
+      {coordinates.map((point) => <g key={point.key}>
+        <text className="admin-chart-label" x={point.x} y="215">{point.label}</text>
+        <g className="admin-chart-point">
+          <circle cx={point.x} cy={point.y} r="5" />
+          <text className="admin-chart-tooltip" x={point.x} y={point.y - 12}>{point.count}</text>
+        </g>
       </g>)}
     </svg>
   </div>
@@ -139,12 +158,21 @@ function CategoryBookingsChart({ bookings, catalog, isLoading, error, reload }) 
   if (isLoading) return <LoadingState message="Loading booking records…" />
   if (error) return <div className="admin-feedback admin-feedback--error"><ErrorState message={error} /><button className="admin-button" onClick={reload} type="button">Retry</button></div>
   if (!categories.length) return <EmptyState message="No service category booking data available." />
+  // superuser.js renderBarChart(): one 42px row per category, purple bars scaled to the busiest one.
+  const height = Math.max(220, categories.length * 42 + 24)
+  const barWidth = 760 - 245 - 55
   return <div className="admin-category-chart">
-    {categories.map((category) => <div className="admin-category-row" key={category.key}>
-      <span>{category.name}</span>
-      <div className="admin-category-track"><i style={{ width: (category.count / maximum) * 100 + '%' }} /></div>
-      <strong>{category.count}</strong>
-    </div>)}
+    <svg aria-label="Bookings per service category" role="img" viewBox={'0 0 760 ' + height} preserveAspectRatio="xMinYMin meet">
+      {categories.map((category, index) => {
+        const y = 18 + index * 42
+        const width = Math.max(3, (category.count / maximum) * barWidth)
+        return <g key={category.key}>
+          <text className="admin-category-chart-name" x="0" y={y + 16}>{category.name}</text>
+          <rect height="22" rx="11" width={width} x="245" y={y} />
+          <text className="admin-category-chart-count" x={245 + width + 10} y={y + 16}>{category.count}</text>
+        </g>
+      })}
+    </svg>
   </div>
 }
 
@@ -164,9 +192,9 @@ function RecentRegistrations({ customers, providers, customersLoading, providers
       <thead><tr><th>Name</th><th>Role</th><th>Registration Date</th><th>Status</th></tr></thead>
       <tbody>{records.map(({ item, role, date }, index) => <tr key={String(item.id || item.email || role) + '-' + index}>
         <td>{show(item.fullName || item.name || item.organisationName)}</td>
-        <td><span className={'admin-role-chip admin-role-chip--' + role.toLowerCase()}>{role}</span></td>
+        <td><AdminChip>{role}</AdminChip></td>
         <td>{displayDate(date)}</td>
-        <td>{show(item.accountStatus || item.status || item.approvalStatus || item.verificationStatus)}</td>
+        <td><AdminChip>{show(item.accountStatus || item.status || item.approvalStatus || item.verificationStatus || 'Active')}</AdminChip></td>
       </tr>)}</tbody>
     </table></div>}
   </>
@@ -178,8 +206,9 @@ export default function AdminHubPage() {
   const customersData = useAdminData(listCustomerAccounts)
   const providersData = useAdminData(listProviderAccounts)
   const verifications = useAdminData(listVerificationRequests)
-  const tickets = useAdminData(listEscalatedTickets)
   const moduleState = useSuperuserModuleData()
+  const activityLog = useAdminData(listActivities)
+  const [responseMetrics, setResponseMetrics] = useState(getResponseMetrics)
 
   const bookingRows = Array.isArray(bookings.data) ? bookings.data : []
   const customerAccounts = Array.isArray(customersData.data?.customers) ? customersData.data.customers : []
@@ -190,9 +219,26 @@ export default function AdminHubPage() {
   const hasRevenue = revenueRecords.some((booking) => Number.isFinite(Number(booking.platformRevenueAmount)))
   const statuses = statusGroups(bookingRows)
   const pendingCount = requests.filter((request) => String(request.status || '').toLowerCase() === 'pending').length
-  const activity = Array.isArray(moduleState.data.activities) ? moduleState.data.activities : []
-  const validActivity = activity.filter((item) => item?.createdAt && !['state_saved', 'state_removed'].includes(String(item.action || '').toLowerCase()))
-    .slice().sort((left, right) => (parseDate(right.createdAt)?.getTime() || 0) - (parseDate(left.createdAt)?.getTime() || 0)).slice(0, 8)
+  // superuser.js renderActivities(): the platform activity log, falling back to the module's own activities.
+  const loggedActivity = Array.isArray(activityLog.data) ? activityLog.data : []
+  const activity = loggedActivity.length ? loggedActivity : (Array.isArray(moduleState.data.activities) ? moduleState.data.activities : [])
+  const activitySeen = new Set()
+  const validActivity = activity.filter((item) => {
+    const key = String(item?.id || [item?.action, item?.details, item?.createdAt].join('|'))
+    if (!item?.createdAt || activitySeen.has(key) || ['state_saved', 'state_removed'].includes(String(item.action || '').toLowerCase())) return false
+    activitySeen.add(key)
+    return true
+  }).sort((left, right) => (parseDate(right.createdAt)?.getTime() || 0) - (parseDate(left.createdAt)?.getTime() || 0)).slice(0, 8)
+  const activityLoading = moduleState.isLoading || activityLog.isLoading
+  const activityFailed = !loggedActivity.length && moduleState.error
+
+  // The average covers every request this tab has made, so it is re-read once the dashboard's own loads finish.
+  const dashboardLoading = bookings.isLoading || catalog.isLoading || customersData.isLoading || providersData.isLoading || verifications.isLoading || activityLoading
+  useEffect(() => {
+    if (dashboardLoading) return undefined
+    const timer = window.setTimeout(() => setResponseMetrics(getResponseMetrics()), 0)
+    return () => window.clearTimeout(timer)
+  }, [dashboardLoading])
 
   return (
     <AdminAccessGate>
@@ -221,21 +267,21 @@ export default function AdminHubPage() {
             <section className="admin-panel admin-panel--compact">
               <h2>Monthly Bookings Trend</h2>
               <MonthlyBookingsChart bookings={bookingRows} error={bookings.error} isLoading={bookings.isLoading} reload={bookings.reload} />
-              <p className="admin-chart-legend">↗ Bookings</p>
+              <p className="admin-chart-legend">⤳ Bookings</p>
             </section>
             <section className="admin-panel admin-panel--compact">
               <h2>Bookings per Service Category</h2>
               <CategoryBookingsChart bookings={bookingRows} catalog={catalog.data} error={bookings.error || catalog.error} isLoading={bookings.isLoading || catalog.isLoading} reload={() => { bookings.reload(); catalog.reload() }} />
             </section>
             <section className="admin-panel admin-panel--compact">
-              <h2>Platform Activity Overview</h2>
-              {moduleState.isLoading && <LoadingState message="Loading platform activity…" />}
-              {!moduleState.isLoading && moduleState.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={moduleState.error} /><button className="admin-button admin-button--secondary admin-button--small" onClick={moduleState.reload} type="button">Retry</button></div>}
-              {!moduleState.isLoading && !moduleState.error && validActivity.length === 0 && <div className="admin-activity-empty">No recent platform activity.</div>}
-              {!moduleState.isLoading && !moduleState.error && validActivity.length > 0 && <div className="admin-activity-list">
+              <h2>📈 Platform Activity Overview</h2>
+              {activityLoading && <LoadingState message="Loading platform activity…" />}
+              {!activityLoading && activityFailed && <div className="admin-feedback admin-feedback--error"><ErrorState message={moduleState.error} /><button className="admin-button admin-button--secondary admin-button--small" onClick={() => { moduleState.reload(); activityLog.reload() }} type="button">Retry</button></div>}
+              {!activityLoading && !activityFailed && validActivity.length === 0 && <div className="admin-activity-empty">No recent platform activity.</div>}
+              {!activityLoading && !activityFailed && validActivity.length > 0 && <div className="admin-activity-list">
                 {validActivity.map((item, index) => <article className="admin-activity-item" key={item.id || String(item.action) + '-' + index}>
                   <span aria-hidden="true" className="admin-activity-icon">•</span>
-                  <div><strong>{show(item.details ? item.action + ' — ' + item.details : item.action)}</strong><span>{displayDate(item.createdAt)}</span></div>
+                  <div><strong>{show(item.details ? item.action + ' — ' + item.details : (item.action || 'Activity'))}</strong><span>{relativeTime(item.createdAt)}</span></div>
                 </article>)}
               </div>}
             </section>
@@ -255,19 +301,13 @@ export default function AdminHubPage() {
           </div>
 
           <aside className="admin-hub-sidebar">
-            <AdminNotifications
-              moduleState={moduleState}
-              tickets={Array.isArray(tickets.data) ? tickets.data : []}
-              ticketsLoading={tickets.isLoading}
-              ticketsError={tickets.error}
-              onRetryTickets={tickets.reload}
-            />
+            <AdminNotifications />
             <section className="admin-panel admin-panel--compact admin-system-stat-card">
               <h2>System Statistics</h2>
-              <div className="admin-system-stat-row"><span>Average Platform Response Time</span><strong>Not available</strong></div>
+              <div className="admin-system-stat-row"><span>Average Platform Response Time</span><strong title={responseMetrics.count ? 'Measured from ' + responseMetrics.count + ' API request' + (responseMetrics.count === 1 ? '' : 's') : undefined}>{responseMetrics.count && responseMetrics.averageMs != null ? Math.round(responseMetrics.averageMs) + ' ms' : 'No response data yet'}</strong></div>
             </section>
             <section className="admin-panel admin-panel--compact">
-              <h2>Booking Status Distribution</h2>
+              <h2>〽 Booking Status Distribution</h2>
               {bookings.isLoading && <LoadingState message="Loading booking records…" />}
               {!bookings.isLoading && bookings.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={bookings.error} /><button className="admin-button admin-button--secondary admin-button--small" onClick={bookings.reload} type="button">Retry</button></div>}
               {!bookings.isLoading && !bookings.error && statuses.length === 0 && <EmptyState message="No booking status data available." />}

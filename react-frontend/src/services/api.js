@@ -112,6 +112,7 @@ export const supportApi = {
 // Read-only employee workspaces; the backend limits each to its department (and superusers).
 export const employeeOperationsApi = {
   customers: () => apiRequest('/employee/customer-operations/customers'),
+  customerNotifications: () => apiRequest('/employee/customer-operations/notifications'),
   customer: (id) => apiRequest(`/employee/customer-operations/customers/${encodeURIComponent(id)}`),
   // PATCH body: { status: 'Blocked' | 'Active', reason, remarks? }; returns { customer, changed }.
   setCustomerStatus: (id, change) => apiRequest(`/employee/customer-operations/customers/${encodeURIComponent(id)}/status`, {
@@ -119,6 +120,7 @@ export const employeeOperationsApi = {
     body: JSON.stringify(change),
   }),
   providers: () => apiRequest('/employee/provider-operations/providers'),
+  providerNotifications: () => apiRequest('/employee/provider-operations/notifications'),
   // `listing` (catalog listing id) is only needed for the few legacy provider accounts that share an id.
   provider: (id, listing) => apiRequest(`/employee/provider-operations/providers/${encodeURIComponent(id)}${listing ? `?listing=${encodeURIComponent(listing)}` : ''}`),
   // PATCH body: { decision: 'approve' | 'reject', reason? (required to reject), remarks? }; returns the updated provider detail.

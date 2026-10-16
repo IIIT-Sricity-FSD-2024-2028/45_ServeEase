@@ -92,7 +92,9 @@ export default function CustomerDashboardPage() {
 
   const recentBookings = useMemo(() => bookings.filter((booking) => upcomingStatuses.has(booking.status)).slice(0, 3), [bookings])
   const recentPayments = useMemo(() => bookings.filter((booking) => booking.paymentStatus || booking.customerTotal || booking.amount).slice(0, 4).map(settleBooking), [bookings])
-  const recentTickets = tickets
+  const recentTickets = useMemo(() => [...tickets]
+    .sort((a, b) => (Date.parse(b.updatedAt || b.createdAt) || 0) - (Date.parse(a.updatedAt || a.createdAt) || 0))
+    .slice(0, 3), [tickets])
   const customerName = String(currentUser?.fullName || currentUser?.name || '').trim()
 
   return <div className="customer-ops">
@@ -140,12 +142,12 @@ export default function CustomerDashboardPage() {
 
       <section className="dashboard-two-column">
         <div className="panel-card">
-          <div className="panel-head"><h2>Support Center</h2><Link to="/customer/support">Open Support</Link></div>
+          <div className="panel-head"><h2>Recent Support Tickets</h2><Link to="/customer/support">View All</Link></div>
           {recentTickets.length
             ? recentTickets.map((ticket) => <PreviewItem key={ticket.ticketId || `ticket-${ticket.createdAt}`} meta={preview(ticket.ticketId, ticket.relatedBookingId, ticket.status)} title={ticket.subject || ticket.ticketType || 'Support request'} />)
             : <div className="empty-state-card">No support tickets yet.</div>}
         </div>
-        <div className="panel-card gradient-panel">
+        <div className="panel-card gradient-panel help-panel">
           <h2>Need Immediate Help?</h2>
           <p>Our support team is available 24/7 to assist you.</p>
           <p>📞 +91 1800-123-4567</p>

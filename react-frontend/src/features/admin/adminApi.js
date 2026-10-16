@@ -121,6 +121,11 @@ export function rejectProviderDocument(id, documentId, rejectionReason) {
   })
 }
 
+// Platform activity log (superuser.js renderActivities reads it before the module's own activities).
+export function listActivities() {
+  return apiRequest('/activities')
+}
+
 export function listEscalatedTickets() {
   return apiRequest('/admin/escalated-tickets')
 }

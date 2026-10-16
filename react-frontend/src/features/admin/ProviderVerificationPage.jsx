@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
-import { StatusBadge } from '../../components/common/StatusBadge'
 import { AdminAccessGate } from './AdminAccessGate'
+import { AdminChip } from './AdminChip'
 import { AdminPageHeader } from './AdminPageHeader'
 import {
   approveProvider,
@@ -14,15 +14,12 @@ import {
   rejectProviderDocument,
   suspendProvider,
 } from './adminApi'
+import { matchesAdminSearch, useAdminSearch } from './adminSearch'
 import { show, useAdminData } from './useAdminData'
 import './admin.css'
 
 const verificationStatuses = ['All', 'Pending', 'Verified', 'Rejected', 'Suspended']
 const documentNames = ['ID Proof', 'Address Proof', 'Skill Certificate', 'Experience Proof', 'Profile Photo']
-
-function badgeTone(status) {
-  return ['Verified', 'Approved', 'Active'].includes(status) ? 'ready' : status === 'Rejected' ? 'danger' : 'neutral'
-}
 
 function formatDate(value) {
   if (!value) return 'Not available'
@@ -32,7 +29,7 @@ function formatDate(value) {
 
 function SummaryCard({ label, count, attention = false }) {
   return <article className={`admin-stat-card${attention ? ' admin-stat-card--attention' : ''}`}>
-    <span>{label}<span>SE</span></span><strong>{count}</strong><p>{label === 'Total' ? 'Total Providers' : `${label} Providers`}</p>
+    <span>{label}<span>SE</span></span><strong>{count}</strong><p>{label === 'Total' ? 'Total Providers' : label === 'Pending' ? 'Pending Verification' : `${label} Providers`}</p>
   </article>
 }
 
@@ -44,7 +41,7 @@ export default function ProviderVerificationPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('provider')
   const [statusFilter, setStatusFilter] = useState('All')
-  const [categoryFilter, setCategoryFilter] = useState('All categories')
+  const [categoryFilter, setCategoryFilter] = useState('All Categories')
   const [sortOrder, setSortOrder] = useState('latest')
   const [actionMode, setActionMode] = useState('')
   const [adminRemarks, setAdminRemarks] = useState('')
@@ -60,17 +57,19 @@ export default function ProviderVerificationPage() {
   const scrollToDocuments = useRef(false)
 
   const requests = useAdminData(listVerificationRequests)
+  const searchTerm = useAdminSearch('/admin/verification')
   const loadSelectedProvider = useCallback(() => selectedId ? getVerificationRequest(selectedId) : Promise.resolve(null), [selectedId])
   const provider = useAdminData(loadSelectedProvider)
   const requestList = useMemo(() => Array.isArray(requests.data) ? requests.data : [], [requests.data])
   const categories = useMemo(() => [...new Set(requestList.map((request) => request.category).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b))), [requestList])
   const filteredRequests = useMemo(() => requestList.filter((request) => (statusFilter === 'All' || request.status === statusFilter)
-    && (categoryFilter === 'All categories' || request.category === categoryFilter))
+    && (categoryFilter === 'All Categories' || request.category === categoryFilter)
+    && matchesAdminSearch([request.id, request.name, request.organisationName, request.email, request.phone], searchTerm))
     .sort((left, right) => {
       if (sortOrder === 'name') return String(left.name || '').localeCompare(String(right.name || ''))
       const dateDiff = Date.parse(left.submittedDate || '') - Date.parse(right.submittedDate || '')
       return sortOrder === 'oldest' ? dateDiff : -dateDiff
-    }), [requestList, statusFilter, categoryFilter, sortOrder])
+    }), [requestList, statusFilter, categoryFilter, sortOrder, searchTerm])
 
   function selectProvider(id) {
     const next = new URLSearchParams(searchParams)
@@ -236,7 +235,7 @@ export default function ProviderVerificationPage() {
       <section className="admin-panel admin-verification-filters">
         <div className="admin-filter-grid">
           <label className="admin-form">Status<select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>{verificationStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Status' : status}</option>)}</select></label>
-          <label className="admin-form">Category<select onChange={(event) => setCategoryFilter(event.target.value)} value={categoryFilter}><option>All categories</option>{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
+          <label className="admin-form">Category<select onChange={(event) => setCategoryFilter(event.target.value)} value={categoryFilter}><option>All Categories</option>{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
           <label className="admin-form">Sort<select onChange={(event) => setSortOrder(event.target.value)} value={sortOrder}><option value="latest">Latest First</option><option value="oldest">Oldest First</option><option value="name">Name A to Z</option></select></label>
         </div>
       </section>
@@ -252,13 +251,13 @@ export default function ProviderVerificationPage() {
           <tbody>{filteredRequests.map((request, index) => <tr key={request.id ?? `${request.name || 'provider'}-${index}`}>
             <td><strong>{show(request.id)}</strong></td><td>{show(request.name)}</td><td>{show(request.organisationName)}</td><td>{show(request.email)}</td><td>{show(request.phone)}</td><td>{show(request.category)}</td>
             <td>{request.experience === null || request.experience === undefined ? 'Not available' : `${request.experience} years`}</td><td>{show(request.location)}</td><td>{formatDate(request.submittedDate)}</td>
-            <td><StatusBadge tone={badgeTone(request.status)}>{show(request.status)}</StatusBadge></td>
+            <td><AdminChip>{show(request.status)}</AdminChip></td>
             <td><div className="admin-provider-row-actions">
-              <button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectProvider(String(request.id))} type="button">View</button>
-              <button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectProviderDocuments(String(request.id))} type="button">Documents</button>
-              <button className="admin-button admin-button--small admin-provider-approve" disabled={isSubmitting || request.status === 'Verified'} onClick={() => { selectProvider(String(request.id)); openAction('approve') }} type="button">Approve</button>
-              <button className="admin-button admin-button--small admin-provider-reject" disabled={isSubmitting} onClick={() => { selectProvider(String(request.id)); openAction('reject') }} type="button">Reject</button>
-              <button className="admin-button admin-button--small admin-provider-suspend" disabled={isSubmitting || request.status === 'Suspended'} onClick={() => { selectProvider(String(request.id)); openAction('suspend') }} type="button">Suspend</button>
+              <button className="admin-inline-action" onClick={() => selectProvider(String(request.id))} type="button">View</button>
+              <button className="admin-inline-action admin-inline-action--documents" onClick={() => selectProviderDocuments(String(request.id))} type="button">Documents</button>
+              <button className="admin-inline-action admin-inline-action--approve" disabled={isSubmitting || request.status === 'Verified'} onClick={() => { selectProvider(String(request.id)); openAction('approve') }} type="button">Approve</button>
+              <button className="admin-inline-action admin-inline-action--danger" disabled={isSubmitting} onClick={() => { selectProvider(String(request.id)); openAction('reject') }} type="button">Reject</button>
+              <button className="admin-inline-action admin-inline-action--danger" disabled={isSubmitting || request.status === 'Suspended'} onClick={() => { selectProvider(String(request.id)); openAction('suspend') }} type="button">Suspend</button>
             </div></td>
           </tr>)}</tbody>
         </table></div>}
@@ -288,7 +287,7 @@ export default function ProviderVerificationPage() {
                 <h3>Verification Documents</h3>
                 {Array.isArray(details.documents) && details.documents.length ? <div className="admin-provider-document-list">{details.documents.filter((doc) => documentNames.some((name) => String(doc.documentType || '').toLowerCase().startsWith(name.toLowerCase()))).map((document, index) => <ProviderDocumentCard key={document.documentId || `${document.documentType}-${index}`} document={document} isSubmitting={isSubmitting} onPreview={openDocumentPreview} onApprove={approveDocument} onReject={rejectDocument} />)}</div> : <EmptyState message="No documents uploaded." />}
                 <h3>Status History</h3>
-                {Array.isArray(details.statusHistory) && details.statusHistory.length ? <div className="admin-provider-history">{details.statusHistory.map((entry, index) => <article key={`${entry.updatedAt || entry.status}-${index}`}><StatusBadge tone={badgeTone(entry.status)}>{show(entry.status)}</StatusBadge><div><strong>{show(entry.note)}</strong><p>{show(entry.updatedBy)} - {formatDate(entry.updatedAt)}</p></div></article>)}</div> : <EmptyState message="No status history available." />}
+                {Array.isArray(details.statusHistory) && details.statusHistory.length ? <div className="admin-provider-history">{details.statusHistory.map((entry, index) => <article key={`${entry.updatedAt || entry.status}-${index}`}><AdminChip>{show(entry.status)}</AdminChip><div><strong>{show(entry.note)}</strong><p>{show(entry.updatedBy)} - {formatDate(entry.updatedAt)}</p></div></article>)}</div> : <EmptyState message="No status history available." />}
                 <h3>Admin Remarks</h3><p className="admin-provider-remarks">{show(details.adminRemarks || details.rejectionReason || 'No remarks added yet.')}</p>
               </>}
             </div>
@@ -317,7 +316,7 @@ function ProviderDocumentCard({ document, isSubmitting, onPreview, onApprove, on
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState('')
   return <article className="admin-provider-document-card">
-    <div className="admin-provider-document-info"><h4>{show(document.documentType)} {document.required && <span className="admin-provider-required">Required</span>}</h4><p>{show(document.documentName)}</p><StatusBadge tone={badgeTone(document.documentStatus)}>{show(document.documentStatus)}</StatusBadge>{document.rejectionReason && <small>Reason: {show(document.rejectionReason)}</small>}</div>
+    <div className="admin-provider-document-info"><h4>{show(document.documentType)} {document.required && <span className="admin-provider-required">Required</span>}</h4><p>{show(document.documentName)}</p><AdminChip>{show(document.documentStatus)}</AdminChip>{document.rejectionReason && <small>Reason: {show(document.rejectionReason)}</small>}</div>
     <div className="admin-provider-document-controls">
       <button className="admin-button admin-button--secondary admin-button--small" disabled={isSubmitting} onClick={() => onPreview(document)} type="button">Preview</button>
       <button className="admin-button admin-provider-approve admin-button--small" disabled={isSubmitting || document.documentStatus === 'Approved'} onClick={() => onApprove(document.documentId)} type="button">Approve</button>

@@ -1,29 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
-import { StatusBadge } from '../../components/common/StatusBadge'
 import { AdminAccessGate } from './AdminAccessGate'
+import { AdminChip } from './AdminChip'
 import { AdminNotifications } from './AdminNotifications'
 import { AdminPageHeader } from './AdminPageHeader'
 import {
   decideProviderAccountVerification,
   getProviderAccount,
   getProviderDocumentPreview,
-  listEscalatedTickets,
   listProviderAccounts,
   updateProviderAccountStatus,
 } from './adminApi'
-import { show, useAdminData, useSuperuserModuleData } from './useAdminData'
+import { matchesAdminSearch, useAdminSearch } from './adminSearch'
+import { show, useAdminData } from './useAdminData'
 import './admin.css'
 
 const statusOptions = ['All Verification States', 'Active', 'Suspended', 'Under Verification', 'Verification Rejected', 'Pending', 'Verified', 'Rejected']
-
-function includesQuery(record, fields, query) {
-  return fields.some((field) => {
-    const value = record?.[field]
-    return value !== null && value !== undefined && String(value).toLocaleLowerCase().includes(query)
-  })
-}
 
 function matchesStatus(record, fields, filter) {
   return filter === 'All statuses' || filter === 'All Verification States' || fields.some((field) => String(record?.[field] || '').toLocaleLowerCase() === filter.toLocaleLowerCase())
@@ -52,14 +45,14 @@ export default function ProviderOperationsPage() {
   const [previewLoadingId, setPreviewLoadingId] = useState('')
 
   const accounts = useAdminData(listProviderAccounts)
-  const tickets = useAdminData(listEscalatedTickets)
-  const moduleState = useSuperuserModuleData()
+  const topbarSearch = useAdminSearch('/admin/providers')
   const loadSelectedProvider = useCallback(() => selectedId ? getProviderAccount(selectedId, selectedListing) : Promise.resolve(null), [selectedId, selectedListing])
   const providerDetail = useAdminData(loadSelectedProvider)
-  const normalizedQuery = query.trim().toLocaleLowerCase()
+  // superuser.js refreshManagementTables(): the topbar search and the table search both narrow the list.
+  const searchTerm = [topbarSearch, query].filter((value) => value.trim()).join(' ')
   const providerRecords = Array.isArray(accounts.data?.providers) ? accounts.data.providers : []
-  const visibleAccounts = providerRecords.filter((provider) => includesQuery(provider,
-    ['id', 'fullName', 'organisationName', 'email', 'phone', 'serviceType', 'location', 'accountStatus', 'verificationStatus'], normalizedQuery)
+  const visibleAccounts = providerRecords.filter((provider) => matchesAdminSearch(
+    ['id', 'fullName', 'organisationName', 'email', 'phone', 'serviceType', 'location', 'accountStatus', 'verificationStatus'].map((field) => provider?.[field]), searchTerm)
     && matchesStatus(provider, ['accountStatus', 'verificationStatus'], statusFilter))
   const details = providerDetail.data
   const provider = details?.provider
@@ -160,7 +153,7 @@ export default function ProviderOperationsPage() {
         </div>
         <div className="admin-operations-layout admin-user-management-layout">
         <section className="admin-panel admin-panel--compact">
-          <div className="admin-panel-heading"><h2>Providers ({accounts.data?.totals?.providers ?? (accounts.data ? providerRecords.length : 'Not available')})</h2>
+          <div className="admin-panel-heading"><h2>Providers ({accounts.data ? visibleAccounts.length : 'Not available'})</h2>
             <div className="admin-operations-filters">
               <label className="admin-sr-only" htmlFor="admin-provider-search">Search providers</label>
               <input className="admin-control" id="admin-provider-search" onChange={(event) => setQuery(event.target.value)} placeholder="Search providers" type="search" value={query} />
@@ -178,19 +171,19 @@ export default function ProviderOperationsPage() {
             <thead><tr><th>Provider ID</th><th>Name</th><th>Organisation</th><th>Email</th><th>Phone</th><th>Category</th><th>Account Status</th><th>Action</th></tr></thead>
             <tbody>{visibleAccounts.map((record, index) => <tr key={`${record.id}-${record.providerCatalogId || index}`}>
               <td>{show(record.id)}</td><td>{show(record.fullName)}</td><td>{show(record.organisationName)}</td><td>{show(record.email)}</td><td>{show(record.phone)}</td>
-              <td>{show(record.serviceType)}</td><td><StatusBadge tone={record.accountStatus === 'Active' ? 'ready' : 'neutral'}>{show(record.accountStatus)}</StatusBadge></td>
-              <td><div className="admin-inline-actions"><button className="admin-button admin-button--secondary admin-button--small" onClick={() => selectProvider(record)} type="button">View</button>
+              <td>{show(record.serviceType)}</td><td><AdminChip>{show(record.accountStatus)}</AdminChip></td>
+              <td><div className="admin-inline-actions"><button className="admin-inline-action" onClick={() => selectProvider(record)} type="button">◉ View</button>
               </div></td>
             </tr>)}</tbody>
           </table></div>}
         </section>
 
-        <AdminNotifications moduleState={moduleState} tickets={tickets.data} ticketsLoading={tickets.isLoading} ticketsError={tickets.error} onRetryTickets={tickets.reload} />
+        <AdminNotifications />
         </div>
         <div className="admin-user-return"><Link className="admin-button admin-button--secondary" to="/admin">‹ Return to Dashboard</Link></div>
 
         {selectedId && <div className="admin-modal-backdrop admin-user-modal-backdrop" onClick={(event) => { if (event.target === event.currentTarget) clearProvider() }}>
-        <section aria-label="Provider account details" aria-modal="true" className="admin-user-modal" onClick={(event) => event.stopPropagation()} role="dialog">
+        <section aria-label="Provider account details" aria-modal="true" className="admin-user-modal admin-user-modal--provider" onClick={(event) => event.stopPropagation()} role="dialog">
           <header className="admin-user-modal-header"><div><h2>{show(provider?.fullName || 'Provider Details')}</h2><p>Provider Details</p></div><button aria-label="Close provider details" className="admin-notification-close" onClick={clearProvider} type="button">×</button></header>
           <div className="admin-user-modal-content">
           {providerDetail.isLoading && <LoadingState message="Loading provider details…" />}

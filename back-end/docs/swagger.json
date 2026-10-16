@@ -3952,6 +3952,21 @@
         ]
       }
     },
+    "/api/employee/customer-operations/notifications": {
+      "get": {
+        "operationId": "EmployeeOperationsController_customerNotifications",
+        "summary": "List customer signup and customer-ticket notifications (Customer Operations)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
     "/api/employee/customer-operations/customers/{id}": {
       "get": {
         "operationId": "EmployeeOperationsController_customer",
@@ -4014,6 +4029,21 @@
       "get": {
         "operationId": "EmployeeOperationsController_providers",
         "summary": "List provider accounts with account/verification status and document and service counts (Provider Operations)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "employee-operations"
+        ]
+      }
+    },
+    "/api/employee/provider-operations/notifications": {
+      "get": {
+        "operationId": "EmployeeOperationsController_providerNotifications",
+        "summary": "List provider signup, verification and provider-ticket notifications (Provider Operations)",
         "parameters": [],
         "responses": {
           "200": {

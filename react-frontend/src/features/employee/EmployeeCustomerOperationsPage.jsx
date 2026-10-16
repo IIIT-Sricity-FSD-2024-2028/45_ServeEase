@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { employeeOperationsApi } from '../../services/api'
-import { Breadcrumb, Chip, LoadState, Metric } from './EmployeeOpsParts'
+import { Chip, LoadState, Metric } from './EmployeeOpsParts'
 import { customerStats, display, filterCustomers } from './employeeOperations'
 import { useOperationsData } from './useOperationsData'
 import './employeeOperations.css'
@@ -23,8 +23,15 @@ export default function EmployeeCustomerOperationsPage() {
     return next
   }, { replace: true })
 
+  useEffect(() => {
+    const search = (event) => setParam('q', String(event.detail || ''))
+    window.addEventListener('serveease-operations-search', search)
+    return () => window.removeEventListener('serveease-operations-search', search)
+    // setParam is intentionally local; this listener only mounts with this workspace.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return <div className="employee-ops">
-    <Breadcrumb items={[['Home', '/'], ['Employee'], ['Customer Operations']]} />
     <section aria-labelledby="customer-operations-title" className="ops-hero">
       <h1 id="customer-operations-title">Customer Operations</h1>
       <p>Internal customer management and operational visibility for ServeEase.</p>

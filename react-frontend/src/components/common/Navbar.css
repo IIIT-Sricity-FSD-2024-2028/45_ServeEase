@@ -84,20 +84,6 @@ div.se-topbar__brand { cursor: default; }
   stroke-linejoin: round;
 }
 
-.se-topbar__alert-symbol {
-  display: inline-flex;
-  width: 22px;
-  height: 22px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #eef4ff;
-  color: #2447a8;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1;
-}
-
 .se-topbar__count {
   position: absolute;
   top: -5px;
@@ -303,31 +289,6 @@ div.se-topbar__brand { cursor: default; }
   padding: 0;
   text-align: left;
   width: 100%;
-}
-
-.se-topbar--superuser .se-notification-item {
-  align-items: stretch;
-  background: #fff0f0;
-  border-color: #bfd0ff;
-  border-left: 4px solid #3766ff;
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-}
-
-.se-topbar--superuser .se-notification-item:not(.is-unread) { background: #eef4ff; }
-.se-topbar--superuser .se-notification-item__open { flex: 1 1 48%; text-align: center; }
-.se-topbar--superuser .se-notification-item__open p { font-weight: 750; }
-.se-notification-item__read {
-  background: #fff;
-  border: 1px solid #d5e0f0;
-  border-radius: 9px;
-  color: #3766ff;
-  cursor: pointer;
-  flex: 1 1 48%;
-  font: inherit;
-  font-weight: 700;
-  min-height: 58px;
 }
 
 .se-notification-item.is-unread {

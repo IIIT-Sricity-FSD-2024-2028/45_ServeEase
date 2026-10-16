@@ -4,6 +4,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/common/Fe
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminPageHeader } from './AdminPageHeader'
 import { listCatalog, saveCatalogCategories, syncCatalog } from './adminApi'
+import { matchesAdminSearch, useAdminSearch } from './adminSearch'
 import { show, useAdminData } from './useAdminData'
 import './admin.css'
 
@@ -24,12 +25,20 @@ function iconFor(name) {
   return '🧰'
 }
 
+// superuser.js normalizeCategoryRecord(): a category without its own description is described by its
+// subcategories.
+function categoryDescription(category) {
+  const description = String(category?.description || '').trim()
+  if (description) return description
+  return Array.isArray(category?.subServices) && category.subServices.length ? category.subServices.join(', ') : ''
+}
+
 function normalizedCategory(category) {
   return {
     ...category,
     id: category.id || slugify(category.name),
     name: String(category.name || '').trim(),
-    description: String(category.description || '').trim(),
+    description: categoryDescription(category),
     icon: category.icon || iconFor(category.name),
     bgImage: category.bgImage || '',
     subServices: Array.isArray(category.subServices) ? category.subServices : [],
@@ -95,6 +104,9 @@ export default function AdminServiceCategoriesPage() {
   const [formNotice, setFormNotice] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const categories = useMemo(() => Array.isArray(catalog.data?.categories) ? catalog.data.categories : [], [catalog.data])
+  const searchTerm = useAdminSearch('/admin/categories')
+  const visibleCategories = useMemo(() => categories.filter((category) => matchesAdminSearch(
+    [category.name, categoryDescription(category), ...(Array.isArray(category.subServices) ? category.subServices : [])], searchTerm)), [categories, searchTerm])
 
   function openAddForm() {
     setEditingId('')
@@ -109,7 +121,7 @@ export default function AdminServiceCategoriesPage() {
   function openEditForm(category) {
     setEditingId(category.id)
     setName(category.name || '')
-    setDescription(category.description || '')
+    setDescription(categoryDescription(category))
     setSubcategories((category.subServices || []).join(', '))
     setFormError('')
     setFormNotice('')
@@ -163,6 +175,7 @@ export default function AdminServiceCategoriesPage() {
   }
 
   async function deleteCategory(category) {
+    if (!window.confirm(`Delete the ${category.name} category? It is removed from the public catalog as well.`)) return
     setIsSaving(true)
     setFormError('')
     setFormNotice('')
@@ -187,8 +200,8 @@ export default function AdminServiceCategoriesPage() {
         {formError && !isFormOpen && <div className="admin-feedback admin-feedback--error" role="alert">{formError}</div>}
         {isFormOpen && <form className="admin-category-form" onSubmit={submitCategory}>
           <div className="admin-category-form-heading"><h3>{editingId ? 'Edit Category' : 'Add New Category'}</h3><button aria-label="Close category form" className="admin-category-form-close" disabled={isSaving} onClick={closeForm} type="button">×</button></div>
-          <label className="admin-form">Category Name<input maxLength={120} onChange={(event) => setName(event.target.value)} required value={name} /></label>
-          <label className="admin-form">Category Description<textarea maxLength={300} onChange={(event) => setDescription(event.target.value)} required value={description} /></label>
+          <label className="admin-form">Category Name<input maxLength={120} onChange={(event) => setName(event.target.value)} placeholder="Car Washing" required value={name} /></label>
+          <label className="admin-form">Category Description<textarea maxLength={300} onChange={(event) => setDescription(event.target.value)} placeholder="House Cleaning" required value={description} /></label>
           <label className="admin-form">Subcategories <span className="admin-muted">Optional</span><textarea onChange={(event) => setSubcategories(event.target.value)} placeholder="Example: Full Home Cleaning, Kitchen Cleaning" value={subcategories} /></label>
           <small>Separate multiple subcategories with commas.</small>
           {formError && <p className="admin-category-error" role="alert">{formError}</p>}
@@ -197,11 +210,12 @@ export default function AdminServiceCategoriesPage() {
         {catalog.isLoading && <LoadingState message="Loading service categories…" />}
         {!catalog.isLoading && catalog.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={catalog.error} /><button className="admin-button" onClick={catalog.reload} type="button">Retry</button></div>}
         {!catalog.isLoading && !catalog.error && categories.length === 0 && <EmptyState message="No service categories are available." />}
-        {!catalog.isLoading && !catalog.error && categories.length > 0 && <div className="admin-category-grid">
-          {categories.map((category) => <article className="admin-category-card" key={category.id}>
+        {!catalog.isLoading && !catalog.error && categories.length > 0 && visibleCategories.length === 0 && <EmptyState message="No categories found." />}
+        {!catalog.isLoading && !catalog.error && visibleCategories.length > 0 && <div className="admin-category-grid">
+          {visibleCategories.map((category) => <article className="admin-category-card" key={category.id}>
             <div className="admin-category-card-top"><div className="admin-category-card-content">
               <div className="admin-category-title"><span aria-hidden="true">{show(category.icon || iconFor(category.name))}</span><h3>{show(category.name)}</h3></div>
-              <p className="admin-category-description">{show(category.description || 'No description added.')}</p>
+              <p className="admin-category-description">{show(categoryDescription(category) || 'No description added.')}</p>
             </div><div className="admin-category-actions">
               <button aria-label={`Edit ${category.name}`} className="admin-category-icon-button" disabled={isSaving} onClick={() => openEditForm(category)} title="Edit category" type="button">✎</button>
               <button aria-label={`Delete ${category.name}`} className="admin-category-icon-button" disabled={isSaving} onClick={() => deleteCategory(category)} title="Delete category" type="button">🗑️</button>

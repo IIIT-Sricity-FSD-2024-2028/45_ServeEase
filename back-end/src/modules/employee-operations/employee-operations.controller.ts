@@ -43,6 +43,14 @@ export class EmployeeOperationsController {
     return successResponse(this.operations.customerOverview());
   }
 
+  @Get('customer-operations/notifications')
+  @Roles('support', 'admin')
+  @Departments('Customer Operations')
+  @ApiOperation({ summary: 'List customer signup and customer-ticket notifications (Customer Operations)' })
+  customerNotifications() {
+    return successResponse(this.operations.customerNotificationFeed());
+  }
+
   @Get('customer-operations/customers/:id')
   @Roles('support', 'admin')
   @Departments('Customer Operations')
@@ -67,6 +75,14 @@ export class EmployeeOperationsController {
   @ApiOperation({ summary: 'List provider accounts with account/verification status and document and service counts (Provider Operations)' })
   providers() {
     return successResponse(this.providerOperations.overview());
+  }
+
+  @Get('provider-operations/notifications')
+  @Roles('support', 'admin')
+  @Departments('Provider Operations')
+  @ApiOperation({ summary: 'List provider signup, verification and provider-ticket notifications (Provider Operations)' })
+  providerNotifications() {
+    return successResponse(this.providerOperations.providerNotificationFeed());
   }
 
   @Get('provider-operations/providers/:id')

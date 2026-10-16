@@ -127,7 +127,7 @@ export default function EmployeeProviderDetailPage() {
   const provider = data?.provider
 
   return <div className="provider-ops provider-ops--detail">
-    <Breadcrumb items={[['Home', '/'], ['Employee'], ['Provider Operations', '/employee/provider-operations'], ['Provider Profile']]} />
+    <Breadcrumb items={[['Provider Operations', '/employee/provider-operations'], ['Provider Profile']]} />
     <Link className="provider-operations-back-link" to="/employee/provider-operations">← Back to Provider Operations</Link>
     <section aria-labelledby="provider-detail-title" className="provider-operations-hero">
       <h1 id="provider-detail-title">Provider Profile</h1>
