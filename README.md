@@ -66,7 +66,6 @@ The current development setup does not require a separate database server. Datab
 │   │   ├── services/           # API client and request helpers
 │   │   └── styles/
 │   └── package.json
-├── front-end/                  # Earlier HTML/CSS/JavaScript frontend
 ├── README.md
 └── SRS.pdf
 ```
