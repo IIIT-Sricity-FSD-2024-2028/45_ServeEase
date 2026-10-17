@@ -162,6 +162,10 @@
   padding-right: 44px;
 }
 
+/* The application supplies one accessible password toggle; suppress the browser's duplicate reveal control. */
+.auth-page .password-input-wrap input::-ms-reveal,
+.auth-page .password-input-wrap input::-ms-clear { display: none; }
+
 .auth-page .password-toggle {
   position: absolute;
   top: 50%;

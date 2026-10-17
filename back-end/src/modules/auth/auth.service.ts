@@ -112,15 +112,16 @@ export class AuthService {
     });
   }
 
-  // A provider edits only their own account, resolved from the session; nothing from the caller picks the record.
+  // An account edits only itself, resolved from the session; customers may change only their phone number.
   updateProviderProfile(token: string, input: UpdateProviderProfileDto) {
     const session = this.session(token);
-    if (session.role !== 'provider') throw new ForbiddenException('Only providers can update a provider profile.');
     const data = this.data();
-    const user = (data.users || []).find((item: Account) => item.id === session.userId && item.role === 'provider');
+    const user = (data.users || []).find((item: Account) => item.id === session.userId && item.role === session.role);
     if (!user) throw new UnauthorizedException('Account no longer exists.');
     this.assertNotSuspended(user);
-    if (input.phone && (data.users || []).some((item: Account) => item.id !== user.id && String(item.phone || '') === input.phone)) throw new ConflictException('Phone number already exists.');
+    if (!['provider', 'customer'].includes(session.role)) throw new ForbiddenException('Only customers and providers can update their profile.');
+    if (session.role === 'customer' && Object.keys(input).some((key) => key !== 'phone')) throw new ForbiddenException('Customers can update only their phone number.');
+    if (input.phone && (data.users || []).some((item: Account) => item.id !== user.id && item.role === user.role && String(item.phone || '') === input.phone)) throw new ConflictException('Phone number already exists.');
     if (input.fullName !== undefined) user.fullName = input.fullName.trim();
     if (input.organisationName !== undefined) user.organisationName = input.organisationName.trim();
     if (input.phone !== undefined) user.phone = input.phone;

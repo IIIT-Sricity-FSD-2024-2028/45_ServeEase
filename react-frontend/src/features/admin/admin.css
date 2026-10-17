@@ -54,6 +54,8 @@
 .admin-panel-heading { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; }
 .admin-panel-heading h2 { margin-bottom: 12px; }
 .admin-table-wrap { overflow-x: auto; }
+.admin-user-table-wrap--ten-rows, .admin-verification-table-wrap { max-height: 570px; overflow: auto; }
+.admin-user-table-wrap--ten-rows .admin-table th, .admin-verification-table-wrap .admin-table th { background: #fff; position: sticky; top: 0; z-index: 1; }
 .admin-table { border-collapse: collapse; min-width: 640px; width: 100%; }
 .admin-table th, .admin-table td { border-bottom: 1px solid #e6edf5; padding: 12px 10px; text-align: left; vertical-align: top; }
 .admin-table th { color: #5d7393; font-size: .84rem; font-weight: 700; }

@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { getResponseMetrics } from '../../services/apiClient'
-import { formatDisplayDateTime } from '../customer/customerOperations'
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminChip } from './AdminChip'
 import { AdminNotifications } from './AdminNotifications'
 import { AdminPageHeader } from './AdminPageHeader'
-import { listActivities, listBookings, listCatalog, listCustomerAccounts, listProviderAccounts, listVerificationRequests } from './adminApi'
+import { listBookings, listCatalog, listCustomerAccounts, listProviderAccounts, listVerificationRequests } from './adminApi'
 import { money, show, useAdminData, useSuperuserModuleData } from './useAdminData'
 import './admin.css'
 
@@ -38,9 +37,9 @@ function displayDate(value) {
   return date ? new Intl.DateTimeFormat('en-GB').format(date) : 'Not available'
 }
 
-// superuser.js dashboardBookingTrend(): bookings grouped by the month they were created.
+// Dashboard trends reflect when a booking is scheduled; older imported records often have a newer migration timestamp.
 function bookingDate(booking) {
-  return booking.createdAt || booking.createdDate || booking.date || booking.serviceDate || booking.bookingDate
+  return [booking.date, booking.serviceDate, booking.bookingDate, booking.createdAt, booking.createdDate].find((value) => parseDate(value))
 }
 
 function bookingTrend(bookings) {
@@ -51,22 +50,20 @@ function bookingTrend(bookings) {
     const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0')
     months.set(key, (months.get(key) || 0) + 1)
   })
-  return Array.from(months.entries()).sort(([left], [right]) => left.localeCompare(right)).map(([key, count]) => {
+  if (!months.size) return []
+  const keys = [...months.keys()].sort()
+  const [startYear, startMonth] = keys[0].split('-').map(Number)
+  const [endYear, endMonth] = keys.at(-1).split('-').map(Number)
+  const points = []
+  for (let year = startYear, month = startMonth; year < endYear || (year === endYear && month <= endMonth); month += 1) {
+    if (month === 13) { year += 1; month = 1 }
+    const key = `${year}-${String(month).padStart(2, '0')}`
+    points.push([key, months.get(key) || 0])
+  }
+  return points.map(([key, count]) => {
     const [year, month] = key.split('-').map(Number)
     return { key, count, label: new Date(year, month - 1, 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) }
   })
-}
-
-// superuser.js formatRelativeTime()
-function relativeTime(value) {
-  const date = parseDate(value)
-  if (!date) return ''
-  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000))
-  if (minutes < 1) return 'Just now'
-  if (minutes < 60) return minutes + ' minutes ago'
-  if (minutes < 1440) return Math.floor(minutes / 60) + ' hours ago'
-  if (minutes < 10080) return Math.floor(minutes / 1440) + ' days ago'
-  return formatDisplayDateTime(value)
 }
 
 function categoryName(booking) {
@@ -207,10 +204,13 @@ export default function AdminHubPage() {
   const providersData = useAdminData(listProviderAccounts)
   const verifications = useAdminData(listVerificationRequests)
   const moduleState = useSuperuserModuleData()
-  const activityLog = useAdminData(listActivities)
   const [responseMetrics, setResponseMetrics] = useState(getResponseMetrics)
 
-  const bookingRows = Array.isArray(bookings.data) ? bookings.data : []
+  // Earlier dashboard bookings remain in the superuser module while new ones use the canonical bookings API.
+  // Combine both sources by booking id so the trend and totals cover the complete 2026 history.
+  const canonicalBookingRows = Array.isArray(bookings.data) ? bookings.data : []
+  const legacyBookingRows = Array.isArray(moduleState.data?.bookings) ? moduleState.data.bookings : []
+  const bookingRows = [...new Map([...legacyBookingRows, ...canonicalBookingRows].map((booking, index) => [String(booking.id || `legacy-${index}`), booking])).values()]
   const customerAccounts = Array.isArray(customersData.data?.customers) ? customersData.data.customers : []
   const providerAccounts = Array.isArray(providersData.data?.providers) ? providersData.data.providers : []
   const requests = Array.isArray(verifications.data) ? verifications.data : []
@@ -219,21 +219,9 @@ export default function AdminHubPage() {
   const hasRevenue = revenueRecords.some((booking) => Number.isFinite(Number(booking.platformRevenueAmount)))
   const statuses = statusGroups(bookingRows)
   const pendingCount = requests.filter((request) => String(request.status || '').toLowerCase() === 'pending').length
-  // superuser.js renderActivities(): the platform activity log, falling back to the module's own activities.
-  const loggedActivity = Array.isArray(activityLog.data) ? activityLog.data : []
-  const activity = loggedActivity.length ? loggedActivity : (Array.isArray(moduleState.data.activities) ? moduleState.data.activities : [])
-  const activitySeen = new Set()
-  const validActivity = activity.filter((item) => {
-    const key = String(item?.id || [item?.action, item?.details, item?.createdAt].join('|'))
-    if (!item?.createdAt || activitySeen.has(key) || ['state_saved', 'state_removed'].includes(String(item.action || '').toLowerCase())) return false
-    activitySeen.add(key)
-    return true
-  }).sort((left, right) => (parseDate(right.createdAt)?.getTime() || 0) - (parseDate(left.createdAt)?.getTime() || 0)).slice(0, 8)
-  const activityLoading = moduleState.isLoading || activityLog.isLoading
-  const activityFailed = !loggedActivity.length && moduleState.error
 
   // The average covers every request this tab has made, so it is re-read once the dashboard's own loads finish.
-  const dashboardLoading = bookings.isLoading || catalog.isLoading || customersData.isLoading || providersData.isLoading || verifications.isLoading || activityLoading
+  const dashboardLoading = bookings.isLoading || catalog.isLoading || customersData.isLoading || providersData.isLoading || verifications.isLoading || moduleState.isLoading
   useEffect(() => {
     if (dashboardLoading) return undefined
     const timer = window.setTimeout(() => setResponseMetrics(getResponseMetrics()), 0)
@@ -257,7 +245,7 @@ export default function AdminHubPage() {
         <section aria-label="Platform summary" className="admin-grid admin-dashboard-stats">
           <Metric caption="Registered Customers" error={customersData.error} isLoading={customersData.isLoading} label="Users" onRetry={customersData.reload} value={customersData.data ? (customersData.data.totals?.customers ?? customerAccounts.length) : 'Not available'} />
           <Metric caption="Service Providers" error={providersData.error} isLoading={providersData.isLoading} label="Pros" onRetry={providersData.reload} value={providersData.data ? (providersData.data.totals?.providers ?? providerAccounts.length) : 'Not available'} />
-          <Metric caption="Total Bookings" error={bookings.error} isLoading={bookings.isLoading} label="Jobs" onRetry={bookings.reload} value={bookings.data ? bookingRows.length : 'Not available'} />
+          <Metric caption="Total Bookings" error={bookings.error} isLoading={bookings.isLoading || moduleState.isLoading} label="Jobs" onRetry={() => { bookings.reload(); moduleState.reload() }} value={bookings.data ? bookingRows.length : 'Not available'} />
           <Metric caption="Platform Revenue (15%)" error={bookings.error} isLoading={bookings.isLoading} label="INR" onRetry={bookings.reload} value={hasRevenue ? money(revenue) : 'Not available'} />
           <Metric attention caption="Pending Verifications" error={verifications.error} isLoading={verifications.isLoading} label="Docs" onRetry={verifications.reload} value={verifications.data ? pendingCount : 'Not available'} />
         </section>
@@ -266,24 +254,12 @@ export default function AdminHubPage() {
           <div className="admin-hub-main">
             <section className="admin-panel admin-panel--compact">
               <h2>Monthly Bookings Trend</h2>
-              <MonthlyBookingsChart bookings={bookingRows} error={bookings.error} isLoading={bookings.isLoading} reload={bookings.reload} />
+              <MonthlyBookingsChart bookings={bookingRows} error={bookings.error} isLoading={bookings.isLoading || moduleState.isLoading} reload={() => { bookings.reload(); moduleState.reload() }} />
               <p className="admin-chart-legend">⤳ Bookings</p>
             </section>
             <section className="admin-panel admin-panel--compact">
               <h2>Bookings per Service Category</h2>
               <CategoryBookingsChart bookings={bookingRows} catalog={catalog.data} error={bookings.error || catalog.error} isLoading={bookings.isLoading || catalog.isLoading} reload={() => { bookings.reload(); catalog.reload() }} />
-            </section>
-            <section className="admin-panel admin-panel--compact">
-              <h2>📈 Platform Activity Overview</h2>
-              {activityLoading && <LoadingState message="Loading platform activity…" />}
-              {!activityLoading && activityFailed && <div className="admin-feedback admin-feedback--error"><ErrorState message={moduleState.error} /><button className="admin-button admin-button--secondary admin-button--small" onClick={() => { moduleState.reload(); activityLog.reload() }} type="button">Retry</button></div>}
-              {!activityLoading && !activityFailed && validActivity.length === 0 && <div className="admin-activity-empty">No recent platform activity.</div>}
-              {!activityLoading && !activityFailed && validActivity.length > 0 && <div className="admin-activity-list">
-                {validActivity.map((item, index) => <article className="admin-activity-item" key={item.id || String(item.action) + '-' + index}>
-                  <span aria-hidden="true" className="admin-activity-icon">•</span>
-                  <div><strong>{show(item.details ? item.action + ' — ' + item.details : (item.action || 'Activity'))}</strong><span>{relativeTime(item.createdAt)}</span></div>
-                </article>)}
-              </div>}
             </section>
             <section className="admin-panel admin-panel--compact">
               <h2>Recent Registrations</h2>

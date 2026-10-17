@@ -6,6 +6,7 @@ export const authApi = {
   session: () => apiRequest('/auth/session'),
   logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   updateProviderProfile: (profile) => apiRequest('/auth/profile', { method: 'PATCH', body: JSON.stringify(profile) }),
+  updateProfile: (profile) => apiRequest('/auth/profile', { method: 'PATCH', body: JSON.stringify(profile) }),
 }
 
 // These wrappers correspond only to endpoints declared by the NestJS controllers.
