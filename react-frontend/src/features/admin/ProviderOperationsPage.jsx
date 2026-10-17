@@ -167,7 +167,7 @@ export default function ProviderOperationsPage() {
           {!accounts.isLoading && accounts.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={accounts.error} /><button className="admin-button" onClick={accounts.reload} type="button">Retry</button></div>}
           {!accounts.isLoading && !accounts.error && providerRecords.length === 0 && <EmptyState message="No provider accounts are available." />}
           {!accounts.isLoading && !accounts.error && providerRecords.length > 0 && visibleAccounts.length === 0 && <EmptyState message="No provider accounts match the current search and status." />}
-          {!accounts.isLoading && !accounts.error && visibleAccounts.length > 0 && <div className="admin-table-wrap admin-user-table-wrap"><table className="admin-table admin-user-table">
+          {!accounts.isLoading && !accounts.error && visibleAccounts.length > 0 && <div className="admin-table-wrap admin-user-table-wrap admin-user-table-wrap--ten-rows"><table className="admin-table admin-user-table">
             <thead><tr><th>Provider ID</th><th>Name</th><th>Organisation</th><th>Email</th><th>Phone</th><th>Category</th><th>Account Status</th><th>Action</th></tr></thead>
             <tbody>{visibleAccounts.map((record, index) => <tr key={`${record.id}-${record.providerCatalogId || index}`}>
               <td>{show(record.id)}</td><td>{show(record.fullName)}</td><td>{show(record.organisationName)}</td><td>{show(record.email)}</td><td>{show(record.phone)}</td>

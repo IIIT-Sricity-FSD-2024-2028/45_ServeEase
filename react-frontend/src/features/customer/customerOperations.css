@@ -171,7 +171,9 @@
 .customer-ops .attachment-link { display: inline-block; margin-top: 8px; color: #2563eb !important; font-weight: 700; }
 
 /* Profile */
-.customer-ops .profile-edit-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.customer-ops .profile-edit-row { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
+.customer-ops .profile-edit-row input { box-sizing: border-box; min-height: 38px; padding: 8px 10px; width: min(100%, 230px); border-radius: 8px; }
+.customer-ops .profile-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .customer-ops .profile-inline-btn { min-width: 82px; padding: 10px 14px; }
 
 .customer-ops :is(.tab-btn, .secondary-action, .danger-action, .table-link-btn, .faq-item, .btn, .btn-light):focus-visible { outline: 3px solid rgba(56, 103, 246, .35); outline-offset: 2px; }

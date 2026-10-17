@@ -175,12 +175,13 @@ describe('AuthService provider profile updates', () => {
     expect(service.sessionUser(token)).toMatchObject({ bankName: 'SBI', accountNumber: '123456789' });
   });
 
-  it('rejects a phone number that belongs to another account and non-provider sessions', () => {
+  it('rejects a phone number that belongs to another account and limits customer edits to their phone', () => {
     const { service } = providerService();
     const provider = service.login({ identifier: 'PRO001', password: 'Pass@1234' });
     expect(() => service.updateProviderProfile(provider.token, { phone: '9000000002' })).toThrow('Phone number already exists.');
     const customer = service.login({ identifier: 'c@example.com', password: 'Pass@1234' });
-    expect(() => service.updateProviderProfile(customer.token, { fullName: 'Hacker' })).toThrow('Only providers');
+    expect(service.updateProviderProfile(customer.token, { phone: '9000000004' })).toMatchObject({ id: 'CUS001', phone: '9000000004' });
+    expect(() => service.updateProviderProfile(customer.token, { fullName: 'Hacker' })).toThrow('Customers can update only their phone number.');
   });
 });
 

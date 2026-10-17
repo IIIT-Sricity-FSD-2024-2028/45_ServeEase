@@ -65,7 +65,7 @@ export function PublicHeader({ city, cities, onCityChange, sectionBase = '' }) {
             <Link onClick={() => setProfileOpen(false)} role="menuitem" to={isProvider ? '/provider/dashboard' : '/customer/dashboard'}>Go to Dashboard</Link>
             <button onClick={handleLogout} role="menuitem" type="button">Logout</button>
           </div>}
-        </div> : <Link className="home-button home-button-primary" to="/login">Login / Register</Link>}
+        </div> : <Link className="home-button home-button-primary" to="/login">Login / Signup</Link>}
       </div>
     </div>
   </header>

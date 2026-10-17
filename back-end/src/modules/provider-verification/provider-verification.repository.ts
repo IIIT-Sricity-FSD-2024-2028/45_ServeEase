@@ -1,106 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { CreateProviderVerificationDto } from './dto/provider-action.dto';
 import { ProviderVerification, ProviderVerificationStatus, VerificationDocument } from './provider-verification.entity';
+import { StateRepository } from '../state/state.repository';
 
 @Injectable()
 export class ProviderVerificationRepository {
-  private readonly providers: ProviderVerification[] = [
-    this.createSeedProvider({
-      id: 'PRO013',
-      name: 'Anita Verma',
-      organisationName: 'Anita Beauty Studio',
-      email: 'anita.verma@email.com',
-      phone: '+91 9876543230',
-      category: 'Salon Services',
-      experience: 5,
-      location: 'Mumbai',
-      address: 'Andheri West, Mumbai, Maharashtra',
-      skills: ['Hair styling', 'Bridal makeup', 'Facial care'],
-      certifications: ['Advanced beauty therapy certificate'],
-      completedJobs: 128,
-      rating: 4.7,
-      submittedDate: '2026-03-08T10:30:00.000Z',
-      status: 'Pending',
-      approvedRequiredDocuments: 3,
-    }),
-    this.createSeedProvider({
-      id: 'PRO014',
-      name: 'Deepak Kumar',
-      organisationName: 'Deepak Electricals',
-      email: 'deepak.kumar@email.com',
-      phone: '+91 9876543233',
-      category: 'Electrical',
-      experience: 4,
-      location: 'Bangalore',
-      address: 'Indiranagar, Bangalore, Karnataka',
-      skills: ['Wiring repair', 'MCB replacement', 'Fan installation'],
-      certifications: ['ITI electrician certificate'],
-      completedJobs: 94,
-      rating: 4.5,
-      submittedDate: '2026-03-07T09:15:00.000Z',
-      status: 'Pending',
-      approvedRequiredDocuments: 5,
-    }),
-    this.createSeedProvider({
-      id: 'PRO015',
-      name: 'Manoj Singh',
-      organisationName: 'Singh Appliance Care',
-      email: 'manoj.singh@email.com',
-      phone: '+91 9876543237',
-      category: 'Appliance Repair',
-      experience: 5,
-      location: 'Delhi',
-      address: 'Rohini, Delhi, NCR',
-      skills: ['AC repair', 'Washing machine service', 'Refrigerator repair'],
-      certifications: ['Appliance service technician certificate'],
-      completedJobs: 176,
-      rating: 4.8,
-      submittedDate: '2026-02-10T12:00:00.000Z',
-      status: 'Verified',
-      approvedRequiredDocuments: 5,
-      verifiedAt: '2026-02-11T12:00:00.000Z',
-      adminRemarks: 'Strong profile and complete document set.',
-    }),
-    this.createSeedProvider({
-      id: 'PRO016',
-      name: 'Rekha Joshi',
-      organisationName: 'Rekha Salon Services',
-      email: 'rekha.joshi@email.com',
-      phone: '+91 9876543240',
-      category: 'Salon Services',
-      experience: 3,
-      location: 'Mumbai',
-      address: 'Borivali West, Mumbai, Maharashtra',
-      skills: ['Hair spa', 'Threading', 'Cleanup'],
-      certifications: ['Salon assistant certificate'],
-      completedJobs: 42,
-      rating: 4.1,
-      submittedDate: '2026-02-25T15:30:00.000Z',
-      status: 'Rejected',
-      approvedRequiredDocuments: 2,
-      rejectionReason: 'Experience proof did not match declared work history.',
-    }),
-    this.createSeedProvider({
-      id: 'PRO017',
-      name: 'Ravi Verma',
-      organisationName: 'Verma Pest Control',
-      email: 'ravi.verma@email.com',
-      phone: '+91 9876543250',
-      category: 'Pest Control',
-      experience: 7,
-      location: 'Hyderabad',
-      address: 'Madhapur, Hyderabad, Telangana',
-      skills: ['Termite treatment', 'Cockroach control', 'Bed bug service'],
-      certifications: ['Pest control chemical handling certificate'],
-      completedJobs: 211,
-      rating: 4.6,
-      submittedDate: '2026-01-28T08:45:00.000Z',
-      status: 'Suspended',
-      approvedRequiredDocuments: 5,
-      suspendedAt: '2026-03-12T08:45:00.000Z',
-      adminRemarks: 'Suspended after customer compliance review.',
-    }),
-  ];
+  private readonly providers: ProviderVerification[];
+
+  constructor(state: StateRepository) {
+    const data = state.findById('serveEaseData')?.value as { users?: Array<Record<string, unknown>> } | undefined;
+    // The verification queue is the documented provider accounts, not a second set of demonstration rows.
+    this.providers = (Array.isArray(data?.users) ? data.users : [])
+      .filter((account) => account.role === 'provider' && Array.isArray(account.documents) && account.documents.length > 0)
+      .map((account) => this.fromAccount(account));
+  }
 
   findAll(): ProviderVerification[] {
     return this.providers;
@@ -234,6 +147,30 @@ export class ProviderVerificationRepository {
     }
 
     return provider;
+  }
+
+  private fromAccount(account: Record<string, any>): ProviderVerification {
+    const submittedDate = account.submittedDate || account.registrationDate || new Date().toISOString();
+    const status: ProviderVerificationStatus = account.verificationStatus === 'Verified'
+      ? 'Verified' : account.verificationStatus === 'Rejected' || account.accountStatus === 'Verification Rejected' ? 'Rejected' : 'Pending';
+    const documents = account.documents.map((document: Record<string, any>, index: number) => ({
+      ...document,
+      documentId: document.documentId || `DOC-${account.id}-${index + 1}`,
+      documentType: document.documentType || 'Verification Document',
+      documentName: document.documentName || document.originalFilename || 'Uploaded document',
+      documentStatus: document.documentStatus || (status === 'Verified' ? 'Approved' : 'Pending'),
+      required: document.required !== false,
+      uploadedAt: document.uploadedAt || submittedDate,
+    }));
+    return {
+      id: String(account.id), name: account.fullName || account.organisationName || String(account.id),
+      organisationName: account.organisationName || account.fullName, email: account.email || '', phone: account.phone || '',
+      category: account.serviceType || account.category || 'Not specified', experience: Number(account.experience) || 0,
+      location: account.location || account.cityName || '', address: account.address || '', skills: account.skills || [], certifications: account.certifications || [],
+      completedJobs: Number(account.completedJobs) || 0, rating: Number(account.rating) || 0, submittedDate, joinedDate: submittedDate,
+      status, documents, statusHistory: Array.isArray(account.statusHistory) ? account.statusHistory : [{ status, note: 'Provider verification record loaded.', updatedBy: 'System', updatedAt: submittedDate }],
+      rejectionReason: account.rejectionReason, adminRemarks: account.adminRemarks, verifiedAt: account.verifiedAt,
+    };
   }
 
   private createDocuments(providerId: string, approvedRequiredDocuments: number): VerificationDocument[] {

@@ -511,7 +511,7 @@ export function Navbar({ area = 'ServeEase' }) {
             </div>}
             {variant.profileLinks(pathname).map((item) => <Link key={item.to} onClick={() => setOpenMenu(null)} to={item.to}>{item.label}</Link>)}
             <button onClick={handleLogout} type="button">Logout</button>
-          </> : <Link onClick={() => setOpenMenu(null)} to="/login">Login</Link>}
+          </> : <Link onClick={() => setOpenMenu(null)} to="/login">Login/Signup</Link>}
         </div>}
       </div>
     </div>

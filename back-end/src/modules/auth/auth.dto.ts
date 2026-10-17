@@ -31,8 +31,8 @@ export class RegisterDto {
   @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({ each: true }) @Type(() => RegisterServiceDto) services?: RegisterServiceDto[];
 }
 
-// Fields a signed-in provider may change on their own account. Email, account id, category and status stay
-// server-controlled: the email is the login and document-ownership key, the rest are set by registration/review.
+// Fields a signed-in account may change on its own account. Customers may update only their phone number;
+// provider-only fields remain server-controlled for customer sessions.
 export class UpdateProviderProfileDto {
   @IsOptional() @IsString() @Matches(/^[A-Za-z\s]{3,}$/) fullName?: string;
   @IsOptional() @IsString() @MinLength(2) @MaxLength(120) organisationName?: string;
