@@ -1330,6 +1330,45 @@
 @media (max-width: 700px) {
   .provider-portal .provider-weekly-slot { grid-template-columns: minmax(108px, 1fr) 10px minmax(108px, 1fr) 28px; }
 }
+
+/* Provider booking rejection dialog */
+.provider-portal .provider-rejection-modal.modal-card { width: min(560px, calc(100vw - 32px)); max-height: min(90vh, 760px); border: 1px solid #e6ebf2; border-radius: 16px; }
+.provider-portal .provider-rejection-modal .modal-head { align-items: flex-start; gap: 20px; padding: 24px 24px 16px; }
+.provider-portal .provider-rejection-heading { min-width: 0; }
+.provider-portal .provider-rejection-heading h2 { margin: 0 0 6px; color: #12284a; font-size: 22px; line-height: 1.3; }
+.provider-portal .provider-rejection-heading p { max-width: 420px; color: #667a97; font-size: 14px; line-height: 1.5; }
+.provider-portal .provider-rejection-modal .modal-body { display: grid; gap: 20px; padding: 0 24px 20px; }
+.provider-portal .provider-rejection-context { padding: 14px 16px; border: 1px solid #e6ebf2; border-radius: 10px; background: #f8faff; }
+.provider-portal .provider-rejection-context > strong { display: block; margin-bottom: 10px; color: #12284a; font-size: 13px; }
+.provider-portal .provider-rejection-context-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+.provider-portal .provider-rejection-context .info-row { min-width: 0; margin-bottom: 7px; font-size: 13px; }
+.provider-portal .provider-rejection-context .info-row:last-child { margin-bottom: 0; }
+.provider-portal .provider-rejection-context .info-row > span:first-child { flex: 0 0 auto; }
+.provider-portal .provider-rejection-context .info-row > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.provider-portal .provider-rejection-form { display: grid; gap: 8px; }
+.provider-portal .provider-rejection-form label { display: block; color: #22395d; font-size: 14px; font-weight: 700; }
+.provider-portal .provider-rejection-form textarea { display: block; box-sizing: border-box; width: 100%; min-height: 136px; padding: 12px 14px; border: 1px solid #cfd8e5; border-radius: 9px; outline: none; background: #fff; color: #12284a; font-family: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
+.provider-portal .provider-rejection-form textarea::placeholder { color: #8a98aa; }
+.provider-portal .provider-rejection-form textarea:focus { border-color: #3867f6; box-shadow: 0 0 0 3px rgba(56, 103, 246, .14); }
+.provider-portal .provider-rejection-form textarea:disabled { background: #f4f6f9; cursor: not-allowed; }
+.provider-portal .provider-rejection-validation { color: #738198; font-size: 12px; }
+.provider-portal .provider-rejection-form .ops-state--error { margin: 0; padding: 10px 12px; border: 1px solid #f2cccc; border-radius: 8px; background: #fff7f7; font-size: 13px; }
+.provider-portal .provider-rejection-footer { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: 10px; padding: 16px 24px 20px; border-top: 1px solid #edf1f6; background: #fff; }
+.provider-portal .provider-rejection-footer .secondary-action,
+.provider-portal .provider-rejection-footer .danger-action { min-width: 120px; height: 42px; padding: 0 16px; }
+.provider-portal .provider-rejection-footer .danger-action { border-color: #d64b4b; background: #d64b4b; color: #fff; }
+.provider-portal .provider-rejection-footer .danger-action:hover:not(:disabled) { border-color: #bd3838; background: #bd3838; }
+.provider-portal .provider-rejection-footer .danger-action:disabled { cursor: not-allowed; opacity: .55; }
+@media (max-width: 480px) {
+  .provider-portal .provider-rejection-modal.modal-card { width: calc(100vw - 24px); max-height: 92vh; }
+  .provider-portal .provider-rejection-modal .modal-head { gap: 12px; padding: 18px 18px 14px; }
+  .provider-portal .provider-rejection-modal .modal-body { gap: 16px; padding: 0 18px 16px; }
+  .provider-portal .provider-rejection-context { padding: 12px; }
+  .provider-portal .provider-rejection-context-grid { grid-template-columns: minmax(0, 1fr); }
+  .provider-portal .provider-rejection-footer { flex-direction: column; padding: 14px 18px 18px; }
+  .provider-portal .provider-rejection-footer .secondary-action,
+  .provider-portal .provider-rejection-footer .danger-action { width: 100%; }
+}
 @media (max-width: 420px) {
   .provider-portal .provider-weekly-slot { grid-template-columns: minmax(90px, 1fr) 8px minmax(90px, 1fr) 24px; }
 }

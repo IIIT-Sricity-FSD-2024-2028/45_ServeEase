@@ -4744,6 +4744,10 @@
           "cancellationReason": {
             "type": "string"
           },
+          "rejectionReason": {
+            "type": "string",
+            "description": "Reason given by the provider when rejecting a booking."
+          },
           "cancelledAt": {
             "type": "string"
           },
@@ -5224,6 +5228,10 @@
           "customerPlatformFeeAmount": {
             "type": "number",
             "example": 50
+          },
+          "rejectionReason": {
+            "type": "string",
+            "example": "Unable to provide the service at the requested time."
           }
         }
       },
@@ -5238,6 +5246,10 @@
               "Completed",
               "Cancelled"
             ]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "example": "Unable to provide the service at the requested time."
           },
           "stateVersion": {
             "type": "number",

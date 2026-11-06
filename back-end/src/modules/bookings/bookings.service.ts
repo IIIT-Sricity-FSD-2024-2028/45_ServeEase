@@ -116,6 +116,9 @@ export class BookingsService {
   }
 
   updateProviderStatus(id: string, data: ProviderBookingStatusDto, request: Request): Booking {
+    if (data.status === 'Rejected' && (typeof data.rejectionReason !== 'string' || !data.rejectionReason.trim())) {
+      throw new BadRequestException('A rejection reason is required.');
+    }
     const providerId = this.providerIdFromRequest(request);
     const existing = this.findByIdForSystem(id);
     if (canonicalProviderId(existing.providerId) !== providerId) {
@@ -135,6 +138,7 @@ export class BookingsService {
 
     const update: UpdateBookingDto = {
       ...this.statusSettlement(existing, data.status, 'Provider'),
+      ...(data.status === 'Rejected' ? { rejectionReason: data.rejectionReason!.trim() } : {}),
       ...(data.stateVersion === undefined ? {} : { stateVersion: data.stateVersion }),
     };
     return this.bookingsRepository.update(id, update)!;
@@ -142,7 +146,12 @@ export class BookingsService {
 
   updateForCaller(id: string, data: UpdateBookingDto, caller: BookingRequestContext): Booking {
     if (caller.role === 'admin') return this.update(id, data);
-    if (Object.keys(data).length !== 1 || typeof data.status !== 'string') {
+    if (typeof data.status !== 'string') throw new ForbiddenException('Only a booking status change is allowed for this role.');
+    const providerRejection = caller.role === 'provider' && data.status === 'Rejected' && Object.keys(data).every((key) => ['status', 'rejectionReason'].includes(key));
+    if (caller.role === 'provider' && data.status === 'Rejected' && (typeof data.rejectionReason !== 'string' || !data.rejectionReason.trim())) {
+      throw new BadRequestException('A rejection reason is required.');
+    }
+    if ((!providerRejection && Object.keys(data).length !== 1) || (providerRejection && (typeof data.rejectionReason !== 'string' || !data.rejectionReason.trim()))) {
       throw new ForbiddenException('Only a booking status change is allowed for this role.');
     }
     const booking = this.findById(id, caller);
@@ -153,7 +162,10 @@ export class BookingsService {
     if (!transitions[caller.role]?.[data.status]?.includes(booking.status)) {
       throw new BadRequestException('This booking status transition is not allowed.');
     }
-    return this.bookingsRepository.update(id, this.statusSettlement(booking, data.status, caller.role === 'customer' ? 'Customer' : 'Provider'))!;
+    return this.bookingsRepository.update(id, {
+      ...this.statusSettlement(booking, data.status, caller.role === 'customer' ? 'Customer' : 'Provider'),
+      ...(providerRejection ? { rejectionReason: data.rejectionReason!.trim() } : {}),
+    })!;
   }
 
   private statusSettlement(booking: Booking, status: string, actor: string): UpdateBookingDto {

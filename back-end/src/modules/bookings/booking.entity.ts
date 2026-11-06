@@ -100,6 +100,9 @@ export class Booking {
   @ApiProperty({ required: false })
   cancellationReason?: string;
 
+  @ApiProperty({ required: false, description: 'Reason given by the provider when rejecting a booking.' })
+  rejectionReason?: string;
+
   @ApiProperty({ required: false })
   cancelledAt?: string;
 
