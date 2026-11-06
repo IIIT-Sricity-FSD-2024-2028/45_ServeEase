@@ -37,6 +37,7 @@ export function BookingDetailsModal({ bookingId, fallback, review, onClose }) {
         {hasValue(booking.cancelledAt) && <InfoRow label="Cancelled On:">{formatDisplayDateTime(booking.cancelledAt)}</InfoRow>}
         {hasValue(booking.cancellationActor) && <InfoRow label="Cancelled By:">{booking.cancellationActor}</InfoRow>}
         {hasValue(booking.cancellationReason) && <InfoRow label="Cancellation Reason:">{booking.cancellationReason}</InfoRow>}
+        {booking.status === 'Rejected' && hasValue(booking.rejectionReason) && <InfoRow label="Reason for Rejection:">{booking.rejectionReason}</InfoRow>}
         {hasValue(booking.cancellationPolicy) && <>
           <InfoRow label="Cancellation Policy:">{booking.cancellationPolicyLabel}</InfoRow>
           <InfoRow label="Refund Amount:">{formatPrice(booking.refundAmount)}</InfoRow>

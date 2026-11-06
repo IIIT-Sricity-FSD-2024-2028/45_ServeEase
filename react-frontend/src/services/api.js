@@ -37,9 +37,9 @@ export const bookingsApi = {
     body: JSON.stringify({ status }),
   }),
   listForProvider: () => apiRequest('/bookings/provider'),
-  updateProviderStatus: (id, status, stateVersion) => apiRequest(`/bookings/${encodeURIComponent(id)}/provider-status`, {
+  updateProviderStatus: (id, status, stateVersion, rejectionReason) => apiRequest(`/bookings/${encodeURIComponent(id)}/provider-status`, {
     method: 'PATCH',
-    body: JSON.stringify({ status, ...(stateVersion === undefined ? {} : { stateVersion }) }),
+    body: JSON.stringify({ status, ...(stateVersion === undefined ? {} : { stateVersion }), ...(rejectionReason === undefined ? {} : { rejectionReason }) }),
   }),
 }
 

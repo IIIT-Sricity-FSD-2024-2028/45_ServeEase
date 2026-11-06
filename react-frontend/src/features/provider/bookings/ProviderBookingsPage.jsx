@@ -55,7 +55,7 @@ function BookingDetails({ booking, review, onClose }) {
 
 export function ProviderBookingsPage() {
   const { isAuthenticated, role } = useAuth()
-  const [bookings, setBookings] = useState([]); const [reviews, setReviews] = useState({}); const [activeTab, setActiveTab] = useState('All'); const [selectedBooking, setSelectedBooking] = useState(null); const [pendingCancellation, setPendingCancellation] = useState(null); const [isLoading, setIsLoading] = useState(() => isAuthenticated && role === 'provider'); const [error, setError] = useState(''); const [actionError, setActionError] = useState(''); const [updatingId, setUpdatingId] = useState(null)
+  const [bookings, setBookings] = useState([]); const [reviews, setReviews] = useState({}); const [activeTab, setActiveTab] = useState('All'); const [selectedBooking, setSelectedBooking] = useState(null); const [pendingCancellation, setPendingCancellation] = useState(null); const [pendingRejection, setPendingRejection] = useState(null); const [rejectionReason, setRejectionReason] = useState(''); const [isLoading, setIsLoading] = useState(() => isAuthenticated && role === 'provider'); const [error, setError] = useState(''); const [actionError, setActionError] = useState(''); const [actionNotice, setActionNotice] = useState(''); const [updatingId, setUpdatingId] = useState(null)
 
   useEffect(() => {
     if (!isAuthenticated || role !== 'provider') return undefined
@@ -68,24 +68,28 @@ export function ProviderBookingsPage() {
   const counts = useMemo(() => Object.fromEntries(tabs.map((tab) => [tab, tab === 'All' ? bookings.length : bookings.filter((booking) => normalizeStatus(booking.status) === normalizeStatus(tab)).length])), [bookings])
   const filteredBookings = useMemo(() => bookings.filter((booking) => activeTab === 'All' || normalizeStatus(booking.status) === normalizeStatus(activeTab)), [activeTab, bookings])
 
-  async function updateStatus(booking, nextStatus) {
+  async function updateStatus(booking, nextStatus, reason) {
     const currentStatus = statusLabel(booking.status).replace(/^./, (character) => character.toUpperCase())
     if (updatingId || !transitions[currentStatus]?.includes(nextStatus)) return false
     setUpdatingId(booking.id); setActionError('')
     try {
-      const updated = await bookingsApi.updateProviderStatus(booking.id, nextStatus, booking.stateVersion)
+      const updated = await bookingsApi.updateProviderStatus(booking.id, nextStatus, booking.stateVersion, reason)
       setBookings((current) => current.map((item) => item.id === updated.id ? updated : item)); setSelectedBooking((current) => current?.id === updated.id ? updated : current); return true
     } catch (requestError) { setActionError(requestError.message || 'Unable to update this booking.'); return false } finally { setUpdatingId(null) }
   }
 
   async function confirmCancellation() { if (pendingCancellation && await updateStatus(pendingCancellation, 'Cancelled')) setPendingCancellation(null) }
+  async function confirmRejection() {
+    if (!pendingRejection || !rejectionReason.trim() || updatingId) return
+    if (await updateStatus(pendingRejection, 'Rejected', rejectionReason.trim())) { setActionNotice(`Booking ${pendingRejection.id} was rejected.`); setPendingRejection(null); setRejectionReason('') }
+  }
 
   if (!isAuthenticated || role !== 'provider') return <section className="provider-portal"><div className="panel-card ops-state">Please sign in with a provider account to view booking management.</div></section>
 
   return <section className="provider-portal">
     <div className="breadcrumb-row"><Link to="/provider/dashboard">Provider Dashboard</Link> &nbsp;›&nbsp; <strong>Booking Management</strong></div>
     <section className="page-title-block provider-page-title"><h1>Booking Management</h1><p>View all booking requests, accept or reject requests, and track service progress.</p></section>
-    {error && <div className="panel-card ops-state ops-state--error" role="alert">{error}</div>}{actionError && <div className="panel-card ops-state ops-state--error" role="alert">{actionError}</div>}
+    {error && <div className="panel-card ops-state ops-state--error" role="alert">{error}</div>}{actionError && !pendingRejection && <div className="panel-card ops-state ops-state--error" role="alert">{actionError}</div>}{actionNotice && <div className="panel-card ops-state" role="status">{actionNotice}</div>}
     <section className="tabs-row" id="providerBookingTabs" role="tablist" aria-label="Booking status filters">{tabs.map((tab) => <button aria-selected={activeTab === tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} key={tab} onClick={() => setActiveTab(tab)} role="tab" type="button">{tab} <span>{counts[tab]}</span></button>)}</section>
     <section className="panel-card">
       <div id="providerBookingsList">
@@ -98,13 +102,46 @@ export function ProviderBookingsPage() {
           <div className="provider-booking-line">Service Fee: <strong>{formatMoney(settleBooking(booking).serviceFee)}</strong></div>
           <div aria-label={`Booking progress ${statusProgress(status)} percent`} className="provider-booking-progress"><span style={{ width: `${statusProgress(status)}%` }} /></div>
           <div className="provider-booking-actions">
-            {normalized === 'pending' && <><button className="btn btn-primary" disabled={Boolean(updatingId)} onClick={() => updateStatus(booking, 'Accepted')} type="button">{updatingId === booking.id ? 'Updating…' : 'Accept'}</button><button className="danger-action" disabled={Boolean(updatingId)} onClick={() => updateStatus(booking, 'Rejected')} type="button">Reject</button></>}
+            {normalized === 'pending' && <><button className="btn btn-primary" disabled={Boolean(updatingId)} onClick={() => updateStatus(booking, 'Accepted')} type="button">{updatingId === booking.id ? 'Updating…' : 'Accept'}</button><button className="danger-action" disabled={Boolean(updatingId)} onClick={() => { setActionError(''); setRejectionReason(''); setPendingRejection(booking) }} type="button">Reject</button></>}
             {normalized === 'accepted' && <><button className="secondary-action" disabled={Boolean(updatingId) || !completeAllowed} onClick={() => updateStatus(booking, 'Completed')} title={completeAllowed ? 'Mark this completed' : 'Available 30 minutes after the scheduled service start time.'} type="button">Mark Completed</button><button className="danger-action" disabled={Boolean(updatingId)} onClick={() => setPendingCancellation(booking)} type="button">Cancel Booking</button></>}
             <button className="secondary-action" onClick={() => setSelectedBooking(booking)} type="button">View Details</button>
           </div></div> })}
       </div>
     </section>
     <BookingDetails booking={selectedBooking} review={reviews[selectedBooking?.id]} onClose={() => setSelectedBooking(null)} />
+    {pendingRejection && <div className="modal-backdrop" role="presentation">
+      <section aria-labelledby="provider-rejection-title" aria-modal="true" className="modal-card booking-details-modal provider-booking-modal-card provider-rejection-modal" role="dialog">
+        <div className="modal-head">
+          <div className="provider-rejection-heading">
+            <h2 id="provider-rejection-title">Reject Booking</h2>
+            <p>Please provide a reason for rejecting this booking request.</p>
+          </div>
+          <button aria-label="Close rejection dialog" className="close-modal-btn" disabled={Boolean(updatingId)} onClick={() => setPendingRejection(null)} type="button">×</button>
+        </div>
+        <div className="modal-body">
+          <div className="provider-rejection-context">
+            <strong>Booking Information</strong>
+            <div className="provider-rejection-context-grid">
+              <Row label="Service" value={pendingRejection.service} />
+              <Row label="Customer" value={pendingRejection.customerName} />
+              <Row label="Reference" value={pendingRejection.id} />
+              <Row label="Date" value={formatDate(pendingRejection.date)} />
+              <Row label="Time" value={pendingRejection.time} />
+            </div>
+          </div>
+          <div className="provider-rejection-form">
+            <label htmlFor="provider-rejection-reason">Reason for Rejection</label>
+            <textarea aria-describedby={!rejectionReason.trim() ? 'provider-rejection-validation' : undefined} aria-required="true" disabled={Boolean(updatingId)} id="provider-rejection-reason" maxLength={1000} onChange={(event) => setRejectionReason(event.target.value)} placeholder="Explain why you are unable to accept this booking..." rows={5} value={rejectionReason} />
+            {!rejectionReason.trim() && <p className="provider-rejection-validation" id="provider-rejection-validation">A rejection reason is required.</p>}
+            {actionError && <p className="ops-state--error" role="alert">{actionError}</p>}
+          </div>
+        </div>
+        <div className="provider-rejection-footer">
+          <button className="secondary-action" disabled={Boolean(updatingId)} onClick={() => setPendingRejection(null)} type="button">Cancel</button>
+          <button className="danger-action" disabled={Boolean(updatingId) || !rejectionReason.trim()} onClick={confirmRejection} type="button">{updatingId === pendingRejection.id ? 'Submitting…' : 'Reject Booking'}</button>
+        </div>
+      </section>
+    </div>}
     {pendingCancellation && <div className="modal-backdrop" role="presentation"><section aria-labelledby="provider-cancellation-title" aria-modal="true" className="modal-card booking-details-modal provider-booking-modal-card" role="dialog"><div className="modal-head"><h2 id="provider-cancellation-title">Booking Details</h2><button aria-label="Close cancellation dialog" className="close-modal-btn" onClick={() => setPendingCancellation(null)} type="button">×</button></div><div className="modal-body"><div className="info-box"><strong>Cancel Booking</strong><p>This will cancel the booking and issue the customer a full refund of the amount paid.</p><div className="provider-booking-actions"><button className="danger-action" disabled={Boolean(updatingId)} onClick={confirmCancellation} type="button">{updatingId ? 'Updating…' : 'Confirm Cancellation'}</button><button className="secondary-action" disabled={Boolean(updatingId)} onClick={() => setPendingCancellation(null)} type="button">Keep Booking</button></div></div></div></section></div>}
   </section>
 }

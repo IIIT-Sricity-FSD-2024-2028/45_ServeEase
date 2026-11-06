@@ -33,5 +33,34 @@ describe('Booking bearer-session authorization', () => {
   it('rejects customer access to another customer booking despite spoofed email', async () => { await request(app.getHttpServer()).get('/bookings/BOOK-20300102-1000-0002').set('Authorization', 'Bearer customer').set('user-email', 'cus-b@example.test').expect(404); });
   it('creates a customer booking using session identity and server price', async () => { const payload = { service: 'Cleaning', providerId: 'PRO-A', date: '2030-01-03', time: '10:00 AM - 12:00 PM', address: '456 Example Road' }; const response = await request(app.getHttpServer()).post('/bookings/customer').set('Authorization', 'Bearer customer').set('user-id', 'CUS-B').send(payload).expect(201); expect(response.body.data.customerId).toBe('CUS-A'); expect(response.body.data).toMatchObject({ serviceFee: 799, taxAmount: 79.9, platformFeeAmount: 39.95, customerTotal: 918.85, amount: 918.85, providerPayout: 719.1, platformRevenueAmount: 119.85 }); });
   it('allows only valid customer and provider transitions on owned bookings', async () => { await request(app.getHttpServer()).patch('/bookings/BOOK-20300102-1000-0001').set('Authorization', 'Bearer customer').send({ status: 'Cancelled' }).expect(200); bookings[0].status = 'Pending'; await request(app.getHttpServer()).patch('/bookings/BOOK-20300102-1000-0001').set('Authorization', 'Bearer provider').send({ status: 'Accepted' }).expect(200); await request(app.getHttpServer()).patch('/bookings/BOOK-20300102-1000-0002').set('Authorization', 'Bearer provider').send({ status: 'Accepted' }).expect(404); });
+  it('requires and persists a provider rejection reason', async () => {
+    const url = '/bookings/BOOK-20300102-1000-0001/provider-status';
+    const auth = request(app.getHttpServer()).patch(url).set('Authorization', 'Bearer provider');
+    await auth.send({ status: 'Rejected' }).expect(400);
+    bookings[0].stateVersion = 1;
+    await request(app.getHttpServer()).patch(url).set('Authorization', 'Bearer provider').send({ status: 'Rejected', rejectionReason: '   ' }).expect(400);
+    bookings[0].status = 'Pending';
+    const response = await request(app.getHttpServer()).patch(url).set('Authorization', 'Bearer provider').send({ status: 'Rejected', rejectionReason: '  Schedule conflict  ', stateVersion: 1 }).expect(200);
+    expect(response.body.data).toMatchObject({ status: 'Rejected', rejectionReason: 'Schedule conflict' });
+    expect(bookings[0].rejectionReason).toBe('Schedule conflict');
+  });
+  it('accepts without a reason, returns the rejection reason to the customer, and keeps whitelist validation', async () => {
+    const url = '/bookings/BOOK-20300102-1000-0001/provider-status';
+    await request(app.getHttpServer()).patch(url).set('Authorization', 'Bearer provider').send({ status: 'Accepted' }).expect(200);
+    bookings[0].status = 'Pending';
+    bookings[0].stateVersion = 1;
+    await request(app.getHttpServer()).patch(url).set('Authorization', 'Bearer provider').send({ status: 'Accepted', unexpected: true }).expect(400);
+    const rejected = await request(app.getHttpServer()).patch(url).set('Authorization', 'Bearer provider').send({ status: 'Rejected', rejectionReason: 'Schedule conflict' }).expect(200);
+    expect(rejected.body.data.rejectionReason).toBe('Schedule conflict');
+    const customerView = await request(app.getHttpServer()).get('/bookings/BOOK-20300102-1000-0001').set('Authorization', 'Bearer customer').expect(200);
+    expect(customerView.body.data.rejectionReason).toBe('Schedule conflict');
+  });
+  it('rejects a rejection attempt from a provider who does not own the booking', async () => {
+    await request(app.getHttpServer()).patch('/bookings/BOOK-20300102-1000-0002/provider-status').set('Authorization', 'Bearer provider').send({ status: 'Rejected', rejectionReason: 'Schedule conflict' }).expect(403);
+  });
+  it('requires a reason on the alternate provider status route and preserves booking ownership', async () => {
+    await request(app.getHttpServer()).patch('/bookings/BOOK-20300102-1000-0001').set('Authorization', 'Bearer provider').send({ status: 'Rejected' }).expect(400);
+    await request(app.getHttpServer()).patch('/bookings/BOOK-20300102-1000-0002').set('Authorization', 'Bearer provider').send({ status: 'Rejected', rejectionReason: 'Schedule conflict' }).expect(404);
+  });
   it('allows a superuser session to list all bookings', async () => { const response = await request(app.getHttpServer()).get('/bookings').set('Authorization', 'Bearer admin').expect(200); expect(response.body.data).toHaveLength(2); });
 });
