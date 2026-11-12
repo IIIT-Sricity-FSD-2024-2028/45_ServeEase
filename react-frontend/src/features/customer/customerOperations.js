@@ -113,6 +113,10 @@ export function canCustomerCancel(booking) {
   return customerCancellableStatuses.includes(booking?.status)
 }
 
+export function canCustomerReschedule(booking) {
+  return booking?.status === 'Pending'
+}
+
 export function isOpenTicket(ticket) {
   return !closedTicketStatuses.includes(ticket?.status)
 }

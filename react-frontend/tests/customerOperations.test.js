@@ -5,13 +5,14 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import {
-  attachmentHref, attachmentValidationError, belongsToCustomer, bookingTabView, canCustomerCancel, canonicalBookingId, countForTab,
+  attachmentHref, attachmentValidationError, belongsToCustomer, bookingTabView, canCustomerCancel, canCustomerReschedule, canonicalBookingId, countForTab,
   filterTickets, formatPrice, openTicketForBooking, statusPillClass, ticketStatusClass, validateTicketForm,
 } from '../src/features/customer/customerOperations.js'
 
 register('./support/jsx-hooks.mjs', import.meta.url)
 
 const { BookingCard } = await import('../src/features/customer/bookings/BookingCard.jsx')
+const { RescheduleModal } = await import('../src/features/customer/bookings/RescheduleModal.jsx')
 const { BookingHistory } = await import('../src/features/customer/bookings/BookingHistory.jsx')
 const { BookingTabs } = await import('../src/features/customer/bookings/BookingTabs.jsx')
 const { AuthContext } = await import('../src/context/authContext.js')
@@ -25,6 +26,26 @@ const booking = (overrides) => ({ id: 'BOOK-1', service: 'AC Repair', provider: 
 const noop = () => {}
 const inRouter = (element, path = '/') => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, element))
 const asCustomer = (page, path) => inRouter(createElement(AuthContext.Provider, { value: { currentUser: customer, isAuthenticated: true, ready: true } }, createElement(page)), path)
+
+test('rescheduling is available only for pending customer bookings', () => {
+  assert.equal(canCustomerReschedule(booking()), true)
+  for (const status of ['Accepted', 'Completed', 'Cancelled', 'Rejected']) assert.equal(canCustomerReschedule(booking({ status })), false)
+})
+
+test('booking cards show Reschedule only for pending bookings', () => {
+  const card = (status) => inRouter(createElement(BookingCard, { booking: booking({ status }), onViewDetails: noop, onRaiseTicket: noop, onCancel: noop, onReschedule: noop }))
+  const pending = card('Pending')
+  assert.match(pending, />View Details</); assert.match(pending, />Reschedule</); assert.match(pending, />Cancel</); assert.doesNotMatch(pending, /Raise Ticket/)
+  const accepted = card('Accepted')
+  assert.match(accepted, /Raise Ticket/); assert.match(accepted, />Cancel</); assert.doesNotMatch(accepted, /Reschedule/)
+  const completed = card('Completed')
+  assert.match(completed, /Raise Ticket/); assert.doesNotMatch(completed, /Reschedule|>Cancel</)
+})
+
+test('reschedule modal starts with its current schedule and availability loading state', () => {
+  const markup = inRouter(createElement(RescheduleModal, { booking: booking(), onClose: noop, onRescheduled: noop }))
+  assert.match(markup, /Reschedule Booking/); assert.match(markup, /Current schedule:/); assert.match(markup, /Finding available appointments/)
+})
 
 test('keeps only the signed-in customer’s records, by id first and email second', () => {
   assert.equal(belongsToCustomer(booking(), customer), true)

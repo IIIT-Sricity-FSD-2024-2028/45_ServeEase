@@ -47,6 +47,7 @@ export function BookingDetailsModal({ bookingId, fallback, review, onClose }) {
       <div className="info-box"><strong>Date &amp; Time</strong>
         <InfoRow label="Date:">{formatDisplayDate(booking.date)}</InfoRow>
         <InfoRow label="Time:">{booking.time || 'Not provided'}</InfoRow>
+        {hasValue(booking.rescheduledAt) && <><InfoRow label="Rescheduled On:">{formatDisplayDateTime(booking.rescheduledAt)}</InfoRow><InfoRow label="Previous Schedule:">{`${formatDisplayDate(booking.originalDate)} · ${booking.originalTime}`}</InfoRow></>}
       </div>
       <div className="info-box"><strong>Service Address</strong><div>{booking.address || 'Not provided'}</div></div>
       <div className="info-box"><strong>Payment</strong>

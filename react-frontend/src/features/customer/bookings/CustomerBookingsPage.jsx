@@ -4,10 +4,12 @@ import { useAuth } from '../../../context/useAuth'
 import { bookingsApi, reviewsApi } from '../../../services/api'
 import { ReviewModal } from '../../reviews/ReviewParts'
 import { CustomerPageHeader, LoadState, OpsModal } from '../CustomerOpsParts'
-import { belongsToCustomer, bookingTabs, bookingTabView, canCustomerCancel, sortNewestFirst } from '../customerOperations'
+import { belongsToCustomer, bookingTabs, bookingTabView, canCustomerCancel, formatDisplayDate, sortNewestFirst } from '../customerOperations'
+import { formatSlot } from '../../discovery/catalogModel'
 import { BookingCard } from './BookingCard'
 import { BookingDetailsModal } from './BookingDetailsModal'
 import { BookingHistory } from './BookingHistory'
+import { RescheduleModal } from './RescheduleModal'
 import { BookingTabs } from './BookingTabs'
 import '../customerOperations.css'
 
@@ -20,6 +22,7 @@ export default function CustomerBookingsPage() {
   const [load, setLoad] = useState({ state: 'loading', bookings: [], error: '' })
   const [notice, setNotice] = useState('')
   const [cancelState, setCancelState] = useState(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [reviews, setReviews] = useState({})
   const [reviewTarget, setReviewTarget] = useState(null)
   const tabParam = searchParams.get('tab')
@@ -98,7 +101,7 @@ export default function CustomerBookingsPage() {
       {view.upcoming && <section aria-labelledby="upcoming-bookings-heading">
         <h2 className="section-title-left" id="upcoming-bookings-heading">{view.upcomingHeading}</h2>
         <div className="booking-grid">{view.upcoming.length
-          ? view.upcoming.map((booking) => <BookingCard booking={booking} key={booking.id} onCancel={(item) => setCancelState({ booking: item, saving: false, error: '' })} onRaiseTicket={raiseTicket} onViewDetails={openDetails} />)
+          ? view.upcoming.map((booking) => <BookingCard booking={booking} key={booking.id} onCancel={(item) => setCancelState({ booking: item, saving: false, error: '' })} onRaiseTicket={raiseTicket} onReschedule={setRescheduleTarget} onViewDetails={openDetails} />)
           : <div className="empty-state-card">No {activeTab === 'All' ? 'upcoming' : activeTab.toLowerCase()} bookings found.</div>}
         </div>
       </section>}
@@ -109,6 +112,7 @@ export default function CustomerBookingsPage() {
     </>}
 
     {selectedId && <BookingDetailsModal bookingId={selectedId} fallback={selectedBooking} key={selectedId} onClose={closeDetails} review={reviews[selectedId]} />}
+    {rescheduleTarget && <RescheduleModal booking={rescheduleTarget} onClose={() => setRescheduleTarget(null)} onRescheduled={(saved) => { setRescheduleTarget(null); setNotice(`Booking ${saved.id} was rescheduled to ${formatDisplayDate(saved.date)}, ${formatSlot(saved.time)}.`); refresh() }} />}
 
     {reviewTarget && <ReviewModal booking={reviewTarget} existing={reviews[reviewTarget.id]} onClose={() => setReviewTarget(null)} onSaved={(saved) => { setReviews((current) => ({ ...current, [saved.bookingId]: saved })); setNotice(`Your review of booking ${saved.bookingId} was saved.`); setReviewTarget(null) }} />}
 

@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request = require('supertest');
 import { AuthService } from '../auth/auth.service';
@@ -15,7 +15,8 @@ describe('Booking bearer-session authorization', () => {
   const repository = {
     findAll: () => bookings, findByCustomer: (id: string) => bookings.filter((item) => item.customerId === id), findByProvider: (id: string) => bookings.filter((item) => item.providerId === id), findById: (id: string) => bookings.find((item) => item.id === id),
     update: (id: string, data: Partial<Booking>) => { const item = bookings.find((candidate) => candidate.id === id); if (item) Object.assign(item, data); return item; },
-    create: (data: Partial<Booking>) => { const item = { ...data, id: 'BOOK-20300102-1000-0003', createdAt: new Date().toISOString() } as Booking; bookings.unshift(item); return item; }, delete: () => undefined,
+    create: (data: Partial<Booking>) => { const item = { ...data, id: 'BOOK-20300102-1000-0003', createdAt: new Date().toISOString() } as Booking; bookings.unshift(item); return item; },
+    reschedule: (id: string, change: Partial<Booking>) => { const item = bookings.find((candidate) => candidate.id === id); if (!item) return undefined; Object.assign(item, change, { rescheduleCount: (item.rescheduleCount || 0) + 1, stateVersion: (item.stateVersion || 0) + 1 }); return item; }, delete: () => undefined,
   };
   const availability = { assertBookable: jest.fn() };
   const catalog = { isBookable: () => true, findAll: () => ({ providers: [{ id: 'PRO-A', ownerProviderId: 'PRO-A', name: 'Provider A', category: 'Cleaning', subServices: ['Cleaning'], servicePricing: { Cleaning: 799 }, startingPrice: 799 }] }) };
@@ -63,4 +64,45 @@ describe('Booking bearer-session authorization', () => {
     await request(app.getHttpServer()).patch('/bookings/BOOK-20300102-1000-0002').set('Authorization', 'Bearer provider').send({ status: 'Rejected', rejectionReason: 'Schedule conflict' }).expect(404);
   });
   it('allows a superuser session to list all bookings', async () => { const response = await request(app.getHttpServer()).get('/bookings').set('Authorization', 'Bearer admin').expect(200); expect(response.body.data).toHaveLength(2); });
+
+  describe('Booking reschedule', () => {
+    const url = '/bookings/BOOK-20300102-1000-0001/reschedule';
+    const auth = () => request(app.getHttpServer()).patch(url).set('Authorization', 'Bearer customer');
+    it('changes only the schedule and keeps the booking pending', async () => {
+      const response = await auth().send({ date: '2030-01-03', time: '13:00-15:00' }).expect(200);
+      expect(response.body.data).toMatchObject({ date: '2030-01-03', time: '13:00-15:00', status: 'Pending', rescheduleCount: 1 });
+      expect(availability.assertBookable).toHaveBeenCalledWith('PRO-A', '2030-01-03', '13:00-15:00', 'BOOK-20300102-1000-0001');
+    });
+    it('rejects another customer booking and non-customer roles', async () => {
+      await request(app.getHttpServer()).patch('/bookings/BOOK-20300102-1000-0002/reschedule').set('Authorization', 'Bearer customer').send({ date: '2030-01-03', time: '13:00' }).expect(404);
+      await auth().set('Authorization', 'Bearer provider').send({ date: '2030-01-03', time: '13:00' }).expect(403);
+      await request(app.getHttpServer()).patch(url).send({ date: '2030-01-03', time: '13:00' }).expect(403);
+    });
+    it('rejects same slots, stale versions, and invalid DTO fields', async () => {
+      await auth().send({ date: '2030-01-02', time: '10:00 AM-12:00 PM' }).expect(400);
+      bookings[0].stateVersion = 2;
+      await auth().send({ date: '2030-01-03', time: '13:00', stateVersion: 1 }).expect(409);
+      await auth().send({ date: '13-11-2026', time: '13:00' }).expect(400);
+      await auth().send({ date: '2030-01-03' }).expect(400);
+      await auth().send({ date: '2030-01-03', time: '13:00', unexpected: true }).expect(400);
+    });
+    it('rejects bookings that are no longer pending', async () => {
+      for (const status of ['Accepted', 'Cancelled', 'Rejected']) {
+        bookings[0].status = status;
+        await auth().send({ date: '2030-01-03', time: '13:00' }).expect(400);
+        bookings[0].status = 'Pending';
+      }
+    });
+    it('leaves the booking unchanged when the selected slot is unavailable', async () => {
+      const before = { ...bookings[0] };
+      availability.assertBookable.mockImplementationOnce(() => { throw new BadRequestException('The selected slot is unavailable.'); });
+      await auth().send({ date: '2030-01-03', time: '13:00' }).expect(400);
+      expect(bookings[0]).toMatchObject({ date: before.date, time: before.time, status: before.status });
+    });
+    it('rejects rescheduling when the provider is no longer bookable', async () => {
+      const check = jest.spyOn(catalog, 'isBookable').mockReturnValue(false);
+      await auth().send({ date: '2030-01-03', time: '13:00' }).expect(409);
+      check.mockRestore();
+    });
+  });
 });

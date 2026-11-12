@@ -27,6 +27,10 @@ export const catalogApi = {
 export const bookingsApi = {
   list: () => apiRequest('/bookings'),
   get: (id) => apiRequest(`/bookings/${encodeURIComponent(id)}`),
+    reschedule: (id, { date, time, stateVersion }) => apiRequest(`/bookings/${encodeURIComponent(id)}/reschedule`, {
+      method: 'PATCH',
+      body: JSON.stringify({ date, time, ...(stateVersion === undefined ? {} : { stateVersion }) }),
+    }),
   createForCustomer: (booking) => apiRequest('/bookings/customer', {
     method: 'POST',
     body: JSON.stringify(booking),
