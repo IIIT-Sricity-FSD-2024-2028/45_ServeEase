@@ -10,6 +10,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { ProviderBookingStatusDto } from './dto/provider-booking-status.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { CreateCustomerBookingDto } from './dto/create-customer-booking.dto';
+import { RescheduleBookingDto } from './dto/reschedule-booking.dto';
 
 function header(request: Request, name: string): string {
   const value = request.headers[name];
@@ -109,6 +110,17 @@ export class BookingsController {
   } } })
   updateWithPatch(@Param('id') id: string, @Body() data: UpdateBookingDto, @Req() request: Request) {
     return successResponse(this.bookingsService.updateForCaller(id, data, callerFrom(request)));
+  }
+
+  @Patch(':id/reschedule')
+  @Roles('user')
+  @ApiOperation({ summary: 'Reschedule an owned Pending booking to another available slot (customer)' })
+  @ApiBody({ type: RescheduleBookingDto })
+  @ApiOkResponse({ description: 'Booking rescheduled successfully.', schema: { properties: {
+    success: { type: 'boolean', example: true }, data: { $ref: getSchemaPath(Booking) },
+  } } })
+  reschedule(@Param('id') id: string, @Body() data: RescheduleBookingDto, @Req() request: Request) {
+    return successResponse(this.bookingsService.rescheduleForCustomer(id, data, callerFrom(request)));
   }
 
   @Patch(':id/provider-status')

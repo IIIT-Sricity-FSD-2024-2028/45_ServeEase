@@ -37,6 +37,15 @@ test('records with no id or status are skipped, and empty inputs are safe', () =
   assert.deepEqual(buildProviderNotifications(null, undefined, user), [])
 })
 
+test('pending reschedules create a separate unread provider notification', () => {
+  const rescheduledAt = '2026-10-18T09:00:00.000Z'
+  const results = buildProviderNotifications([{ id: 'BOOK-9', service: 'Cleaning', status: 'Pending', date: '2026-10-20', time: '09:00-12:00', rescheduledAt }], [], user)
+  const notice = results.find((item) => item.id === `reschedule:book-9:${rescheduledAt}`)
+  assert.ok(notice)
+  assert.equal(notice.isUnread, true)
+  assert.equal(notice.to, '/provider/bookings')
+})
+
 test('the signup "Other" service is validated before it is sent', () => {
   const available = ['Haircut']
   assert.equal(customServiceError({ enabled: false }, available, {}), false)

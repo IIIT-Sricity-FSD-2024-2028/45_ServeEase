@@ -1226,6 +1226,82 @@
         ]
       }
     },
+    "/api/bookings/{id}/reschedule": {
+      "patch": {
+        "operationId": "BookingsController_reschedule",
+        "summary": "Reschedule an owned Pending booking to another available slot (customer)",
+        "parameters": [
+          {
+            "name": "user-email",
+            "in": "header",
+            "description": "Caller-supplied email used for UI-compatible booking filtering; not verified.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "user-id",
+            "in": "header",
+            "description": "Caller-supplied identifier used for UI-compatible booking filtering; not verified.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Faculty-required role header. This is not caller authentication.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking rescheduled successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Booking"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
     "/api/bookings/{id}/provider-status": {
       "patch": {
         "operationId": "BookingsController_updateProviderStatus",
@@ -4790,6 +4866,24 @@
           "customerPlatformFeeAmount": {
             "type": "number",
             "example": 50
+          },
+          "rescheduledAt": {
+            "type": "string"
+          },
+          "rescheduleCount": {
+            "type": "number"
+          },
+          "originalDate": {
+            "type": "string"
+          },
+          "originalTime": {
+            "type": "string"
+          },
+          "rescheduleHistory": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
@@ -5234,6 +5328,29 @@
             "example": "Unable to provide the service at the requested time."
           }
         }
+      },
+      "RescheduleBookingDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-11-13",
+            "description": "New service date, YYYY-MM-DD."
+          },
+          "time": {
+            "type": "string",
+            "example": "09:00-12:00",
+            "description": "New time slot exactly as returned by the availability endpoint."
+          },
+          "stateVersion": {
+            "type": "number",
+            "example": 3
+          }
+        },
+        "required": [
+          "date",
+          "time"
+        ]
       },
       "ProviderBookingStatusDto": {
         "type": "object",

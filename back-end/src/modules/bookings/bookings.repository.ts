@@ -110,6 +110,22 @@ export class BookingsRepository {
     return booking;
   }
 
+  reschedule(id: string, change: { date: string; time: string; rescheduledAt: string; rescheduledBy: string }): Booking | undefined {
+    const booking = this.findById(id);
+    if (!booking) return undefined;
+    const entry = { fromDate: booking.date, fromTime: booking.time, toDate: change.date, toTime: change.time, rescheduledAt: change.rescheduledAt, rescheduledBy: change.rescheduledBy };
+    if (!booking.originalDate) booking.originalDate = booking.date;
+    if (!booking.originalTime) booking.originalTime = booking.time;
+    booking.date = change.date;
+    booking.time = change.time;
+    booking.rescheduledAt = change.rescheduledAt;
+    booking.rescheduleCount = (booking.rescheduleCount || 0) + 1;
+    booking.rescheduleHistory = [...(booking.rescheduleHistory || []), entry].slice(-10);
+    booking.stateVersion = (Number(booking.stateVersion) || 0) + 1;
+    this.persist();
+    return booking;
+  }
+
   private paymentDateFor(serviceDate: string): string {
     const now = new Date();
     const service = new Date(serviceDate);

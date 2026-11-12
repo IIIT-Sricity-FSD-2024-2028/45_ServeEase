@@ -1,9 +1,10 @@
-import { bookingTotal, canCustomerCancel, formatDisplayDate, formatPrice, statusPillClass } from '../customerOperations'
+import { bookingTotal, canCustomerCancel, canCustomerReschedule, formatDisplayDate, formatPrice, statusPillClass } from '../customerOperations'
 
 // Upcoming booking card from initMyBookings(): View Details, Raise Ticket and, while the backend
 // still allows it (Pending/Accepted), Cancel.
-export function BookingCard({ booking, onViewDetails, onRaiseTicket, onCancel }) {
+export function BookingCard({ booking, onViewDetails, onRaiseTicket, onCancel, onReschedule }) {
   const cancellable = canCustomerCancel(booking)
+  const reschedulable = canCustomerReschedule(booking)
   return <article className="booking-card-customer">
     <div className="booking-card-top">
       <div><h3>{booking.service}</h3><div className="booking-provider">{booking.provider}</div></div>
@@ -18,7 +19,7 @@ export function BookingCard({ booking, onViewDetails, onRaiseTicket, onCancel })
     </div>
     <div className={`booking-actions${cancellable ? '' : ' booking-actions--two'}`}>
       <button className="secondary-action" onClick={() => onViewDetails(booking)} type="button">View Details</button>
-      <button className="secondary-action" onClick={() => onRaiseTicket(booking)} type="button">Raise Ticket</button>
+      {reschedulable ? <button className="secondary-action" onClick={() => onReschedule(booking)} type="button">Reschedule</button> : <button className="secondary-action" onClick={() => onRaiseTicket(booking)} type="button">Raise Ticket</button>}
       {cancellable && <button className="danger-action" onClick={() => onCancel(booking)} type="button">Cancel</button>}
     </div>
   </article>

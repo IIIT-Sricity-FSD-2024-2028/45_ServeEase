@@ -144,4 +144,19 @@ export class Booking {
 
   @ApiProperty({ example: 50, required: false })
   customerPlatformFeeAmount?: number;
+
+  @ApiProperty({ required: false })
+  rescheduledAt?: string;
+
+  @ApiProperty({ required: false })
+  rescheduleCount?: number;
+
+  @ApiProperty({ required: false })
+  originalDate?: string;
+
+  @ApiProperty({ required: false })
+  originalTime?: string;
+
+  @ApiProperty({ required: false, type: 'array', items: { type: 'object' } })
+  rescheduleHistory?: { fromDate: string; fromTime: string; toDate: string; toTime: string; rescheduledAt: string; rescheduledBy: string }[];
 }

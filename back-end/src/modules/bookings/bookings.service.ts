@@ -10,6 +10,7 @@ import { AvailabilityService } from '../availability/availability.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { CreateCustomerBookingDto } from './dto/create-customer-booking.dto';
 import { cancellationSettlement, priceBreakdown } from './booking-finance';
+import { RescheduleBookingDto } from './dto/reschedule-booking.dto';
 
 export interface BookingRequestContext {
   role: string;
@@ -113,6 +114,26 @@ export class BookingsService {
       this.availabilityService.assertBookable(data.providerId ?? existing.providerId, data.date ?? existing.date, data.time ?? existing.time, id);
     }
     return this.bookingsRepository.update(id, data)!;
+  }
+
+  rescheduleForCustomer(id: string, data: RescheduleBookingDto, caller: BookingRequestContext): Booking {
+    if (caller.role !== 'customer') throw new ForbiddenException('Only customers can reschedule their bookings.');
+    const booking = this.findById(id, caller);
+    if (booking.status !== 'Pending') throw new BadRequestException(`Only pending bookings can be rescheduled. This booking is ${String(booking.status).toLowerCase()}.`);
+    if (data.stateVersion !== undefined && booking.stateVersion !== undefined && data.stateVersion !== booking.stateVersion) {
+      throw new ConflictException('This booking has changed. Refresh it before rescheduling.');
+    }
+    const requestedProviderId = canonicalProviderId(booking.providerId);
+    const provider = this.catalogService.findAll().providers.find((candidate) =>
+      canonicalProviderId(candidate.id) === requestedProviderId || canonicalProviderId(candidate.ownerProviderId || '') === requestedProviderId,
+    );
+    if (!provider || !this.catalogService.isBookable(provider)) throw new ConflictException('This provider is not currently available for booking.');
+    const time = data.time.trim();
+    if (data.date === booking.date && time.replace(/\s+/g, '').toLowerCase() === String(booking.time).replace(/\s+/g, '').toLowerCase()) {
+      throw new BadRequestException('Choose a different date or time than your current booking.');
+    }
+    this.availabilityService.assertBookable(booking.providerId, data.date, time, booking.id);
+    return this.bookingsRepository.reschedule(booking.id, { date: data.date, time, rescheduledAt: new Date().toISOString(), rescheduledBy: 'Customer' })!;
   }
 
   updateProviderStatus(id: string, data: ProviderBookingStatusDto, request: Request): Booking {

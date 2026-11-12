@@ -2,6 +2,8 @@
 // theirs (front-end/CSS/dashboard.css .notification-panel is the shared panel): the bookings they have to act
 // on or that changed, and replies on their support tickets. Nothing is stored server-side; read state is kept
 // per provider in this browser.
+import { formatDisplayDate } from '../customer/customerOperations.js'
+
 const readKey = (user) => `serveEaseProviderNotificationReads:${user?.userId || user?.email || 'provider'}`
 
 export function readProviderNotificationIds(user) {
@@ -38,6 +40,10 @@ export function buildProviderNotifications(bookings, tickets, user) {
       isUnread: unreadBookingStatuses.includes(status) && !readIds.has(id),
       to: '/provider/bookings',
     })
+    if (booking.rescheduledAt && status === 'pending') {
+      const rescheduleId = `reschedule:${String(booking.id).toLowerCase()}:${booking.rescheduledAt}`
+      notifications.push({ id: rescheduleId, text: `${service} booking ${booking.id} was rescheduled to ${formatDisplayDate(booking.date)}, ${booking.time}.`, createdAt: booking.rescheduledAt, isUnread: !readIds.has(rescheduleId), to: '/provider/bookings' })
+    }
   })
 
   ;(Array.isArray(tickets) ? tickets : []).forEach((ticket) => {
