@@ -9334,6 +9334,26 @@
           "adminRemarks": "",
           "statusHistory": [
             {
+              "dateTime": "2026-10-24T06:03:32.097Z",
+              "action": "Provider activated",
+              "previousStatus": "Suspended",
+              "newStatus": "Active",
+              "reason": ".",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
+            {
+              "dateTime": "2026-10-24T06:03:19.160Z",
+              "action": "Provider suspended",
+              "previousStatus": "Active",
+              "newStatus": "Suspended",
+              "reason": ".",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
+            {
               "dateTime": "2026-10-16T05:45:17.330Z",
               "action": "Provider activated",
               "previousStatus": "Suspended",
@@ -9471,7 +9491,6 @@
           "organisationName": "Fresh Space Cleaning",
           "email": "fresh-space-cleaning@serveease.com",
           "phone": "9100000018",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 6,
           "address": "Chennai, Tamil Nadu",
@@ -9481,11 +9500,41 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active",
-          "status": "Active",
-          "approvalStatus": "Active",
+          "accountStatus": "Suspended",
+          "status": "Suspended",
+          "approvalStatus": "Suspended",
           "adminRemarks": "",
           "statusHistory": [
+            {
+              "dateTime": "2026-10-24T06:08:25.901Z",
+              "action": "Provider suspended",
+              "previousStatus": "Active",
+              "newStatus": "Suspended",
+              "reason": "test case",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
+            {
+              "dateTime": "2026-10-24T06:08:02.247Z",
+              "action": "Provider activated",
+              "previousStatus": "Suspended",
+              "newStatus": "Active",
+              "reason": "test case",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
+            {
+              "dateTime": "2026-10-24T06:07:35.229Z",
+              "action": "Provider suspended",
+              "previousStatus": "Active",
+              "newStatus": "Suspended",
+              "reason": "Test case",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
             {
               "dateTime": "2026-10-15T12:19:59.059Z",
               "action": "Provider activated",
@@ -9506,7 +9555,9 @@
               "performedBy": "Provider Operations",
               "performedById": "EMP-PO-001"
             }
-          ]
+          ],
+          "passwordHash": "a40c692cb128f08b51c3e802bc7ead63:86ce8228decd4b795318b750ee6ba762dcb693597ff75616e0d8bf4e1bc4dbb14c3644d0be524ca33831eb2815c046fb449412e9e252b99b61ce375f74ea883b",
+          "suspensionReason": "test case"
         },
         {
           "id": "PRO-CAT-136",
@@ -9553,7 +9604,6 @@
           "organisationName": "DrainMaster Solutions",
           "email": "drainmaster-solutions@serveease.com",
           "phone": "9100000020",
-          "password": "Password@123",
           "serviceType": "Plumbing",
           "experience": 8,
           "address": "Chennai, Tamil Nadu",
@@ -9563,7 +9613,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "9b81a726f9190505c5495081056f7feb:6325f1de71d50a47b31561578af2ae207efe5a9059b04bcfe697ddacc5af76602a45c61e064771ecc142b6d13202be2474ac267d0b479a5faeb9f2077478b90b"
         },
         {
           "id": "PRO-CAT-022",
@@ -9572,7 +9623,6 @@
           "organisationName": "BugBusters Pro",
           "email": "bugbusters-pro@serveease.com",
           "phone": "9100000021",
-          "password": "Password@123",
           "serviceType": "Pest Control",
           "experience": 8,
           "address": "Chennai, Tamil Nadu",
@@ -9582,7 +9632,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "8b231a69ffb1d3bd6d7aece149d99ece:f3d87d025e97b6b45432d24a70527c1baa0cc7f41f171bebec45240970bca493edc101af09912ee3c57f0dd5b3343b9d44c2ea285dd9aed1ebeedc52ff37ef0d"
         },
         {
           "id": "PRO-CAT-023",
@@ -9591,7 +9642,6 @@
           "organisationName": "HomeGlow Painters",
           "email": "homeglow-painters@serveease.com",
           "phone": "9100000022",
-          "password": "Password@123",
           "serviceType": "Painting",
           "experience": 6,
           "address": "Chennai, Tamil Nadu",
@@ -9601,7 +9651,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "d819fc7b91af10800a2fd1bfd6a193d4:7f40303d04686e06abc544871bcb495ead636470e22f615ce4984d10c6ad872af1be8aacda6b873de02b20cac079e0edb4f704114ac92dd472a73834b93e8243"
         },
         {
           "id": "PRO-CAT-024",
@@ -9610,7 +9661,6 @@
           "organisationName": "WoodCraft Repair",
           "email": "woodcraft-repair@serveease.com",
           "phone": "9100000023",
-          "password": "Password@123",
           "serviceType": "Carpentry",
           "experience": 5,
           "address": "Chennai, Tamil Nadu",
@@ -9620,7 +9670,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "3ba7294a736907af65f73fdda7a2d3b9:859973877549eb05b13cce9e4571888bfdf54bd09fc7112733143e9d92e61e2b4f0fc9af27b0087d68a5cf43e393f33975de071b283911eddd4f5e73e4f21df6"
         },
         {
           "id": "PRO-CAT-025",
@@ -9648,7 +9699,6 @@
           "organisationName": "Glamour At Doorstep",
           "email": "glamour-at-doorstep@serveease.com",
           "phone": "9100000025",
-          "password": "Password@123",
           "serviceType": "Salon at Home",
           "experience": 7,
           "address": "Bangalore, Karnataka",
@@ -9658,7 +9708,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "eabc8c4554a33f0ab75eb7a01c468924:4683d10e98a46c1682711a070f0ce6ccd70206152b70035b99e05405fdd845a7d7ebaad487946d7979db6c39f1756985fac938900ab20db13aeb1f464649d2ee"
         },
         {
           "id": "PRO-CAT-027",
@@ -9667,7 +9718,6 @@
           "organisationName": "Royal Beauty Services",
           "email": "royal-beauty-services@serveease.com",
           "phone": "9100000026",
-          "password": "Password@123",
           "serviceType": "Salon at Home",
           "experience": 6,
           "address": "Bangalore, Karnataka",
@@ -9677,7 +9727,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "076dd00030386121d8e0c8745a796df5:7ce0dedee8f2397fb9ca961f9eaceeabd09d807efed5854f9100091921672005f46e2ade985c80e1fc8548db46f446ff02d5bf9c23559c4581e125bef52889ea"
         },
         {
           "id": "PRO-CAT-028",
@@ -9686,7 +9737,6 @@
           "organisationName": "BrightWire Solutions",
           "email": "brightwire-solutions@serveease.com",
           "phone": "9100000027",
-          "password": "Password@123",
           "serviceType": "Electrician",
           "experience": 8,
           "address": "Bangalore, Karnataka",
@@ -9696,7 +9746,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "46ae094674e3d88a5440c0779f3cddce:35c01c98ac19847aa8d441d976ee10ba3cac9aa07e1f0b07028518edf9b126d0816f3540dbd7c80398293e0642264bdb7241cd5187339e1432fac51478c27831"
         },
         {
           "id": "PRO-CAT-029",
@@ -9705,7 +9756,6 @@
           "organisationName": "CurrentCare Electrician",
           "email": "currentcare-electrician@serveease.com",
           "phone": "9100000028",
-          "password": "Password@123",
           "serviceType": "Electrician",
           "experience": 6,
           "address": "Bangalore, Karnataka",
@@ -9715,7 +9765,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "be8da9fd94c6743d4498f8ba86db0c75:bbfec9ab917537f4414ea1e0d954431af6fc86f17d8a8221232974296a08065210c70054d0cca6187fe8bf5347847d927512bbed17f143f3cef93d1ac23ed580"
         },
         {
           "id": "PRO-CAT-030",
@@ -9724,7 +9775,6 @@
           "organisationName": "Carpenter Plus",
           "email": "carpenter-plus@serveease.com",
           "phone": "9100000029",
-          "password": "Password@123",
           "serviceType": "Carpentry",
           "experience": 7,
           "address": "Bangalore, Karnataka",
@@ -9734,7 +9784,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "23c1a8bb3b143b0b0a962328b1462b11:8d388933daf540961ad19d2e987b01f709cbc24fd9a2696fbe036c4a17e99e200db3aaad7df493a61e12c7bc1b0ed2d085eae54103b0fe186992b78704c7cb69"
         },
         {
           "id": "PRO-CAT-031",
@@ -9743,7 +9794,6 @@
           "organisationName": "PipePro Services",
           "email": "pipepro-services@serveease.com",
           "phone": "9100000030",
-          "password": "Password@123",
           "serviceType": "Plumbing",
           "experience": 6,
           "address": "Bangalore, Karnataka",
@@ -9753,7 +9803,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "9df00534618330d5a224426eff4c4b17:4ab967bfcecf102913de08e18e8e89f45e98b572334cc57703980695077518af744a564a3b02c921a4347c835a2a46c251a000f9f6b6546f137ab6472476457b"
         },
         {
           "id": "PRO-CAT-032",
@@ -10288,7 +10339,6 @@
           "organisationName": "HygienePlus Cleaners",
           "email": "hygieneplus-hyd@serveease.com",
           "phone": "9100000053",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 6,
           "address": "Hyderabad, Telangana",
@@ -10298,7 +10348,8 @@
           "cityName": "Hyderabad",
           "location": "Hyderabad",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "537034fbc397aa23e154774adfe2f3c1:9d8ba945b541f4fe27f96d81fb2cd15ac9f5418dff5b5abb94de40e339435f3045deb4913deb83da2e8837b1415a2e77b5af196c0171e7614bf58124859a1a4a"
         },
         {
           "id": "PRO-CAT-055",
@@ -10307,7 +10358,6 @@
           "organisationName": "SparkClean Delhi",
           "email": "sparkclean-delhi@serveease.com",
           "phone": "9100000054",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 4,
           "address": "Delhi, NCR",
@@ -10317,7 +10367,8 @@
           "cityName": "Delhi",
           "location": "Delhi",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "a200fd0414150407ead60d8dc61f9db1:ba796c67a465e70486f8295b27e992372363cc654fbdaf7236c1b5c67014bfda560544372ffaf90ef5a27ca4e3fc917b898944fb1cbfd3d5109dd70d25abad37"
         },
         {
           "id": "PRO-CAT-056",
@@ -10326,7 +10377,6 @@
           "organisationName": "FreshStart Cleaning",
           "email": "freshstart-cleaning-mum@serveease.com",
           "phone": "9100000055",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 5,
           "address": "Mumbai, Maharashtra",
@@ -10336,7 +10386,8 @@
           "cityName": "Mumbai",
           "location": "Mumbai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "24c99c3a41ca989f57324cf02277a319:4ab96d64f709503060fe26330b94d44fc927837f466265304d0644e1c10f82106b53180da880f8a1091db8a4173cb38314c17c76e51ec8feaf6f5ea37fcf1313"
         },
         {
           "id": "PRO-CAT-057",
@@ -10345,7 +10396,6 @@
           "organisationName": "Glam Studio Chennai",
           "email": "glam-studio-chennai@serveease.com",
           "phone": "9100000056",
-          "password": "Password@123",
           "serviceType": "Salon at Home",
           "experience": 4,
           "address": "Chennai, Tamil Nadu",
@@ -10355,7 +10405,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "a82d0d2f3a23478b31346a833aeae150:f9c6c050ba656d970097fc7628d68b61d0da84f7dd01b46dfb511fc886477fb3662cefa35955c73e59ffcc60476b5913e740782f03fd9706e43a5a42032789a9"
         },
         {
           "id": "PRO-CAT-058",
@@ -10421,7 +10472,6 @@
           "organisationName": "VoltFix Electricians",
           "email": "voltfix-chennai@serveease.com",
           "phone": "9100000060",
-          "password": "Password@123",
           "serviceType": "Electrician",
           "experience": 6,
           "address": "Chennai, Tamil Nadu",
@@ -10431,7 +10481,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "84eab222856f3218c4efb5a63a69fc0f:7b099fcb939a5becdf056a63300bf5502d17f668e949b576d6d2b2a07358ac314d60328a068fce2c555ba823c8d30a35de13d9f96c0f25a873287ef9dd21d47d"
         },
         {
           "id": "PRO-CAT-062",
@@ -10459,7 +10510,6 @@
           "organisationName": "RepairZone Appliances",
           "email": "repairzone-chennai@serveease.com",
           "phone": "9100000062",
-          "password": "Password@123",
           "serviceType": "Appliance Repair / Installation",
           "experience": 7,
           "address": "Chennai, Tamil Nadu",
@@ -10469,7 +10519,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "772478dda37735c3c5a13fe2c6f9a9f4:aae5d01ab17ba6a4e6f9ad3a2e6de52f9966f002bce2ba6e71ea4272d826afbee186a5b3acac0a842bea05fd4104bbda6053c77cbb32df314320e91e38aa7b9c"
         },
         {
           "id": "PRO-CAT-064",
@@ -10478,7 +10529,6 @@
           "organisationName": "FixMaster Appliances",
           "email": "fixmaster-blr@serveease.com",
           "phone": "9100000063",
-          "password": "Password@123",
           "serviceType": "Appliance Repair / Installation",
           "experience": 6,
           "address": "Bangalore, Karnataka",
@@ -10488,7 +10538,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "5c7ba3dedff31b60a41d64ca1c24012e:23be2a60e5845035c98102aff81a37dd648b379946dabbbacf6ebca8334bda964cc75adbb634fb9d7b6307a131ef2f46e5dce206aef8260846fa36497c391b7d"
         },
         {
           "id": "PRO-CAT-065",
@@ -10554,7 +10605,6 @@
           "organisationName": "CleanCraft Solutions",
           "email": "cleancraft-solutions-ban3@serveease.com",
           "phone": "9100000067",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 5,
           "address": "Bangalore, Karnataka",
@@ -10564,7 +10614,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "7e911df65a364adfd4500fe82d26d50d:41f41dc3317e7904d381b97ffe3630423327ad4c1886f73f8b50beeea3682461ca15d6dab235d2cafe3b266aa2994ec1a0cf990a926e58c021936c55a4881013"
         },
         {
           "id": "PRO-CAT-069",
@@ -10573,7 +10624,6 @@
           "organisationName": "HomeShine Experts",
           "email": "homeshine-experts-hyd2@serveease.com",
           "phone": "9100000068",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 5,
           "address": "Hyderabad, Telangana",
@@ -10583,7 +10633,8 @@
           "cityName": "Hyderabad",
           "location": "Hyderabad",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "684cffb80bf1cd3f80a9467c523c02f2:9de6079eda7b9b6ffcadc6df33a16f566813819f509e3c12ef769759f9201c415ef6344196badefaf53932a1f83de91a544799d7e25c051981a1bea56b90337f"
         },
         {
           "id": "PRO-CAT-070",
@@ -10592,7 +10643,6 @@
           "organisationName": "PureHome Services",
           "email": "purehome-services-hyd3@serveease.com",
           "phone": "9100000069",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 6,
           "address": "Hyderabad, Telangana",
@@ -10602,7 +10652,8 @@
           "cityName": "Hyderabad",
           "location": "Hyderabad",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "f3e379e5eea7672eeb8d0cf9eb480456:c0b36ace6335489c4955f71076b5e54e1969acd87f5c6de4441d1eeaf916853f5a19fefde92f3c66a699ca5c131f14eaa408a30b128a5918f41c69f1e27aa59d"
         },
         {
           "id": "PRO-CAT-071",
@@ -10611,7 +10662,6 @@
           "organisationName": "BrightNest Cleaners",
           "email": "brightnest-cleaners-del2@serveease.com",
           "phone": "9100000070",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 6,
           "address": "Delhi, NCR",
@@ -10621,7 +10671,8 @@
           "cityName": "Delhi",
           "location": "Delhi",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "0f716897ece8b58414e34218403758fc:e97e9e25889aece437962902f5dd0999d4f9b2224ae902bdb8523734af78d61819fed4978d0b76787ba670b7bc34c0617ffce24cc20c7b5b98577fc6c76440c2"
         },
         {
           "id": "PRO-CAT-072",
@@ -10630,7 +10681,6 @@
           "organisationName": "AquaClean Home",
           "email": "aquaclean-home-del3@serveease.com",
           "phone": "9100000071",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 7,
           "address": "Delhi, NCR",
@@ -10640,7 +10690,8 @@
           "cityName": "Delhi",
           "location": "Delhi",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "066c03d78256cb970bd7bcaf4f8068e6:75e0265349a51e891de9fe4e779c102941a7d5a3a13208dd3c602b72535df06737b6c26b546807621a41263c86460704392e0ab41bd35d49328731fbf793bb38"
         },
         {
           "id": "PRO-CAT-073",
@@ -10649,7 +10700,6 @@
           "organisationName": "GreenMop Services",
           "email": "greenmop-services-mum2@serveease.com",
           "phone": "9100000072",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 7,
           "address": "Mumbai, Maharashtra",
@@ -10659,7 +10709,8 @@
           "cityName": "Mumbai",
           "location": "Mumbai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "0152663b1b701fbd98a8f6ebf5c46978:2139c63b73e7cf16b74986db7c0410195d6122d0a98b41cf1386677d64c121148dc3aaa1474c2c41e6cf4cc2f6deef27899298985710d1a44d1d140439b5e772"
         },
         {
           "id": "PRO-CAT-074",
@@ -10668,7 +10719,6 @@
           "organisationName": "Spotless Living",
           "email": "spotless-living-mum3@serveease.com",
           "phone": "9100000073",
-          "password": "Password@123",
           "serviceType": "Home Cleaning",
           "experience": 8,
           "address": "Mumbai, Maharashtra",
@@ -10678,7 +10728,8 @@
           "cityName": "Mumbai",
           "location": "Mumbai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "a69aa4f1d1c700a58052f6432ec39314:74200ea5c6e542bb4ecfb3f15af7a798037489828ff95e21a6e1a50d04097c0714ff9a4d761894a5f7375d67a40e62705c49a2839784a3b168b8f2205f4efad6"
         },
         {
           "id": "PRO-CAT-075",
@@ -10687,7 +10738,6 @@
           "organisationName": "StyleMate Salon",
           "email": "stylemate-salon-che2@serveease.com",
           "phone": "9100000074",
-          "password": "Password@123",
           "serviceType": "Salon at Home",
           "experience": 4,
           "address": "Chennai, Tamil Nadu",
@@ -10697,7 +10747,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "ec97b57368311d12dd2852c31333ad16:20a548c48ec4be4d0a727fe1927f451a029d18c1a3ebf81ccd22483bf89203943a31eff435a706da04ee2b0e72e8313b224a92c1db6c1178249dddc75598f956"
         },
         {
           "id": "PRO-CAT-076",
@@ -10706,7 +10757,6 @@
           "organisationName": "GlowUp At Home",
           "email": "glowup-at-home-che3@serveease.com",
           "phone": "9100000075",
-          "password": "Password@123",
           "serviceType": "Salon at Home",
           "experience": 5,
           "address": "Chennai, Tamil Nadu",
@@ -10716,7 +10766,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "0a0dc052a25d5c1b804aa74f2a94dffa:e0c331c26bbe6fecd3ad7d0a71740f7cb1df28f7405f09468cdcc2549cd4783c97e8b9adb4c14637d1d871babe7be6276d370aa0fcf9f336f4737167389fa5a0"
         },
         {
           "id": "PRO-CAT-077",
@@ -10820,7 +10871,6 @@
           "organisationName": "FlowFix Plumbers",
           "email": "flowfix-plumbers-che2@serveease.com",
           "phone": "9100000081",
-          "password": "Password@123",
           "serviceType": "Plumbing",
           "experience": 4,
           "address": "Chennai, Tamil Nadu",
@@ -10830,7 +10880,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "bef08cc9bef09a8ec02d13cef91f5fe6:6a2742f10d67b62952dde71b7039e695795680b35d1dbc6d856692a24ab218ba2ffa236dfee3711275d1dbe6d29a920f33fe3d48c6fd6478662df1f253e34da2"
         },
         {
           "id": "PRO-CAT-083",
@@ -10839,7 +10890,6 @@
           "organisationName": "TapMaster Services",
           "email": "tapmaster-services-che3@serveease.com",
           "phone": "9100000082",
-          "password": "Password@123",
           "serviceType": "Plumbing",
           "experience": 5,
           "address": "Chennai, Tamil Nadu",
@@ -10849,7 +10899,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "c02b30f1f74e30aa4268a29d06ff7271:a769ba778865467982b4e54a68f6eff82118fe31dee1ef189a497bb26a3ab7325432613f67c91dbd365ed514b1e6c73e0affa1af7b438f4cf8992de671ad09e3"
         },
         {
           "id": "PRO-CAT-084",
@@ -10858,7 +10909,6 @@
           "organisationName": "LeakStop Experts",
           "email": "leakstop-experts-ban2@serveease.com",
           "phone": "9100000083",
-          "password": "Password@123",
           "serviceType": "Plumbing",
           "experience": 5,
           "address": "Bangalore, Karnataka",
@@ -10868,7 +10918,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "b7d897e2c58c431a9bfea768f9af5cb5:ec92195a42356bd997d84827d8713271fea5cc68d063c25836d3e950ca6392b1f8d10c396714f4bc8958d0420e9b21851966665277e9c537c964651e3417a782"
         },
         {
           "id": "PRO-CAT-085",
@@ -10877,7 +10928,6 @@
           "organisationName": "HydroFix Plumbing",
           "email": "hydrofix-plumbing-ban3@serveease.com",
           "phone": "9100000084",
-          "password": "Password@123",
           "serviceType": "Plumbing",
           "experience": 6,
           "address": "Bangalore, Karnataka",
@@ -10887,7 +10937,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "84e7399c270e2593149c4fd2eda7de5d:3aa817a312c4325db209823491e81f0f28d04cbec61b66b5f12b22391bd4bb7e095e19f5ee2c1347ef94ddd683e5b2d26a4f2749964e9a3efcfef9cb61ad0b85"
         },
         {
           "id": "PRO-CAT-086",
@@ -11010,7 +11061,6 @@
           "organisationName": "PowerGrid Experts",
           "email": "powergrid-experts-che2@serveease.com",
           "phone": "9100000091",
-          "password": "Password@123",
           "serviceType": "Electrician",
           "experience": 4,
           "address": "Chennai, Tamil Nadu",
@@ -11020,7 +11070,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "fc56a0e953b807c7b681aad10df43d4f:fb8ab00d0ba6a50921a972263c1642b7edeb3c4a82672cf1b96423a34e8184d828c518b659b9f36ff709a73acb34530c50df0894ec425e46bbbc2740e28e6d3a"
         },
         {
           "id": "PRO-CAT-093",
@@ -11029,7 +11080,6 @@
           "organisationName": "CircuitPro Services",
           "email": "circuitpro-services-che3@serveease.com",
           "phone": "9100000092",
-          "password": "Password@123",
           "serviceType": "Electrician",
           "experience": 5,
           "address": "Chennai, Tamil Nadu",
@@ -11039,7 +11089,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "1752e1343c763656c82bf1cba4180db3:8d6344c9bf356a35eb382c55e63f442c6e77239840d9ff7186df3be18110122f3071d98ee7c3969578efe2bd93bce0614a1ccb2e010d6176dd4ce9614630d9db"
         },
         {
           "id": "PRO-CAT-094",
@@ -11048,7 +11099,6 @@
           "organisationName": "SafeWire Electricals",
           "email": "safewire-electricals-ban2@serveease.com",
           "phone": "9100000093",
-          "password": "Password@123",
           "serviceType": "Electrician",
           "experience": 5,
           "address": "Bangalore, Karnataka",
@@ -11058,7 +11108,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "186517136744594a9964b8fce37cb2d8:e2364b8521f2bad625f2bbfbbc66f9714cca1e4bcc29ddf6759559509283a62e147763ed2f9505a854a5cdb1abb6e2c7354f9222a2b555c40855632b14682346"
         },
         {
           "id": "PRO-CAT-095",
@@ -11162,7 +11213,6 @@
           "organisationName": "ServiceKing Appliances",
           "email": "serviceking-appliances-che2@serveease.com",
           "phone": "9100000099",
-          "password": "Password@123",
           "serviceType": "Appliance Repair / Installation",
           "experience": 4,
           "address": "Chennai, Tamil Nadu",
@@ -11172,7 +11222,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "4e9de034b34a3d8f904046b6a0de0a5c:5fa93f0316c21dd0546e149187493e7ce59506c0cc6621db81ce04f8c7060b0106516fe804c5a618c35476fa260056d8a1315ac045c8eab519534189aa043d45"
         },
         {
           "id": "PRO-CAT-101",
@@ -11181,7 +11232,6 @@
           "organisationName": "ProRepair Solutions",
           "email": "prorepair-solutions-che3@serveease.com",
           "phone": "9100000100",
-          "password": "Password@123",
           "serviceType": "Appliance Repair / Installation",
           "experience": 5,
           "address": "Chennai, Tamil Nadu",
@@ -11191,7 +11241,19 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "dab2766aef91176db4d26e94e395ac22:0b92ffa4d5d0dcee8f88e00c801fbe510063116714aaf9e26d434de4b740b8cd989088b28fd8aaa1446402057a5a828dbc83d80ddba23b4c465a4631edf2d196",
+          "documents": [
+            {
+              "documentId": "DOC-PRO-CAT-101-PHOTO",
+              "documentType": "Profile Photo",
+              "documentName": "Screenshot 2026-10-26 005958.png",
+              "documentUrl": "",
+              "required": false,
+              "documentStatus": "Uploaded",
+              "rejectionReason": ""
+            }
+          ]
         },
         {
           "id": "PRO-CAT-102",
@@ -11200,7 +11262,6 @@
           "organisationName": "SmartFix Technicians",
           "email": "smartfix-technicians-ban2@serveease.com",
           "phone": "9100000101",
-          "password": "Password@123",
           "serviceType": "Appliance Repair / Installation",
           "experience": 5,
           "address": "Bangalore, Karnataka",
@@ -11210,7 +11271,8 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "bb3307a28c33c0b34381362cfa3267cc:cf9d2cac8bb424ba7c6427a91609b6df5941ed7a6989135e2bb251c96b75104b7ef9fae8bede4e6034b49d9be5a2606543936efdf4b2e9eb7b8cc87794cb3bc4"
         },
         {
           "id": "PRO-CAT-103",
@@ -11219,7 +11281,6 @@
           "organisationName": "HomeGadget Repair",
           "email": "homegadget-repair-ban3@serveease.com",
           "phone": "9100000102",
-          "password": "Password@123",
           "serviceType": "Appliance Repair / Installation",
           "experience": 6,
           "address": "Bangalore, Karnataka",
@@ -11229,7 +11290,19 @@
           "cityName": "Bangalore",
           "location": "Bangalore",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "a5e55897148fa5f9422c56d356e7f31e:f1cc849d76abf982f8254673e61fa79bc7322f958c36e103add330df32f286cce2aa14547a106f162ae6f5acd2158442e864cb3389d4d8f8b8233c20f9b0013f",
+          "documents": [
+            {
+              "documentId": "DOC-PRO-CAT-103-PHOTO",
+              "documentType": "Profile Photo",
+              "documentName": "LD.png",
+              "documentUrl": "",
+              "required": false,
+              "documentStatus": "Uploaded",
+              "rejectionReason": ""
+            }
+          ]
         },
         {
           "id": "PRO-CAT-104",
@@ -11295,7 +11368,6 @@
           "organisationName": "ShieldPest Services",
           "email": "shieldpest-services-che2@serveease.com",
           "phone": "9100000106",
-          "password": "Password@123",
           "serviceType": "Pest Control",
           "experience": 4,
           "address": "Chennai, Tamil Nadu",
@@ -11305,7 +11377,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "49beb9a94067a88e3d7a272e458de2a9:27656fa2ba54ad5f014f00332f7cff4f4b2f1bea10639b69401791ef64f53f9446590aa6b6d31d3e714a1166ce8090a18925d5307fb06eca7c8e395b74b65e0e"
         },
         {
           "id": "PRO-CAT-108",
@@ -11314,7 +11387,6 @@
           "organisationName": "EcoGuard Pest Control",
           "email": "ecoguard-pest-control-che3@serveease.com",
           "phone": "9100000107",
-          "password": "Password@123",
           "serviceType": "Pest Control",
           "experience": 5,
           "address": "Chennai, Tamil Nadu",
@@ -11324,7 +11396,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "3f5436c24f5444a3b4a5fd9f5860f66c:50103c3149d305aeadde6ccfdc33f54feefe192280acf6c5e05c61a4973156bc2ef28d7585210d14defa7b2423a9b85f48e3fd3e5d4353c6227160ff18574df0"
         },
         {
           "id": "PRO-CAT-109",
@@ -11485,7 +11558,6 @@
           "organisationName": "PaintPro Services",
           "email": "paintpro-services-che2@serveease.com",
           "phone": "9100000116",
-          "password": "Password@123",
           "serviceType": "Painting",
           "experience": 4,
           "address": "Chennai, Tamil Nadu",
@@ -11495,7 +11567,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "7bf69a5ff993aa57db62e26bd196be97:cb74eccab17d33eb2437dc0817d526160ebf33fc0715b56f68cff6d58c5d8ae971d36975e56fccf0b5b64fc09b0052a6e767b2398f9b9a0f1dfb8768c27f9a3d"
         },
         {
           "id": "PRO-CAT-118",
@@ -11504,7 +11577,6 @@
           "organisationName": "WallCraft Painters",
           "email": "wallcraft-painters-che3@serveease.com",
           "phone": "9100000117",
-          "password": "Password@123",
           "serviceType": "Painting",
           "experience": 5,
           "address": "Chennai, Tamil Nadu",
@@ -11514,7 +11586,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "d7c8bab61b6caab507474ede922e5357:bbee12139c7397e84bff388a4c1b515f71a2d775c18323b49c39a9f25540c7f5a19ef26b15cf891c32c7dfe39e03a099eecf1fc65a7d1676ad4ac6ec1d5fa28d"
         },
         {
           "id": "PRO-CAT-119",
@@ -11656,7 +11729,6 @@
           "organisationName": "WoodWise Carpentry",
           "email": "woodwise-carpentry-che2@serveease.com",
           "phone": "9100000125",
-          "password": "Password@123",
           "serviceType": "Carpentry",
           "experience": 4,
           "address": "Chennai, Tamil Nadu",
@@ -11666,7 +11738,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "88e9ea420d0fbb1de3a481eb1c1069b2:eb8fbc820392d18571a86646eaf24c4c41bf56bb255007a75a2e836ee2280ebb0e8b6b14a1bb9c2730ba04e7fab32d2ace8bd6209ff027c459616d680ad206cf"
         },
         {
           "id": "PRO-CAT-127",
@@ -11675,7 +11748,6 @@
           "organisationName": "TimberPro Services",
           "email": "timberpro-services-che3@serveease.com",
           "phone": "9100000126",
-          "password": "Password@123",
           "serviceType": "Carpentry",
           "experience": 5,
           "address": "Chennai, Tamil Nadu",
@@ -11685,7 +11757,8 @@
           "cityName": "Chennai",
           "location": "Chennai",
           "registrationDate": "Not available",
-          "accountStatus": "Active"
+          "accountStatus": "Active",
+          "passwordHash": "8d19a460b9b441ad0af2151fea61850b:a4c8b7ffed83ff615d90eabc12d5a6c9ffaef38897d24d6a7bfd3297c0e403915ae187e5fa571166a5f5a6925dfbb160bb94fb80ff968c695c0a0b0da1c206d9"
         },
         {
           "id": "PRO-CAT-128",
@@ -12013,7 +12086,6 @@
           "fullName": "vijaya ram",
           "email": "v@gmail.com",
           "phone": "7702771802",
-          "password": "Password@123",
           "organisationName": "vijay services",
           "serviceType": "Appliance Repair / Installation",
           "experience": 5,
@@ -12023,7 +12095,19 @@
           "address": "123 MG Road, Chennai, Tamil Nadu",
           "providerCatalogId": "vijay-services",
           "approvalStatus": "Active",
-          "registrationDate": "5 May 2026"
+          "registrationDate": "5 May 2026",
+          "passwordHash": "12523a6866dc2a30bf376f59519c72ef:322ecaa7ff013c8442dd48e79baea18d3c20e7cf89abd4d1a50f509e6947f3c3e95e77ced62b45efc6246bca65b094c6a8691190c06de6ab9fbe7f0fa912c80f",
+          "documents": [
+            {
+              "documentId": "DOC-PRO136-PHOTO",
+              "documentType": "Profile Photo",
+              "documentName": "TV.png",
+              "documentUrl": "",
+              "required": false,
+              "documentStatus": "Uploaded",
+              "rejectionReason": ""
+            }
+          ]
         },
         {
           "id": "PRO137",
@@ -12031,7 +12115,6 @@
           "fullName": "ramesh",
           "email": "r@gmail.com",
           "phone": "7702771843",
-          "password": "Password@123",
           "organisationName": "Ramesh solutions",
           "serviceType": "Appliance Repair / Installation",
           "experience": 5,
@@ -12041,7 +12124,19 @@
           "address": "123 MG Road, Chennai, Tamil Nadu",
           "providerCatalogId": "ramesh-solutions",
           "approvalStatus": "Active",
-          "registrationDate": "5 May 2026"
+          "registrationDate": "5 May 2026",
+          "passwordHash": "65ae2ab1adc7844a81b0d58abac999b2:b64ca76bb6bf99d42efcc9e23eafd304e4032fa99a1819d52063368f62862f01c77de0c8e0e6c07811baf7b2296a58cd2011ad3c376aa2071c9ff09793cf14a7",
+          "documents": [
+            {
+              "documentId": "DOC-PRO137-PHOTO",
+              "documentType": "Profile Photo",
+              "documentName": "gesyer.jpg.jpeg",
+              "documentUrl": "",
+              "required": false,
+              "documentStatus": "Uploaded",
+              "rejectionReason": ""
+            }
+          ]
         },
         {
           "id": "PRO138",
@@ -12176,7 +12271,6 @@
           "fullName": "Raja Babu",
           "email": "rajababu@gmail.com",
           "phone": "9632147851",
-          "password": "Password@123",
           "organisationName": "Raymond Company",
           "serviceType": "Carpentry",
           "experience": 1,
@@ -12226,7 +12320,7 @@
             {
               "documentId": "DOC-PRO139-5",
               "documentType": "Profile Photo",
-              "documentName": "carpentry4.jpg.jpeg",
+              "documentName": "carpentry5.jpg.jpeg",
               "documentUrl": "local-document://PRO139/DOC-PRO139-5",
               "required": true,
               "documentStatus": "Approved",
@@ -12236,7 +12330,8 @@
           "registrationDate": "31-07-2026",
           "verificationStatus": "Verified",
           "adminRemarks": "",
-          "status": "Active"
+          "status": "Active",
+          "passwordHash": "a6729be216f8d4f6ce079b5b069738b7:a506959a735eb6581c4abdd8b351e666916399204f1e747c5b7cfb3f1b3fe19d6612e057e1215cc8969af43ad12dbbaa7f6f157f5cb7604b508ecfe3f6afd400"
         },
         {
           "id": "CUS009",
@@ -12684,11 +12779,26 @@
           "location": "Bangalore",
           "address": "123, Main road, Chennai",
           "registrationDate": "2026-08-31T19:27:19.735Z",
-          "approvalStatus": "Active",
-          "status": "Active",
+          "approvalStatus": "Suspended",
+          "status": "Suspended",
           "verificationStatus": "Verified",
           "providerCatalogId": "PRO145",
-          "role": "provider"
+          "role": "provider",
+          "accountStatus": "Suspended",
+          "adminRemarks": "",
+          "suspensionReason": "Not communicating well",
+          "statusHistory": [
+            {
+              "dateTime": "2026-10-24T12:01:07.382Z",
+              "action": "Provider suspended",
+              "previousStatus": "Active",
+              "newStatus": "Suspended",
+              "reason": "Not communicating well",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            }
+          ]
         },
         {
           "id": "CUS016",
@@ -12828,17 +12938,6 @@
               "performedById": "EMP-PO-001"
             }
           ]
-        },
-        {
-          "id": "CUS018",
-          "role": "customer",
-          "fullName": "AZHARUDDIN PATAN MOHAMMED",
-          "email": "azharuddinpatan.m24@iiits.in",
-          "phone": "7418529630",
-          "passwordHash": "082a5df836cc48d0e75bf9e3774db5f8:3cef9d19ea7a242565fd764f12951f03b4e8cd573654d6079c2756daa43fdd7b4b18d505cf95100c54f231752501897f4940ef8706ce7eeedaee4bb63a08e834",
-          "registrationDate": "2026-10-26",
-          "accountStatus": "Active",
-          "status": "Active"
         }
       ],
       "providerApprovalRequests": [
@@ -13554,10 +13653,10 @@
           "location": "Bangalore",
           "address": "123, Main road, Chennai",
           "providerCatalogId": "finestars-electricals",
-          "approvalStatus": "Active",
+          "approvalStatus": "Suspended",
           "verificationStatus": "Verified",
-          "accountStatus": "Active",
-          "status": "Active",
+          "accountStatus": "Suspended",
+          "status": "Suspended",
           "documents": [
             {
               "documentId": "DOC-PRO145-1",
@@ -13590,6 +13689,16 @@
           "registrationDate": "01-09-2026",
           "submittedDate": "01-09-2026",
           "statusHistory": [
+            {
+              "dateTime": "2026-10-24T12:01:07.382Z",
+              "action": "Provider suspended",
+              "previousStatus": "Active",
+              "newStatus": "Suspended",
+              "reason": "Not communicating well",
+              "remarks": "",
+              "performedBy": "Provider Operations",
+              "performedById": "EMP-PO-001"
+            },
             {
               "dateTime": "01-09-2026 01:09 AM",
               "action": "Verification approved",
@@ -13629,11 +13738,12 @@
           ],
           "rejectionReason": "",
           "verified": true,
-          "adminRemarks": ""
+          "adminRemarks": "",
+          "suspensionReason": "Not communicating well"
         }
       ]
     },
-    "updatedAt": "2026-10-26T11:28:03.896Z"
+    "updatedAt": "2026-10-25T20:02:59.827Z"
   },
   {
     "key": "serveEaseSupportModuleData",
@@ -21686,213 +21796,170 @@
     "value": {
       "bookings": [
         {
-          "service": "Kitchen Cleaning",
+          "service": "Bathroom Cleaning",
           "provider": "Cleanpro Services",
           "providerId": "PRO001",
-          "date": "2026-11-17",
-          "time": "13:00-17:00",
-          "address": "asdfghj",
-          "serviceFee": 799,
+          "date": "2026-10-27",
+          "time": "09:00-12:00",
+          "address": "123, Main Raod, Chennai",
+          "serviceFee": 599,
           "taxRate": 10,
-          "taxAmount": 79.9,
+          "taxAmount": 59.9,
           "platformFeeRate": 5,
-          "platformFeeAmount": 39.95,
-          "customerTotal": 918.85,
+          "platformFeeAmount": 29.95,
+          "customerTotal": 688.85,
           "providerCommissionRate": 10,
-          "providerCommissionAmount": 79.9,
-          "providerPayout": 719.1,
-          "providerPayoutAmount": 719.1,
-          "platformRevenueAmount": 119.85,
-          "amount": 918.85,
+          "providerCommissionAmount": 0,
+          "providerPayout": 0,
+          "providerPayoutAmount": 0,
+          "platformRevenueAmount": 0,
+          "amount": 688.85,
+          "payoutStatus": "Not Paid",
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "customerPhone": "9876543222",
+          "customerEmail": "user@serveease.com",
+          "status": "Rejected",
+          "category": "home-cleaning",
+          "paymentStatus": "Refunded",
+          "paymentMethod": "UPI - WhatsApp Pay",
+          "id": "BOOK-20261026-1804-0022",
+          "createdAt": "2026-10-26T12:34:34.623Z",
+          "paymentDate": "2026-10-26",
+          "paymentId": "TXN-20261026-1804-0022",
+          "statusUpdatedAt": "2026-10-26T12:38:37.477Z",
+          "stateVersion": 2,
+          "cancellationActor": "Provider",
+          "cancelledAt": "2026-10-26T12:38:37.476Z",
+          "cancellationPolicy": "PROVIDER_CANCEL_FULL_REFUND",
+          "refundAmount": 688.85,
+          "refundServiceFee": 599,
+          "refundPlatformFee": 29.95,
+          "refundTax": 59.9,
+          "taxRefundAmount": 59.9,
+          "refundStatus": "Refunded",
+          "refundDate": "2026-10-26"
+        },
+        {
+          "service": "Geyser",
+          "provider": "ServiceKing Appliances",
+          "providerId": "PRO-CAT-100",
+          "date": "2026-10-29",
+          "time": "09:00-10:00",
+          "address": "123, Main Raod, Chennai",
+          "serviceFee": 299,
+          "taxRate": 10,
+          "taxAmount": 29.9,
+          "platformFeeRate": 5,
+          "platformFeeAmount": 14.95,
+          "customerTotal": 343.85,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 29.9,
+          "providerPayout": 269.1,
+          "providerPayoutAmount": 269.1,
+          "platformRevenueAmount": 44.85,
+          "amount": 343.85,
           "payoutStatus": "Pending",
           "customerId": "CUS001",
           "customerName": "Raghava Kumar",
           "customerPhone": "9876543222",
           "customerEmail": "user@serveease.com",
           "status": "Pending",
+          "category": "appliance-repair-installation",
+          "paymentStatus": "Paid",
+          "paymentMethod": "Net Banking - Federal Bank",
+          "id": "BOOK-20261026-1003-0021",
+          "createdAt": "2026-10-26T04:33:33.043Z",
+          "paymentDate": "2026-10-26",
+          "paymentId": "TXN-20261026-1003-0021",
+          "statusUpdatedAt": "2026-10-26T04:33:33.043Z",
+          "stateVersion": 1
+        },
+        {
+          "service": "Bathroom Cleaning",
+          "provider": "Cleanpro Services",
+          "providerId": "PRO001",
+          "date": "2026-10-27",
+          "time": "13:00-17:00",
+          "address": "123, Main Road, Chennai.",
+          "serviceFee": 599,
+          "taxRate": 10,
+          "taxAmount": 59.9,
+          "platformFeeRate": 5,
+          "platformFeeAmount": 29.95,
+          "customerTotal": 688.85,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 59.9,
+          "providerPayout": 539.1,
+          "providerPayoutAmount": 539.1,
+          "platformRevenueAmount": 89.85,
+          "amount": 688.85,
+          "payoutStatus": "Pending",
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "customerPhone": "9876543222",
+          "customerEmail": "user@serveease.com",
+          "status": "Accepted",
           "category": "home-cleaning",
           "paymentStatus": "Paid",
-          "paymentMethod": "Net Banking - IndusInd Bank",
-          "id": "BOOK-20261112-1039-0022",
-          "createdAt": "2026-11-12T05:09:07.360Z",
-          "paymentDate": "2026-11-12",
-          "paymentId": "TXN-20261112-1039-0022",
-          "statusUpdatedAt": "2026-11-12T05:09:07.360Z",
-          "stateVersion": 4,
-          "originalDate": "2026-11-13",
-          "originalTime": "01:00-02:00",
-          "rescheduledAt": "2026-11-12T12:07:33.722Z",
-          "rescheduleCount": 3,
-          "rescheduleHistory": [
-            {
-              "fromDate": "2026-11-13",
-              "fromTime": "01:00-02:00",
-              "toDate": "2026-11-13",
-              "toTime": "09:00-12:00",
-              "rescheduledAt": "2026-11-12T05:09:39.208Z",
-              "rescheduledBy": "Customer"
-            },
-            {
-              "fromDate": "2026-11-13",
-              "fromTime": "09:00-12:00",
-              "toDate": "2026-11-13",
-              "toTime": "12:00-13:00",
-              "rescheduledAt": "2026-11-12T05:10:31.854Z",
-              "rescheduledBy": "Customer"
-            },
-            {
-              "fromDate": "2026-11-13",
-              "fromTime": "12:00-13:00",
-              "toDate": "2026-11-17",
-              "toTime": "13:00-17:00",
-              "rescheduledAt": "2026-11-12T12:07:33.722Z",
-              "rescheduledBy": "Customer"
-            }
-          ]
-        },
-        {
-          "service": "Kitchen Cleaning",
-          "provider": "Cleanpro Services",
-          "providerId": "PRO001",
-          "date": "2026-11-07",
-          "time": "09:00-11:00",
-          "address": "qwertyuio",
-          "serviceFee": 799,
-          "taxRate": 10,
-          "taxAmount": 79.9,
-          "platformFeeRate": 5,
-          "platformFeeAmount": 39.95,
-          "customerTotal": 918.85,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 0,
-          "providerPayout": 0,
-          "providerPayoutAmount": 0,
-          "platformRevenueAmount": 0,
-          "amount": 918.85,
-          "payoutStatus": "Not Paid",
-          "customerId": "CUS001",
-          "customerName": "Raghava Kumar",
-          "customerPhone": "9876543222",
-          "customerEmail": "user@serveease.com",
-          "status": "Rejected",
-          "category": "home-cleaning",
-          "paymentStatus": "Refunded",
-          "paymentMethod": "Net Banking - Axis Bank",
-          "id": "BOOK-20261106-1225-0021",
-          "createdAt": "2026-11-06T06:55:06.649Z",
-          "paymentDate": "2026-11-06",
-          "paymentId": "TXN-20261106-1225-0021",
-          "statusUpdatedAt": "2026-11-06T06:55:23.391Z",
-          "stateVersion": 2,
-          "cancellationActor": "Provider",
-          "cancelledAt": "2026-11-06T06:55:23.390Z",
-          "cancellationPolicy": "PROVIDER_CANCEL_FULL_REFUND",
-          "refundAmount": 918.85,
-          "refundServiceFee": 799,
-          "refundPlatformFee": 39.95,
-          "refundTax": 79.9,
-          "taxRefundAmount": 79.9,
-          "refundStatus": "Refunded",
-          "refundDate": "2026-11-06",
-          "rejectionReason": "Raghava is too good"
-        },
-        {
-          "service": "Kitchen Cleaning",
-          "provider": "Cleanpro Services",
-          "providerId": "PRO001",
-          "date": "2026-11-07",
-          "time": "09:00-11:00",
-          "address": "asdfghj",
-          "serviceFee": 799,
-          "taxRate": 10,
-          "taxAmount": 79.9,
-          "platformFeeRate": 5,
-          "platformFeeAmount": 39.95,
-          "customerTotal": 918.85,
-          "providerCommissionRate": 10,
-          "providerCommissionAmount": 0,
-          "providerPayout": 0,
-          "providerPayoutAmount": 0,
-          "platformRevenueAmount": 0,
-          "amount": 918.85,
-          "payoutStatus": "Not Paid",
-          "customerId": "CUS001",
-          "customerName": "Raghava Kumar",
-          "customerPhone": "9876543222",
-          "customerEmail": "user@serveease.com",
-          "status": "Rejected",
-          "category": "home-cleaning",
-          "paymentStatus": "Refunded",
           "paymentMethod": "Net Banking - Federal Bank",
-          "id": "BOOK-20261106-1206-0020",
-          "createdAt": "2026-11-06T06:36:28.603Z",
-          "paymentDate": "2026-11-06",
-          "paymentId": "TXN-20261106-1206-0020",
-          "statusUpdatedAt": "2026-11-06T06:53:40.601Z",
-          "stateVersion": 2,
-          "cancellationActor": "Provider",
-          "cancelledAt": "2026-11-06T06:53:40.599Z",
-          "cancellationPolicy": "PROVIDER_CANCEL_FULL_REFUND",
-          "refundAmount": 918.85,
-          "refundServiceFee": 799,
-          "refundPlatformFee": 39.95,
-          "refundTax": 79.9,
-          "taxRefundAmount": 79.9,
-          "refundStatus": "Refunded",
-          "refundDate": "2026-11-06",
-          "rejectionReason": "not available"
+          "id": "BOOK-20261026-1000-0020",
+          "createdAt": "2026-10-26T04:30:10.840Z",
+          "paymentDate": "2026-10-26",
+          "paymentId": "TXN-20261026-1000-0020",
+          "statusUpdatedAt": "2026-10-26T04:30:28.538Z",
+          "stateVersion": 2
         },
         {
-          "service": "Kitchen Cleaning",
-          "provider": "Cleanpro Services",
-          "providerId": "PRO001",
-          "date": "2026-10-29",
+          "service": "Plumbing",
+          "provider": "RMD plumbers",
+          "providerId": "PRO127",
+          "date": "2026-10-26",
           "time": "09:00-12:00",
-          "address": "sdfghjk",
-          "serviceFee": 799,
+          "address": "741258",
+          "serviceFee": 499,
           "taxRate": 10,
-          "taxAmount": 79.9,
+          "taxAmount": 49.9,
           "platformFeeRate": 5,
-          "platformFeeAmount": 39.95,
-          "customerTotal": 918.85,
+          "platformFeeAmount": 24.95,
+          "customerTotal": 573.85,
           "providerCommissionRate": 10,
-          "providerCommissionAmount": 0,
-          "providerPayout": 0,
-          "providerPayoutAmount": 0,
-          "platformRevenueAmount": 0,
-          "amount": 918.85,
-          "payoutStatus": "Not Paid",
+          "providerCommissionAmount": 49.9,
+          "providerPayout": 449.1,
+          "providerPayoutAmount": 449.1,
+          "platformRevenueAmount": 74.85,
+          "amount": 573.85,
+          "payoutStatus": "Paid",
           "customerId": "CUS001",
           "customerName": "Raghava Kumar",
           "customerPhone": "9876543222",
           "customerEmail": "user@serveease.com",
-          "status": "Rejected",
-          "category": "home-cleaning",
-          "paymentStatus": "Refunded",
-          "paymentMethod": "UPI - Freecharge",
-          "id": "BOOK-20261028-1221-0019",
-          "createdAt": "2026-10-28T06:51:11.057Z",
-          "paymentDate": "2026-10-28",
-          "paymentId": "TXN-20261028-1221-0019",
-          "statusUpdatedAt": "2026-10-28T06:52:40.348Z",
+          "status": "Cancelled",
+          "category": "plumbing",
+          "paymentStatus": "Paid",
+          "paymentMethod": "Net Banking - RBL Bank",
+          "id": "BOOK-20261023-1939-0019",
+          "createdAt": "2026-10-23T14:09:05.740Z",
+          "paymentDate": "2026-10-23",
+          "paymentId": "TXN-20261023-1939-0019",
+          "statusUpdatedAt": "2026-10-26T04:28:47.495Z",
           "stateVersion": 2,
-          "cancellationActor": "Provider",
-          "cancelledAt": "2026-10-28T06:52:40.346Z",
-          "cancellationPolicy": "PROVIDER_CANCEL_FULL_REFUND",
-          "refundAmount": 918.85,
-          "refundServiceFee": 799,
-          "refundPlatformFee": 39.95,
-          "refundTax": 79.9,
-          "taxRefundAmount": 79.9,
-          "refundStatus": "Refunded",
-          "refundDate": "2026-10-28"
+          "cancellationActor": "Customer",
+          "cancelledAt": "2026-10-26T04:28:47.494Z",
+          "cancellationPolicy": "CUSTOMER_CANCEL_LT_3H",
+          "refundAmount": 0,
+          "refundServiceFee": 0,
+          "refundPlatformFee": 0,
+          "refundTax": 0,
+          "taxRefundAmount": 0,
+          "refundStatus": "No Refund Due"
         },
         {
           "service": "Kitchen Cleaning",
           "provider": "Cleanpro Services",
           "providerId": "PRO001",
-          "date": "2026-11-17",
-          "time": "20:00-21:00",
+          "date": "2026-10-17",
+          "time": "18:30-20:30",
           "address": "741258",
           "serviceFee": 799,
           "taxRate": 10,
@@ -21906,12 +21973,12 @@
           "providerPayoutAmount": 719.1,
           "platformRevenueAmount": 119.85,
           "amount": 918.85,
-          "payoutStatus": "Pending",
+          "payoutStatus": "Paid",
           "customerId": "CUS001",
           "customerName": "Raghava Kumar",
           "customerPhone": "9876543210",
           "customerEmail": "user@serveease.com",
-          "status": "Accepted",
+          "status": "Completed",
           "category": "home-cleaning",
           "paymentStatus": "Paid",
           "paymentMethod": "Net Banking - Canara Bank",
@@ -21919,22 +21986,10 @@
           "createdAt": "2026-10-16T20:31:32.064Z",
           "paymentDate": "2026-10-16",
           "paymentId": "TXN-20261017-0201-0018",
-          "statusUpdatedAt": "2026-11-12T04:09:15.283Z",
+          "statusUpdatedAt": "2026-10-26T04:28:17.415Z",
           "stateVersion": 3,
-          "originalDate": "2026-10-17",
-          "originalTime": "18:30-20:30",
-          "rescheduledAt": "2026-11-12T04:07:53.948Z",
-          "rescheduleCount": 1,
-          "rescheduleHistory": [
-            {
-              "fromDate": "2026-10-17",
-              "fromTime": "18:30-20:30",
-              "toDate": "2026-11-17",
-              "toTime": "20:00-21:00",
-              "rescheduledAt": "2026-11-12T04:07:53.948Z",
-              "rescheduledBy": "Customer"
-            }
-          ]
+          "receivedDate": "2026-10-26",
+          "payoutDate": "2026-10-26"
         },
         {
           "service": "Kitchen Cleaning",
@@ -21955,12 +22010,12 @@
           "providerPayoutAmount": 719.1,
           "platformRevenueAmount": 119.85,
           "amount": 918.85,
-          "payoutStatus": "Pending",
+          "payoutStatus": "Paid",
           "customerId": "CUS001",
           "customerName": "Raghava Kumar",
           "customerPhone": "9876543210",
           "customerEmail": "user@serveease.com",
-          "status": "Accepted",
+          "status": "Completed",
           "category": "home-cleaning",
           "paymentStatus": "Paid",
           "paymentMethod": "Net Banking - RBL Bank",
@@ -21968,8 +22023,10 @@
           "createdAt": "2026-10-16T14:50:28.741Z",
           "paymentDate": "2026-10-16",
           "paymentId": "TXN-20261016-2020-0017",
-          "statusUpdatedAt": "2026-10-16T14:52:29.693Z",
-          "stateVersion": 2
+          "statusUpdatedAt": "2026-10-26T04:28:12.560Z",
+          "stateVersion": 3,
+          "receivedDate": "2026-10-26",
+          "payoutDate": "2026-10-26"
         },
         {
           "service": "Furniture Repair",
@@ -22025,14 +22082,17 @@
           "customerName": "Raghava Kumar",
           "customerPhone": "9876543210",
           "customerEmail": "user@serveease.com",
-          "status": "Accepted",
+          "status": "Completed",
           "category": "home-cleaning",
           "paymentStatus": "Paid",
           "id": "BOOK-20261016-1600-0015",
           "createdAt": "2026-10-16T10:30:10.347Z",
           "paymentDate": "2026-10-16",
-          "statusUpdatedAt": "2026-10-16T10:31:29.739Z",
-          "stateVersion": 2
+          "statusUpdatedAt": "2026-10-26T04:28:32.654Z",
+          "stateVersion": 3,
+          "receivedDate": "2026-10-26",
+          "payoutStatus": "Paid",
+          "payoutDate": "2026-10-26"
         },
         {
           "service": "Kitchen Cleaning",
@@ -22556,7 +22616,7 @@
         }
       ]
     },
-    "updatedAt": "2026-11-12T12:07:33.722Z"
+    "updatedAt": "2026-10-26T12:38:37.477Z"
   },
   {
     "key": "serveEaseEmployeeModuleData",
@@ -23554,6 +23614,44 @@
     "key": "serveEaseCanonicalTickets",
     "value": {
       "tickets": [
+        {
+          "ticketId": "TKT-20261023-941780",
+          "raisedByType": "customer",
+          "raisedById": "CUS001",
+          "raisedByName": "Raghava Kumar",
+          "raisedByEmail": "user@serveease.com",
+          "raisedByPhone": "9876543210",
+          "relatedBookingId": "BOOK-20261017-0201-0018",
+          "providerId": "PRO001",
+          "providerName": "Cleanpro Services",
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "ticketType": "Other",
+          "subject": "No response",
+          "description": "No response yet from provider regarding booking",
+          "attachmentUrl": "/uploads/tickets/1792736105834-8eb8903c-3f49-4b99-9bbc-307f92694468.png",
+          "priority": "Medium",
+          "status": "In Progress",
+          "escalationReason": "",
+          "assignedSupportId": "SUP001",
+          "assignedSupportName": "Priya Sharma",
+          "createdAt": "2026-10-23T06:15:05.847Z",
+          "updatedAt": "2026-10-23T06:15:37.759Z",
+          "statusHistory": [
+            {
+              "status": "In Progress",
+              "note": "Support moved ticket to In Progress.",
+              "updatedBy": "Support",
+              "updatedAt": "2026-10-23T06:15:37.759Z"
+            },
+            {
+              "status": "Pending",
+              "note": "Ticket created by customer.",
+              "updatedBy": "Customer",
+              "updatedAt": "2026-10-23T06:15:05.847Z"
+            }
+          ]
+        },
         {
           "ticketId": "TKT-20261016-941779",
           "raisedByType": "customer",
@@ -25518,7 +25616,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-16T10:11:15.699Z"
+    "updatedAt": "2026-10-23T06:15:37.759Z"
   },
   {
     "key": "serveEaseProviderServices:PRO-CAT-037",
@@ -26776,10 +26874,140 @@
               "actor": "Provider (PRO147)"
             }
           ]
+        },
+        {
+          "documentId": "DOC-PRO139-5",
+          "providerAccountId": "PRO139",
+          "ownerEmail": "rajababu@gmail.com",
+          "providerListingId": "raymond-company",
+          "documentType": "Profile Photo",
+          "verificationStatus": "Approved",
+          "originalFilename": "carpentry5.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 88525,
+          "sha256": "6571c4bcbe8a27b4bc5d6c930c3ea027c5811f969783e1c8be16ebeb361f2816",
+          "storageKey": "6571c4bcbe8a27b4bc5d6c930c3ea027c5811f969783e1c8be16ebeb361f2816.jpg",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-25T19:11:24.994Z",
+          "updatedAt": "2026-10-25T19:11:24.994Z",
+          "history": [
+            {
+              "at": "2026-10-25T19:11:24.994Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO139)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO137-PHOTO",
+          "providerAccountId": "PRO137",
+          "ownerEmail": "r@gmail.com",
+          "providerListingId": "ramesh-solutions",
+          "documentType": "Profile Photo",
+          "verificationStatus": "Uploaded",
+          "originalFilename": "gesyer.jpg.jpeg",
+          "mimeType": "image/jpeg",
+          "size": 28622,
+          "sha256": "997e3ec16b478ebd281ae9333619b81952b4c7f5eadf732461dac55be0cb7764",
+          "storageKey": "997e3ec16b478ebd281ae9333619b81952b4c7f5eadf732461dac55be0cb7764.jpg",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-25T19:23:25.268Z",
+          "updatedAt": "2026-10-25T19:23:25.268Z",
+          "history": [
+            {
+              "at": "2026-10-25T19:23:25.268Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO137)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO-CAT-101-PHOTO",
+          "providerAccountId": "PRO-CAT-101",
+          "ownerEmail": "prorepair-solutions-che3@serveease.com",
+          "providerListingId": "prorepair-solutions-che3",
+          "documentType": "Profile Photo",
+          "verificationStatus": "Uploaded",
+          "originalFilename": "Screenshot 2026-10-26 005958.png",
+          "mimeType": "image/png",
+          "size": 461153,
+          "sha256": "6f3a9a830b45273409e47c310f50a2def51fca4f2c63760e145621c3c2def1cb",
+          "storageKey": "6f3a9a830b45273409e47c310f50a2def51fca4f2c63760e145621c3c2def1cb.png",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-25T19:32:03.256Z",
+          "updatedAt": "2026-10-25T19:32:03.256Z",
+          "history": [
+            {
+              "at": "2026-10-25T19:32:03.256Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO-CAT-101)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO136-PHOTO",
+          "providerAccountId": "PRO136",
+          "ownerEmail": "v@gmail.com",
+          "providerListingId": "vijay-services",
+          "documentType": "Profile Photo",
+          "verificationStatus": "Uploaded",
+          "originalFilename": "TV.png",
+          "mimeType": "image/png",
+          "size": 964215,
+          "sha256": "e21e6c720eeb13c247e0392e3a61b4d0236e5ff0bb7adb259640512ac32d305e",
+          "storageKey": "e21e6c720eeb13c247e0392e3a61b4d0236e5ff0bb7adb259640512ac32d305e.png",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-25T19:30:25.490Z",
+          "updatedAt": "2026-10-25T19:35:14.324Z",
+          "history": [
+            {
+              "at": "2026-10-25T19:35:14.324Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO136)"
+            },
+            {
+              "at": "2026-10-25T19:30:25.490Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO136)"
+            }
+          ]
+        },
+        {
+          "documentId": "DOC-PRO-CAT-103-PHOTO",
+          "providerAccountId": "PRO-CAT-103",
+          "ownerEmail": "homegadget-repair-ban3@serveease.com",
+          "providerListingId": "homegadget-repair-ban3",
+          "documentType": "Profile Photo",
+          "verificationStatus": "Uploaded",
+          "originalFilename": "LD.png",
+          "mimeType": "image/png",
+          "size": 1370592,
+          "sha256": "98c6f996acb54adeee135a1956d47b0cfdbb0eaa611ba58c098e944a265cf350",
+          "storageKey": "98c6f996acb54adeee135a1956d47b0cfdbb0eaa611ba58c098e944a265cf350.png",
+          "source": "secure-upload",
+          "sourceReference": null,
+          "recordOrigin": "account",
+          "createdAt": "2026-10-25T19:51:43.814Z",
+          "updatedAt": "2026-10-25T19:51:43.814Z",
+          "history": [
+            {
+              "at": "2026-10-25T19:51:43.814Z",
+              "action": "profile-photo-replaced",
+              "actor": "Provider (PRO-CAT-103)"
+            }
+          ]
         }
       ]
     },
-    "updatedAt": "2026-10-16T17:00:12.263Z"
+    "updatedAt": "2026-10-25T19:51:43.814Z"
   },
   {
     "key": "serveEaseAvailabilityWeekly:PRO135:0000-01-01",
@@ -26932,14 +27160,41 @@
           "providerId": "PRO001",
           "providerName": "Cleanpro Services",
           "customerId": "CUS001",
-          "rating": 2,
-          "feedback": "Raghava",
+          "rating": 5,
+          "feedback": "Great job, very tidy.",
           "createdAt": "2026-10-16T07:21:04.340Z",
-          "updatedAt": "2026-10-26T11:22:25.464Z"
+          "updatedAt": "2026-10-16T07:21:06.018Z"
+        },
+        {
+          "bookingId": "BOOK-20261017-0201-0018",
+          "providerId": "PRO001",
+          "providerName": "Cleanpro Services",
+          "customerId": "CUS001",
+          "rating": 5,
+          "feedback": "",
+          "createdAt": "2026-10-26T04:33:52.809Z"
+        },
+        {
+          "bookingId": "BOOK-20261016-2020-0017",
+          "providerId": "PRO001",
+          "providerName": "Cleanpro Services",
+          "customerId": "CUS001",
+          "rating": 4,
+          "feedback": "",
+          "createdAt": "2026-10-26T04:33:59.174Z"
+        },
+        {
+          "bookingId": "BOOK-20261016-1600-0015",
+          "providerId": "PRO001",
+          "providerName": "Cleanpro Services",
+          "customerId": "CUS001",
+          "rating": 4,
+          "feedback": "",
+          "createdAt": "2026-10-26T04:34:07.094Z"
         }
       ]
     },
-    "updatedAt": "2026-10-26T11:22:25.465Z"
+    "updatedAt": "2026-10-26T04:34:07.094Z"
   },
   {
     "key": "serveEaseAvailabilityWeekly:PRO134:0000-01-01",
@@ -27186,5 +27441,3299 @@
       "effectiveFrom": "0000-01-01"
     },
     "updatedAt": "2026-10-16T16:56:21.000Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-068",
+    "value": {
+      "providerId": "PRO-CAT-068",
+      "services": [
+        {
+          "name": "Kitchen Cleaning",
+          "category": "Home Cleaning",
+          "description": "Cleaning since 5 years",
+          "price": 599,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792822263058",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:11:36.061Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T06:11:36.061Z"
+    },
+    "updatedAt": "2026-10-24T06:11:36.061Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-068:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-068",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "11:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-11:00",
+            "11:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T06:12:35.109Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-054",
+    "value": {
+      "providerId": "PRO-CAT-054",
+      "services": [
+        {
+          "name": "Bathroom Cleaning",
+          "category": "Home Cleaning",
+          "description": "bathroom related cleaning services",
+          "price": 499,
+          "location": "Hyderabad",
+          "cityId": 3,
+          "cityName": "Hyderabad",
+          "id": "SVC-1792822951456",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:22:31.456Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T06:22:31.456Z"
+    },
+    "updatedAt": "2026-10-24T06:22:31.456Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-054:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-054",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-11:00",
+            "11:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-11:00",
+            "11:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T06:23:18.694Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-069",
+    "value": {
+      "providerId": "PRO-CAT-069",
+      "services": [
+        {
+          "name": "Full Home Cleaning",
+          "category": "Home Cleaning",
+          "description": "All home cleaning services",
+          "price": 799,
+          "location": "Hyderabad",
+          "cityId": 3,
+          "cityName": "Hyderabad",
+          "id": "SVC-1792823140877",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:25:40.877Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T06:25:40.877Z"
+    },
+    "updatedAt": "2026-10-24T06:25:40.877Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-069:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-069",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-11:00",
+            "11:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-11:00",
+            "11:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T06:26:31.378Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-070",
+    "value": {
+      "providerId": "PRO-CAT-070",
+      "services": [
+        {
+          "name": "Full Home Cleaning",
+          "category": "Home Cleaning",
+          "description": "All Home cleaning services",
+          "price": 799,
+          "location": "Hyderabad",
+          "cityId": 3,
+          "cityName": "Hyderabad",
+          "id": "SVC-1792823275168",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:27:55.168Z"
+        },
+        {
+          "name": "Kitchen cleaning",
+          "category": "Home Cleaning",
+          "description": "Kitchen related cleaning services",
+          "price": 599,
+          "location": "Hyderabad",
+          "cityId": 3,
+          "cityName": "Hyderabad",
+          "id": "SVC-1792823318188",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:28:38.188Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T06:28:38.188Z"
+    },
+    "updatedAt": "2026-10-24T06:28:38.188Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-070:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-070",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "10:00-12:00",
+            "14:00-16:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "14:00-16:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T06:29:35.992Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-055",
+    "value": {
+      "providerId": "PRO-CAT-055",
+      "services": [
+        {
+          "name": "Kitchen cleaning",
+          "category": "Home Cleaning",
+          "description": "Kitchen cleaning services",
+          "price": 599,
+          "location": "Delhi",
+          "cityId": 4,
+          "cityName": "Delhi",
+          "id": "SVC-1792823497020",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:31:37.020Z"
+        },
+        {
+          "name": "Bathroom Cleaning",
+          "category": "Home Cleaning",
+          "description": "bathroom cleaning services",
+          "price": 499,
+          "location": "Delhi",
+          "cityId": 4,
+          "cityName": "Delhi",
+          "id": "SVC-1792823523029",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:32:03.029Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T06:32:03.029Z"
+    },
+    "updatedAt": "2026-10-24T06:32:03.030Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-055:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-055",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T06:32:17.955Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-056",
+    "value": {
+      "providerId": "PRO-CAT-056",
+      "services": [
+        {
+          "name": "Full Home Cleaning",
+          "category": "Home Cleaning",
+          "description": "Cleaning services",
+          "price": 799,
+          "location": "Mumbai",
+          "cityId": 5,
+          "cityName": "Mumbai",
+          "id": "SVC-1792823618413",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:33:38.413Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T06:33:38.413Z"
+    },
+    "updatedAt": "2026-10-24T06:33:38.413Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-056:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-056",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T06:35:15.066Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-071",
+    "value": {
+      "providerId": "PRO-CAT-071",
+      "services": [
+        {
+          "name": "Full Home Cleaning",
+          "category": "Home Cleaning",
+          "description": "service 1",
+          "price": 799,
+          "location": "Delhi",
+          "cityId": 4,
+          "cityName": "Delhi",
+          "id": "SVC-1792823843114",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:37:23.114Z"
+        },
+        {
+          "name": "Kitchen Cleaning",
+          "category": "Home Cleaning",
+          "description": "service 2",
+          "price": 599,
+          "location": "Delhi",
+          "cityId": 4,
+          "cityName": "Delhi",
+          "id": "SVC-1792823878964",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T06:37:58.964Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T06:37:58.964Z"
+    },
+    "updatedAt": "2026-10-24T06:37:58.964Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-071:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-071",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T06:38:46.801Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-074:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-074",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "11:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T10:46:31.061Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-073",
+    "value": {
+      "providerId": "PRO-CAT-073",
+      "services": [
+        {
+          "name": "Full Home Cleaning",
+          "category": "Home Cleaning",
+          "description": "Full cleaning",
+          "price": 799,
+          "location": "Mumbai",
+          "cityId": 5,
+          "cityName": "Mumbai",
+          "id": "SVC-1792838659376",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T10:44:19.376Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T10:44:19.376Z"
+    },
+    "updatedAt": "2026-10-24T10:44:19.376Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-073:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-073",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "12:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00",
+            "11:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T10:44:52.511Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-074",
+    "value": {
+      "providerId": "PRO-CAT-074",
+      "services": [
+        {
+          "name": "Full Home Cleaning",
+          "category": "Home Cleaning",
+          "description": "Full cleaning service",
+          "price": 799,
+          "location": "Mumbai",
+          "cityId": 5,
+          "cityName": "Mumbai",
+          "id": "SVC-1792838745629",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T10:45:45.629Z"
+        },
+        {
+          "name": "Bathroom Cleaning",
+          "category": "Home Cleaning",
+          "description": "Bathrooms",
+          "price": 499,
+          "location": "Mumbai",
+          "cityId": 5,
+          "cityName": "Mumbai",
+          "id": "SVC-1792838768522",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T10:46:08.522Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T10:46:08.522Z"
+    },
+    "updatedAt": "2026-10-24T10:46:08.522Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-072",
+    "value": {
+      "providerId": "PRO-CAT-072",
+      "services": [
+        {
+          "name": "Full Home Cleaning",
+          "category": "Home Cleaning",
+          "description": "Full Home",
+          "price": 799,
+          "location": "Delhi",
+          "cityId": 4,
+          "cityName": "Delhi",
+          "id": "SVC-1792838925973",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T10:48:45.973Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T10:48:45.973Z"
+    },
+    "updatedAt": "2026-10-24T10:48:45.973Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-072:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-072",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T10:49:03.716Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-057",
+    "value": {
+      "providerId": "PRO-CAT-057",
+      "services": [
+        {
+          "name": "Haircut & Styling",
+          "category": "Salon at Home",
+          "description": "S1",
+          "price": 399,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792839218071",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T10:53:38.071Z"
+        },
+        {
+          "name": "Facial & Cleanup",
+          "category": "Salon at Home",
+          "description": "S2",
+          "price": 399,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792839235230",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T10:53:55.230Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T10:53:55.230Z"
+    },
+    "updatedAt": "2026-10-24T10:53:55.230Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-057:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-057",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "17:00-18:00",
+            "18:00-19:00",
+            "19:00-20:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00",
+            "11:00-12:00",
+            "18:00-19:00",
+            "19:00-20:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T10:55:56.385Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-075",
+    "value": {
+      "providerId": "PRO-CAT-075",
+      "services": [
+        {
+          "name": "Manicure & Pedicure",
+          "category": "Salon at Home",
+          "description": "MP1",
+          "price": 599,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792839424974",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T10:57:04.974Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T10:57:04.974Z"
+    },
+    "updatedAt": "2026-10-24T10:57:04.974Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-075:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-075",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T10:57:19.199Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-076",
+    "value": {
+      "providerId": "PRO-CAT-076",
+      "services": [
+        {
+          "name": "Haircut & Styling",
+          "category": "Salon at Home",
+          "description": "HS1",
+          "price": 399,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792839517017",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T10:58:37.017Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T10:58:37.017Z"
+    },
+    "updatedAt": "2026-10-24T10:58:37.017Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-076:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-076",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "17:00-18:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "17:00-18:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00",
+            "18:00-19:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T10:59:39.245Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-026",
+    "value": {
+      "providerId": "PRO-CAT-026",
+      "services": [
+        {
+          "name": "Facial & Cleanup",
+          "category": "Salon at Home",
+          "description": "FC",
+          "price": 699,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792839647370",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T11:00:47.370Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T11:00:47.370Z"
+    },
+    "updatedAt": "2026-10-24T11:00:47.371Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-026:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-026",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T11:01:04.347Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-027",
+    "value": {
+      "providerId": "PRO-CAT-027",
+      "services": [
+        {
+          "name": "Manicure & Pedicure",
+          "category": "Salon at Home",
+          "description": "MP",
+          "price": 599,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792839817739",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T11:03:37.739Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T11:03:37.739Z"
+    },
+    "updatedAt": "2026-10-24T11:03:37.739Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-027:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-027",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T11:03:52.314Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-031",
+    "value": {
+      "providerId": "PRO-CAT-031",
+      "services": [
+        {
+          "name": "Plumbing",
+          "category": "Plumbing",
+          "description": "P1",
+          "price": 499,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792839923574",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T11:05:23.574Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T11:05:23.574Z"
+    },
+    "updatedAt": "2026-10-24T11:05:23.574Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-031:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-031",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "11:00-12:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T11:05:56.919Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-084",
+    "value": {
+      "providerId": "PRO-CAT-084",
+      "services": [
+        {
+          "name": "Plumbing",
+          "category": "Plumbing",
+          "description": "P1",
+          "price": 449,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792839996737",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T11:07:34.998Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T11:07:34.998Z"
+    },
+    "updatedAt": "2026-10-24T11:07:34.998Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-084:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-084",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T11:07:07.029Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-085",
+    "value": {
+      "providerId": "PRO-CAT-085",
+      "services": [
+        {
+          "name": "Plumbing",
+          "category": "Plumbing",
+          "description": "P1",
+          "price": 399,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792840097573",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T11:08:35.724Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T11:08:35.724Z"
+    },
+    "updatedAt": "2026-10-24T11:08:35.724Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-085:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-085",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T11:08:52.701Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-021",
+    "value": {
+      "providerId": "PRO-CAT-021",
+      "services": [
+        {
+          "name": "Plumbing",
+          "category": "Plumbing",
+          "description": "P1",
+          "price": 499,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792840216907",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T11:10:16.907Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T11:10:16.907Z"
+    },
+    "updatedAt": "2026-10-24T11:10:16.907Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-021:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-021",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T11:10:48.670Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-082",
+    "value": {
+      "providerId": "PRO-CAT-082",
+      "services": [
+        {
+          "name": "Plumbing",
+          "category": "Plumbing",
+          "description": "P1",
+          "price": 349,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792840318968",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T11:11:58.968Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T11:11:58.968Z"
+    },
+    "updatedAt": "2026-10-24T11:11:58.968Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-082:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-082",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T11:12:33.069Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-083",
+    "value": {
+      "providerId": "PRO-CAT-083",
+      "services": [
+        {
+          "name": "Plumbing",
+          "category": "Plumbing",
+          "description": "P1",
+          "price": 349,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792840407199",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T11:13:27.199Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T11:13:27.199Z"
+    },
+    "updatedAt": "2026-10-24T11:13:27.199Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-083:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-083",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T11:13:43.394Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-028",
+    "value": {
+      "providerId": "PRO-CAT-028",
+      "services": [
+        {
+          "name": "Electrician",
+          "category": "Electrician",
+          "description": "E1",
+          "price": 299,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792843459995",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T12:04:19.995Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T12:04:19.995Z"
+    },
+    "updatedAt": "2026-10-24T12:04:19.995Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-028:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-028",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00",
+            "19:00-20:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T12:05:43.122Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-029",
+    "value": {
+      "providerId": "PRO-CAT-029",
+      "services": [
+        {
+          "name": "Electrician",
+          "category": "Electrician",
+          "description": "E1",
+          "price": 399,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792843610740",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T12:06:50.740Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T12:06:50.740Z"
+    },
+    "updatedAt": "2026-10-24T12:06:50.740Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-029:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-029",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "10:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00",
+            "11:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T12:07:17.990Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-094",
+    "value": {
+      "providerId": "PRO-CAT-094",
+      "services": [
+        {
+          "name": "Electrician",
+          "category": "Electrician",
+          "description": "E1",
+          "price": 249,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792843699980",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T12:08:19.980Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T12:08:19.980Z"
+    },
+    "updatedAt": "2026-10-24T12:08:19.980Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-094:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-094",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00",
+            "17:00-18:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T12:08:41.553Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-061",
+    "value": {
+      "providerId": "PRO-CAT-061",
+      "services": [
+        {
+          "name": "Electrician",
+          "category": "Electrician",
+          "description": "E1",
+          "price": 329,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792843829365",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T12:10:29.365Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T12:10:29.365Z"
+    },
+    "updatedAt": "2026-10-24T12:10:29.365Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-061:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-061",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "10:00-11:00",
+            "11:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00",
+            "11:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T12:11:09.778Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-092",
+    "value": {
+      "providerId": "PRO-CAT-092",
+      "services": [
+        {
+          "name": "Electrician",
+          "category": "Electrician",
+          "description": "E1",
+          "price": 349,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792843920427",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T12:12:00.427Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T12:12:00.427Z"
+    },
+    "updatedAt": "2026-10-24T12:12:00.427Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-092:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-092",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "10:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "10:00-11:00",
+            "12:00-13:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T12:12:41.714Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-093",
+    "value": {
+      "providerId": "PRO-CAT-093",
+      "services": [
+        {
+          "name": "Electrician",
+          "category": "Electrician",
+          "description": "E1",
+          "price": 449,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792844020218",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-24T12:13:40.218Z"
+        }
+      ],
+      "updatedAt": "2026-10-24T12:13:40.218Z"
+    },
+    "updatedAt": "2026-10-24T12:13:40.218Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-093:2026-10-24",
+    "value": {
+      "providerId": "PRO-CAT-093",
+      "effectiveFrom": "2026-10-24",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00",
+            "10:00-11:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-24T12:14:09.759Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-024",
+    "value": {
+      "providerId": "PRO-CAT-024",
+      "services": [
+        {
+          "name": "Door Repair / Installation",
+          "category": "Carpentry",
+          "description": "DRI",
+          "price": 429,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792955671384",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:14:31.384Z"
+        },
+        {
+          "name": "Furniture Repair",
+          "category": "Carpentry",
+          "description": "FR",
+          "price": 399,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792955692453",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:14:52.453Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:14:52.453Z"
+    },
+    "updatedAt": "2026-10-25T19:14:52.453Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-024:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-024",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:15:19.050Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-126",
+    "value": {
+      "providerId": "PRO-CAT-126",
+      "services": [
+        {
+          "name": "Door Repair / Installation",
+          "category": "Carpentry",
+          "description": "DRI",
+          "price": 449,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792955818738",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:16:58.738Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:16:58.738Z"
+    },
+    "updatedAt": "2026-10-25T19:16:58.738Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-126:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-126",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:17:14.003Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-127",
+    "value": {
+      "providerId": "PRO-CAT-127",
+      "services": [
+        {
+          "name": "Furniture Repair",
+          "category": "Carpentry",
+          "description": "FR",
+          "price": 499,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792955923219",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:18:43.219Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:18:43.219Z"
+    },
+    "updatedAt": "2026-10-25T19:18:43.219Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-127:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-127",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:18:57.701Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-030",
+    "value": {
+      "providerId": "PRO-CAT-030",
+      "services": [
+        {
+          "name": "Door Repair / Installation",
+          "category": "Carpentry",
+          "description": "DRI",
+          "price": 499,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792956008372",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:20:08.372Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:20:08.372Z"
+    },
+    "updatedAt": "2026-10-25T19:20:08.372Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-030:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-030",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:20:19.478Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-101",
+    "value": {
+      "providerId": "PRO-CAT-101",
+      "services": [
+        {
+          "name": "AC",
+          "category": "Appliance Repair / Installation",
+          "description": "A",
+          "price": 799,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792957084093",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:38:04.093Z"
+        },
+        {
+          "name": "Washing Machine",
+          "category": "Appliance Repair / Installation",
+          "description": "WM",
+          "price": 599,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792957122582",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:38:42.582Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:38:42.582Z"
+    },
+    "updatedAt": "2026-10-25T19:38:42.582Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-101:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-101",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:38:53.996Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-063",
+    "value": {
+      "providerId": "PRO-CAT-063",
+      "services": [
+        {
+          "name": "AC",
+          "category": "Appliance Repair / Installation",
+          "description": "A",
+          "price": 799,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792957200277",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:40:00.277Z"
+        },
+        {
+          "name": "Washing Machine",
+          "category": "Appliance Repair / Installation",
+          "description": "WM",
+          "price": 599,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792957222013",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:40:22.013Z"
+        },
+        {
+          "name": "Refrigerator",
+          "category": "Appliance Repair / Installation",
+          "description": "RF",
+          "price": 599,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792957245292",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:40:45.292Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:40:45.292Z"
+    },
+    "updatedAt": "2026-10-25T19:40:45.292Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-063:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-063",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:41:00.364Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-100",
+    "value": {
+      "providerId": "PRO-CAT-100",
+      "services": [
+        {
+          "name": "AC",
+          "category": "Appliance Repair / Installation",
+          "description": "AC",
+          "price": 799,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792957323358",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:42:03.358Z"
+        },
+        {
+          "name": "Geyser",
+          "category": "Appliance Repair / Installation",
+          "description": "GS",
+          "price": 299,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792957343748",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:42:23.748Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:42:23.748Z"
+    },
+    "updatedAt": "2026-10-25T19:42:23.748Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-100:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-100",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:42:34.355Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-064",
+    "value": {
+      "providerId": "PRO-CAT-064",
+      "services": [
+        {
+          "name": "TV",
+          "category": "Appliance Repair / Installation",
+          "description": "TV",
+          "price": 499,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792957431424",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:43:51.424Z"
+        },
+        {
+          "name": "AC",
+          "category": "Appliance Repair / Installation",
+          "description": "AC",
+          "price": 799,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792957444218",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:44:04.218Z"
+        },
+        {
+          "name": "Laptop/Desktop",
+          "category": "Appliance Repair / Installation",
+          "description": "LD",
+          "price": 499,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792957539523",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:45:39.523Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:45:39.523Z"
+    },
+    "updatedAt": "2026-10-25T19:45:39.523Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-064:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-064",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:45:55.842Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-102",
+    "value": {
+      "providerId": "PRO-CAT-102",
+      "services": [
+        {
+          "name": "AC",
+          "category": "Appliance Repair / Installation",
+          "description": "AC",
+          "price": 799,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792957625820",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:47:05.820Z"
+        },
+        {
+          "name": "Washing Machine",
+          "category": "Appliance Repair / Installation",
+          "description": "WM",
+          "price": 499,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792957640203",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:47:20.203Z"
+        },
+        {
+          "name": "Geyser",
+          "category": "Appliance Repair / Installation",
+          "description": "GS",
+          "price": 299,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792957679739",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:47:59.739Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:47:59.739Z"
+    },
+    "updatedAt": "2026-10-25T19:47:59.739Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-102:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-102",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:47:33.134Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-103",
+    "value": {
+      "providerId": "PRO-CAT-103",
+      "services": [
+        {
+          "name": "Laptop/Desktop",
+          "category": "Appliance Repair / Installation",
+          "description": "LD",
+          "price": 699,
+          "location": "Bangalore",
+          "cityId": 2,
+          "cityName": "Bangalore",
+          "id": "SVC-1792957752299",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:49:12.299Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:49:12.299Z"
+    },
+    "updatedAt": "2026-10-25T19:49:12.299Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-103:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-103",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:49:32.067Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-022",
+    "value": {
+      "providerId": "PRO-CAT-022",
+      "services": [
+        {
+          "name": "General Pest Control",
+          "category": "Pest Control",
+          "description": "GPC",
+          "price": 899,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792958036609",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:53:56.609Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:53:56.609Z"
+    },
+    "updatedAt": "2026-10-25T19:53:56.609Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-022:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-022",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-10:00",
+            "18:00-19:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:54:17.263Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-107",
+    "value": {
+      "providerId": "PRO-CAT-107",
+      "services": [
+        {
+          "name": "Termite Control",
+          "category": "Pest Control",
+          "description": "TC",
+          "price": 1199,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792958186148",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:56:26.148Z"
+        },
+        {
+          "name": "General Pest Control",
+          "category": "Pest Control",
+          "description": "GPC",
+          "price": 799,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792958216486",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:56:56.486Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:56:56.486Z"
+    },
+    "updatedAt": "2026-10-25T19:56:56.486Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-107:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-107",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:57:08.757Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-108",
+    "value": {
+      "providerId": "PRO-CAT-108",
+      "services": [
+        {
+          "name": "General Pest Control",
+          "category": "Pest Control",
+          "description": "GPC",
+          "price": 949,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792958323812",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T19:59:04.938Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T19:59:04.938Z"
+    },
+    "updatedAt": "2026-10-25T19:59:04.938Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-108:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-108",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T19:59:16.474Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-023",
+    "value": {
+      "providerId": "PRO-CAT-023",
+      "services": [
+        {
+          "name": "Painting",
+          "category": "Painting",
+          "description": "PG",
+          "price": 1499,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792958428677",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T20:00:28.677Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T20:00:28.677Z"
+    },
+    "updatedAt": "2026-10-25T20:00:28.677Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-023:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-023",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-12:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T20:01:00.057Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-117",
+    "value": {
+      "providerId": "PRO-CAT-117",
+      "services": [
+        {
+          "name": "Painting",
+          "category": "Painting",
+          "description": "PG",
+          "price": 1149,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792958531563",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T20:02:11.563Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T20:02:11.563Z"
+    },
+    "updatedAt": "2026-10-25T20:02:11.563Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-117:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-117",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T20:02:18.657Z"
+  },
+  {
+    "key": "serveEaseProviderServices:PRO-CAT-118",
+    "value": {
+      "providerId": "PRO-CAT-118",
+      "services": [
+        {
+          "name": "Painting",
+          "category": "Painting",
+          "description": "PG",
+          "price": 1299,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1792958603211",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-10-25T20:03:23.211Z"
+        }
+      ],
+      "updatedAt": "2026-10-25T20:03:23.211Z"
+    },
+    "updatedAt": "2026-10-25T20:03:23.211Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO-CAT-118:2026-10-26",
+    "value": {
+      "providerId": "PRO-CAT-118",
+      "effectiveFrom": "2026-10-26",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": []
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-10:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-10-25T20:03:36.585Z"
   }
 ]
