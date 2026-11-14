@@ -1,22 +1,19 @@
-import { useCallback, useEffect, useState } from 'react'
-import { availabilityApi, bookingsApi } from '../../../services/api'
+import { useMemo, useState } from 'react'
+import { bookingsApi } from '../../../services/api'
 import { formatSlot } from '../../discovery/catalogModel'
+import { useProviderAvailability } from '../../discovery/useProviderAvailability'
 import { canCustomerReschedule, formatDisplayDate } from '../customerOperations'
 import { OpsModal } from '../CustomerOpsParts'
 
 export function RescheduleModal({ booking, onClose, onRescheduled }) {
-  const [availability, setAvailability] = useState({ loading: true, dates: [], error: '' })
+  // The booking already records the provider account id the availability API expects.
+  const { dates, loading, error: availabilityError, reload: loadAvailability } = useProviderAvailability(booking.providerId)
+  // Only dates with an open slot are offered; the slice keeps the server response unchanged.
+  const availability = useMemo(() => ({ loading, error: availabilityError, dates: dates.filter((item) => Array.isArray(item.slots) && item.slots.length) }), [dates, loading, availabilityError])
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const loadAvailability = useCallback(() => {
-    setAvailability({ loading: true, dates: [], error: '' })
-    availabilityApi.get(booking.providerId)
-      .then((result) => setAvailability({ loading: false, dates: (result?.dates || []).filter((item) => Array.isArray(item.slots) && item.slots.length), error: '' }))
-      .catch((requestError) => setAvailability({ loading: false, dates: [], error: requestError.message || 'Available appointments could not be loaded.' }))
-  }, [booking.providerId])
-  useEffect(() => { let active = true; availabilityApi.get(booking.providerId).then((result) => { if (active) setAvailability({ loading: false, dates: (result?.dates || []).filter((item) => Array.isArray(item.slots) && item.slots.length), error: '' }) }).catch((requestError) => { if (active) setAvailability({ loading: false, dates: [], error: requestError.message || 'Available appointments could not be loaded.' }) }); return () => { active = false } }, [booking.providerId])
   const close = () => { if (!saving) onClose() }
   const selectedDate = availability.dates.find((item) => item.date === date)
   async function confirm() {

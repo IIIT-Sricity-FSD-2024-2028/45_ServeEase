@@ -1,29 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { availabilityApi, catalogApi, reviewsApi } from '../../services/api'
+import { catalogApi, reviewsApi } from '../../services/api'
 import { reviewStars } from '../reviews/reviewFormat'
 import { availabilityProviderId, bookableServices, dateParts, formatCurrency, formatSlot, imageFallback, listingRow, providerDisplayImage, providerIsDiscoverable, ratingSummary } from './catalogModel'
 import { saveJourney } from './journeyState'
 import { PublicJourneyShell } from './PublicJourneyShell'
+import { useProviderAvailability } from './useProviderAvailability'
 
 function BookingCard({ provider, services, cityParam }) {
   const { isAuthenticated, currentUser } = useAuth()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const [attempt, setAttempt] = useState(0)
-  const [availability, setAvailability] = useState({ loading: true, dates: [], error: '' })
   const [notice, setNotice] = useState('')
-  const ownerId = availabilityProviderId(provider)
-
-  useEffect(() => {
-    let live = true
-    availabilityApi.get(ownerId)
-      .then((response) => live && setAvailability({ loading: false, dates: Array.isArray(response?.dates) ? response.dates : [], error: '' }))
-      .catch((error) => live && setAvailability({ loading: false, dates: [], error: error.message }))
-    return () => { live = false }
-  }, [ownerId, attempt])
-  const retry = () => { setAvailability({ loading: true, dates: [], error: '' }); setAttempt((value) => value + 1) }
+  // Availability is requested for the provider account that owns this listing (ownerProviderId || id).
+  const availability = useProviderAvailability(availabilityProviderId(provider))
+  const retry = availability.reload
 
   const datesWithSlots = availability.dates.filter((item) => Array.isArray(item.slots) && item.slots.length)
   const requestedService = params.get('service')

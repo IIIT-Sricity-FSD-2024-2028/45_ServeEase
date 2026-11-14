@@ -1,8 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { availabilityApi } from '../../../services/api'
+import { useLayoutEffect, useMemo, useState } from 'react'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks'
+import {
+  availabilityProviderKey,
+  deleteProviderDateOverride,
+  fetchProviderDateOverrides,
+  fetchProviderWeeklySchedule,
+  saveProviderDateOverride,
+  saveWeeklySchedule,
+  selectDeleteDateOverrideMutationStatus,
+  selectProviderDateOverrides,
+  selectProviderDateOverridesFetchError,
+  selectProviderDateOverridesFetchStatus,
+  selectProviderWeeklySchedule,
+  selectProviderWeeklyScheduleFetchError,
+  selectProviderWeeklyScheduleFetchStatus,
+  selectSaveDateOverrideMutationStatus,
+  selectSaveWeeklyScheduleMutationStatus,
+} from '../../../store/availability/availabilitySlice'
 import { availabilityDays } from './availabilityConstants'
 
-const emptySchedule = Object.fromEntries(availabilityDays.map(([key]) => [key, []]))
 const slotPattern = /^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/
 
 function isoDate(date) {
@@ -22,6 +38,11 @@ function parseSlot(value) {
 
 function fromResponse(response) {
   return availabilityDays.reduce((result, [key]) => ({ ...result, [key]: Array.isArray(response?.weeklySchedule?.[key]) ? response.weeklySchedule[key] : [] }), {})
+}
+
+// unwrap() rejects with the thunk's rejectWithValue string (the backend message).
+function errorMessage(rejection, fallback) {
+  return (typeof rejection === 'string' ? rejection : rejection?.message) || fallback
 }
 
 function slotParts(slot) {
@@ -48,38 +69,51 @@ function validateSchedule(schedule) {
   return ''
 }
 
+const noOverrides = []
+const isPending = (status) => status === 'idle' || status === 'loading'
+
+// Server data (weekly schedule, date overrides, request states) lives in the availability slice.
+// The panel loads both resources on mount and then hands a snapshot to the editor, whose
+// draft schedule, calendar month, selected date and drawer stay component state.
 export function ProviderAvailabilityPanel({ providerId, embedded = false }) {
-  const [schedule, setSchedule] = useState(emptySchedule)
-  const [enabledDays, setEnabledDays] = useState(Object.fromEntries(availabilityDays.map(([key]) => [key, true])))
-  const [overrides, setOverrides] = useState([])
+  const dispatch = useAppDispatch()
+  const providerKey = availabilityProviderKey(providerId)
+  const weekly = useAppSelector(selectProviderWeeklySchedule(providerKey))
+  const weeklyStatus = useAppSelector(selectProviderWeeklyScheduleFetchStatus(providerKey))
+  const weeklyError = useAppSelector(selectProviderWeeklyScheduleFetchError(providerKey))
+  const overridesStatus = useAppSelector(selectProviderDateOverridesFetchStatus(providerKey))
+  const overridesError = useAppSelector(selectProviderDateOverridesFetchError(providerKey))
+
+  useLayoutEffect(() => {
+    if (!providerKey) return
+    dispatch(fetchProviderWeeklySchedule(providerKey))
+    dispatch(fetchProviderDateOverrides(providerKey))
+  }, [dispatch, providerKey])
+
+  if (providerKey && (isPending(weeklyStatus) || isPending(overridesStatus))) return <div className="provider-availability-skeleton" role="status" aria-label="Loading availability settings"><span /><span /><span /><span /></div>
+
+  // As before, a failure to load either resource leaves the editor empty and reports the error.
+  const failed = weeklyStatus === 'failed' || overridesStatus === 'failed'
+  const loadError = failed ? (weeklyStatus === 'failed' ? weeklyError : overridesError) || 'Unable to load availability settings.' : ''
+  return <AvailabilityEditor embedded={embedded} initialWeekly={failed ? null : weekly} key={providerKey} loadError={loadError} providerKey={providerKey} showOverrides={!failed} />
+}
+
+function AvailabilityEditor({ providerKey, embedded, initialWeekly, loadError, showOverrides }) {
+  const dispatch = useAppDispatch()
+  const storedOverrides = useAppSelector(selectProviderDateOverrides(providerKey))
+  const overrides = showOverrides && Array.isArray(storedOverrides) ? storedOverrides : noOverrides
+  const [schedule, setSchedule] = useState(() => fromResponse(initialWeekly))
+  const [enabledDays, setEnabledDays] = useState(() => { const initial = fromResponse(initialWeekly); return Object.fromEntries(availabilityDays.map(([key]) => [key, initialWeekly ? initial[key].length > 0 : true])) })
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [selectedDate, setSelectedDate] = useState('')
   const [draftOverride, setDraftOverride] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [overrideSaving, setOverrideSaving] = useState(false)
-  const [error, setError] = useState('')
+  const saving = useAppSelector(selectSaveWeeklyScheduleMutationStatus(providerKey)) === 'loading'
+  const overrideSaving = [
+    useAppSelector(selectSaveDateOverrideMutationStatus(providerKey, selectedDate)),
+    useAppSelector(selectDeleteDateOverrideMutationStatus(providerKey, selectedDate)),
+  ].includes('loading')
+  const [error, setError] = useState(loadError)
   const [notice, setNotice] = useState('')
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const [weekly, dateOverrides] = await Promise.all([availabilityApi.getWeeklySchedule(providerId), availabilityApi.getDateOverrides(providerId)])
-      const nextSchedule = fromResponse(weekly)
-      setSchedule(nextSchedule)
-      setEnabledDays(Object.fromEntries(availabilityDays.map(([key]) => [key, nextSchedule[key].length > 0])))
-      setOverrides(Array.isArray(dateOverrides) ? dateOverrides : [])
-    } catch (requestError) {
-      setError(requestError.message || 'Unable to load availability settings.')
-    } finally {
-      setLoading(false)
-    }
-  }, [providerId])
-
-  // The effect synchronizes the panel with the authenticated provider API.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { if (providerId) load() }, [load, providerId])
 
   const updateSlot = (key, index, part, value) => {
     setSchedule((current) => ({ ...current, [key]: current[key].map((slot, slotIndex) => { if (slotIndex !== index) return slot; const parts = slotParts(slot); return part === 'start' ? `${value}-${parts.end}` : `${parts.start}-${value}` }) }))
@@ -94,12 +128,12 @@ export function ProviderAvailabilityPanel({ providerId, embedded = false }) {
     event.preventDefault()
     const validationError = validateSchedule(schedule)
     if (validationError) { setError(validationError); setNotice(''); return }
-    setSaving(true); setError(''); setNotice('')
+    setError(''); setNotice('')
     try {
       const weeklySchedule = Object.fromEntries(availabilityDays.map(([key]) => [key, enabledDays[key] ? schedule[key] : []]))
-      const saved = await availabilityApi.saveWeeklySchedule(providerId, weeklySchedule)
+      const { weeklySchedule: saved } = await dispatch(saveWeeklySchedule({ providerId: providerKey, weeklySchedule })).unwrap()
       setSchedule(fromResponse(saved)); setNotice('Availability updated successfully.')
-    } catch (requestError) { setError(requestError.message || 'Unable to save weekly schedule.') } finally { setSaving(false) }
+    } catch (requestError) { setError(errorMessage(requestError, 'Unable to save weekly schedule.')) }
   }
 
   const selected = selectedDate ? new Date(`${selectedDate}T00:00:00`) : null
@@ -122,19 +156,17 @@ export function ProviderAvailabilityPanel({ providerId, embedded = false }) {
 
   const saveOverride = async () => {
     if (!selectedDate || !draftOverride || overrideSaving) return
-    setOverrideSaving(true); setError(''); setNotice('')
+    setError(''); setNotice('')
     try {
+      // The slice applies the server-confirmed override (or removal) to the cached list.
       if (!draftOverride.fullDayOff && !draftOverride.disabledSlots.length) {
-        if (existingOverride) await availabilityApi.deleteDateOverride(providerId, selectedDate)
+        if (existingOverride) await dispatch(deleteProviderDateOverride({ providerId: providerKey, date: selectedDate })).unwrap()
       } else {
-        await availabilityApi.saveDateOverride(providerId, selectedDate, { fullDayOff: draftOverride.fullDayOff, disabledSlots: draftOverride.disabledSlots, enabledSlots: [] })
+        await dispatch(saveProviderDateOverride({ providerId: providerKey, date: selectedDate, override: { fullDayOff: draftOverride.fullDayOff, disabledSlots: draftOverride.disabledSlots, enabledSlots: [] } })).unwrap()
       }
-      const updated = await availabilityApi.getDateOverrides(providerId)
-      setOverrides(Array.isArray(updated) ? updated : []); setSelectedDate(''); setDraftOverride(null); setNotice('Availability updated successfully.')
-    } catch (requestError) { setError(requestError.message || 'Unable to save this date override.') } finally { setOverrideSaving(false) }
+      setSelectedDate(''); setDraftOverride(null); setNotice('Availability updated successfully.')
+    } catch (requestError) { setError(errorMessage(requestError, 'Unable to save this date override.')) }
   }
-
-  if (loading) return <div className="provider-availability-skeleton" role="status" aria-label="Loading availability settings"><span /><span /><span /><span /></div>
 
   return <div className={`provider-availability-manager ${embedded ? 'is-embedded' : ''}`}>
     {error && <div className="provider-availability-feedback provider-availability-feedback--error" role="alert">{error}</div>}
