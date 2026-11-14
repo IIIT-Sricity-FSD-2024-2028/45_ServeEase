@@ -21807,6 +21807,55 @@
     "value": {
       "bookings": [
         {
+          "service": "Kitchen Cleaning",
+          "provider": "Cleanpro Services",
+          "providerId": "PRO001",
+          "date": "2026-11-16",
+          "time": "09:00-11:00",
+          "address": "147852",
+          "serviceFee": 799,
+          "taxRate": 10,
+          "taxAmount": 79.9,
+          "platformFeeRate": 5,
+          "platformFeeAmount": 39.95,
+          "customerTotal": 918.85,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "providerPayoutAmount": 719.1,
+          "platformRevenueAmount": 119.85,
+          "amount": 918.85,
+          "payoutStatus": "Pending",
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "customerPhone": "9876543222",
+          "customerEmail": "user@serveease.com",
+          "status": "Pending",
+          "category": "home-cleaning",
+          "paymentStatus": "Paid",
+          "paymentMethod": "Net Banking - Axis Bank",
+          "id": "BOOK-20261114-2031-0025",
+          "createdAt": "2026-11-14T15:01:09.722Z",
+          "paymentDate": "2026-11-14",
+          "paymentId": "TXN-20261114-2031-0025",
+          "statusUpdatedAt": "2026-11-14T15:01:09.722Z",
+          "stateVersion": 2,
+          "originalDate": "2026-11-18",
+          "originalTime": "12:00-13:00",
+          "rescheduledAt": "2026-11-14T15:03:00.023Z",
+          "rescheduleCount": 1,
+          "rescheduleHistory": [
+            {
+              "fromDate": "2026-11-18",
+              "fromTime": "12:00-13:00",
+              "toDate": "2026-11-16",
+              "toTime": "09:00-11:00",
+              "rescheduledAt": "2026-11-14T15:03:00.023Z",
+              "rescheduledBy": "Customer"
+            }
+          ]
+        },
+        {
           "service": "Full Home Cleaning",
           "provider": "Neatly Home Services",
           "providerId": "PRO-CAT-053",
@@ -22697,7 +22746,7 @@
         }
       ]
     },
-    "updatedAt": "2026-11-14T08:14:30.824Z"
+    "updatedAt": "2026-11-14T15:03:00.023Z"
   },
   {
     "key": "serveEaseEmployeeModuleData",
@@ -30830,7 +30879,7 @@
         {
           "dayOfWeek": "Monday",
           "slots": [
-            "09:00-12:00",
+            "09:00-11:00",
             "13:00-17:00",
             "19:00-21:00"
           ]
@@ -30882,6 +30931,26 @@
         }
       ]
     },
-    "updatedAt": "2026-11-14T08:19:32.345Z"
+    "updatedAt": "2026-11-14T14:29:45.859Z"
+  },
+  {
+    "key": "serveEaseAvailabilityOverride:PRO001:2026-11-21",
+    "value": {
+      "date": "2026-11-21",
+      "fullDayOff": true,
+      "disabledSlots": [],
+      "enabledSlots": []
+    },
+    "updatedAt": "2026-11-14T14:33:18.693Z"
+  },
+  {
+    "key": "serveEaseAvailabilityOverride:PRO001:2026-11-17",
+    "value": {
+      "date": "2026-11-17",
+      "fullDayOff": true,
+      "disabledSlots": [],
+      "enabledSlots": []
+    },
+    "updatedAt": "2026-11-14T14:33:29.786Z"
   }
 ]

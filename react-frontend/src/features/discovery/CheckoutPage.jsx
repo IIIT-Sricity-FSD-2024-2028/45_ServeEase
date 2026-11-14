@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { availabilityApi, bookingsApi, catalogApi } from '../../services/api'
+import { bookingsApi, catalogApi } from '../../services/api'
 import { availabilityProviderId, bookableServices, formatCurrency, formatDisplayDate, paymentMethodLabel, validateCustomerDetails, validatePayment } from './catalogModel'
 import { readJourney, saveJourney } from './journeyState'
+import { useProviderAvailability } from './useProviderAvailability'
 import { CANCELLATION_POLICY_LINES, priceBreakdown } from '../finance/revenueModel'
 import './journey.css'
 
@@ -36,7 +37,7 @@ export function CheckoutPage() {
   }
   const selectionKey = [selection.providerId, selection.serviceName, selection.date, selection.time].join('|')
   const draft = journey?.draft
-  const [state, setState] = useState({ loading: true, provider: null, categories: [], slots: null, error: '' })
+  const [state, setState] = useState({ loading: true, provider: null, categories: [], error: '' })
   const [customer, setCustomer] = useState({ name: currentUser?.fullName || '', phone: currentUser?.phone || '', address: '' })
   const [paymentType, setPaymentType] = useState('card')
   const [payment, setPayment] = useState({})
@@ -51,17 +52,18 @@ export function CheckoutPage() {
     Promise.all([
       catalogApi.getProvider(selection.providerId),
       catalogApi.getCatalog().catch(() => null),
-    ]).then(async ([provider, catalog]) => {
-      // null = unknown (availability failed to load); the booking API still enforces it on submit.
-      const slots = await availabilityApi.get(availabilityProviderId(provider))
-        .then((availability) => (availability?.dates || []).find((item) => item.date === selection.date)?.slots || [])
-        .catch(() => null)
-      if (live) setState({ loading: false, provider, categories: catalog?.categories || [], slots, error: '' })
-    }).catch((error) => live && setState({ loading: false, provider: null, categories: [], slots: null, error: error.message }))
+    ]).then(([provider, catalog]) => {
+      if (live) setState({ loading: false, provider, categories: catalog?.categories || [], error: '' })
+    }).catch((error) => live && setState({ loading: false, provider: null, categories: [], error: error.message }))
     return () => { live = false }
-  }, [selection.providerId, selection.date])
+  }, [selection.providerId])
 
   const provider = state.provider
+  // Availability is requested once the listing is known, for the account that owns it.
+  const availability = useProviderAvailability(provider ? availabilityProviderId(provider) : null)
+  // null = unknown (availability failed to load); the booking API still enforces it on submit.
+  const slots = availability.error ? null : availability.dates.find((item) => item.date === selection.date)?.slots || []
+  const loading = state.loading || availability.loading
   const service = useMemo(() => bookableServices(provider).find((item) => item.name === selection.serviceName), [provider, selection.serviceName])
 
   // A login redirect can drop the query string; recover the selection saved on the profile page.
@@ -78,7 +80,7 @@ export function CheckoutPage() {
 
   const profileUrl = `/providers/${encodeURIComponent(selection.providerId)}?${new URLSearchParams({ service: selection.serviceName, date: selection.date, time: selection.time, ...(selection.city ? { city: selection.city } : {}) })}`
   const alreadyBooked = journey?.booked?.key === selectionKey ? journey.booked : null
-  const slotUnavailable = Array.isArray(state.slots) && !state.slots.includes(selection.time)
+  const slotUnavailable = !loading && Array.isArray(slots) && !slots.includes(selection.time)
   const category = state.categories.find((item) => item.id === provider?.category)
 
   const setField = (key, value) => { setPayment((previous) => ({ ...previous, [key]: value })); setErrors((previous) => ({ ...previous, payment: '' })) }
@@ -123,14 +125,14 @@ export function CheckoutPage() {
     <Link to="/">Home</Link> &nbsp;›&nbsp; <Link to={`/services?${new URLSearchParams({ ...(provider?.category ? { category: provider.category } : {}), ...(selection.city ? { city: selection.city } : {}) })}`}>Service Providers</Link> &nbsp;›&nbsp; <Link to={profileUrl}>Provider Profile</Link> &nbsp;›&nbsp; <strong>Booking &amp; Checkout</strong>
   </div>
 
-  if (state.loading || state.error || !service) {
+  if (loading || state.error || !service) {
     let message = 'Loading booking details…'
     if (state.error) message = /not found/i.test(state.error) ? 'Booking details not found. The selected provider is not in the catalog.' : `We couldn't load the booking details. ${state.error}`
-    else if (!state.loading) message = 'The selected service is not offered by this provider.'
+    else if (!loading) message = 'The selected service is not offered by this provider.'
     return <div className="se-journey journey-in-shell"><div className="checkout-page">
       {breadcrumbs}
       <h1 className="checkout-title">Booking &amp; Checkout</h1>
-      <div className="empty-state-card" role={state.loading ? 'status' : 'alert'}>{message} {!state.loading && <Link className="link-inline" to={profileUrl}>Back to provider profile</Link>}</div>
+      <div className="empty-state-card" role={loading ? 'status' : 'alert'}>{message} {!loading && <Link className="link-inline" to={profileUrl}>Back to provider profile</Link>}</div>
     </div></div>
   }
 

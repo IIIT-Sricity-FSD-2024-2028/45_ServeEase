@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { availabilityApi } from '../../services/api'
-import { PRICE_STEP, categoryProviders, filterProviders, formatCurrency, priceBounds, resolveCategory, serviceOptions } from './catalogModel'
+import { useAppDispatch, useAppSelector } from '../../store/hooks'
+import { availabilityProviderKey, fetchProviderAvailability, selectProviderAvailabilityFetchStatusMap, selectProviderAvailabilityMap } from '../../store/availability/availabilitySlice'
+import { PRICE_STEP, availabilityProviderId, categoryProviders, filterProviders, formatCurrency, priceBounds, resolveCategory, serviceOptions } from './catalogModel'
 import { DiscoveryResults } from './DiscoveryResults'
 import { PublicJourneyShell } from './PublicJourneyShell'
 import { useCatalog } from './useCatalog'
@@ -22,7 +23,9 @@ export function ServicesPage() {
   const category = resolveCategory(categories, categoryParam)
   const query = params.get('q') || ''
   const service = params.get('service') || 'all'
-  const [todayAvailability, setTodayAvailability] = useState({})
+  const dispatch = useAppDispatch()
+  const availabilityByProvider = useAppSelector(selectProviderAvailabilityMap)
+  const availabilityStatusByProvider = useAppSelector(selectProviderAvailabilityFetchStatusMap)
 
   function setParam(key, value, fallback, replace = false) {
     setParams((previous) => {
@@ -59,22 +62,28 @@ export function ServicesPage() {
 
   // Providers with a live schedule: replace the catalog's static availableToday flag with the
   // availability API result (initCategoryServicesPage → loadTodayAvailability in the original).
-  const ownedIds = useMemo(() => [...new Set(allRows.filter((row) => row.ownerProviderId).map((row) => `${row.id}|${row.ownerProviderId}`))], [allRows])
+  // Only listings owned by a provider account have a live schedule; their availability is keyed by
+  // that account id (availabilityProviderId → ownerProviderId), never by the listing id.
+  const ownedRows = useMemo(() => allRows
+    .filter((row) => row.ownerProviderId)
+    .map((row) => ({ id: row.id, providerKey: availabilityProviderKey(availabilityProviderId(row)) }))
+    .filter((row) => row.providerKey), [allRows])
+  // A stable string dependency: re-filtering the same providers must not request them again.
+  const ownerKeys = useMemo(() => JSON.stringify([...new Set(ownedRows.map((row) => row.providerKey))]), [ownedRows])
   useEffect(() => {
-    if (!ownedIds.length) return undefined
-    let live = true
-    Promise.all(ownedIds.map(async (key) => {
-      const [id, ownerId] = key.split('|')
-      try {
-        const response = await availabilityApi.get(ownerId)
-        const today = (response?.dates || []).find((item) => item.date === localToday())
-        return [id, Boolean(today?.slots?.length)]
-      } catch {
-        return [id, false]
-      }
-    })).then((entries) => live && setTodayAvailability((previous) => ({ ...previous, ...Object.fromEntries(entries) })))
-    return () => { live = false }
-  }, [ownedIds])
+    JSON.parse(ownerKeys).forEach((providerKey) => dispatch(fetchProviderAvailability(providerKey)))
+  }, [dispatch, ownerKeys])
+  // A failed request means "not available today"; a provider not loaded yet keeps the catalog flag.
+  const todayAvailability = useMemo(() => {
+    const today = localToday()
+    return Object.fromEntries(ownedRows.flatMap(({ id, providerKey }) => {
+      if (availabilityStatusByProvider[providerKey] === 'failed') return [[id, false]]
+      const response = availabilityByProvider[providerKey]
+      if (!response) return []
+      const day = (Array.isArray(response.dates) ? response.dates : []).find((item) => item.date === today)
+      return [[id, Boolean(day?.slots?.length)]]
+    }))
+  }, [ownedRows, availabilityByProvider, availabilityStatusByProvider])
 
   const categoryLabel = category ? `${category.name} Services` : 'All Services'
   return <PublicJourneyShell city={city} cities={cities} className="listing-page" onCityChange={changeCity}>

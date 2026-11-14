@@ -4,6 +4,8 @@ import { register } from 'node:module'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
+import { configureStore } from '@reduxjs/toolkit'
+import { Provider } from 'react-redux'
 import {
   attachmentHref, attachmentValidationError, belongsToCustomer, bookingTabView, canCustomerCancel, canCustomerReschedule, canonicalBookingId, countForTab,
   filterTickets, formatPrice, openTicketForBooking, statusPillClass, ticketStatusClass, validateTicketForm,
@@ -20,6 +22,7 @@ const { default: CustomerBookingsPage } = await import('../src/features/customer
 const { default: CustomerSupportPage } = await import('../src/features/customer/support/CustomerSupportPage.jsx')
 const { default: CustomerTicketsPage } = await import('../src/features/customer/tickets/CustomerTicketsPage.jsx')
 const { default: CustomerProfilePage } = await import('../src/features/customer/profile/CustomerProfilePage.jsx')
+const { default: availability } = await import('../src/store/availability/availabilitySlice.js')
 
 const customer = { userId: 'CUS001', email: 'abhi@example.test', role: 'customer' }
 const booking = (overrides) => ({ id: 'BOOK-1', service: 'AC Repair', provider: 'CoolFix', date: '2026-10-20', time: '09:00-12:00', address: '12 MG Road', amount: 500, customerTotal: 575, status: 'Pending', paymentStatus: 'Pending', customerId: 'CUS001', ...overrides })
@@ -43,7 +46,9 @@ test('booking cards show Reschedule only for pending bookings', () => {
 })
 
 test('reschedule modal starts with its current schedule and availability loading state', () => {
-  const markup = inRouter(createElement(RescheduleModal, { booking: booking(), onClose: noop, onRescheduled: noop }))
+  // Availability now comes from the Redux store; a fresh store starts in its idle (loading) state.
+  const store = configureStore({ reducer: { availability } })
+  const markup = inRouter(createElement(Provider, { store }, createElement(RescheduleModal, { booking: booking({ providerId: 'PRV-1' }), onClose: noop, onRescheduled: noop })))
   assert.match(markup, /Reschedule Booking/); assert.match(markup, /Current schedule:/); assert.match(markup, /Finding available appointments/)
 })
 
