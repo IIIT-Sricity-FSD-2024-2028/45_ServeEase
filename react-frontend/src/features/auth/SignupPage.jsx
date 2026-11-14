@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { destinationFor } from '../../app/destinations'
-import { authApi, catalogApi, providerDocumentsApi } from '../../services/api'
+import { authApi, providerDocumentsApi } from '../../services/api'
 import { useAuth } from '../../context/useAuth'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
+import { fetchCatalog, selectCatalog, selectCatalogFetchStatus } from '../../store/catalog/catalogSlice.js'
 import { AuthFooterLinks, AuthPromo, FieldError, PasswordInput } from './AuthParts'
 import { documentFileError, uploadRegisteredDocuments } from './providerDocuments'
 import { categoryServices, customServiceError, signupPayload } from './signupPayload'
@@ -43,16 +45,18 @@ function validate(role, values, documents, offered, available, custom) {
 export function SignupPage() {
   const [params] = useSearchParams(); const [role, setRole] = useState(params.get('role') === 'provider' ? 'provider' : 'customer')
   const [values, setValues] = useState(initial); const [documents, setDocuments] = useState({}); const [errors, setErrors] = useState({}); const [submitted, setSubmitted] = useState(false); const [error, setError] = useState(''); const [loading, setLoading] = useState(false)
-  const [categories, setCategories] = useState(null); const [categoriesError, setCategoriesError] = useState(false); const [offered, setOffered] = useState({})
+  const dispatch = useAppDispatch()
+  const catalog = useAppSelector(selectCatalog)
+  const catalogStatus = useAppSelector(selectCatalogFetchStatus)
+  const categories = role === 'provider' && catalogStatus === 'succeeded' ? (Array.isArray(catalog?.categories) ? catalog.categories : []) : null
+  const categoriesError = role === 'provider' && catalogStatus === 'failed'
+  const [offered, setOffered] = useState({})
   const [custom, setCustom] = useState({ enabled: false, name: '', price: '' })
   const [issued, setIssued] = useState(null)
   const { isAuthenticated, currentUser, establishSession } = useAuth(); const navigate = useNavigate()
   useEffect(() => {
-    if (role !== 'provider' || categories) return undefined
-    let live = true
-    catalogApi.getCatalog().then((catalog) => { if (live) { setCategories(Array.isArray(catalog?.categories) ? catalog.categories : []); setCategoriesError(false) } }).catch(() => { if (live) setCategoriesError(true) })
-    return () => { live = false }
-  }, [role, categories])
+    if (role === 'provider') dispatch(fetchCatalog())
+  }, [role, dispatch])
   if (isAuthenticated) return <Navigate to={destinationFor(currentUser)} replace />
   const update = (event) => { const { name, value } = event.target; if (name === 'serviceType') { setOffered({}); setCustom({ enabled: false, name: '', price: '' }) } setValues({ ...values, [name]: sanitizers[name] ? sanitizers[name](value) : value }) }
   const choose = (event) => setDocuments({ ...documents, [event.target.name]: event.target.files?.[0] })

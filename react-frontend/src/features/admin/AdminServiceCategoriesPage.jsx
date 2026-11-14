@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminPageHeader } from './AdminPageHeader'
-import { listCatalog, saveCatalogCategories, syncCatalog } from './adminApi'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
+import { fetchCatalog, saveCatalogCategories, selectCatalog, selectCatalogFetchError, selectCatalogFetchStatus, syncCatalog } from '../../store/catalog/catalogSlice.js'
 import { matchesAdminSearch, useAdminSearch } from './adminSearch'
-import { show, useAdminData } from './useAdminData'
+import { show } from './useAdminData'
 import './admin.css'
 
 function slugify(value) {
@@ -94,7 +95,12 @@ function prepareCatalog(catalog, categories) {
 }
 
 export default function AdminServiceCategoriesPage() {
-  const catalog = useAdminData(listCatalog)
+  const dispatch = useAppDispatch()
+  const catalogData = useAppSelector(selectCatalog)
+  const fetchStatus = useAppSelector(selectCatalogFetchStatus)
+  const fetchError = useAppSelector(selectCatalogFetchError)
+  const catalog = { data: fetchStatus === 'succeeded' ? catalogData : null, isLoading: fetchStatus === 'idle' || fetchStatus === 'loading', error: fetchStatus === 'failed' ? fetchError || 'Unable to load admin data.' : '', reload: () => dispatch(fetchCatalog()) }
+  useEffect(() => { dispatch(fetchCatalog()) }, [dispatch])
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingId, setEditingId] = useState('')
   const [name, setName] = useState('')
@@ -162,13 +168,13 @@ export default function AdminServiceCategoriesPage() {
     setFormError('')
     setFormNotice('')
     try {
-      await syncCatalog(prepareCatalog(catalog.data || {}, nextCategories))
-      await saveCatalogCategories(nextCategories)
+      await dispatch(syncCatalog(prepareCatalog(catalog.data || {}, nextCategories))).unwrap()
+      await dispatch(saveCatalogCategories(nextCategories)).unwrap()
       setFormNotice(editingId ? 'Category updated successfully.' : 'Category added successfully.')
       setIsFormOpen(false)
       await catalog.reload()
     } catch (error) {
-      setFormError(error?.message || 'Unable to save the category.')
+      setFormError((typeof error === 'string' ? error : error?.message) || 'Unable to save the category.')
     } finally {
       setIsSaving(false)
     }
@@ -180,12 +186,12 @@ export default function AdminServiceCategoriesPage() {
     setFormError('')
     setFormNotice('')
     try {
-      await syncCatalog(prepareCatalog(catalog.data || {}, categories.filter((item) => item.id !== category.id)))
-      await saveCatalogCategories(categories.filter((item) => item.id !== category.id))
+      await dispatch(syncCatalog(prepareCatalog(catalog.data || {}, categories.filter((item) => item.id !== category.id)))).unwrap()
+      await dispatch(saveCatalogCategories(categories.filter((item) => item.id !== category.id))).unwrap()
       setFormNotice(`${category.name} deleted successfully.`)
       await catalog.reload()
     } catch (error) {
-      setFormError(error?.message || 'Unable to delete the category.')
+      setFormError((typeof error === 'string' ? error : error?.message) || 'Unable to delete the category.')
     } finally {
       setIsSaving(false)
     }

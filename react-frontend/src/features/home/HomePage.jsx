@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { catalogApi } from '../../services/api'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
+import { fetchCatalog, selectCatalog, selectCatalogFetchStatus } from '../../store/catalog/catalogSlice.js'
 import { getCities, getInitialCity, locationStorageKey } from './cityState'
-import { homeFallbackCatalog } from './homeFallbackCatalog'
+import { initialHomeCatalog, resolveHomeCatalog } from './homeCatalog.js'
 import { PublicFooter, PublicHeader } from './PublicChrome'
 import './homePage.css'
 
@@ -117,6 +118,9 @@ function InformationSections() {
 }
 
 export default function HomePage() {
+  const dispatch = useAppDispatch()
+  const response = useAppSelector(selectCatalog)
+  const catalogStatus = useAppSelector(selectCatalogFetchStatus)
   const { currentUser, ready } = useAuth()
   const location = useLocation()
   const [cities] = useState(getCities)
@@ -125,40 +129,22 @@ export default function HomePage() {
     ownerKey: initialCityOwnerKey,
     city: getInitialCity(currentUser, cities),
   }))
-  const [catalog, setCatalog] = useState(() => {
-    const local = readLocalCatalog()
-    return local?.categories?.length ? local : { ...homeFallbackCatalog, providers: [] }
-  })
-  const [hasProviderData, setHasProviderData] = useState(() => Array.isArray(readLocalCatalog()?.providers))
+  const [initialLocal] = useState(readLocalCatalog)
+  const [initialResolution] = useState(() => initialHomeCatalog(initialLocal))
   const activeCityStorageKey = locationStorageKey(currentUser)
   const city = ready && citySelection.ownerKey !== activeCityStorageKey
     ? getInitialCity(currentUser, cities)
     : citySelection.city
 
-  useEffect(() => {
-    let active = true
-    catalogApi.getCatalog().then((response) => {
-      if (!active) return
-      if (!response || !Array.isArray(response.categories) || !response.categories.length) {
-        const local = readLocalCatalog()
-        if (local?.categories?.length) {
-          setCatalog(local)
-          setHasProviderData(Array.isArray(local.providers))
-        }
-        return
-      }
-      setCatalog(response)
-      setHasProviderData(Array.isArray(response.providers))
-    }).catch(() => {
-      const local = readLocalCatalog()
-      if (!active) return
-      if (local?.categories?.length) {
-        setCatalog(local)
-        setHasProviderData(Array.isArray(local.providers))
-      }
-    })
-    return () => { active = false }
-  }, [])
+  useEffect(() => { dispatch(fetchCatalog()) }, [dispatch])
+  const resolution = useMemo(() => resolveHomeCatalog({
+    status: catalogStatus,
+    response,
+    local: catalogStatus === 'failed' || catalogStatus === 'succeeded' ? readLocalCatalog() : initialLocal,
+    initialCatalog: initialResolution.catalog,
+    initialHasProviderData: initialResolution.hasProviderData,
+  }), [catalogStatus, response, initialLocal, initialResolution])
+  const { catalog, hasProviderData } = resolution
 
   useEffect(() => {
     if (location.hash !== '#categories') return undefined
