@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
@@ -100,7 +100,7 @@ export default function AdminServiceCategoriesPage() {
   const fetchStatus = useAppSelector(selectCatalogFetchStatus)
   const fetchError = useAppSelector(selectCatalogFetchError)
   const catalog = { data: fetchStatus === 'succeeded' ? catalogData : null, isLoading: fetchStatus === 'idle' || fetchStatus === 'loading', error: fetchStatus === 'failed' ? fetchError || 'Unable to load admin data.' : '', reload: () => dispatch(fetchCatalog()) }
-  useEffect(() => { dispatch(fetchCatalog()) }, [dispatch])
+  useLayoutEffect(() => { dispatch(fetchCatalog()) }, [dispatch])
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingId, setEditingId] = useState('')
   const [name, setName] = useState('')

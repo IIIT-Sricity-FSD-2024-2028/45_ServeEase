@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { destinationFor } from '../../app/destinations'
 import { authApi, providerDocumentsApi } from '../../services/api'
@@ -54,7 +54,7 @@ export function SignupPage() {
   const [custom, setCustom] = useState({ enabled: false, name: '', price: '' })
   const [issued, setIssued] = useState(null)
   const { isAuthenticated, currentUser, establishSession } = useAuth(); const navigate = useNavigate()
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (role === 'provider') dispatch(fetchCatalog())
   }, [role, dispatch])
   if (isAuthenticated) return <Navigate to={destinationFor(currentUser)} replace />

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ServiceCard } from './ServiceCard'
 import { useAuth } from '../../../context/useAuth'
@@ -31,7 +31,8 @@ export function ProviderServicesPage() {
   const category = currentUser?.serviceType || currentUser?.category || currentUser?.serviceCategory
   const cityName = currentUser?.cityName || currentUser?.location || ''
   const serviceContext = { category, cityId: currentUser?.cityId, cityName }
-  const servicesState = useAppSelector(selectProviderServices(providerId || ''))
+  const servicesSelector = useMemo(() => selectProviderServices(providerId || ''), [providerId])
+  const servicesState = useAppSelector(servicesSelector)
   const catalogState = useAppSelector(selectCatalogState)
   const fetchStatus = catalogState.fetchStatus.providerServicesByProviderId[providerId] || 'idle'
   const fetchError = catalogState.fetchError.providerServicesByProviderId[providerId]
@@ -48,7 +49,7 @@ export function ProviderServicesPage() {
   const showLoading = Boolean(providerId) && role === 'provider' && (fetchStatus === 'idle' || fetchStatus === 'loading')
   const visibleError = fetchStatus === 'failed' ? (fetchError || 'Unable to load your services.') : error
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!providerId || role !== 'provider') {
       return undefined
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
@@ -136,7 +136,7 @@ export default function HomePage() {
     ? getInitialCity(currentUser, cities)
     : citySelection.city
 
-  useEffect(() => { dispatch(fetchCatalog()) }, [dispatch])
+  useLayoutEffect(() => { dispatch(fetchCatalog()) }, [dispatch])
   const resolution = useMemo(() => resolveHomeCatalog({
     status: catalogStatus,
     response,

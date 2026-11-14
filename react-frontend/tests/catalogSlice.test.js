@@ -2,9 +2,24 @@ import test, { afterEach } from 'node:test'
 import { register } from 'node:module'
 import assert from 'node:assert/strict'
 import { configureStore } from '@reduxjs/toolkit'
-import catalog, { assembleCatalog, createProviderService, fetchCatalog, fetchProviderById, fetchProviderServices, initialCatalogState, normalizeCatalogResponse, providerServiceEntityKey, saveCatalogCategories, selectCatalog, syncCatalog, updateProviderService } from '../src/store/catalog/catalogSlice.js'
 
 register('./support/jsx-hooks.mjs', import.meta.url)
+
+const {
+  default: catalog,
+  assembleCatalog,
+  createProviderService,
+  fetchCatalog,
+  fetchProviderById,
+  fetchProviderServices,
+  initialCatalogState,
+  normalizeCatalogResponse,
+  providerServiceEntityKey,
+  saveCatalogCategories,
+  selectCatalog,
+  syncCatalog,
+  updateProviderService,
+} = await import('../src/store/catalog/catalogSlice.js')
 
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })
@@ -20,7 +35,14 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
 function fixture() {
   return {
     categories: [{ id: 'cleaning', subServices: ['Kitchen'] }], popularServices: [{ title: 'Home cleaning' }], region: 'IN', generatedAt: '2026-01-01',
-    providers: Array.from({ length: 10 }, (_, index) => ({ id: `listing-${index}`, name: `Provider ${index}`, cityId: index + 1, ownerProviderId: index % 2 ? `account-${index}` : undefined, services: index % 2 ? [{ id: `S-${index}`, name: 'Cleaning', price: 1200 }] : undefined, servicePricing: { Cleaning: 1200 }, extra: { verified: true } })),
+    providers: Array.from({ length: 10 }, (_, index) => ({
+      id: `listing-${index}`,
+      name: `Provider ${index}`,
+      cityId: index + 1,
+      ...(index % 2 ? { ownerProviderId: `account-${index}`, services: [{ id: `S-${index}`, name: 'Cleaning', price: 1200 }] } : {}),
+      servicePricing: { Cleaning: 1200 },
+      extra: { verified: true },
+    })),
   }
 }
 
