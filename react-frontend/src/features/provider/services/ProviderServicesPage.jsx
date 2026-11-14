@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ServiceCard } from './ServiceCard'
 import { useAuth } from '../../../context/useAuth'
-import { catalogApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import { createProviderService, fetchProviderServices, providerServiceEntityKey, selectCatalogState, selectProviderServices, updateProviderService } from '../../../store/catalog/catalogSlice.js'
 import { ProviderAvailabilityPanel } from '../availability/ProviderAvailabilityPanel'
 import '../providerPortal.css'
 
@@ -25,41 +26,36 @@ function serviceFormData(service, { category, cityId, cityName }) {
 
 export function ProviderServicesPage() {
   const { currentUser, isAuthenticated, role } = useAuth()
+  const dispatch = useAppDispatch()
   const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
   const category = currentUser?.serviceType || currentUser?.category || currentUser?.serviceCategory
   const cityName = currentUser?.cityName || currentUser?.location || ''
   const serviceContext = { category, cityId: currentUser?.cityId, cityName }
-  const [services, setServices] = useState([])
-  const [isLoading, setIsLoading] = useState(Boolean(providerId))
+  const servicesSelector = useMemo(() => selectProviderServices(providerId || ''), [providerId])
+  const servicesState = useAppSelector(servicesSelector)
+  const catalogState = useAppSelector(selectCatalogState)
+  const fetchStatus = catalogState.fetchStatus.providerServicesByProviderId[providerId] || 'idle'
+  const fetchError = catalogState.fetchError.providerServicesByProviderId[providerId]
+  const services = fetchStatus === 'succeeded' && Array.isArray(servicesState) ? servicesState : []
   const [error, setError] = useState('')
   const [editingService, setEditingService] = useState(null)
   const [form, setForm] = useState(emptyService)
-  const [isSaving, setIsSaving] = useState(false)
-  const [updatingId, setUpdatingId] = useState(null)
-  const showLoading = Boolean(providerId) && role === 'provider' && isLoading
+  const [activeRequestKey, setActiveRequestKey] = useState('')
+  const requestCounter = useRef(0)
+  const saveKey = editingService && !editingService.isNew ? providerServiceEntityKey(providerId, editingService.id) : null
+  const isSaving = editingService?.isNew
+    ? catalogState.mutationStatus.createProviderServiceByRequestKey[activeRequestKey] === 'loading'
+    : Boolean(saveKey && catalogState.mutationStatus.updateProviderServiceByKey[saveKey] === 'loading')
+  const showLoading = Boolean(providerId) && role === 'provider' && (fetchStatus === 'idle' || fetchStatus === 'loading')
+  const visibleError = fetchStatus === 'failed' ? (fetchError || 'Unable to load your services.') : error
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!providerId || role !== 'provider') {
       return undefined
     }
 
-    let active = true
-    const loadServices = async () => {
-      setIsLoading(true)
-      setError('')
-      try {
-        const result = await catalogApi.getProviderServices(providerId)
-        if (active) setServices(Array.isArray(result) ? result : [])
-      } catch (requestError) {
-        if (active) setError(requestError.message || 'Unable to load your services.')
-      } finally {
-        if (active) setIsLoading(false)
-      }
-    }
-    loadServices()
-
-    return () => { active = false }
-  }, [providerId, role])
+    dispatch(fetchProviderServices(providerId))
+  }, [dispatch, providerId, role])
 
   const closeModal = () => {
     setEditingService(null)
@@ -85,37 +81,30 @@ export function ProviderServicesPage() {
       setError('Enter a name, a description, and a price greater than zero.')
       return
     }
-    setIsSaving(true)
     setError('')
     const payload = serviceFormData(form, serviceContext)
     try {
       if (editingService.isNew) {
-        const created = await catalogApi.createProviderService(providerId, payload)
-        setServices((current) => [created, ...current])
+        const requestKey = `${providerId}:${Date.now()}:${++requestCounter.current}`
+        setActiveRequestKey(requestKey)
+        await dispatch(createProviderService({ providerId, service: payload, requestKey })).unwrap()
       } else {
-        const updated = await catalogApi.updateProviderService(providerId, editingService.id, payload)
-        setServices((current) => current.map((service) => service.id === updated.id ? updated : service))
+        await dispatch(updateProviderService({ providerId, serviceId: editingService.id, service: payload })).unwrap()
       }
       closeModal()
     } catch (requestError) {
-      setError(requestError.message || 'Unable to save this service.')
-    } finally {
-      setIsSaving(false)
+      setError((typeof requestError === 'string' ? requestError : requestError.message) || 'Unable to save this service.')
     }
   }
 
   const toggleService = async (service) => {
     const isActive = String(service.status || '').toLowerCase() === 'active' || service.isActive === true
     const patch = { status: isActive ? 'Inactive' : 'Active', isActive: !isActive }
-    setUpdatingId(service.id)
     setError('')
     try {
-      const updated = await catalogApi.updateProviderService(providerId, service.id, patch)
-      setServices((current) => current.map((item) => item.id === updated.id ? updated : item))
+      await dispatch(updateProviderService({ providerId, serviceId: service.id, service: patch })).unwrap()
     } catch (requestError) {
-      setError(requestError.message || 'Unable to update the service status.')
-    } finally {
-      setUpdatingId(null)
+      setError((typeof requestError === 'string' ? requestError : requestError.message) || 'Unable to update the service status.')
     }
   }
 
@@ -135,14 +124,14 @@ export function ProviderServicesPage() {
     <section className="provider-portal">
       <div className="breadcrumb-row"><Link to="/provider/dashboard">Provider Dashboard</Link> &nbsp;›&nbsp; <strong>Manage Services &amp; Availability</strong></div>
       <section className="page-title-block provider-page-title"><h1>Manage Services</h1><p>Manage your service listings, activation status, and availability slots.</p></section>
-      {error && !editingService && <div className="panel-card ops-state ops-state--error" role="alert">{error}</div>}
+      {visibleError && !editingService && <div className="panel-card ops-state ops-state--error" role="alert">{visibleError}</div>}
       <section className="provider-services-layout">
         <div className="panel-card">
           <div className="panel-head"><h2>Your Services</h2><button className="btn btn-primary" onClick={openAdd} type="button">+ Add New Service</button></div>
           <div className="provider-service-grid" id="providerServiceGrid">
             {showLoading && <div className="superuser-empty-state">Loading your services…</div>}
-            {!showLoading && services.length === 0 && !error && <div className="superuser-empty-state">You have not added any services yet.</div>}
-            {!showLoading && services.map((service) => <ServiceCard key={service.id} isUpdating={updatingId === service.id} onEdit={openEdit} onToggle={toggleService} service={service} />)}
+            {!showLoading && services.length === 0 && !visibleError && <div className="superuser-empty-state">You have not added any services yet.</div>}
+            {!showLoading && services.map((service) => <ServiceCard key={service.id} isUpdating={catalogState.mutationStatus.updateProviderServiceByKey[providerServiceEntityKey(providerId, service.id)] === 'loading'} onEdit={openEdit} onToggle={toggleService} service={service} />)}
           </div>
         </div>
         <div className="panel-card"><div className="panel-head"><h2>Availability Management</h2></div><div id="providerAvailabilityPanel"><ProviderAvailabilityPanel embedded providerId={providerId} /></div></div>
@@ -158,7 +147,7 @@ export function ProviderServicesPage() {
             <label htmlFor="providerServicePrice">Price (₹)</label>
             <input id="providerServicePrice" min="1" onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} placeholder="799" required type="number" value={form.price} />
             {cityName && <p className="provider-modal-note">Offered in {cityName}, the city recorded on your provider account.</p>}
-            <small className="error" id="providerServiceError" role="alert">{error}</small>
+            <small className="error" id="providerServiceError" role="alert">{visibleError}</small>
             <div className="provider-modal-actions"><button className="btn btn-primary" disabled={isSaving} type="submit">{isSaving ? 'Saving…' : 'Save Changes'}</button><button className="secondary-btn" disabled={isSaving} onClick={closeModal} type="button">Cancel</button></div>
           </form>
         </div>

@@ -12938,6 +12938,17 @@
               "performedById": "EMP-PO-001"
             }
           ]
+        },
+        {
+          "id": "CUS018",
+          "role": "customer",
+          "fullName": "abcd",
+          "email": "abcd@gmail.com",
+          "phone": "7452369851",
+          "passwordHash": "e91733acf49569bdc8f2be6e8cedbf40:d9f9b85776af332267527af047723760d2b59293c02003c3b623e47bf087c7cb8df3d4feba5e5d23305a5fb4c95fe9b8ec8e71a0b989bf84e521d54bf09d2aef",
+          "registrationDate": "2026-11-14",
+          "accountStatus": "Active",
+          "status": "Active"
         }
       ],
       "providerApprovalRequests": [
@@ -13743,7 +13754,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-25T20:02:59.827Z"
+    "updatedAt": "2026-11-14T08:17:06.667Z"
   },
   {
     "key": "serveEaseSupportModuleData",
@@ -21796,6 +21807,76 @@
     "value": {
       "bookings": [
         {
+          "service": "Full Home Cleaning",
+          "provider": "Neatly Home Services",
+          "providerId": "PRO-CAT-053",
+          "date": "2026-11-16",
+          "time": "09:00-12:00",
+          "address": "412589",
+          "serviceFee": 899,
+          "taxRate": 10,
+          "taxAmount": 89.9,
+          "platformFeeRate": 5,
+          "platformFeeAmount": 44.95,
+          "customerTotal": 1033.85,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 89.9,
+          "providerPayout": 809.1,
+          "providerPayoutAmount": 809.1,
+          "platformRevenueAmount": 134.85,
+          "amount": 1033.85,
+          "payoutStatus": "Pending",
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "customerPhone": "9876543222",
+          "customerEmail": "user@serveease.com",
+          "status": "Pending",
+          "category": "home-cleaning",
+          "paymentStatus": "Paid",
+          "paymentMethod": "Net Banking - RBL Bank",
+          "id": "BOOK-20261114-1344-0024",
+          "createdAt": "2026-11-14T08:14:30.821Z",
+          "paymentDate": "2026-11-14",
+          "paymentId": "TXN-20261114-1344-0024",
+          "statusUpdatedAt": "2026-11-14T08:14:30.821Z",
+          "stateVersion": 1
+        },
+        {
+          "service": "Kitchen Cleaning",
+          "provider": "Cleanpro Services",
+          "providerId": "PRO001",
+          "date": "2026-11-14",
+          "time": "16:30-18:30",
+          "address": "Raghava enterprises",
+          "serviceFee": 799,
+          "taxRate": 10,
+          "taxAmount": 79.9,
+          "platformFeeRate": 5,
+          "platformFeeAmount": 39.95,
+          "customerTotal": 918.85,
+          "providerCommissionRate": 10,
+          "providerCommissionAmount": 79.9,
+          "providerPayout": 719.1,
+          "providerPayoutAmount": 719.1,
+          "platformRevenueAmount": 119.85,
+          "amount": 918.85,
+          "payoutStatus": "Pending",
+          "customerId": "CUS001",
+          "customerName": "Raghava Kumar",
+          "customerPhone": "9876543222",
+          "customerEmail": "user@serveease.com",
+          "status": "Pending",
+          "category": "home-cleaning",
+          "paymentStatus": "Paid",
+          "paymentMethod": "Net Banking - Yes Bank",
+          "id": "BOOK-20261114-1120-0023",
+          "createdAt": "2026-11-14T05:50:38.435Z",
+          "paymentDate": "2026-11-13",
+          "paymentId": "TXN-20261114-1120-0023",
+          "statusUpdatedAt": "2026-11-14T05:50:38.435Z",
+          "stateVersion": 1
+        },
+        {
           "service": "Bathroom Cleaning",
           "provider": "Cleanpro Services",
           "providerId": "PRO001",
@@ -22616,7 +22697,7 @@
         }
       ]
     },
-    "updatedAt": "2026-10-26T12:38:37.477Z"
+    "updatedAt": "2026-11-14T08:14:30.824Z"
   },
   {
     "key": "serveEaseEmployeeModuleData",
@@ -23143,12 +23224,16 @@
         {
           "id": "SVC001",
           "name": "Kitchen Cleaning",
-          "category": "Cleaning Services",
+          "category": "Home Cleaning",
           "description": "Professional kitchen deep cleaning service",
           "price": 799,
           "duration": "2 hours",
           "status": "Active",
-          "isActive": true
+          "isActive": true,
+          "updatedAt": "2026-11-14T08:18:58.286Z",
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai"
         },
         {
           "id": "SVC002",
@@ -23201,9 +23286,9 @@
           "updatedAt": "2026-10-13T17:37:13.659Z"
         }
       ],
-      "updatedAt": "2026-10-16T17:46:36.845Z"
+      "updatedAt": "2026-11-14T08:18:58.286Z"
     },
-    "updatedAt": "2026-10-16T17:46:36.845Z"
+    "updatedAt": "2026-11-14T08:18:58.286Z"
   },
   {
     "key": "serveEaseProviderServices:PRO143",
@@ -30735,5 +30820,68 @@
       ]
     },
     "updatedAt": "2026-10-25T20:03:36.585Z"
+  },
+  {
+    "key": "serveEaseAvailabilityWeekly:PRO001:2026-11-14",
+    "value": {
+      "providerId": "PRO001",
+      "effectiveFrom": "2026-11-14",
+      "days": [
+        {
+          "dayOfWeek": "Monday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00",
+            "19:00-21:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Tuesday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00",
+            "20:00-21:00",
+            "21:00-22:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Wednesday",
+          "slots": [
+            "09:00-12:00",
+            "12:00-13:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Thursday",
+          "slots": [
+            "09:00-12:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Friday",
+          "slots": [
+            "01:00-02:00",
+            "09:00-12:00",
+            "12:00-13:00",
+            "13:00-17:00"
+          ]
+        },
+        {
+          "dayOfWeek": "Saturday",
+          "slots": [
+            "09:00-11:00",
+            "16:30-18:30",
+            "18:30-20:30"
+          ]
+        },
+        {
+          "dayOfWeek": "Sunday",
+          "slots": []
+        }
+      ]
+    },
+    "updatedAt": "2026-11-14T08:19:32.345Z"
   }
 ]
