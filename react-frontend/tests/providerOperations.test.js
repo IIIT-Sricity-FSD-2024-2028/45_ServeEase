@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { register } from 'node:module'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
 import { initialStatusChange, statusChangeReducer } from '../src/features/employee/employeeOperations.js'
 import {
@@ -18,6 +19,7 @@ const { VerificationReview } = await import('../src/features/employee/EmployeePr
 const { DecisionDialog, DocumentPreviewDialog, LoadState, ProviderNotFound } = await import('../src/features/employee/ProviderOpsParts.jsx')
 const { AppRoutes } = await import('../src/app/routes.jsx')
 const { AuthContext } = await import('../src/context/authContext.js')
+const { store } = await import('../src/store/store.js')
 
 const render = (component, props) => renderToStaticMarkup(createElement(MemoryRouter, null, createElement(component, props)))
 const noop = () => {}
@@ -239,8 +241,8 @@ const renderAt = (path, user) => {
   console.error = () => {}
   console.warn = () => {}
   try {
-    return renderToStaticMarkup(createElement(AuthContext.Provider, { value: { currentUser: user, role: user.role, isAuthenticated: true, ready: true } },
-      createElement(MemoryRouter, { initialEntries: [path] }, createElement(AppRoutes))))
+    return renderToStaticMarkup(createElement(Provider, { store }, createElement(AuthContext.Provider, { value: { currentUser: user, role: user.role, isAuthenticated: true, ready: true } },
+      createElement(MemoryRouter, { initialEntries: [path] }, createElement(AppRoutes)))))
   } finally {
     console.error = originalError
     console.warn = originalWarn

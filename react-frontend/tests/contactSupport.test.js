@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { register } from 'node:module'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
 
 register('./support/jsx-hooks.mjs', import.meta.url)
@@ -11,9 +12,10 @@ register('./support/jsx-hooks.mjs', import.meta.url)
 const { AppRoutes } = await import('../src/app/routes.jsx')
 const { AuthContext } = await import('../src/context/authContext.js')
 const { SuspendedAccountNotice } = await import('../src/features/auth/SuspendedAccountNotice.jsx')
+const { store } = await import('../src/store/store.js')
 
 const signedOut = { isAuthenticated: false, currentUser: null, ready: true, suspension: null, clearSuspension() {}, reportSuspension() {}, async logout() {}, establishSession() {} }
-const at = (entry, value = signedOut) => renderToStaticMarkup(createElement(AuthContext.Provider, { value }, createElement(MemoryRouter, { initialEntries: [entry] }, createElement(AppRoutes))))
+const at = (entry, value = signedOut) => renderToStaticMarkup(createElement(Provider, { store }, createElement(AuthContext.Provider, { value }, createElement(MemoryRouter, { initialEntries: [entry] }, createElement(AppRoutes)))))
 
 test('a signed-out visitor can open the public contact page, with the real contact methods and no pretence of sending', () => {
   const html = at('/contact-support')

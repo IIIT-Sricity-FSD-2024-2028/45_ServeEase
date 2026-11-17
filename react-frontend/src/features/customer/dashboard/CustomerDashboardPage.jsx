@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { ErrorState, LoadingState } from '../../../components/common/FeedbackStates'
-import { bookingsApi, ticketsApi } from '../../../services/api'
+import { bookingsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  fetchCustomerTickets, selectTicketListFetchError, selectTicketListFetchStatus, selectTicketsForScope,
+} from '../../../store/tickets/ticketsSlice.js'
 import { formatDisplayDate, formatPrice, paymentTag, transactionId } from '../customerOperations'
 import { settleBooking } from '../../finance/revenueModel'
 import '../customerOperations.css'
@@ -37,9 +41,13 @@ function PreviewItem({ title, meta }) {
 
 export default function CustomerDashboardPage() {
   const { currentUser, isAuthenticated } = useAuth()
+  const dispatch = useAppDispatch()
+  const ticketRecords = useAppSelector(selectTicketsForScope('customer'))
+  const ticketFetchStatus = useAppSelector(selectTicketListFetchStatus('customer'))
+  const ticketFetchError = useAppSelector(selectTicketListFetchError('customer'))
   const userId = currentUser?.userId
   const email = currentUser?.email
-  const [result, setResult] = useState({ status: 'loading', bookings: [], tickets: [], error: '' })
+  const [result, setResult] = useState({ status: 'loading', bookings: [], error: '' })
 
   useEffect(() => {
     let active = true
@@ -48,19 +56,16 @@ export default function CustomerDashboardPage() {
 
     Promise.all([
       bookingsApi.list(),
-      ticketsApi.listMine(),
+      dispatch(fetchCustomerTickets()),
     ])
-      .then(([bookingRecords, ticketRecords]) => {
+      .then(([bookingRecords]) => {
         if (!active) return
-        if (!Array.isArray(bookingRecords) || !Array.isArray(ticketRecords)) {
-          throw new Error('One or more customer dashboard services returned an invalid response.')
-        }
+        if (!Array.isArray(bookingRecords)) throw new Error('The customer dashboard service returned an invalid response.')
 
         const customerBookings = bookingRecords.filter((booking) => belongsToCustomer(booking, userId, email))
         setResult({
           status: 'ready',
           bookings: customerBookings,
-          tickets: Array.isArray(ticketRecords) ? ticketRecords : [],
           error: '',
         })
       })
@@ -69,19 +74,26 @@ export default function CustomerDashboardPage() {
         setResult({
           status: 'error',
           bookings: [],
-          tickets: [],
           error: requestError.message || 'Your dashboard data could not be loaded.',
         })
       })
 
     return () => { active = false }
-  }, [email, isAuthenticated, userId])
+  }, [dispatch, email, isAuthenticated, userId])
 
-  const loadState = !isAuthenticated ? 'error' : result.status
-  const error = !isAuthenticated ? 'Please sign in as a customer to view your dashboard.' : result.error
+  const loadState = !isAuthenticated
+    ? 'error'
+    : result.status === 'error' || ticketFetchStatus === 'failed'
+      ? 'error'
+      : result.status === 'ready' && ticketFetchStatus === 'succeeded'
+        ? 'ready'
+        : 'loading'
+  const error = !isAuthenticated
+    ? 'Please sign in as a customer to view your dashboard.'
+    : result.error || ticketFetchError || 'Your dashboard data could not be loaded.'
 
   const bookings = useMemo(() => (!isAuthenticated ? [] : result.bookings), [isAuthenticated, result.bookings])
-  const tickets = useMemo(() => (!isAuthenticated ? [] : result.tickets), [isAuthenticated, result.tickets])
+  const tickets = useMemo(() => (!isAuthenticated ? [] : ticketRecords), [isAuthenticated, ticketRecords])
 
   const summary = useMemo(() => ({
     total: bookings.length,

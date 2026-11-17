@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi, ticketsApi } from '../../../services/api'
+import { bookingsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  createProviderTicket, fetchOwnerTicketById, fetchProviderTickets, registerTicketAttachmentFile,
+  selectTicketById, selectTicketDetailFetchError, selectTicketDetailFetchStatus,
+  selectTicketListFetchError, selectTicketListFetchStatus,
+  selectTicketMutationError, selectTicketMutationStatus, selectTicketsForScope,
+  ticketEntityKey, uploadTicketAttachment,
+} from '../../../store/tickets/ticketsSlice.js'
 import { providerStatusPill } from '../providerStatus'
 import { TicketChatModal } from '../../support/TicketChatModal'
 import '../providerPortal.css'
@@ -19,6 +27,7 @@ const blankForm = { ticketType: '', relatedBookingId: '', priority: 'Medium', su
 const allowedAttachmentTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
 const allowedAttachmentExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.webp']
 const maxAttachmentSize = 5 * 1024 * 1024
+const newRequestKey = () => globalThis.crypto?.randomUUID?.() || `ticket-${Date.now()}-${Math.random().toString(36).slice(2)}`
 
 function formatDate(value) {
   const date = new Date(value || '')
@@ -53,31 +62,48 @@ function TicketDetailsModal({ ticket, onClose }) {
 
 export function ProviderSupportPage() {
   const { currentUser, isAuthenticated, role } = useAuth()
-  const [tickets, setTickets] = useState([])
+  const dispatch = useAppDispatch()
+  const tickets = useAppSelector(selectTicketsForScope('provider'))
+  const ticketFetchStatus = useAppSelector(selectTicketListFetchStatus('provider'))
+  const ticketFetchError = useAppSelector(selectTicketListFetchError('provider'))
   const [bookings, setBookings] = useState([])
   const [form, setForm] = useState(blankForm)
   const [attachment, setAttachment] = useState(null)
   const [attachmentInputKey, setAttachmentInputKey] = useState(0)
   const [faqOpen, setFaqOpen] = useState(null)
-  const [selectedTicket, setSelectedTicket] = useState(null)
+  const [selectedTicketId, setSelectedTicketId] = useState('')
   const [chatTicket, setChatTicket] = useState(null)
-  const [loadState, setLoadState] = useState('loading')
-  const [isSaving, setIsSaving] = useState(false)
+  const [settledTicketFetchStatus, setSettledTicketFetchStatus] = useState(ticketFetchStatus)
+  const [uploadRequestKey, setUploadRequestKey] = useState('')
+  const [createRequestKey, setCreateRequestKey] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const selectedTicket = useAppSelector(selectTicketById(selectedTicketId))
+  const chatTicketRecord = useAppSelector(selectTicketById(chatTicket))
+  const selectedTicketFetchStatus = useAppSelector(selectTicketDetailFetchStatus(selectedTicketId))
+  const selectedTicketFetchError = useAppSelector(selectTicketDetailFetchError(selectedTicketId))
+  const uploadStatus = useAppSelector(selectTicketMutationStatus('uploadAttachmentByRequestKey', uploadRequestKey))
+  const uploadError = useAppSelector(selectTicketMutationError('uploadAttachmentByRequestKey', uploadRequestKey))
+  const createStatus = useAppSelector(selectTicketMutationStatus('createProviderTicketByRequestKey', createRequestKey))
+  const createError = useAppSelector(selectTicketMutationError('createProviderTicketByRequestKey', createRequestKey))
+  const isSaving = uploadStatus === 'loading' || createStatus === 'loading'
+  const visibleTicketFetchStatus = ticketFetchStatus === 'loading' ? settledTicketFetchStatus : ticketFetchStatus
+  const loadState = visibleTicketFetchStatus === 'failed' ? 'error' : visibleTicketFetchStatus === 'succeeded' ? 'ready' : 'loading'
 
   useEffect(() => {
     if (!isAuthenticated || role !== 'provider') return undefined
     let active = true
-    Promise.allSettled([ticketsApi.listProvider(), bookingsApi.listForProvider()]).then(([ticketResult, bookingResult]) => {
-      if (!active) return
-      if (ticketResult.status === 'fulfilled') setTickets(Array.isArray(ticketResult.value) ? ticketResult.value : [])
-      else setError(ticketResult.reason?.message || 'Your provider tickets could not be loaded.')
-      if (bookingResult.status === 'fulfilled') setBookings(Array.isArray(bookingResult.value) ? bookingResult.value : [])
-      setLoadState(ticketResult.status === 'fulfilled' ? 'ready' : 'error')
+    dispatch(fetchProviderTickets()).then((action) => {
+      if (active) setSettledTicketFetchStatus(action.meta.requestStatus === 'fulfilled' ? 'succeeded' : 'failed')
+    })
+    bookingsApi.listForProvider().then((records) => {
+      if (active && Array.isArray(records)) setBookings(records)
+      else if (active) setError('The booking service returned an invalid response.')
+    }).catch((requestError) => {
+      if (active) setError(requestError.message || 'Your provider bookings could not be loaded.')
     })
     return () => { active = false }
-  }, [isAuthenticated, role])
+  }, [dispatch, isAuthenticated, role])
 
   const selectedBooking = useMemo(() => bookings.find((booking) => booking.id === form.relatedBookingId), [bookings, form.relatedBookingId])
   function update(name, value) { setForm((current) => ({ ...current, [name]: value })); setError(''); setNotice('') }
@@ -94,23 +120,32 @@ export function ProviderSupportPage() {
   async function submit(event) {
     event.preventDefault()
     if (!form.ticketType || !form.subject.trim() || form.description.trim().length < 10) { setError('Select a category and enter a subject with at least 10 characters of detail.'); return }
-    setIsSaving(true); setError(''); setNotice('')
+    setError(''); setNotice('')
     try {
       let uploaded = null
-      if (attachment) uploaded = await ticketsApi.uploadAttachment(attachment)
-      const created = await ticketsApi.createProvider({
+      if (attachment) {
+        const requestKey = newRequestKey()
+        setUploadRequestKey(requestKey)
+        registerTicketAttachmentFile(requestKey, attachment)
+        uploaded = (await dispatch(uploadTicketAttachment(requestKey)).unwrap()).metadata
+      }
+      const requestKey = newRequestKey()
+      setCreateRequestKey(requestKey)
+      const { ticket: created } = await dispatch(createProviderTicket({ requestKey, ticket: {
         ticketType: form.ticketType, subject: form.subject.trim(), description: form.description.trim(), priority: form.priority,
         relatedBookingId: form.relatedBookingId || undefined, providerId: currentUser?.providerId || currentUser?.providerCatalogId || currentUser?.userId,
         providerName: currentUser?.organisationName || currentUser?.fullName, customerName: selectedBooking?.customerName, service: selectedBooking?.service,
         attachmentUrl: uploaded?.fileUrl,
-      })
-      setTickets((current) => [created, ...current]); setForm(blankForm); setAttachment(null); setAttachmentInputKey((current) => current + 1); setNotice(`Ticket ${ticketId(created)} was submitted.`)
-    } catch (requestError) { setError(requestError.message || 'The ticket could not be submitted.') } finally { setIsSaving(false) }
+      } })).unwrap()
+      setForm(blankForm); setAttachment(null); setAttachmentInputKey((current) => current + 1); setNotice(`Ticket ${ticketId(created)} was submitted.`)
+    } catch { /* Mutation errors are read from their Redux request-key maps. */ }
   }
 
   async function openDetails(ticket) {
     setError('')
-    try { setSelectedTicket(await ticketsApi.get(ticketId(ticket))) } catch (requestError) { setError(requestError.message || 'Ticket details could not be loaded.') }
+    const id = ticketEntityKey(ticket)
+    setSelectedTicketId(id)
+    await dispatch(fetchOwnerTicketById({ ticketId: id, scope: 'provider' }))
   }
 
   if (!isAuthenticated || role !== 'provider') return <section className="provider-portal"><div className="panel-card ops-state ops-state--error">Please sign in with a provider account to open Provider Support Center.</div></section>
@@ -144,7 +179,7 @@ export function ProviderSupportPage() {
             <label htmlFor="providerTicketAttachment">Optional Attachment</label>
             <input accept=".pdf,.jpg,.jpeg,.png,.webp" id="providerTicketAttachment" key={attachmentInputKey} onChange={handleAttachment} type="file" />
             {attachment && <small className="support-form-hint">Selected: {attachment.name}</small>}
-            <small className="error" id="providerTicketError" role="alert">{error}</small>
+            <small className="error" id="providerTicketError" role="alert">{error || createError || uploadError || selectedTicketFetchError}</small>
             <small className="success-message" id="providerTicketSuccess" role="status">{notice}</small>
             <button className="btn btn-primary btn-full" disabled={isSaving} type="submit">{isSaving ? 'Submitting…' : 'Submit Ticket'}</button>
           </form>
@@ -152,14 +187,14 @@ export function ProviderSupportPage() {
         <div className="panel-card"><div className="panel-head"><h2>My Support Tickets</h2></div>
           <div id="providerSupportTicketsList">
             {loadState === 'loading' && <div className="superuser-empty-state">Loading your provider tickets…</div>}
-            {loadState === 'error' && <div className="superuser-empty-state">{error || 'Unable to load provider tickets.'}</div>}
+            {loadState === 'error' && <div className="superuser-empty-state">{ticketFetchError || 'Unable to load provider tickets.'}</div>}
             {loadState === 'ready' && tickets.length === 0 && <div className="superuser-empty-state">You have not raised any provider support tickets yet.</div>}
-            {loadState === 'ready' && tickets.map((ticket) => <div className="ticket-card" key={ticketId(ticket)}><div className="ticket-top"><h3>{ticket.subject || ticket.ticketType || 'Provider support request'}</h3><span className={`status-pill ${providerStatusPill(ticket.status)}`}>{ticket.status || 'Pending'}</span></div><div className="ticket-meta">Ticket ID: <strong>{ticketId(ticket)}</strong></div><div className="ticket-meta">{ticket.ticketType || 'Other'} - {ticket.priority || 'Medium'} - {formatDate(ticket.createdAt)}</div><div className="ticket-meta">Booking: {ticket.relatedBookingId || 'General'}{ticket.customerName ? ` - Customer: ${ticket.customerName}` : ''}</div><div className="ticket-actions"><button className="secondary-action provider-ticket-view-btn" onClick={() => openDetails(ticket)} type="button">View Details</button><button className="btn btn-primary provider-ticket-chat-btn" onClick={() => setChatTicket(ticket)} type="button">Chat with Support</button></div></div>)}
+            {loadState === 'ready' && tickets.map((ticket) => <div className="ticket-card" key={ticketEntityKey(ticket)}><div className="ticket-top"><h3>{ticket.subject || ticket.ticketType || 'Provider support request'}</h3><span className={`status-pill ${providerStatusPill(ticket.status)}`}>{ticket.status || 'Pending'}</span></div><div className="ticket-meta">Ticket ID: <strong>{ticketId(ticket)}</strong></div><div className="ticket-meta">{ticket.ticketType ||  'Other'} - {ticket.priority || 'Medium'} - {formatDate(ticket.createdAt)}</div><div className="ticket-meta">Booking: {ticket.relatedBookingId || 'General'}{ticket.customerName ? ` - Customer: ${ticket.customerName}` : ''}</div><div className="ticket-actions"><button className="secondary-action provider-ticket-view-btn" onClick={() => openDetails(ticket)} type="button">View Details</button><button className="btn btn-primary provider-ticket-chat-btn" onClick={() => setChatTicket(ticketEntityKey(ticket))} type="button">Chat with Support</button></div></div>)}
           </div>
         </div>
       </div>
     </section>
-    {chatTicket && <TicketChatModal audience="provider" key={chatTicket.ticketId} onClose={() => setChatTicket(null)} ticket={chatTicket} />}
-    {selectedTicket && <TicketDetailsModal onClose={() => setSelectedTicket(null)} ticket={selectedTicket} />}
+    {chatTicket && chatTicketRecord && <TicketChatModal audience="provider" key={chatTicket} onClose={() => setChatTicket(null)} ticket={chatTicketRecord} />}
+    {selectedTicket && selectedTicketFetchStatus === 'succeeded' && <TicketDetailsModal onClose={() => setSelectedTicketId('')} ticket={selectedTicket} />}
   </section>
 }

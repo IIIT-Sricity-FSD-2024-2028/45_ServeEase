@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/common/FeedbackStates'
-import { ticketsApi } from '../../services/api'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
+import {
+  escalateSupportTicket, fetchSupportTicketById, resolveSupportTicket, saveSupportTicketSolution,
+  selectTicketById, selectTicketDetailFetchError, selectTicketDetailFetchStatus,
+  selectTicketMutationError, selectTicketMutationStatus, sendSupportTicketMessage,
+  updateSupportTicketRemarks, updateSupportTicketStatus,
+} from '../../store/tickets/ticketsSlice.js'
 import { API_BASE_URL } from '../../services/apiClient'
 import { AttachmentPreview } from './AttachmentPreview'
 import './support.css'
@@ -38,8 +44,24 @@ function selectableStatus(status) {
 export default function SupportTicketDetailPage() {
   const { ticketId } = useParams()
   const navigate = useNavigate()
-  const [ticket, setTicket] = useState(null)
+  const dispatch = useAppDispatch()
+  const ticket = useAppSelector(selectTicketById(ticketId))
+  const fetchStatus = useAppSelector(selectTicketDetailFetchStatus(ticketId))
+  const fetchError = useAppSelector(selectTicketDetailFetchError(ticketId))
+  const supportMessageStatus = useAppSelector(selectTicketMutationStatus('supportMessageById', ticketId))
+  const supportMessageError = useAppSelector(selectTicketMutationError('supportMessageById', ticketId))
+  const solutionStatus = useAppSelector(selectTicketMutationStatus('supportSolutionById', ticketId))
+  const solutionError = useAppSelector(selectTicketMutationError('supportSolutionById', ticketId))
+  const statusStatus = useAppSelector(selectTicketMutationStatus('supportStatusById', ticketId))
+  const statusError = useAppSelector(selectTicketMutationError('supportStatusById', ticketId))
+  const remarksStatus = useAppSelector(selectTicketMutationStatus('supportRemarksById', ticketId))
+  const remarksError = useAppSelector(selectTicketMutationError('supportRemarksById', ticketId))
+  const resolveStatus = useAppSelector(selectTicketMutationStatus('supportResolveById', ticketId))
+  const resolveError = useAppSelector(selectTicketMutationError('supportResolveById', ticketId))
+  const escalateStatus = useAppSelector(selectTicketMutationStatus('supportEscalateById', ticketId))
+  const escalateError = useAppSelector(selectTicketMutationError('supportEscalateById', ticketId))
   const [loadedTicketId, setLoadedTicketId] = useState('')
+  const [successfullyLoadedTicketId, setSuccessfullyLoadedTicketId] = useState('')
   const [errorState, setErrorState] = useState({ ticketId: '', message: '' })
   const [notice, setNotice] = useState('')
   const [remarks, setRemarks] = useState('')
@@ -49,55 +71,65 @@ export default function SupportTicketDetailPage() {
   const [reply, setReply] = useState('')
   const [replyFeedback, setReplyFeedback] = useState({ type: '', message: '' })
   const [selectedStatus, setSelectedStatus] = useState('')
-  const [saving, setSaving] = useState(false)
   const [showEscalationDialog, setShowEscalationDialog] = useState(false)
   const [escalationError, setEscalationError] = useState('')
+  const initializedTicketId = useRef('')
+  const saving = [supportMessageStatus, solutionStatus, statusStatus, remarksStatus, resolveStatus, escalateStatus].includes('loading')
 
   useEffect(() => {
     let active = true
-    ticketsApi.getForSupport(ticketId).then((record) => {
+    dispatch(fetchSupportTicketById(ticketId)).then((action) => {
       if (!active) return
-      setTicket(record)
       setLoadedTicketId(ticketId)
-      setSelectedStatus(selectableStatus(record.status))
-      setRemarks(record.supportRemarks ?? '')
-      setSolution(record.supportUpdate ?? '')
-    }).catch((requestError) => { if (active) { setErrorState({ ticketId, message: requestError.message || 'Unable to load this ticket.' }); setLoadedTicketId(ticketId) } })
+      if (action.meta.requestStatus === 'fulfilled' && initializedTicketId.current !== ticketId) {
+        const record = action.payload.ticket
+        setSuccessfullyLoadedTicketId(ticketId)
+        initializedTicketId.current = ticketId
+        setSelectedStatus(selectableStatus(record.status))
+        setRemarks(record.supportRemarks ?? '')
+        setSolution(record.supportUpdate ?? '')
+      }
+    })
     return () => { active = false }
-  }, [ticketId])
+  }, [dispatch, ticketId])
 
   // New customer or provider messages arrive while the page is open; only the ticket itself is refreshed, so
   // anything being typed is kept.
   useEffect(() => {
     if (loadedTicketId !== ticketId) return undefined
-    const timer = window.setInterval(() => { ticketsApi.getForSupport(ticketId).then(setTicket).catch(() => {}) }, 8000)
+    const timer = window.setInterval(() => { dispatch(fetchSupportTicketById(ticketId)) }, 8000)
     return () => window.clearInterval(timer)
-  }, [loadedTicketId, ticketId])
+  }, [dispatch, loadedTicketId, ticketId])
 
-  const error = errorState.ticketId === ticketId ? errorState.message : ''
+  const ticketMutationError = remarksError || statusError || resolveError || escalateError
+  const initialFetchError = fetchStatus === 'failed' && successfullyLoadedTicketId !== ticketId ? fetchError : ''
+  const error = errorState.ticketId === ticketId
+    ? errorState.message
+    : initialFetchError
+      ? initialFetchError || 'Unable to load this ticket.'
+      : ticketMutationError || ''
   const fail = useCallback((message) => setErrorState({ ticketId, message }), [ticketId])
   const clearFeedback = () => { setErrorState({ ticketId, message: '' }); setNotice('') }
-  const adopt = (record) => { setTicket(record); setSelectedStatus(selectableStatus(record.status)); return record }
   const locked = ticket ? lockedStatuses.includes(ticket.status) : false
   const savedSolution = String(ticket?.supportUpdate || '')
 
   async function saveRemarks() {
     const note = remarks.trim()
     if (note.length < 5) return fail('Internal remarks must contain at least 5 characters.')
-    setSaving(true); clearFeedback()
-    try { adopt(await ticketsApi.updateSupportRemarks(ticketId, note)); setNotice('Internal remarks saved for support/admin review.') } catch (requestError) { fail(requestError.message || 'Ticket update failed.') } finally { setSaving(false) }
+    clearFeedback()
+    try { await dispatch(updateSupportTicketRemarks({ ticketId, remarks: note })).unwrap(); setNotice('Internal remarks saved for support/admin review.') } catch { /* The mutation error is rendered from Redux. */ }
   }
 
   async function saveSolution(event) {
     event.preventDefault()
     const next = solution.trim()
     if (next.length < 10) { setSolutionFeedback({ type: 'error', message: 'Solution must contain at least 10 characters.' }); solutionRef.current?.focus(); return }
-    setSaving(true); clearFeedback()
+    clearFeedback()
     try {
-      adopt(await ticketsApi.saveSupportSolution(ticketId, next))
+      await dispatch(saveSupportTicketSolution({ ticketId, solution: next })).unwrap()
       setSolution(next)
       setSolutionFeedback({ type: 'success', message: 'Solution saved and shared with the user.' })
-    } catch (requestError) { setSolutionFeedback({ type: 'error', message: requestError.message || 'The solution could not be saved.' }) } finally { setSaving(false) }
+    } catch { /* The mutation error is rendered from Redux. */ }
   }
 
   async function submitStatus(event) {
@@ -110,25 +142,25 @@ export default function SupportTicketDetailPage() {
       solutionRef.current?.focus()
       return
     }
-    setSaving(true); clearFeedback(); setSolutionFeedback({ type: '', message: '' })
+    clearFeedback(); setSolutionFeedback({ type: '', message: '' })
     try {
       let current = ticket
-      if (current.status === 'Pending') current = await ticketsApi.updateSupportStatus(ticketId, 'In Progress')
-      if (selectedStatus === 'Resolved') current = await ticketsApi.resolveForSupport(ticketId, savedSolution.trim())
-      adopt(current)
+      if (current.status === 'Pending') current = (await dispatch(updateSupportTicketStatus({ ticketId, status: 'In Progress' })).unwrap()).ticket
+      if (selectedStatus === 'Resolved') current = (await dispatch(resolveSupportTicket({ ticketId, remarks: savedSolution.trim() })).unwrap()).ticket
+      setSelectedStatus(selectableStatus(current.status))
       setNotice(`Ticket status updated to ${selectedStatus}.`)
-    } catch (requestError) { fail(requestError.message || 'Ticket update failed.') } finally { setSaving(false) }
+    } catch { /* The mutation error is rendered from Redux. */ }
   }
 
   async function escalate() {
     const note = remarks.trim()
     if (ticket.status === 'Escalated') return setNotice('Ticket is already escalated to the superuser queue.')
     if (note.length < 10) return setEscalationError('Add at least 10 characters of internal investigation remarks before escalating.')
-    setEscalationError(''); setShowEscalationDialog(false); setSaving(true); clearFeedback()
+    setEscalationError(''); setShowEscalationDialog(false); clearFeedback()
     try {
-      adopt(await ticketsApi.escalateForSupport(ticketId, note))
+      await dispatch(escalateSupportTicket({ ticketId, remarks: note })).unwrap()
       setNotice('Ticket escalated to the superuser queue.')
-    } catch (requestError) { fail(requestError.message || 'Ticket update failed.') } finally { setSaving(false) }
+    } catch { /* The mutation error is rendered from Redux. */ }
   }
 
   async function sendReply(event) {
@@ -136,12 +168,12 @@ export default function SupportTicketDetailPage() {
     const text = reply.trim()
     if (!text) return setReplyFeedback({ type: 'error', message: 'Reply message cannot be empty.' })
     if (text.length < 5) return setReplyFeedback({ type: 'error', message: 'Reply must contain at least 5 characters.' })
-    setSaving(true); clearFeedback()
+    clearFeedback()
     try {
-      adopt(await ticketsApi.sendSupportMessage(ticketId, text))
+      await dispatch(sendSupportTicketMessage({ ticketId, text })).unwrap()
       setReply('')
       setReplyFeedback({ type: 'success', message: 'Reply sent successfully.' })
-    } catch (requestError) { setReplyFeedback({ type: 'error', message: requestError.message || 'The reply could not be sent.' }) } finally { setSaving(false) }
+    } catch { /* The mutation error is rendered from Redux. */ }
   }
 
   if (loadedTicketId !== ticketId) return <main className="support-page"><LoadingState message="Loading ticket…" /></main>
@@ -167,10 +199,10 @@ export default function SupportTicketDetailPage() {
         <section className="support-card"><h2>Ticket Details</h2><dl className="support-ticket-detail-grid">{details.map(([label, value]) => <div className="support-detail-box" key={label}><dt>{label}</dt><dd>{label === 'Current Status' ? <span className={`support-status-badge ${statusTone(value)}`}>{valueLabel(value)}</span> : valueLabel(value)}</dd></div>)}</dl><div className="support-contact"><h3>Contact Information</h3><p><strong>Phone:</strong> {ticket.raisedByPhone ? <a href={`tel:${ticket.raisedByPhone}`}>{ticket.raisedByPhone}</a> : 'N/A'}</p><p><strong>Email:</strong> {ticket.raisedByEmail ? <a href={`mailto:${ticket.raisedByEmail}`}>{ticket.raisedByEmail}</a> : 'N/A'}</p></div></section>
         <section className="support-card support-customer-ticket"><h2>{ticket.raisedByType === 'provider' ? 'Provider Ticket' : 'Customer Ticket'}</h2><div className="support-ticket-copy support-ticket-subject"><span>Subject</span><strong>{valueLabel(ticket.subject)}</strong></div><div className="support-ticket-copy support-ticket-description"><span>Description</span><p>{valueLabel(ticket.description)}</p></div>
           <AttachmentPreview apiBaseUrl={API_BASE_URL} ticket={ticket} />
-          <div className="support-ticket-edit-block"><label htmlFor="support-detail-solution">Solution</label><form onSubmit={saveSolution}><textarea disabled={locked} id="support-detail-solution" maxLength={600} onChange={(event) => { setSolution(event.target.value); if (event.target.value.trim().length >= 10 && solutionFeedback.type === 'error') setSolutionFeedback({ type: '', message: '' }) }} placeholder="Type the resolution customers/providers will see as Support Update..." ref={solutionRef} value={solution} />{solutionFeedback.message && <p className={`support-chat-feedback support-chat-feedback--${solutionFeedback.type}`} role={solutionFeedback.type === 'error' ? 'alert' : 'status'}>{solutionFeedback.message}</p>}<div className="support-solution-footer"><small>{solution.length} / 600</small><button className="support-action-button" disabled={saving || locked} type="submit">Save Solution</button></div></form></div>
+          <div className="support-ticket-edit-block"><label htmlFor="support-detail-solution">Solution</label><form onSubmit={saveSolution}><textarea disabled={locked} id="support-detail-solution" maxLength={600} onChange={(event) => { setSolution(event.target.value); if (event.target.value.trim().length >= 10 && solutionFeedback.type === 'error') setSolutionFeedback({ type: '', message: '' }) }} placeholder="Type the resolution customers/providers will see as Support Update..." ref={solutionRef} value={solution} />{(solutionFeedback.message || solutionError) && <p className={`support-chat-feedback support-chat-feedback--${solutionFeedback.message ? solutionFeedback.type : 'error'}`} role={solutionFeedback.message && solutionFeedback.type !== 'error' ? 'status' : 'alert'}>{solutionFeedback.message || solutionError}</p>}<div className="support-solution-footer"><small>{solution.length} / 600</small><button className="support-action-button" disabled={saving || locked} type="submit">Save Solution</button></div></form></div>
           <div className="support-ticket-edit-block"><label htmlFor="support-detail-remarks">Internal Investigation Remarks</label><textarea disabled={locked} id="support-detail-remarks" maxLength={700} onChange={(event) => setRemarks(event.target.value)} placeholder="Add what Support checked: booking, payment, customer, provider, evidence..." value={remarks} /><div className="support-solution-footer"><small>{remarks.length} / 700</small><button className="support-action-button" disabled={saving || locked} onClick={saveRemarks} type="button">Save Internal Remarks</button></div></div>
         </section>
-        <section className="support-card"><h2>Communication Panel</h2>{messages.length ? <div className="support-message-thread">{messages.map((message) => <article className={`support-message${['agent', 'admin', 'support'].includes(message.senderType) ? ' is-agent' : ''}`} key={message.messageId || message.sentAt}><strong>{valueLabel(message.sender)}</strong><p>{valueLabel(message.text)}</p><time>{dateTimeLabel(message.sentAt)}</time></article>)}</div> : <p className="support-muted">No messages yet.</p>}<form className="support-reply-form" onSubmit={sendReply}><input aria-label="Type your reply" onChange={(event) => { setReply(event.target.value); if (replyFeedback.type === 'error') setReplyFeedback({ type: '', message: '' }) }} placeholder="Type your reply..." value={reply} /><button className="support-update-button" disabled={saving} type="submit">Send</button></form>{replyFeedback.message && <p className={`support-chat-feedback support-chat-feedback--${replyFeedback.type}`} role={replyFeedback.type === 'error' ? 'alert' : 'status'}>{replyFeedback.message}</p>}</section>
+        <section className="support-card"><h2>Communication Panel</h2>{messages.length ? <div className="support-message-thread">{messages.map((message) => <article className={`support-message${['agent', 'admin', 'support'].includes(message.senderType) ? ' is-agent' : ''}`} key={message.messageId || message.sentAt}><strong>{valueLabel(message.sender)}</strong><p>{valueLabel(message.text)}</p><time>{dateTimeLabel(message.sentAt)}</time></article>)}</div> : <p className="support-muted">No messages yet.</p>}<form className="support-reply-form" onSubmit={sendReply}><input aria-label="Type your reply" onChange={(event) => { setReply(event.target.value); if (replyFeedback.type === 'error') setReplyFeedback({ type: '', message: '' }) }} placeholder="Type your reply..." value={reply} /><button className="support-update-button" disabled={saving} type="submit">Send</button></form>{(replyFeedback.message || supportMessageError) && <p className={`support-chat-feedback support-chat-feedback--${replyFeedback.message ? replyFeedback.type : 'error'}`} role={replyFeedback.message && replyFeedback.type !== 'error' ? 'status' : 'alert'}>{replyFeedback.message || supportMessageError}</p>}</section>
       </div>
       <aside className="support-detail-sidebar">
         <section className="support-card"><h2>Update Ticket Status</h2><form onSubmit={submitStatus}><div className="support-status-options">{statuses.map((status) => <label className={`support-status-option support-status-option--${statusTone(status)}${selectedStatus === status ? ' is-selected' : ''}`} key={status}><input checked={selectedStatus === status} disabled={locked} name="support-ticket-status" onChange={() => { setSelectedStatus(status); setSolutionFeedback({ type: '', message: '' }); clearFeedback() }} type="radio" value={status} /><span>{status}</span></label>)}</div><button className="support-update-button" disabled={saving || locked} type="submit">{saving ? 'Updating…' : 'Update Status'}</button></form></section>

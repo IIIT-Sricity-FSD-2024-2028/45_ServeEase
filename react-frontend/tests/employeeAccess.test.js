@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { register } from 'node:module'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
 import { UNSUPPORTED_DEPARTMENT_PATH, accessRedirect, destinationFor } from '../src/app/destinations.js'
 import { customerDetailStats, customerStats, display, filterCustomers } from '../src/features/employee/employeeOperations.js'
@@ -11,6 +12,7 @@ register('./support/jsx-hooks.mjs', import.meta.url)
 
 const { AppRoutes } = await import('../src/app/routes.jsx')
 const { AuthContext } = await import('../src/context/authContext.js')
+const { store } = await import('../src/store/store.js')
 
 const employee = (department) => ({ role: 'support', department, userId: 'EMP-1', email: 'emp@example.test' })
 const users = {
@@ -31,8 +33,8 @@ const renderAt = (path, user) => {
   console.error = () => {}
   console.warn = () => {}
   try {
-    return renderToStaticMarkup(createElement(AuthContext.Provider, { value: { currentUser: user, role: user.role, isAuthenticated: true, ready: true } },
-      createElement(MemoryRouter, { initialEntries: [path] }, createElement(AppRoutes))))
+    return renderToStaticMarkup(createElement(Provider, { store }, createElement(AuthContext.Provider, { value: { currentUser: user, role: user.role, isAuthenticated: true, ready: true } },
+      createElement(MemoryRouter, { initialEntries: [path] }, createElement(AppRoutes)))))
   } finally {
     console.error = originalError
     console.warn = originalWarn
