@@ -109,7 +109,27 @@ export default function AdminServiceCategoriesPage() {
   const [formError, setFormError] = useState('')
   const [formNotice, setFormNotice] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const categories = useMemo(() => Array.isArray(catalog.data?.categories) ? catalog.data.categories : [], [catalog.data])
+  // The catalog API derives each provider listing's subServices from its saved, active service
+  // records. Category records remain administrator-owned, so include those listing services in
+  // the category view without writing a frontend-only catalog update.
+  const categories = useMemo(() => {
+    const sourceCategories = Array.isArray(catalog.data?.categories) ? catalog.data.categories : []
+    const providers = Array.isArray(catalog.data?.providers) ? catalog.data.providers : []
+    return sourceCategories.map((category) => {
+      const serviceNames = providers
+        .filter((provider) => slugify(provider.category) === slugify(category.id) || slugify(provider.category) === slugify(category.name))
+        .flatMap((provider) => Array.isArray(provider.subServices) ? provider.subServices : [])
+      const seen = new Set()
+      const subServices = [...(Array.isArray(category.subServices) ? category.subServices : []), ...serviceNames]
+        .filter((service) => {
+          const key = String(service || '').trim().toLocaleLowerCase()
+          if (!key || seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+      return { ...category, subServices }
+    })
+  }, [catalog.data])
   const searchTerm = useAdminSearch('/admin/categories')
   const visibleCategories = useMemo(() => categories.filter((category) => matchesAdminSearch(
     [category.name, categoryDescription(category), ...(Array.isArray(category.subServices) ? category.subServices : [])], searchTerm)), [categories, searchTerm])

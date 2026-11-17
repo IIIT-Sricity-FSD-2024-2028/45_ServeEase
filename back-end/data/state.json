@@ -23333,11 +23333,37 @@
           "status": "Inactive",
           "isActive": false,
           "updatedAt": "2026-10-13T17:37:13.659Z"
+        },
+        {
+          "name": "Terrace Cleaning",
+          "category": "Home Cleaning",
+          "description": "Terrace Cleaning",
+          "price": 562,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1794883540050",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-11-17T02:45:40.050Z"
+        },
+        {
+          "name": "Test Cleaning",
+          "category": "Home Cleaning",
+          "description": "We will clean the test",
+          "price": 58796314,
+          "location": "Chennai",
+          "cityId": 1,
+          "cityName": "Chennai",
+          "id": "SVC-1794919078768",
+          "status": "Active",
+          "isActive": true,
+          "updatedAt": "2026-11-17T12:37:58.768Z"
         }
       ],
-      "updatedAt": "2026-11-14T08:18:58.286Z"
+      "updatedAt": "2026-11-17T12:37:58.768Z"
     },
-    "updatedAt": "2026-11-14T08:18:58.286Z"
+    "updatedAt": "2026-11-17T12:37:58.768Z"
   },
   {
     "key": "serveEaseProviderServices:PRO143",
