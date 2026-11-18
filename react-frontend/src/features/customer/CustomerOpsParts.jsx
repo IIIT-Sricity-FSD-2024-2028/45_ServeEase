@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { API_BASE_URL } from '../../services/apiClient'
-import { ticketsApi } from '../../services/api'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
+import { fetchOwnerTicketById, selectTicketById, selectTicketDetailFetchError, selectTicketDetailFetchStatus } from '../../store/tickets/ticketsSlice.js'
 import { attachmentHref, formatDisplayDate, formatDisplayDateTime, hasValue, ticketStatusClass } from './customerOperations'
 
 // Breadcrumb + title block shared by the original customer pages (.breadcrumb-row, .page-title-block).
@@ -66,47 +67,46 @@ export function TicketStatus({ status }) {
 // Ticket details from GET /tickets/:id (tickets.js ticketDetailsMarkup + the Support Center "Support Update").
 // Only fields the backend recorded are shown; the history is the server's statusHistory.
 export function TicketDetails({ ticketId, fallback }) {
-  const [result, setResult] = useState({ id: '', ticket: null, error: '' })
+  const dispatch = useAppDispatch()
+  const ticket = useAppSelector(selectTicketById(ticketId))
+  const fetchStatus = useAppSelector(selectTicketDetailFetchStatus(ticketId))
+  const fetchError = useAppSelector(selectTicketDetailFetchError(ticketId))
 
   useEffect(() => {
-    let active = true
-    ticketsApi.get(ticketId)
-      .then((ticket) => { if (active) setResult({ id: ticketId, ticket, error: '' }) })
-      .catch((error) => { if (active) setResult({ id: ticketId, ticket: null, error: error.message || 'Ticket details could not be loaded.' }) })
-    return () => { active = false }
-  }, [ticketId])
+    dispatch(fetchOwnerTicketById({ ticketId, scope: 'customer' }))
+  }, [dispatch, ticketId])
 
-  const loaded = result.id === ticketId
-  const ticket = (loaded && result.ticket) || fallback
-  if (!ticket) return <LoadState error={result.error} loadingText="Loading ticket…" state={loaded ? 'error' : 'loading'} />
+  const loaded = fetchStatus === 'succeeded' || fetchStatus === 'failed'
+  const displayedTicket = (fetchStatus === 'succeeded' && ticket) || fallback || ticket
+  if (!displayedTicket) return <LoadState error={fetchError || 'Ticket details could not be loaded.'} loadingText="Loading ticket…" state={fetchStatus === 'failed' ? 'error' : 'loading'} />
 
-  const href = attachmentHref(ticket.attachmentUrl, API_BASE_URL)
+  const href = attachmentHref(displayedTicket.attachmentUrl, API_BASE_URL)
   return <>
-    {loaded && result.error && <p className="ops-alert" role="alert">Showing the last loaded copy: {result.error}</p>}
+    {fetchStatus === 'failed' && <p className="ops-alert" role="alert">Showing the last loaded copy: {fetchError || 'Ticket details could not be loaded.'}</p>}
     {!loaded && <p className="info-note" role="status">Refreshing ticket…</p>}
     <div className="info-grid">
       <div className="info-box"><strong>Ticket Details</strong>
-        <InfoRow label="Ticket ID:">{ticket.ticketId}</InfoRow>
-        <InfoRow label="Type:">{ticket.ticketType}</InfoRow>
-        <InfoRow label="Subject:">{ticket.subject}</InfoRow>
-        <InfoRow label="Status:"><TicketStatus status={ticket.status} /></InfoRow>
-        <InfoRow label="Priority:">{ticket.priority}</InfoRow>
-        <InfoRow label="Created On:">{formatDisplayDate(ticket.createdAt)}</InfoRow>
+        <InfoRow label="Ticket ID:">{displayedTicket.ticketId}</InfoRow>
+        <InfoRow label="Type:">{displayedTicket.ticketType}</InfoRow>
+        <InfoRow label="Subject:">{displayedTicket.subject}</InfoRow>
+        <InfoRow label="Status:"><TicketStatus status={displayedTicket.status} /></InfoRow>
+        <InfoRow label="Priority:">{displayedTicket.priority}</InfoRow>
+        <InfoRow label="Created On:">{formatDisplayDate(displayedTicket.createdAt)}</InfoRow>
       </div>
       <div className="info-box"><strong>Booking Details</strong>
-        <InfoRow label="Booking:">{ticket.relatedBookingId}</InfoRow>
-        <InfoRow label="Provider:">{ticket.providerName}</InfoRow>
-        <InfoRow label="Customer:">{ticket.customerName}</InfoRow>
+        <InfoRow label="Booking:">{displayedTicket.relatedBookingId}</InfoRow>
+        <InfoRow label="Provider:">{displayedTicket.providerName}</InfoRow>
+        <InfoRow label="Customer:">{displayedTicket.customerName}</InfoRow>
       </div>
       <div className="info-box"><strong>Evidence</strong>
         {href ? <a className="attachment-link" href={href} rel="noreferrer" target="_blank">View attachment</a> : <div>No evidence uploaded</div>}
       </div>
-      <div className="info-box"><strong>Ticket Description</strong><div>{ticket.description || 'Not provided'}</div></div>
-      <div className="info-box"><strong>Support Update</strong><div>{ticket.supportUpdate || 'Your ticket has been received and is currently being reviewed by the support team.'}</div></div>
-      <div className="info-box"><strong>Final Decision</strong><div>{ticket.finalDecision || 'Awaiting admin decision.'}</div>{ticket.adminRemarks && <div>{ticket.adminRemarks}</div>}</div>
+      <div className="info-box"><strong>Ticket Description</strong><div>{displayedTicket.description || 'Not provided'}</div></div>
+      <div className="info-box"><strong>Support Update</strong><div>{displayedTicket.supportUpdate || 'Your ticket has been received and is currently being reviewed by the support team.'}</div></div>
+      <div className="info-box"><strong>Final Decision</strong><div>{displayedTicket.finalDecision || 'Awaiting admin decision.'}</div>{displayedTicket.adminRemarks && <div>{displayedTicket.adminRemarks}</div>}</div>
     </div>
-    {Array.isArray(ticket.statusHistory) && ticket.statusHistory.length > 0 && <div className="ticket-history" aria-label="Ticket history">
-      {ticket.statusHistory.map((entry, index) => <div key={`${entry.updatedAt}-${index}`}><strong>{entry.status}</strong><span>{[entry.note, entry.updatedBy, formatDisplayDateTime(entry.updatedAt)].filter(Boolean).join(' • ')}</span></div>)}
+    {Array.isArray(displayedTicket.statusHistory) && displayedTicket.statusHistory.length > 0 && <div className="ticket-history" aria-label="Ticket history">
+      {displayedTicket.statusHistory.map((entry, index) => <div key={`${entry.updatedAt}-${index}`}><strong>{entry.status}</strong><span>{[entry.note, entry.updatedBy, formatDisplayDateTime(entry.updatedAt)].filter(Boolean).join(' • ')}</span></div>)}
     </div>}
   </>
 }

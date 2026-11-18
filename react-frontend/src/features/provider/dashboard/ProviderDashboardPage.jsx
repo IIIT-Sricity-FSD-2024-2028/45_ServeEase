@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { catalogApi, ticketsApi } from '../../../services/api'
+import { catalogApi } from '../../../services/api'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import { fetchProviderTickets, selectTicketListFetchError, selectTicketListFetchStatus, selectTicketsForScope, ticketEntityKey } from '../../../store/tickets/ticketsSlice.js'
 import {
   fetchProviderBookings,
   selectProviderBookings,
@@ -34,22 +35,31 @@ const pillClass = (status) => {
 
 export function ProviderDashboardPage() {
   const { currentUser, isAuthenticated, role } = useAuth()
-  const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
   const dispatch = useAppDispatch()
+  const tickets = useAppSelector(selectTicketsForScope('provider'))
+  const ticketFetchStatus = useAppSelector(selectTicketListFetchStatus('provider'))
+  const ticketFetchError = useAppSelector(selectTicketListFetchError('provider'))
+  const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
+  const [settledTicketFetchStatus, setSettledTicketFetchStatus] = useState(ticketFetchStatus)
+  const [auxData, setAuxData] = useState({ services: null, loading: true, errors: {} })
+  const visibleTicketFetchStatus = ticketFetchStatus === 'loading' ? settledTicketFetchStatus : ticketFetchStatus
   const serverBookings = useAppSelector(selectProviderBookings)
   const bookingStatus = useAppSelector(selectProviderBookingsFetchStatus)
   const bookingError = useAppSelector(selectProviderBookingsFetchError)
-  const [auxData, setAuxData] = useState({ services: null, tickets: null, loading: true, errors: {} })
 
   useEffect(() => {
     if (!isAuthenticated || role !== 'provider' || !providerId) return undefined
     let active = true
     dispatch(fetchProviderBookings())
-    Promise.allSettled([catalogApi.getProviderServices(providerId), ticketsApi.listProvider()]).then(([services, tickets]) => {
+    Promise.allSettled([
+      catalogApi.getProviderServices(providerId),
+      dispatch(fetchProviderTickets()).unwrap(),
+    ]).then(([services, ticketResult]) => {
       if (!active) return
+      setSettledTicketFetchStatus(ticketResult.status === 'fulfilled' ? 'succeeded' : 'failed')
       const errors = {}
       const read = (result, key, message) => { if (result.status === 'fulfilled') return Array.isArray(result.value) ? result.value : []; errors[key] = result.reason?.message || message; return null }
-      setAuxData({ services: read(services, 'services', 'Services are unavailable.'), tickets: read(tickets, 'tickets', 'Notifications are unavailable.'), loading: false, errors })
+      setAuxData({ services: read(services, 'services', 'Services are unavailable.'), loading: false, errors })
     })
     return () => { active = false }
   }, [dispatch, isAuthenticated, providerId, role])
@@ -82,10 +92,11 @@ export function ProviderDashboardPage() {
     <section className="provider-hero-card"><div><h1>Welcome, {providerName}!</h1><p>Manage bookings, services, availability, earnings, and support from one place.</p></div><div className="provider-hero-side"><div className="provider-hero-line"><strong>Provider ID:</strong> <span>{providerId}</span></div>{providerStatus && <div className="provider-hero-line"><strong>Status:</strong> <span className={`status-pill ${pillClass(providerStatus)}`}>{providerStatus}</span></div>}</div></section>
     {data.loading && <div className="panel-card ops-state">Loading your provider dashboard…</div>}
     {!data.loading && Object.entries(data.errors).map(([key, message]) => <div className="panel-card ops-state ops-state--error" key={key} role="alert">{message}</div>)}
+    {!data.loading && visibleTicketFetchStatus === 'failed' && <div className="panel-card ops-state ops-state--error" role="alert">{ticketFetchError || 'Notifications are unavailable.'}</div>}
     <section className="dashboard-actions-grid provider-actions-grid"><FeatureCard icon="🛠" tone="blue" title="Manage Services" description="Add, edit, activate, and manage availability slots." to="/provider/services" /><FeatureCard icon="📅" tone="orange" title="Booking Management" description="Accept, reject, and track service booking requests." to="/provider/bookings" /><FeatureCard icon="💰" tone="green" title="Earnings & Payments" description="Track payments, earnings, and transaction details." to="/provider/earnings" /><FeatureCard icon="🎧" tone="purple" title="Get Support" description="Raise support tickets and contact the support team." to="/provider/support" /></section>
     <section className="dashboard-stats-grid" aria-label="Provider statistics">{stats.map(([tone, icon, label, value]) => <div className="stat-card-dashboard" key={label}><div className={`feature-icon ${tone}`}>{icon}</div><h3>{value == null ? 'Unavailable' : value}</h3><p>{label}</p></div>)}</section>
     <section className="dashboard-two-column provider-two-column"><div className="panel-card"><PanelHeading title="Service Performance" to="/provider/bookings" action="View Bookings" /><div id="providerPerformanceList">{data.bookings === null ? <div className="preview-item"><div className="preview-meta">Booking performance is unavailable.</div></div> : recentBookings.length === 0 ? <div className="preview-item"><div className="preview-meta">No bookings yet.</div></div> : recentBookings.map((booking) => <div className="preview-item" key={booking.id}><div className="preview-title">{booking.service || 'Service unavailable'}</div><div className="preview-meta">{[booking.customerName || 'Customer unavailable', booking.date ? formatDisplayDate(booking.date) : 'Date unavailable', booking.status || 'Unavailable'].join(' • ')}</div></div>)}</div></div>
-      <div className="panel-card"><PanelHeading title="Notifications" to="/provider/support" action="Open Support" /><div id="providerNotificationPreview">{data.tickets === null ? <div className="preview-item"><div className="preview-meta">Notifications are unavailable.</div></div> : data.tickets.length === 0 ? <div className="preview-item"><div className="preview-meta">No new notifications.</div></div> : data.tickets.slice(0, 4).map((ticket) => <div className="preview-item" key={ticket.id}><div className="preview-title">{ticket.subject || ticket.category || 'Support ticket'}</div><div className="preview-meta">{ticket.remarks || `Support ticket is ${ticket.status || 'Open'}.`}</div></div>)}</div></div></section>
+      <div className="panel-card"><PanelHeading title="Notifications" to="/provider/support" action="Open Support" /><div id="providerNotificationPreview">{visibleTicketFetchStatus === 'failed' ? <div className="preview-item"><div className="preview-meta">Notifications are unavailable.</div></div> : visibleTicketFetchStatus !== 'succeeded' ? <div className="preview-item"><div className="preview-meta">Loading notifications…</div></div> : tickets.length === 0 ? <div className="preview-item"><div className="preview-meta">No new notifications.</div></div> : tickets.slice(0, 4).map((ticket) => <div className="preview-item" key={ticketEntityKey(ticket)}><div className="preview-title">{ticket.subject || ticket.category || 'Support ticket'}</div><div className="preview-meta">{ticket.remarks || `Support ticket is ${ticket.status || 'Open'}.`}</div></div>)}</div></div></section>
     <section className="dashboard-two-column provider-two-column"><div className="panel-card gradient-panel"><h2>Earnings This Month</h2><p>{monthEarnings == null ? 'Unavailable' : currency(monthEarnings)}</p><div className="provider-earnings-mini"><div><span>Total Earnings</span><strong>{currency(totalEarnings)}</strong></div><div><span>Pending Payout</span><strong>{currency(pendingPayout)}</strong></div></div><Link className="btn btn-light" to="/provider/earnings">View Earnings</Link></div>
       <div className="panel-card"><div className="panel-head"><h2>Quick Links</h2></div><div className="provider-quick-links">{[['Manage Services', '/provider/services'], ['Booking Management', '/provider/bookings'], ['Earnings & Payments', '/provider/earnings'], ['Support Center', '/provider/support'], ['My Profile', '/provider/account']].map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}</div></div></section>
   </section>

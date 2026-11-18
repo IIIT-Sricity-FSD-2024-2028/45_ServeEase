@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
 import { ErrorState, LoadingState } from '../../../components/common/FeedbackStates'
-import { ticketsApi } from '../../../services/api'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  fetchCustomerTickets, selectTicketListFetchError, selectTicketListFetchStatus, selectTicketsForScope,
+} from '../../../store/tickets/ticketsSlice.js'
 import {
   fetchCustomerBookings,
   selectCustomerBookings,
@@ -44,46 +46,38 @@ function PreviewItem({ title, meta }) {
 
 export default function CustomerDashboardPage() {
   const { currentUser, isAuthenticated } = useAuth()
+  const dispatch = useAppDispatch()
+  const ticketRecords = useAppSelector(selectTicketsForScope('customer'))
+  const ticketFetchStatus = useAppSelector(selectTicketListFetchStatus('customer'))
+  const ticketFetchError = useAppSelector(selectTicketListFetchError('customer'))
   const userId = currentUser?.userId
   const email = currentUser?.email
-  const dispatch = useAppDispatch()
   const serverBookings = useAppSelector(selectCustomerBookings)
   const bookingStatus = useAppSelector(selectCustomerBookingsFetchStatus)
   const bookingError = useAppSelector(selectCustomerBookingsFetchError)
-  const [ticketResult, setTicketResult] = useState({ status: 'loading', tickets: [], error: '' })
 
   useEffect(() => {
-    let active = true
-
-    if (!isAuthenticated) return () => { active = false }
+    if (!isAuthenticated) return undefined
 
     dispatch(fetchCustomerBookings())
-    ticketsApi.listMine()
-      .then((ticketRecords) => {
-        if (!Array.isArray(ticketRecords)) throw new Error('The ticket service returned an invalid response.')
-        if (active) setTicketResult({ status: 'ready', tickets: ticketRecords, error: '' })
-      })
-      .catch((requestError) => {
-        if (!active) return
-        setTicketResult({ status: 'error', tickets: [], error: requestError.message || 'Your dashboard data could not be loaded.' })
-      })
-
-    return () => { active = false }
-  }, [dispatch, email, isAuthenticated, userId])
+    dispatch(fetchCustomerTickets())
+  }, [dispatch, isAuthenticated])
 
   const loadState = !isAuthenticated
     ? 'error'
-    : bookingStatus === 'failed' || ticketResult.status === 'error'
+    : bookingStatus === 'failed' || ticketFetchStatus === 'failed'
       ? 'error'
-      : bookingStatus === 'succeeded' && ticketResult.status === 'ready' ? 'ready' : 'loading'
+      : bookingStatus === 'succeeded' && ticketFetchStatus === 'succeeded'
+        ? 'ready'
+        : 'loading'
   const error = !isAuthenticated
     ? 'Please sign in as a customer to view your dashboard.'
-    : bookingError === 'The booking service returned an invalid response.' || ticketResult.error === 'The ticket service returned an invalid response.'
+    : bookingError === 'The booking service returned an invalid response.' || ticketFetchError === 'The ticket service returned an invalid response.'
       ? 'One or more customer dashboard services returned an invalid response.'
-      : bookingError === 'Booking request failed.' ? 'Your dashboard data could not be loaded.' : bookingError || ticketResult.error || 'Your dashboard data could not be loaded.'
+      : bookingError === 'Booking request failed.' ? 'Your dashboard data could not be loaded.' : bookingError || ticketFetchError || 'Your dashboard data could not be loaded.'
 
   const bookings = useMemo(() => (!isAuthenticated ? [] : serverBookings.filter((booking) => belongsToCustomer(booking, userId, email))), [email, isAuthenticated, serverBookings, userId])
-  const tickets = useMemo(() => (!isAuthenticated ? [] : ticketResult.tickets), [isAuthenticated, ticketResult.tickets])
+  const tickets = useMemo(() => (!isAuthenticated ? [] : ticketRecords), [isAuthenticated, ticketRecords])
 
   const summary = useMemo(() => ({
     total: bookings.length,

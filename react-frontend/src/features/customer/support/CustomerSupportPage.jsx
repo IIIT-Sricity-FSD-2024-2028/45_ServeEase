@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi, ticketsApi } from '../../../services/api'
+import { bookingsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  createCustomerTicket, fetchCustomerTickets, registerTicketAttachmentFile, selectTicketById,
+  selectTicketListFetchError, selectTicketListFetchStatus, selectTicketMutationError,
+  selectTicketMutationStatus, selectTicketsForScope, ticketEntityKey, uploadTicketAttachment,
+} from '../../../store/tickets/ticketsSlice.js'
 import { CustomerPageHeader, LoadState, OpsModal, TicketDetails, TicketStatus } from '../CustomerOpsParts'
 import { TicketChatModal } from '../../support/TicketChatModal'
 import {
@@ -10,6 +16,7 @@ import {
 import '../customerOperations.css'
 
 const blankForm = { bookingId: '', ticketType: '', subject: '', description: '' }
+const newRequestKey = () => globalThis.crypto?.randomUUID?.() || `ticket-${Date.now()}-${Math.random().toString(36).slice(2)}`
 
 // Help Resources accordion, text from customer-support-center.html.
 const faqs = [
@@ -23,6 +30,10 @@ const faqs = [
 // and POST /uploads/tickets.
 export default function CustomerSupportPage() {
   const { currentUser } = useAuth()
+  const dispatch = useAppDispatch()
+  const tickets = useAppSelector(selectTicketsForScope('customer'))
+  const ticketFetchStatus = useAppSelector(selectTicketListFetchStatus('customer'))
+  const ticketFetchError = useAppSelector(selectTicketListFetchError('customer'))
   const [searchParams, setSearchParams] = useSearchParams()
   const prefillRef = (searchParams.get('bookingRef') || '').trim()
   const viewTicketId = searchParams.get('ticket') || ''
@@ -34,16 +45,15 @@ export default function CustomerSupportPage() {
   const [submitError, setSubmitError] = useState('')
   const [success, setSuccess] = useState('')
   const [stage, setStage] = useState('')
+  const [uploadRequestKey, setUploadRequestKey] = useState('')
+  const [createRequestKey, setCreateRequestKey] = useState('')
   const [openFaq, setOpenFaq] = useState(-1)
-  const [ticketsLoad, setTicketsLoad] = useState({ state: 'loading', tickets: [], error: '' })
   const [chatTicket, setChatTicket] = useState(null)
   const [bookingsLoad, setBookingsLoad] = useState({ state: 'loading', bookings: [], error: '' })
-
-  const fetchTickets = useCallback(async () => {
-    const records = await ticketsApi.listMine()
-    if (!Array.isArray(records)) throw new Error('The ticket service returned an invalid response.')
-    return sortNewestFirst(records)
-  }, [])
+  const uploadStatus = useAppSelector(selectTicketMutationStatus('uploadAttachmentByRequestKey', uploadRequestKey))
+  const uploadError = useAppSelector(selectTicketMutationError('uploadAttachmentByRequestKey', uploadRequestKey))
+  const createStatus = useAppSelector(selectTicketMutationStatus('createCustomerTicketByRequestKey', createRequestKey))
+  const createError = useAppSelector(selectTicketMutationError('createCustomerTicketByRequestKey', createRequestKey))
 
   const fetchBookings = useCallback(async () => {
     const records = await bookingsApi.list()
@@ -52,11 +62,8 @@ export default function CustomerSupportPage() {
   }, [currentUser])
 
   const reloadTickets = useCallback(() => {
-    setTicketsLoad((current) => ({ ...current, state: 'loading', error: '' }))
-    return fetchTickets()
-      .then((tickets) => setTicketsLoad({ state: 'ready', tickets, error: '' }))
-      .catch((error) => setTicketsLoad({ state: 'error', tickets: [], error: error.message || 'Your support tickets could not be loaded.' }))
-  }, [fetchTickets])
+    return dispatch(fetchCustomerTickets())
+  }, [dispatch])
 
   const reloadBookings = useCallback(() => {
     setBookingsLoad((current) => ({ ...current, state: 'loading', error: '' }))
@@ -67,18 +74,19 @@ export default function CustomerSupportPage() {
 
   useEffect(() => {
     let active = true
-    fetchTickets()
-      .then((tickets) => { if (active) setTicketsLoad({ state: 'ready', tickets, error: '' }) })
-      .catch((error) => { if (active) setTicketsLoad({ state: 'error', tickets: [], error: error.message || 'Your support tickets could not be loaded.' }) })
+    dispatch(fetchCustomerTickets())
     fetchBookings()
       .then((bookings) => { if (active) setBookingsLoad({ state: 'ready', bookings, error: '' }) })
       .catch((error) => { if (active) setBookingsLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }) })
     return () => { active = false }
-  }, [fetchBookings, fetchTickets])
+  }, [dispatch, fetchBookings])
 
   const prefillBooking = useMemo(() => bookingsLoad.bookings.find((booking) => String(booking.id).toLowerCase() === prefillRef.toLowerCase()), [bookingsLoad.bookings, prefillRef])
-  const existingTicket = prefillRef ? openTicketForBooking(ticketsLoad.tickets, prefillRef) : null
-  const selectedTicket = ticketsLoad.tickets.find((ticket) => ticket.ticketId === viewTicketId)
+  const sortedTickets = useMemo(() => sortNewestFirst(tickets), [tickets])
+  const existingTicket = prefillRef ? openTicketForBooking(sortedTickets, prefillRef) : null
+  const selectedTicket = sortedTickets.find((ticket) => ticketEntityKey(ticket) === viewTicketId)
+  const chatTicketRecord = useAppSelector(selectTicketById(chatTicket))
+  const ticketsLoadState = ticketFetchStatus === 'failed' ? 'error' : ticketFetchStatus === 'succeeded' ? 'ready' : 'loading'
 
   function setParam(key, value) {
     const next = new URLSearchParams(searchParams)
@@ -130,34 +138,37 @@ export default function CustomerSupportPage() {
       let attachmentMetadata = uploadedAttachment
       if (attachment && !attachmentMetadata) {
         setStage('Uploading attachment…')
-        attachmentMetadata = await ticketsApi.uploadAttachment(attachment)
-        if (!attachmentMetadata?.fileUrl) throw new Error('The attachment upload did not return a saved file reference.')
+        const requestKey = newRequestKey()
+        setUploadRequestKey(requestKey)
+        registerTicketAttachmentFile(requestKey, attachment)
+        attachmentMetadata = (await dispatch(uploadTicketAttachment(requestKey)).unwrap()).metadata
         setUploadedAttachment(attachmentMetadata)
       }
       setStage('Submitting ticket…')
+      const requestKey = newRequestKey()
+      setCreateRequestKey(requestKey)
       // Customer identity is taken from the authenticated session on the server, not from this body.
-      const created = await ticketsApi.createCustomer({
+      const { ticket: created } = await dispatch(createCustomerTicket({ requestKey, ticket: {
         bookingId: canonicalBookingId(bookingsLoad.bookings, form.bookingId),
         ticketType: form.ticketType,
         subject: form.subject.trim(),
         description: form.description.trim(),
         ...(attachmentMetadata?.fileUrl ? { attachmentUrl: attachmentMetadata.fileUrl } : {}),
-      })
-      if (!created?.ticketId) throw new Error('The server did not return the new ticket.')
+      } })).unwrap()
+      const createdKey = ticketEntityKey(created)
       setForm(blankForm)
       removeAttachment()
-      setSuccess(`Support ticket ${created.ticketId} submitted successfully. Status: ${created.status || 'not provided'}.`)
+      setSuccess(`Support ticket ${createdKey} submitted successfully. Status: ${created.status || 'not provided'}.`)
       if (prefillRef) setParam('bookingRef', '')
       await reloadTickets()
-    } catch (error) {
-      setSubmitError(error.message || 'The ticket could not be submitted.')
-    } finally {
+    } catch { /* Mutation errors are read from their Redux request-key maps. */ } finally {
       setStage('')
     }
   }
 
   const fieldProps = (name) => ({ 'aria-describedby': `support-${name}-error`, 'aria-invalid': errors[name] ? 'true' : undefined, id: `support-${name}` })
   const fieldError = (name) => <small className="field-error" id={`support-${name}-error`}>{errors[name] || ''}</small>
+  const ticketMutationError = createStatus === 'failed' ? createError : uploadStatus === 'failed' ? uploadError : null
 
   return <div className="customer-ops">
     <CustomerPageHeader crumbs={[['Home', '/'], ['Customer Dashboard', '/customer/dashboard'], ['Support Center']]} description="Get help with bookings, payments, or service issues." title="Customer Support Center" />
@@ -194,7 +205,7 @@ export default function CustomerSupportPage() {
           {attachment && <div className="support-attachment"><span>📎 {attachment.name}</span><button onClick={removeAttachment} type="button">Remove</button></div>}
           {fieldError('attachment')}
 
-          {submitError && <p className="ops-alert" role="alert">{submitError}</p>}
+          {(submitError || ticketMutationError) && <p className="ops-alert" role="alert">{submitError || ticketMutationError}</p>}
           {success && <p className="ops-notice" role="status">{success}</p>}
           <button className="btn btn-primary btn-full" disabled={Boolean(stage)} type="submit">{stage || 'Submit Ticket'}</button>
         </form>
@@ -221,21 +232,21 @@ export default function CustomerSupportPage() {
 
     <section aria-labelledby="my-support-tickets-heading" className="table-section">
       <h2 className="section-title-left" id="my-support-tickets-heading">My Support Tickets</h2>
-      <LoadState error={ticketsLoad.error} loadingText="Loading your support tickets…" onRetry={reloadTickets} state={ticketsLoad.state} />
-      {ticketsLoad.state === 'ready' && (ticketsLoad.tickets.length ? <div className="ticket-list">{ticketsLoad.tickets.map((ticket) => <article className="ticket-card" key={ticket.ticketId}>
+      <LoadState error={ticketFetchError || 'Your support tickets could not be loaded.'} loadingText="Loading your support tickets…" onRetry={reloadTickets} state={ticketsLoadState} />
+      {ticketsLoadState === 'ready' && (sortedTickets.length ? <div className="ticket-list">{sortedTickets.map((ticket) => <article className="ticket-card" key={ticketEntityKey(ticket)}>
         <div className="ticket-top"><h3>{ticket.subject || ticket.ticketType}</h3><TicketStatus status={ticket.status} /></div>
-        <p>Ticket ID: <strong>{ticket.ticketId}</strong></p>
+        <p>Ticket ID: <strong>{ticketEntityKey(ticket)}</strong></p>
         <p>Booking Ref: {ticket.relatedBookingId || 'Not provided'}</p>
         <p>{ticket.ticketType} • {formatDisplayDate(ticket.createdAt)}</p>
         <div className="ticket-actions">
-          <button className="secondary-action" onClick={() => setParam('ticket', ticket.ticketId)} type="button">View Ticket</button>
-          <button className="btn btn-primary" onClick={() => setChatTicket(ticket)} type="button">Chat with Support</button>
+          <button className="secondary-action" onClick={() => setParam('ticket', ticketEntityKey(ticket))} type="button">View Ticket</button>
+          <button className="btn btn-primary" onClick={() => setChatTicket(ticketEntityKey(ticket))} type="button">Chat with Support</button>
         </div>
         {ticket.supportUpdate && <p className="ticket-note">Support update: {ticket.supportUpdate}</p>}
       </article>)}</div> : <div className="empty-state-card">You have not raised any support tickets yet.</div>)}
     </section>
 
-    {chatTicket && <TicketChatModal audience="customer" key={chatTicket.ticketId} onClose={() => setChatTicket(null)} ticket={chatTicket} />}
+    {chatTicket && chatTicketRecord && <TicketChatModal audience="customer" key={chatTicket} onClose={() => setChatTicket(null)} ticket={chatTicketRecord} />}
 
     {viewTicketId && <OpsModal labelId="support-ticket-title" onClose={() => setParam('ticket', '')} title="Support Ticket Details">
       <TicketDetails fallback={selectedTicket} key={viewTicketId} ticketId={viewTicketId} />

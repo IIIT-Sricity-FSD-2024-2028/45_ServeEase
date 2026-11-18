@@ -2,7 +2,9 @@ import { formatDisplayDateTime } from '../../features/customer/customerOperation
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
-import { bookingsApi, employeeOperationsApi, ticketsApi } from '../../services/api'
+import { bookingsApi, employeeOperationsApi } from '../../services/api'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
+import { fetchCustomerTickets, fetchProviderTickets, fetchSupportTickets, selectTicketsForScope } from '../../store/tickets/ticketsSlice.js'
 import { buildEmployeeNotifications, readEmployeeNotificationIds, saveEmployeeNotificationIds } from '../../features/employee/employeeNotifications'
 import { buildSupportNotifications, readSupportNotificationIds, saveSupportNotificationIds } from '../../features/support/supportNotifications'
 import { buildProviderNotifications, readProviderNotificationIds, saveProviderNotificationIds } from '../../features/provider/providerNotifications'
@@ -159,6 +161,10 @@ function formatNotificationTime(value) {
 
 export function Navbar({ area = 'ServeEase' }) {
   const { currentUser, isAuthenticated, logout } = useAuth()
+  const dispatch = useAppDispatch()
+  const customerTickets = useAppSelector(selectTicketsForScope('customer'))
+  const providerTickets = useAppSelector(selectTicketsForScope('provider'))
+  const supportTickets = useAppSelector(selectTicketsForScope('support'))
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [openMenu, setOpenMenu] = useState(null)
@@ -169,6 +175,8 @@ export function Navbar({ area = 'ServeEase' }) {
   const [notificationOwnerKey, setNotificationOwnerKey] = useState('')
   const [notificationState, setNotificationState] = useState('idle')
   const [notificationError, setNotificationError] = useState('')
+  const [notificationBookings, setNotificationBookings] = useState([])
+  const [, setReadVersion] = useState(0)
   const [showAllNotifications, setShowAllNotifications] = useState(false)
   const actionsRef = useRef(null)
   const profileButtonRef = useRef(null)
@@ -193,7 +201,17 @@ export function Navbar({ area = 'ServeEase' }) {
   const customerNotificationIdentity = currentUser?.role === 'customer' || isSupportAgent || isProviderAccount || isOperationsEmployee
     ? String(currentUser.userId || currentUser.email || '')
     : ''
-  const customerNotifications = notificationOwnerKey === customerNotificationIdentity ? notifications : []
+  const selectorNotifications = notificationState !== 'ready' || notificationOwnerKey !== customerNotificationIdentity
+    ? null
+    : isSupportAgent
+      ? buildSupportNotifications(supportTickets, currentUser)
+      : isProviderAccount
+        ? buildProviderNotifications(notificationBookings, providerTickets, currentUser)
+        : currentUser?.role === 'customer'
+          ? buildCustomerNotifications(notificationBookings, customerTickets, currentUser)
+          : null
+  const notificationRecords = selectorNotifications || notifications
+  const customerNotifications = notificationOwnerKey === customerNotificationIdentity ? notificationRecords : []
   const customerNotificationState = notificationOwnerKey === customerNotificationIdentity ? notificationState : 'idle'
   const activeNotifications = variant?.notifications === 'superuser' ? notifications : customerNotifications
   const notificationUnreadCount = activeNotifications.filter((notification) => notification.isUnread).length
@@ -240,9 +258,8 @@ export function Navbar({ area = 'ServeEase' }) {
       const ownerKey = String(currentUser.userId || currentUser.email || '')
       if (!silent) { setNotificationOwnerKey(ownerKey); setNotificationState('loading'); setNotificationError('') }
       try {
-        const tickets = await ticketsApi.listForSupport()
+        await dispatch(fetchSupportTickets()).unwrap()
         if (requestId !== notificationRequestRef.current) return
-        setNotifications(buildSupportNotifications(Array.isArray(tickets) ? tickets : [], currentUser))
         setNotificationOwnerKey(ownerKey)
         setNotificationState('ready')
       } catch (error) {
@@ -282,9 +299,13 @@ export function Navbar({ area = 'ServeEase' }) {
       const ownerKey = String(currentUser.userId || currentUser.email || '')
       if (!silent) { setNotificationOwnerKey(ownerKey); setNotificationState('loading'); setNotificationError('') }
       try {
-        const [bookingRecords, ticketRecords] = await Promise.all([bookingsApi.listForProvider(), ticketsApi.listProvider()])
+        const [bookingRecords] = await Promise.all([
+          bookingsApi.listForProvider(),
+          dispatch(fetchProviderTickets()).unwrap(),
+        ])
         if (requestId !== notificationRequestRef.current) return
-        setNotifications(buildProviderNotifications(bookingRecords, ticketRecords, currentUser))
+        if (!Array.isArray(bookingRecords)) throw new Error('Notification data returned an invalid response.')
+        setNotificationBookings(bookingRecords)
         setNotificationOwnerKey(ownerKey)
         setNotificationState('ready')
       } catch (error) {
@@ -308,11 +329,13 @@ export function Navbar({ area = 'ServeEase' }) {
     setNotificationState('loading')
     setNotificationError('')
     try {
-      const [bookingRecords, ticketRecords] = await Promise.all([bookingsApi.list(), ticketsApi.listMine()])
+      const [bookingRecords] = await Promise.all([
+        bookingsApi.list(),
+        dispatch(fetchCustomerTickets()).unwrap(),
+      ])
       if (requestId !== notificationRequestRef.current) return
-      if (!Array.isArray(bookingRecords) || !Array.isArray(ticketRecords)) throw new Error('Notification data returned an invalid response.')
-      const nextNotifications = buildCustomerNotifications(bookingRecords, ticketRecords, currentUser)
-      setNotifications(nextNotifications)
+      if (!Array.isArray(bookingRecords)) throw new Error('Notification data returned an invalid response.')
+      setNotificationBookings(bookingRecords)
       setNotificationOwnerKey(ownerKey)
       setNotificationState('ready')
     } catch (error) {
@@ -386,7 +409,8 @@ export function Navbar({ area = 'ServeEase' }) {
       const readIds = readIdsFor()
       readIds.add(notification.id)
       saveReadIds(readIds)
-      setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, isUnread: false } : item))
+      if (isSupportAgent || isProviderAccount || currentUser?.role === 'customer') setReadVersion((version) => version + 1)
+      else setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, isUnread: false } : item))
       setOpenMenu(null)
       navigate(notification.to)
     } catch {
@@ -401,9 +425,10 @@ export function Navbar({ area = 'ServeEase' }) {
     }
     try {
       const readIds = readIdsFor()
-      notifications.forEach((notification) => readIds.add(notification.id))
+      activeNotifications.forEach((notification) => readIds.add(notification.id))
       saveReadIds(readIds)
-      setNotifications((current) => current.map((notification) => ({ ...notification, isUnread: false })))
+      if (isSupportAgent || isProviderAccount || currentUser?.role === 'customer') setReadVersion((version) => version + 1)
+      else setNotifications((current) => current.map((notification) => ({ ...notification, isUnread: false })))
     } catch {
       setNotificationError('Read state could not be saved in this browser.')
     }

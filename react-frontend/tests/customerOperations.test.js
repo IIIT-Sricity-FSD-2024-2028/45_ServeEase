@@ -23,14 +23,13 @@ const { default: CustomerSupportPage } = await import('../src/features/customer/
 const { default: CustomerTicketsPage } = await import('../src/features/customer/tickets/CustomerTicketsPage.jsx')
 const { default: CustomerProfilePage } = await import('../src/features/customer/profile/CustomerProfilePage.jsx')
 const { default: availability } = await import('../src/store/availability/availabilitySlice.js')
-const { default: bookings } = await import('../src/store/bookings/bookingsSlice.js')
+const { store } = await import('../src/store/store.js')
 
 const customer = { userId: 'CUS001', email: 'abhi@example.test', role: 'customer' }
 const booking = (overrides) => ({ id: 'BOOK-1', service: 'AC Repair', provider: 'CoolFix', date: '2026-10-20', time: '09:00-12:00', address: '12 MG Road', amount: 500, customerTotal: 575, status: 'Pending', paymentStatus: 'Pending', customerId: 'CUS001', ...overrides })
 const noop = () => {}
-const inRouter = (element, path = '/') => renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, element))
-const customerStore = configureStore({ reducer: { bookings, availability } })
-const asCustomer = (page, path) => inRouter(createElement(AuthContext.Provider, { value: { currentUser: customer, isAuthenticated: true, ready: true } }, createElement(Provider, { store: customerStore }, createElement(page))), path)
+const inRouter = (element, path = '/') => renderToStaticMarkup(createElement(Provider, { store }, createElement(MemoryRouter, { initialEntries: [path] }, element)))
+const asCustomer = (page, path) => inRouter(createElement(AuthContext.Provider, { value: { currentUser: customer, isAuthenticated: true, ready: true } }, createElement(page)), path)
 
 test('rescheduling is available only for pending customer bookings', () => {
   assert.equal(canCustomerReschedule(booking()), true)
