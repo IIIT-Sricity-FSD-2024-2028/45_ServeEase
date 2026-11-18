@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  fetchCustomerBookings,
+  selectCustomerBookings,
+  selectCustomerBookingsFetchError,
+  selectCustomerBookingsFetchStatus,
+} from '../../../store/bookings/bookingsSlice.js'
 import { CustomerPageHeader, InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
 import { formatDisplayDate, formatPrice, paymentTag, statusPillClass, summarizePayments, transactionId } from '../customerOperations'
 import { settleBooking } from '../../finance/revenueModel'
@@ -77,34 +83,21 @@ export default function CustomerPaymentHistoryPage() {
   const { currentUser, isAuthenticated } = useAuth()
   const userId = currentUser?.userId
   const email = currentUser?.email
-  const identityKey = JSON.stringify([userId || '', email || ''])
-  const [result, setResult] = useState({ identityKey: '', status: 'loading', payments: [], error: '' })
+  const dispatch = useAppDispatch()
+  const serverBookings = useAppSelector(selectCustomerBookings)
+  const fetchStatus = useAppSelector(selectCustomerBookingsFetchStatus)
+  const fetchError = useAppSelector(selectCustomerBookingsFetchError)
   const [selectedPayment, setSelectedPayment] = useState(null)
 
   useEffect(() => {
-    let active = true
-    if (!isAuthenticated) return () => { active = false }
+    if (isAuthenticated) dispatch(fetchCustomerBookings())
+  }, [dispatch, isAuthenticated])
 
-    bookingsApi.list()
-      .then((records) => {
-        if (!active) return
-        if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
-        // Every booking records its payment on the booking itself (paymentStatus, paymentDate, totals);
-        // there is no separate payments endpoint.
-        const customerTransactions = records.filter((booking) => belongsToCustomer(booking, userId, email)).map(settleBooking)
-        setResult({ identityKey, status: 'ready', payments: customerTransactions, error: '' })
-      })
-      .catch((requestError) => {
-        if (!active) return
-        setResult({ identityKey, status: 'error', payments: [], error: requestError.message || 'Payment information could not be loaded.' })
-      })
-
-    return () => { active = false }
-  }, [email, identityKey, isAuthenticated, userId])
-
-  const loadState = !isAuthenticated ? 'error' : result.identityKey === identityKey ? result.status : 'loading'
-  const error = !isAuthenticated ? 'Please sign in to view payment information.' : result.error
-  const payments = result.identityKey === identityKey ? result.payments : emptyPayments
+  const loadState = !isAuthenticated ? 'error' : fetchStatus === 'failed' ? 'error' : fetchStatus === 'succeeded' ? 'ready' : 'loading'
+  const error = !isAuthenticated ? 'Please sign in to view payment information.' : fetchError === 'Booking request failed.' ? 'Payment information could not be loaded.' : fetchError || 'Payment information could not be loaded.'
+  const payments = useMemo(() => isAuthenticated
+    ? serverBookings.filter((booking) => belongsToCustomer(booking, userId, email)).map(settleBooking)
+    : emptyPayments, [email, isAuthenticated, serverBookings, userId])
   const summary = useMemo(() => summarizePayments(payments), [payments])
 
   return <div className="customer-ops">
