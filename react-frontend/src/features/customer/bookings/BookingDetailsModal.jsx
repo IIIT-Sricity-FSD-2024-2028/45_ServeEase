@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { bookingsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  fetchBookingDetail,
+  selectBookingById,
+  selectBookingDetailFetchError,
+  selectBookingDetailFetchStatus,
+} from '../../../store/bookings/bookingsSlice.js'
 import { InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
 import { ReviewRating } from '../../reviews/ReviewParts'
 import { formatDisplayDate, formatDisplayDateTime, formatPrice, hasValue, paymentTag, statusPillClass, transactionId } from '../customerOperations'
@@ -10,23 +16,32 @@ import { PaymentMethod } from '../../finance/PaymentMethod'
 // refresh shows the server copy (the API answers 404 for bookings that are not the caller's). The
 // original's hard-coded provider phone number is not reproduced; payment status is shown on its own.
 export function BookingDetailsModal({ bookingId, fallback, review, onClose }) {
-  const [result, setResult] = useState({ id: '', booking: null, error: '' })
+  const dispatch = useAppDispatch()
   const [attempt, setAttempt] = useState(0)
+  const [retryState, setRetryState] = useState({ active: false, error: '' })
+  const serverBooking = useAppSelector(selectBookingById(bookingId))
+  const detailStatus = useAppSelector(selectBookingDetailFetchStatus(bookingId))
+  const detailError = useAppSelector(selectBookingDetailFetchError(bookingId))
 
   useEffect(() => {
-    let active = true
-    bookingsApi.get(bookingId)
-      .then((booking) => { if (active) setResult({ id: bookingId, booking, error: '' }) })
-      .catch((error) => { if (active) setResult({ id: bookingId, booking: null, error: error.message || 'Booking details could not be loaded.' }) })
-    return () => { active = false }
-  }, [attempt, bookingId])
+    if (!bookingId) return
+    dispatch(fetchBookingDetail(bookingId)).then(() => setRetryState({ active: false, error: '' }))
+  }, [attempt, bookingId, dispatch])
 
-  const loaded = result.id === bookingId
-  const record = (loaded && result.booking) || (!loaded ? fallback : null)
+  const retrying = retryState.active && detailStatus !== 'succeeded'
+  const error = retrying
+    ? retryState.error
+    : detailError === 'Booking request failed.' ? 'Booking details could not be loaded.' : detailError || ''
+  const loaded = detailStatus === 'failed' || retrying
+  const record = detailStatus === 'succeeded' ? serverBooking : loaded ? null : fallback
   const booking = record ? settleBooking(record) : null
+  const retry = () => {
+    setRetryState({ active: true, error: error || 'Booking details could not be loaded.' })
+    setAttempt((count) => count + 1)
+  }
 
   return <OpsModal className="booking-details-modal" labelId="booking-details-title" onClose={onClose} title="Booking Details">
-    {!booking && <LoadState error={result.error} loadingText="Loading booking details…" onRetry={() => setAttempt((count) => count + 1)} state={loaded ? 'error' : 'loading'} />}
+    {!booking && <LoadState error={error} loadingText="Loading booking details…" onRetry={retry} state={loaded ? 'error' : 'loading'} />}
     {booking && <div className="info-grid">
       <div className="info-box"><strong>Service Information</strong>
         <InfoRow label="Service Name:">{booking.service}</InfoRow>

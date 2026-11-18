@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi, catalogApi, ticketsApi } from '../../../services/api'
+import { catalogApi, ticketsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  fetchProviderBookings,
+  selectProviderBookings,
+  selectProviderBookingsFetchError,
+  selectProviderBookingsFetchStatus,
+} from '../../../store/bookings/bookingsSlice.js'
 import { formatDisplayDate } from '../../customer/customerOperations'
 import { projectTransactions, summarizeTransactions } from '../account/providerFinancials'
 import '../providerPortal.css'
@@ -28,21 +35,33 @@ const pillClass = (status) => {
 export function ProviderDashboardPage() {
   const { currentUser, isAuthenticated, role } = useAuth()
   const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
-  const [data, setData] = useState({ services: null, bookings: null, tickets: null, loading: true, errors: {} })
+  const dispatch = useAppDispatch()
+  const serverBookings = useAppSelector(selectProviderBookings)
+  const bookingStatus = useAppSelector(selectProviderBookingsFetchStatus)
+  const bookingError = useAppSelector(selectProviderBookingsFetchError)
+  const [auxData, setAuxData] = useState({ services: null, tickets: null, loading: true, errors: {} })
 
   useEffect(() => {
     if (!isAuthenticated || role !== 'provider' || !providerId) return undefined
     let active = true
-    Promise.allSettled([catalogApi.getProviderServices(providerId), bookingsApi.listForProvider(), ticketsApi.listProvider()]).then(([services, bookings, tickets]) => {
+    dispatch(fetchProviderBookings())
+    Promise.allSettled([catalogApi.getProviderServices(providerId), ticketsApi.listProvider()]).then(([services, tickets]) => {
       if (!active) return
       const errors = {}
       const read = (result, key, message) => { if (result.status === 'fulfilled') return Array.isArray(result.value) ? result.value : []; errors[key] = result.reason?.message || message; return null }
-      setData({ services: read(services, 'services', 'Services are unavailable.'), bookings: read(bookings, 'bookings', 'Bookings are unavailable.'), tickets: read(tickets, 'tickets', 'Notifications are unavailable.'), loading: false, errors })
+      setAuxData({ services: read(services, 'services', 'Services are unavailable.'), tickets: read(tickets, 'tickets', 'Notifications are unavailable.'), loading: false, errors })
     })
     return () => { active = false }
-  }, [isAuthenticated, providerId, role])
+  }, [dispatch, isAuthenticated, providerId, role])
 
-  const bookings = useMemo(() => data.bookings || [], [data.bookings])
+  const bookingsAvailable = bookingStatus === 'succeeded'
+  const bookings = useMemo(() => bookingsAvailable ? serverBookings : [], [bookingsAvailable, serverBookings])
+  const data = {
+    ...auxData,
+    bookings: bookingsAvailable ? bookings : null,
+    loading: auxData.loading || bookingStatus === 'idle' || bookingStatus === 'loading',
+    errors: { ...auxData.errors, ...(bookingStatus === 'failed' ? { bookings: bookingError === 'Booking request failed.' ? 'Bookings are unavailable.' : bookingError || 'Bookings are unavailable.' } : {}) },
+  }
   const completed = bookings.filter(isCompleted)
   // The same projection the Earnings & Payments page uses, so both pages always show identical figures.
   const summary = useMemo(() => summarizeTransactions(projectTransactions(bookings)), [bookings])
