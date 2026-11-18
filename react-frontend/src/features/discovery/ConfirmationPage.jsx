@@ -1,6 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { bookingsApi } from '../../services/api'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
+import {
+  fetchBookingDetail,
+  selectBookingById,
+  selectBookingDetailFetchError,
+  selectBookingDetailFetchStatus,
+} from '../../store/bookings/bookingsSlice.js'
 import { formatCurrency, formatDisplayDate } from './catalogModel'
 import { paymentTag } from '../customer/customerOperations'
 import { readJourney } from './journeyState'
@@ -14,17 +20,23 @@ export function ConfirmationPage() {
   const bookingId = params.get('booking') || ''
   const saved = readJourney()?.booked
   const fromJourney = saved?.booking?.id === bookingId ? saved.booking : null
-  const [state, setState] = useState(() => (fromJourney ? { loading: false, booking: fromJourney, error: '' } : { loading: Boolean(bookingId), booking: null, error: '' }))
+  const dispatch = useAppDispatch()
+  const serverBooking = useAppSelector(selectBookingById(bookingId))
+  const detailStatus = useAppSelector(selectBookingDetailFetchStatus(bookingId))
+  const detailError = useAppSelector(selectBookingDetailFetchError(bookingId))
 
   useEffect(() => {
     if (!bookingId || fromJourney) return undefined
-    let live = true
-    bookingsApi.get(bookingId)
-      .then((booking) => live && setState({ loading: false, booking, error: '' }))
-      .catch((error) => live && setState({ loading: false, booking: null, error: error.message }))
-    return () => { live = false }
-  }, [bookingId, fromJourney])
+    dispatch(fetchBookingDetail(bookingId))
+  }, [bookingId, dispatch, fromJourney])
 
+  const state = fromJourney
+    ? { loading: false, booking: fromJourney, error: '' }
+    : {
+      loading: Boolean(bookingId) && !['succeeded', 'failed'].includes(detailStatus),
+      booking: detailStatus === 'succeeded' ? serverBooking : null,
+      error: detailError === 'Booking request failed.' ? '' : detailError || '',
+    }
   const booking = state.booking
   let content
   if (state.loading) content = <p role="status">Loading booking…</p>

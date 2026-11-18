@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi, catalogApi } from '../../../services/api'
+import { catalogApi } from '../../../services/api'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
 import { fetchProviderTickets, selectTicketListFetchError, selectTicketListFetchStatus, selectTicketsForScope, ticketEntityKey } from '../../../store/tickets/ticketsSlice.js'
+import {
+  fetchProviderBookings,
+  selectProviderBookings,
+  selectProviderBookingsFetchError,
+  selectProviderBookingsFetchStatus,
+} from '../../../store/bookings/bookingsSlice.js'
 import { formatDisplayDate } from '../../customer/customerOperations'
 import { projectTransactions, summarizeTransactions } from '../account/providerFinancials'
 import '../providerPortal.css'
@@ -35,27 +41,37 @@ export function ProviderDashboardPage() {
   const ticketFetchError = useAppSelector(selectTicketListFetchError('provider'))
   const providerId = currentUser?.providerId || currentUser?.userId || currentUser?.providerCatalogId
   const [settledTicketFetchStatus, setSettledTicketFetchStatus] = useState(ticketFetchStatus)
-  const [data, setData] = useState({ services: null, bookings: null, loading: true, errors: {} })
+  const [auxData, setAuxData] = useState({ services: null, loading: true, errors: {} })
   const visibleTicketFetchStatus = ticketFetchStatus === 'loading' ? settledTicketFetchStatus : ticketFetchStatus
+  const serverBookings = useAppSelector(selectProviderBookings)
+  const bookingStatus = useAppSelector(selectProviderBookingsFetchStatus)
+  const bookingError = useAppSelector(selectProviderBookingsFetchError)
 
   useEffect(() => {
     if (!isAuthenticated || role !== 'provider' || !providerId) return undefined
     let active = true
+    dispatch(fetchProviderBookings())
     Promise.allSettled([
       catalogApi.getProviderServices(providerId),
-      bookingsApi.listForProvider(),
       dispatch(fetchProviderTickets()).unwrap(),
-    ]).then(([services, bookings, ticketResult]) => {
+    ]).then(([services, ticketResult]) => {
       if (!active) return
       setSettledTicketFetchStatus(ticketResult.status === 'fulfilled' ? 'succeeded' : 'failed')
       const errors = {}
       const read = (result, key, message) => { if (result.status === 'fulfilled') return Array.isArray(result.value) ? result.value : []; errors[key] = result.reason?.message || message; return null }
-      setData({ services: read(services, 'services', 'Services are unavailable.'), bookings: read(bookings, 'bookings', 'Bookings are unavailable.'), loading: false, errors })
+      setAuxData({ services: read(services, 'services', 'Services are unavailable.'), loading: false, errors })
     })
     return () => { active = false }
   }, [dispatch, isAuthenticated, providerId, role])
 
-  const bookings = useMemo(() => data.bookings || [], [data.bookings])
+  const bookingsAvailable = bookingStatus === 'succeeded'
+  const bookings = useMemo(() => bookingsAvailable ? serverBookings : [], [bookingsAvailable, serverBookings])
+  const data = {
+    ...auxData,
+    bookings: bookingsAvailable ? bookings : null,
+    loading: auxData.loading || bookingStatus === 'idle' || bookingStatus === 'loading',
+    errors: { ...auxData.errors, ...(bookingStatus === 'failed' ? { bookings: bookingError === 'Booking request failed.' ? 'Bookings are unavailable.' : bookingError || 'Bookings are unavailable.' } : {}) },
+  }
   const completed = bookings.filter(isCompleted)
   // The same projection the Earnings & Payments page uses, so both pages always show identical figures.
   const summary = useMemo(() => summarizeTransactions(projectTransactions(bookings)), [bookings])

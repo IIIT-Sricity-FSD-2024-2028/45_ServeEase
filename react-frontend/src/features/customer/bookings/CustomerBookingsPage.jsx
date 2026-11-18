@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi, reviewsApi } from '../../../services/api'
+import { reviewsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  cancelBooking,
+  fetchCustomerBookings,
+  selectCustomerBookings,
+  selectCustomerBookingsFetchError,
+  selectCustomerBookingsFetchStatus,
+} from '../../../store/bookings/bookingsSlice.js'
 import { ReviewModal } from '../../reviews/ReviewParts'
 import { CustomerPageHeader, LoadState, OpsModal } from '../CustomerOpsParts'
-import { belongsToCustomer, bookingTabs, bookingTabView, canCustomerCancel, formatDisplayDate, sortNewestFirst } from '../customerOperations'
+import { belongsToCustomer, bookingTabs, bookingTabView, formatDisplayDate, sortNewestFirst } from '../customerOperations'
 import { formatSlot } from '../../discovery/catalogModel'
 import { BookingCard } from './BookingCard'
 import { BookingDetailsModal } from './BookingDetailsModal'
@@ -18,8 +26,8 @@ import '../customerOperations.css'
 export default function CustomerBookingsPage() {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [load, setLoad] = useState({ state: 'loading', bookings: [], error: '' })
   const [notice, setNotice] = useState('')
   const [cancelState, setCancelState] = useState(null)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
@@ -28,12 +36,9 @@ export default function CustomerBookingsPage() {
   const tabParam = searchParams.get('tab')
   const activeTab = bookingTabs.includes(tabParam) ? tabParam : 'All'
   const selectedId = searchParams.get('booking') || ''
-
-  const loadBookings = useCallback(async () => {
-    const records = await bookingsApi.list()
-    if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
-    return sortNewestFirst(records.filter((booking) => belongsToCustomer(booking, currentUser)))
-  }, [currentUser])
+  const serverBookings = useAppSelector(selectCustomerBookings)
+  const fetchStatus = useAppSelector(selectCustomerBookingsFetchStatus)
+  const fetchError = useAppSelector(selectCustomerBookingsFetchError)
 
   // The customer's own reviews, keyed by booking. A failure only hides ratings; bookings still load.
   const loadReviews = useCallback(() => reviewsApi.mine()
@@ -41,20 +46,17 @@ export default function CustomerBookingsPage() {
     .catch(() => setReviews({})), [])
   useEffect(() => { loadReviews() }, [loadReviews])
 
-  const refresh = useCallback(() => {
-    setLoad((current) => ({ ...current, state: 'loading', error: '' }))
-    loadBookings()
-      .then((bookings) => setLoad({ state: 'ready', bookings, error: '' }))
-      .catch((error) => setLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }))
-  }, [loadBookings])
+  const refresh = useCallback(() => dispatch(fetchCustomerBookings()), [dispatch])
 
   useEffect(() => {
-    let active = true
-    loadBookings()
-      .then((bookings) => { if (active) setLoad({ state: 'ready', bookings, error: '' }) })
-      .catch((error) => { if (active) setLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }) })
-    return () => { active = false }
-  }, [loadBookings])
+    if (currentUser) dispatch(fetchCustomerBookings())
+  }, [currentUser, dispatch])
+
+  const load = useMemo(() => ({
+    state: fetchStatus === 'failed' ? 'error' : fetchStatus === 'succeeded' ? 'ready' : 'loading',
+    bookings: sortNewestFirst(serverBookings.filter((booking) => belongsToCustomer(booking, currentUser))),
+    error: fetchError === 'Booking request failed.' ? 'Your bookings could not be loaded.' : fetchError || '',
+  }), [currentUser, fetchError, fetchStatus, serverBookings])
 
   const view = useMemo(() => bookingTabView(load.bookings, activeTab), [activeTab, load.bookings])
   const selectedBooking = load.bookings.find((booking) => booking.id === selectedId)
@@ -77,18 +79,18 @@ export default function CustomerBookingsPage() {
   async function confirmCancel() {
     const booking = cancelState.booking
     setCancelState({ booking, saving: true, error: '' })
+    let saved
     try {
-      // persistCustomerCancellation(): re-read the canonical booking before asking for the transition.
-      const latest = await bookingsApi.get(booking.id)
-      if (!canCustomerCancel(latest)) throw new Error(`This booking is ${String(latest.status).toLowerCase()} and can no longer be cancelled.`)
-      const saved = await bookingsApi.updateStatus(booking.id, 'Cancelled')
+      saved = await dispatch(cancelBooking({ bookingId: booking.id })).unwrap()
       if (saved?.status !== 'Cancelled') throw new Error('The server did not confirm the cancellation.')
-      setCancelState(null)
-      setNotice(`Booking ${booking.id} was cancelled.`)
-      refresh()
     } catch (error) {
-      setCancelState({ booking, saving: false, error: error.message || 'The booking could not be cancelled.' })
+      const message = error?.message || (typeof error === 'string' ? error : '') || 'The booking could not be cancelled.'
+      setCancelState({ booking, saving: false, error: message === 'Booking request failed.' ? 'The booking could not be cancelled.' : message })
+      return
     }
+    setCancelState(null)
+    setNotice(`Booking ${booking.id} was cancelled.`)
+    void refresh()
   }
 
   return <div className="customer-ops">

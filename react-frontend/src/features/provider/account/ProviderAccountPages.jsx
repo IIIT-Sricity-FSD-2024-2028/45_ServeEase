@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  fetchProviderBookings,
+  selectProviderBookings,
+  selectProviderBookingsFetchError,
+  selectProviderBookingsFetchStatus,
+} from '../../../store/bookings/bookingsSlice.js'
 import { projectTransactions, summarizeTransactions } from './providerFinancials'
 import { PaymentMethod } from '../../finance/PaymentMethod'
 import { formatDisplayDate } from '../../customer/customerOperations'
@@ -12,8 +18,9 @@ const money = (value) => value == null ? 'Unavailable' : `₹${Number(value).toL
 const formatDate = (value) => (value ? formatDisplayDate(value) : '—')
 
 export function ProviderEarningsPage() {
-  const { isAuthenticated, role } = useAuth(); const [state, setState] = useState({ loading: true, bookings: [], error: '' }); const [query, setQuery] = useState(''); const [statusFilter, setStatusFilter] = useState('all'); const [sort, setSort] = useState('newest')
-  useEffect(() => { if (!isAuthenticated || role !== 'provider') return undefined; let active = true; bookingsApi.listForProvider().then((bookings) => { if (active) setState({ loading: false, bookings: Array.isArray(bookings) ? bookings : [], error: '' }) }).catch((error) => { if (active) setState({ loading: false, bookings: [], error: error.message || 'Unable to load payout records.' }) }); return () => { active = false } }, [isAuthenticated, role])
+  const { isAuthenticated, role } = useAuth(); const dispatch = useAppDispatch(); const serverBookings = useAppSelector(selectProviderBookings); const fetchStatus = useAppSelector(selectProviderBookingsFetchStatus); const fetchError = useAppSelector(selectProviderBookingsFetchError); const [query, setQuery] = useState(''); const [statusFilter, setStatusFilter] = useState('all'); const [sort, setSort] = useState('newest')
+  useEffect(() => { if (isAuthenticated && role === 'provider') dispatch(fetchProviderBookings()) }, [dispatch, isAuthenticated, role])
+  const state = { loading: fetchStatus !== 'succeeded' && fetchStatus !== 'failed', bookings: fetchStatus === 'succeeded' ? serverBookings : [], error: fetchError === 'Booking request failed.' ? 'Unable to load payout records.' : fetchError || '' }
   const transactions = useMemo(() => projectTransactions(state.bookings), [state.bookings]); const summary = useMemo(() => summarizeTransactions(transactions), [transactions]); const { pending, totalEarnings, pendingPayout } = summary
   const visibleTransactions = useMemo(() => { const normalizedQuery = query.trim().toLowerCase(); const filtered = transactions.filter((transaction) => (!normalizedQuery || [transaction.transactionId, transaction.bookingRef, transaction.service, transaction.customer, transaction.paymentMethod, transaction.status].some((value) => String(value || '').toLowerCase().includes(normalizedQuery))) && (statusFilter === 'all' || transaction.status.toLowerCase() === statusFilter)); return filtered.sort((left, right) => { if (sort === 'highest') return right.payout - left.payout; if (sort === 'lowest') return left.payout - right.payout; if (sort === 'status') return left.status.localeCompare(right.status); const leftDate = new Date(left.date || 0).getTime(); const rightDate = new Date(right.date || 0).getTime(); return sort === 'oldest' ? leftDate - rightDate : rightDate - leftDate }) }, [query, sort, statusFilter, transactions])
   if (!isAuthenticated || role !== 'provider') return <section className="provider-portal"><div className="panel-card ops-state">Please sign in with a provider account to view earnings and payments.</div></section>

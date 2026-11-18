@@ -1,34 +1,38 @@
 import { useMemo, useState } from 'react'
-import { bookingsApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import {
+  rescheduleBooking,
+  selectRescheduleBookingMutationStatus,
+} from '../../../store/bookings/bookingsSlice.js'
 import { formatSlot } from '../../discovery/catalogModel'
 import { useProviderAvailability } from '../../discovery/useProviderAvailability'
-import { canCustomerReschedule, formatDisplayDate } from '../customerOperations'
+import { formatDisplayDate } from '../customerOperations'
 import { OpsModal } from '../CustomerOpsParts'
 
 export function RescheduleModal({ booking, onClose, onRescheduled }) {
+  const dispatch = useAppDispatch()
   // The booking already records the provider account id the availability API expects.
   const { dates, loading, error: availabilityError, reload: loadAvailability } = useProviderAvailability(booking.providerId)
   // Only dates with an open slot are offered; the slice keeps the server response unchanged.
   const availability = useMemo(() => ({ loading, error: availabilityError, dates: dates.filter((item) => Array.isArray(item.slots) && item.slots.length) }), [dates, loading, availabilityError])
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const saving = useAppSelector(selectRescheduleBookingMutationStatus(booking.id)) === 'loading'
   const close = () => { if (!saving) onClose() }
   const selectedDate = availability.dates.find((item) => item.date === date)
   async function confirm() {
-    setSaving(true); setError('')
+    setError('')
     try {
-      const latest = await bookingsApi.get(booking.id)
-      if (!canCustomerReschedule(latest)) throw new Error(`This booking is ${String(latest.status).toLowerCase()} and can no longer be rescheduled.`)
-      const saved = await bookingsApi.reschedule(booking.id, { date, time, stateVersion: latest.stateVersion })
+      const saved = await dispatch(rescheduleBooking({ bookingId: booking.id, date, time })).unwrap()
       if (saved?.date !== date) throw new Error('The server did not confirm the new schedule.')
       onRescheduled(saved)
     } catch (requestError) {
-      const message = requestError.message || 'The booking could not be rescheduled.'
-      setError(message)
-      if (/slot|available|availability/i.test(message)) { setTime(''); loadAvailability() }
-    } finally { setSaving(false) }
+      const message = requestError?.message || (typeof requestError === 'string' ? requestError : '') || 'The booking could not be rescheduled.'
+      const visibleMessage = message === 'Booking request failed.' ? 'The booking could not be rescheduled.' : message
+      setError(visibleMessage)
+      if (/slot|available|availability/i.test(visibleMessage)) { setTime(''); loadAvailability() }
+    }
   }
   return <OpsModal className="reschedule-modal" labelId="reschedule-booking-title" onClose={close} title="Reschedule Booking">
     <div className="reschedule-current"><strong>Current schedule:</strong> {formatDisplayDate(booking.date)} · {formatSlot(booking.time)}<div>{booking.service} · {booking.provider}</div></div>
