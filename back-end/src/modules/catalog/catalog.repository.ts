@@ -6,7 +6,7 @@ import { UpdateProviderDto } from './dto/update-provider.dto';
 import { ProviderServiceDto, UpdateProviderServiceDto } from './dto/provider-service.dto';
 import { StateRepository } from '../state/state.repository';
 import { canonicalProviderId } from '../../common/provider-identity';
-import { readProviderServices, writeProviderServices } from './provider-services-store';
+import { providerServicesKey, readProviderServices, writeProviderServices } from './provider-services-store';
 import { providerAccountStatus } from '../../common/provider-account-status';
 import { profilePhotoRecord } from '../provider-documents/profile-photo';
 import { accountServices, AccountService, catalogView, listingOwner } from './catalog-derivation';
@@ -86,6 +86,15 @@ export class CatalogRepository implements OnModuleInit {
     return service;
   }
 
+  deleteService(providerId: string, serviceId: string): any | undefined {
+    const services = this.findServices(providerId);
+    const serviceIndex = services.findIndex((item) => item && String(item.id) === serviceId);
+    if (serviceIndex < 0) return undefined;
+    const [service] = services.splice(serviceIndex, 1);
+    this.saveServices(providerId, services);
+    return service;
+  }
+
   syncServices(providerId: string, services: any[]): any[] {
     return this.saveServices(providerId, services.map((service) => ({
       ...service,
@@ -99,7 +108,7 @@ export class CatalogRepository implements OnModuleInit {
   // accounts and service records on every read, so an approval, rejection, suspension, reactivation or service
   // change shows immediately, without a restart or a superuser sync, and repeated reads cannot duplicate anything.
   findAll(): CatalogState {
-    return { ...this.catalog, providers: catalogView({ users: this.providerUsers(), categories: this.catalog.categories, providers: this.catalog.providers, servicesFor: (providerId) => this.findServices(providerId), hasPhoto: (account) => Boolean(profilePhotoRecord(this.registryDocuments(), account)), ratingFor: (listing) => statsFor(readReviews(this.stateRepository), listingKeys(listing)) }) };
+    return { ...this.catalog, providers: catalogView({ users: this.providerUsers(), categories: this.catalog.categories, providers: this.catalog.providers, servicesFor: (providerId) => this.findServices(providerId), hasStoredServices: (providerId) => Boolean(this.stateRepository.findById(providerServicesKey(providerId))), hasPhoto: (account) => Boolean(profilePhotoRecord(this.registryDocuments(), account)), ratingFor: (listing) => statsFor(readReviews(this.stateRepository), listingKeys(listing)) }) };
   }
 
   findById(id: string): CatalogProvider | undefined {

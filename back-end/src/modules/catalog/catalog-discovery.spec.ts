@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { AppModule } from '../../app.module';
+import { BookingsRepository } from '../bookings/bookings.repository';
 
 // supertest ships without type declarations in this project, so it is loaded untyped.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -52,7 +53,7 @@ describe('Verified provider discovery (HTTP)', () => {
   const catalog = async () => (await http().get('/api/catalog').set({ role: 'user' })).body.data.providers as Array<Record<string, any>>;
   const ownedBy = async (owner: string) => (await catalog()).filter((item) => item.ownerProviderId === owner);
   const addService = async (providerId: string, body: Record<string, unknown>) => http().post(`/api/catalog/providers/${providerId}/services`).set(auth(await login({ identifier: providerId }))).send(body);
-  const book = async (providerId: string) => http().post('/api/bookings/customer').set(auth(await login({ identifier: 'cus@example.test' }))).send({ service: 'Haircut', providerId, date: '2030-01-03', time: '10:00 AM - 12:00 PM', address: '1 Example Road' });
+  const book = async (providerId: string, service = 'Haircut') => http().post('/api/bookings/customer').set(auth(await login({ identifier: 'cus@example.test' }))).send({ service, providerId, date: '2030-01-03', time: '10:00 AM - 12:00 PM', address: '1 Example Road' });
 
   beforeAll(async () => {
     dir = mkdtempSync(join(tmpdir(), 'serveease-discovery-'));
@@ -160,5 +161,57 @@ describe('Verified provider discovery (HTTP)', () => {
     expect(off.services).toEqual([]);
     expect((await edit({ isActive: true })).status).toBe(200);
     expect((await ownedBy('PROBASE'))[0].subServices).toEqual(['Tap Repair']);
+  });
+
+  it('deletes only the owned service, persists the catalog change, and preserves booking/payment history', async () => {
+    const created = await addService('PROBASE', { name: 'Delete Safe', category: 'Plumbing', price: 225, cityId: 1, cityName: 'Chennai' });
+    expect(created.status).toBe(201);
+    const serviceId = created.body.data.id as string;
+    // Seed a historical booking snapshot directly: service deletion must not rewrite booking/payment data.
+    const booking = app.get(BookingsRepository).create({
+      customerId: 'CUS700', service: 'Delete Safe', provider: 'Org PROBASE', providerId: 'PROBASE',
+      date: '2030-01-03', time: '10:00 AM - 12:00 PM', address: '1 Example Road', amount: 258.75,
+      customerName: 'Cus', customerPhone: '9000000700', customerEmail: 'cus@example.test', paymentStatus: 'Paid', paymentId: 'TXN-DELETE-SAFE',
+    });
+    const bookingId = booking.id;
+
+    const otherProvider = await http().delete(`/api/catalog/providers/PRONEW/services/${serviceId}`)
+      .set(auth(await login({ identifier: 'PRONEW' })));
+    expect(otherProvider.status).toBe(404);
+    const forbiddenOwner = await http().delete(`/api/catalog/providers/PROBASE/services/${serviceId}`)
+      .set(auth(await login({ identifier: 'PRONEW' })));
+    expect(forbiddenOwner.status).toBe(403);
+    expect((await http().delete('/api/catalog/providers/PROBASE/services/%20')
+      .set(auth(await login({ identifier: 'PROBASE' })))).status).toBe(400);
+
+    const deleted = await http().delete(`/api/catalog/providers/PROBASE/services/${serviceId}`)
+      .set(auth(await login({ identifier: 'PROBASE' })));
+    expect(deleted.status).toBe(200);
+    expect(deleted.body.data).toMatchObject({ id: serviceId, name: 'Delete Safe' });
+    const storedServices = await http().get('/api/catalog/providers/PROBASE/services').set(auth(await login({ identifier: 'PROBASE' })));
+    expect(storedServices.body.data.some((service: any) => service.id === serviceId)).toBe(false);
+    const refreshedCatalog = await catalog();
+    const listing = refreshedCatalog.find((item) => item.ownerProviderId === 'PROBASE');
+    expect(listing?.subServices).not.toContain('Delete Safe');
+    expect(listing?.services?.some((service: any) => service.id === serviceId)).toBe(false);
+
+    const secondDelete = await http().delete(`/api/catalog/providers/PROBASE/services/${serviceId}`)
+      .set(auth(await login({ identifier: 'PROBASE' })));
+    expect(secondDelete.status).toBe(404);
+
+    // Removing the last stored record must not make a service from the old synced listing appear again.
+    const remainingServices = await http().get('/api/catalog/providers/PROBASE/services').set(auth(await login({ identifier: 'PROBASE' })));
+    const lastService = remainingServices.body.data[0];
+    expect(lastService.name).toBe('Tap Repair');
+    expect((await http().delete(`/api/catalog/providers/PROBASE/services/${lastService.id}`)
+      .set(auth(await login({ identifier: 'PROBASE' })))).status).toBe(200);
+    expect((await http().get('/api/catalog/providers/PROBASE/services').set(auth(await login({ identifier: 'PROBASE' })))).body.data).toEqual([]);
+    const emptyDiscoveryListing = (await catalog()).find((item) => item.ownerProviderId === 'PROBASE');
+    expect(emptyDiscoveryListing?.subServices).toEqual([]);
+    expect(emptyDiscoveryListing?.services).toEqual([]);
+
+    const providerBookings = await http().get('/api/bookings/provider').set(auth(await login({ identifier: 'PROBASE' })));
+    const preserved = providerBookings.body.data.find((item: any) => item.id === bookingId);
+    expect(preserved).toMatchObject({ service: 'Delete Safe', paymentId: 'TXN-DELETE-SAFE', paymentStatus: 'Paid', amount: 258.75 });
   });
 });

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ServiceCard } from './ServiceCard'
 import { useAuth } from '../../../context/useAuth'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
-import { createProviderService, fetchProviderServices, providerServiceEntityKey, selectCatalogState, selectProviderServices, updateProviderService } from '../../../store/catalog/catalogSlice.js'
+import { createProviderService, deleteProviderService, fetchProviderServices, providerServiceEntityKey, selectCatalogState, selectProviderServices, updateProviderService } from '../../../store/catalog/catalogSlice.js'
 import { ProviderAvailabilityPanel } from '../availability/ProviderAvailabilityPanel'
 import '../providerPortal.css'
 
@@ -38,11 +38,15 @@ export function ProviderServicesPage() {
   const fetchError = catalogState.fetchError.providerServicesByProviderId[providerId]
   const services = fetchStatus === 'succeeded' && Array.isArray(servicesState) ? servicesState : []
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [editingService, setEditingService] = useState(null)
+  const [deletingService, setDeletingService] = useState(null)
   const [form, setForm] = useState(emptyService)
   const [activeRequestKey, setActiveRequestKey] = useState('')
   const requestCounter = useRef(0)
   const saveKey = editingService && !editingService.isNew ? providerServiceEntityKey(providerId, editingService.id) : null
+  const deleteKey = deletingService ? providerServiceEntityKey(providerId, deletingService.id) : null
+  const isDeleting = Boolean(deleteKey && catalogState.mutationStatus.deleteProviderServiceByKey[deleteKey] === 'loading')
   const isSaving = editingService?.isNew
     ? catalogState.mutationStatus.createProviderServiceByRequestKey[activeRequestKey] === 'loading'
     : Boolean(saveKey && catalogState.mutationStatus.updateProviderServiceByKey[saveKey] === 'loading')
@@ -63,14 +67,31 @@ export function ProviderServicesPage() {
     setError('')
   }
 
+  const closeDeleteModal = () => setDeletingService(null)
+
+  const confirmDeleteService = async () => {
+    if (!deletingService || isDeleting) return
+    setError('')
+    setNotice('')
+    try {
+      await dispatch(deleteProviderService({ providerId, serviceId: deletingService.id })).unwrap()
+      setNotice(`${deletingService.name} was deleted successfully.`)
+      closeDeleteModal()
+    } catch (requestError) {
+      setError((typeof requestError === 'string' ? requestError : requestError.message) || 'Unable to delete this service.')
+    }
+  }
+
   const openAdd = () => {
     setError('')
+    setNotice('')
     setForm(emptyService)
     setEditingService({ isNew: true })
   }
 
   const openEdit = (service) => {
     setError('')
+    setNotice('')
     setForm({ name: service.name || '', description: service.description || '', price: String(service.price ?? '') })
     setEditingService(service)
   }
@@ -101,6 +122,7 @@ export function ProviderServicesPage() {
     const isActive = String(service.status || '').toLowerCase() === 'active' || service.isActive === true
     const patch = { status: isActive ? 'Inactive' : 'Active', isActive: !isActive }
     setError('')
+    setNotice('')
     try {
       await dispatch(updateProviderService({ providerId, serviceId: service.id, service: patch })).unwrap()
     } catch (requestError) {
@@ -124,14 +146,15 @@ export function ProviderServicesPage() {
     <section className="provider-portal">
       <div className="breadcrumb-row"><Link to="/provider/dashboard">Provider Dashboard</Link> &nbsp;›&nbsp; <strong>Manage Services &amp; Availability</strong></div>
       <section className="page-title-block provider-page-title"><h1>Manage Services</h1><p>Manage your service listings, activation status, and availability slots.</p></section>
-      {visibleError && !editingService && <div className="panel-card ops-state ops-state--error" role="alert">{visibleError}</div>}
+      {visibleError && !editingService && !deletingService && <div className="panel-card ops-state ops-state--error" role="alert">{visibleError}</div>}
+      {notice && <div className="panel-card ops-state provider-service-success" role="status">{notice}</div>}
       <section className="provider-services-layout">
         <div className="panel-card">
           <div className="panel-head"><h2>Your Services</h2><button className="btn btn-primary" onClick={openAdd} type="button">+ Add New Service</button></div>
           <div className="provider-service-grid" id="providerServiceGrid">
             {showLoading && <div className="superuser-empty-state">Loading your services…</div>}
             {!showLoading && services.length === 0 && !visibleError && <div className="superuser-empty-state">You have not added any services yet.</div>}
-            {!showLoading && services.map((service) => <ServiceCard key={service.id} isUpdating={catalogState.mutationStatus.updateProviderServiceByKey[providerServiceEntityKey(providerId, service.id)] === 'loading'} onEdit={openEdit} onToggle={toggleService} service={service} />)}
+            {!showLoading && services.map((service) => <ServiceCard key={service.id} isDeleting={catalogState.mutationStatus.deleteProviderServiceByKey[providerServiceEntityKey(providerId, service.id)] === 'loading'} isUpdating={catalogState.mutationStatus.updateProviderServiceByKey[providerServiceEntityKey(providerId, service.id)] === 'loading'} onDelete={(selected) => { setError(''); setNotice(''); setDeletingService(selected) }} onEdit={openEdit} onToggle={toggleService} service={service} />)}
           </div>
         </div>
         <div className="panel-card"><div className="panel-head"><h2>Availability Management</h2></div><div id="providerAvailabilityPanel"><ProviderAvailabilityPanel embedded providerId={providerId} /></div></div>
@@ -150,6 +173,14 @@ export function ProviderServicesPage() {
             <small className="error" id="providerServiceError" role="alert">{visibleError}</small>
             <div className="provider-modal-actions"><button className="btn btn-primary" disabled={isSaving} type="submit">{isSaving ? 'Saving…' : 'Save Changes'}</button><button className="secondary-btn" disabled={isSaving} onClick={closeModal} type="button">Cancel</button></div>
           </form>
+        </div>
+      </div>}
+      {deletingService && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isDeleting) closeDeleteModal() }}>
+        <div aria-labelledby="providerServiceDeleteTitle" aria-modal="true" className="modal-card provider-modal-card provider-service-delete-modal" role="dialog">
+          <div className="modal-head"><h2 id="providerServiceDeleteTitle">Delete Service?</h2><button aria-label="Close" className="close-modal-btn" disabled={isDeleting} onClick={closeDeleteModal} type="button">×</button></div>
+          <p>Are you sure you want to delete “{deletingService.name}”? This action cannot be undone.</p>
+          {error && <p className="provider-service-delete-error" role="alert">{error}</p>}
+          <div className="provider-modal-actions"><button className="secondary-btn" disabled={isDeleting} onClick={closeDeleteModal} type="button">Cancel</button><button className="provider-service-delete-confirm" disabled={isDeleting} onClick={confirmDeleteService} type="button">{isDeleting ? 'Deleting…' : 'Delete Service'}</button></div>
         </div>
       </div>}
     </section>

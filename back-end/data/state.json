@@ -23226,11 +23226,11 @@
           "name": "Kitchen Cleaning",
           "category": "Home Cleaning",
           "description": "Professional kitchen deep cleaning service",
-          "price": 799,
+          "price": 899,
           "duration": "2 hours",
           "status": "Active",
           "isActive": true,
-          "updatedAt": "2026-11-14T08:18:58.286Z",
+          "updatedAt": "2026-11-17T12:44:15.442Z",
           "location": "Chennai",
           "cityId": 1,
           "cityName": "Chennai"
@@ -23297,24 +23297,11 @@
           "status": "Active",
           "isActive": true,
           "updatedAt": "2026-11-17T02:45:40.050Z"
-        },
-        {
-          "name": "Test Cleaning",
-          "category": "Home Cleaning",
-          "description": "We will clean the test",
-          "price": 58796314,
-          "location": "Chennai",
-          "cityId": 1,
-          "cityName": "Chennai",
-          "id": "SVC-1794919078768",
-          "status": "Active",
-          "isActive": true,
-          "updatedAt": "2026-11-17T12:37:58.768Z"
         }
       ],
-      "updatedAt": "2026-11-17T12:37:58.768Z"
+      "updatedAt": "2026-11-17T13:04:08.290Z"
     },
-    "updatedAt": "2026-11-17T12:37:58.768Z"
+    "updatedAt": "2026-11-17T13:04:08.290Z"
   },
   {
     "key": "serveEaseProviderServices:PRO143",

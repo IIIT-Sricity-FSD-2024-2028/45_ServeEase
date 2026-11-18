@@ -116,6 +116,16 @@ export class CatalogController {
     return successResponse(this.catalogService.updateService(providerId, serviceId, data));
   }
 
+  @Delete('providers/:providerId/services/:serviceId')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'provider')
+  @ApiOperation({ summary: 'Delete a provider service' })
+  @ApiOkResponse({ description: 'Provider service deleted successfully.', schema: successResponseSchema(ProviderServiceDto) })
+  deleteService(@Param('providerId') providerId: string, @Param('serviceId') serviceId: string, @Req() request: Request) {
+    this.assertProviderOwnership(request, providerId);
+    return successResponse(this.catalogService.deleteService(providerId, serviceId));
+  }
+
   private assertProviderOwnership(request: Request, providerId: string) {
     if (request.auth?.role !== 'provider') return;
     const ownedIds = [request.auth.userId, request.auth.providerCatalogId].filter(Boolean).map((value) => String(value).toLowerCase());

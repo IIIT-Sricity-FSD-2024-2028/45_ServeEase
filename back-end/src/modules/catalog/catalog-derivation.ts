@@ -19,6 +19,7 @@ export interface DerivationInput {
   categories: CatalogCategory[];
   providers: CatalogProvider[];
   servicesFor: (providerId: string) => Account[];
+  hasStoredServices?: (providerId: string) => boolean;
   // True when the account has a stored profile-photo image that can be shown on its listing.
   hasPhoto?: (account: Account) => boolean;
   // Average rating and review count computed from the stored customer reviews of a listing.
@@ -145,7 +146,6 @@ function listingServices(listing: CatalogProvider, account: Account, records: Ac
 // service in Manage Services shows on the customer pages at once. A listing left with no active service has
 // nothing to book and drops out of discovery, which is what the provider asked for by deactivating them all.
 function withRecordedServices(listing: CatalogProvider, account: Account, records: Account[], categories: CatalogCategory[]): CatalogProvider {
-  if (!records.length) return listing;
   const services = listingServices(listing, account, records, categories);
   return {
     ...listing,
@@ -226,8 +226,13 @@ export function catalogView(input: DerivationInput): CatalogProvider[] {
     if (!account) return listing;
     // Records are authoritative except for a legacy id shared by two accounts, whose id-keyed records
     // cannot be told apart (the same rule accountServices() applies).
-    const records = shared(account) ? [] : input.servicesFor(String(account.id));
-    return withRecordedServices(overlay(listing, account), account, records, input.categories);
+    const providerId = String(account.id);
+    const records = shared(account) ? [] : input.servicesFor(providerId);
+    // An explicitly stored empty list means the provider removed their last saved service. Keep that
+    // empty state authoritative instead of resurrecting services from an older catalog snapshot.
+    const currentListing = overlay(listing, account);
+    if (!records.length && !input.hasStoredServices?.(providerId)) return currentListing;
+    return withRecordedServices(currentListing, account, records, input.categories);
   });
   // An active provider's own submitted profile photo is shown on their listing unless the listing already
   // carries one; it is served by the public photo route, never from the private document store directly.
