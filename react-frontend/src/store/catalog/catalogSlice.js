@@ -56,6 +56,18 @@ export const createProviderService = createAsyncThunk('catalog/createProviderSer
 export const updateProviderService = createAsyncThunk('catalog/updateProviderService', async ({ providerId, serviceId, service }, api) => {
   try { return { providerId, serviceId, service: await catalogApi.updateProviderService(providerId, serviceId, service) } } catch (error) { return reject(error, api) }
 })
+export const deleteProviderService = createAsyncThunk('catalog/deleteProviderService', async ({ providerId, serviceId }, api) => {
+  try {
+    const service = await catalogApi.deleteProviderService(providerId, serviceId)
+    api.dispatch(fetchCatalog())
+    return { providerId, serviceId, service }
+  } catch (error) { return reject(error, api) }
+}, {
+  condition: ({ providerId, serviceId }, { getState }) => {
+    const key = providerServiceEntityKey(providerId, serviceId)
+    return getState().catalog.mutationStatus.deleteProviderServiceByKey[key] !== 'loading'
+  },
+})
 export const syncCatalog = createAsyncThunk('catalog/syncCatalog', async (catalog, api) => {
   try { return await apiSyncCatalog(catalog) } catch (error) { return reject(error, api) }
 })
@@ -68,9 +80,9 @@ export const initialCatalogState = {
   providerServicesByProviderId: {}, providerServicesByKey: {},
   fetchStatus: { catalog: 'idle', providerById: {}, providerServicesByProviderId: {} },
   fetchError: { catalog: null, providerById: {}, providerServicesByProviderId: {} },
-  mutationStatus: { syncCatalog: 'idle', saveCatalogCategories: 'idle', createProviderServiceByRequestKey: {}, updateProviderServiceByKey: {} },
-  mutationError: { syncCatalog: null, saveCatalogCategories: null, createProviderServiceByRequestKey: {}, updateProviderServiceByKey: {} },
-  latestRequestId: { catalog: null, providerById: {}, providerServicesByProviderId: {}, createProviderServiceByRequestKey: {}, updateProviderServiceByKey: {} },
+  mutationStatus: { syncCatalog: 'idle', saveCatalogCategories: 'idle', createProviderServiceByRequestKey: {}, updateProviderServiceByKey: {}, deleteProviderServiceByKey: {} },
+  mutationError: { syncCatalog: null, saveCatalogCategories: null, createProviderServiceByRequestKey: {}, updateProviderServiceByKey: {}, deleteProviderServiceByKey: {} },
+  latestRequestId: { catalog: null, providerById: {}, providerServicesByProviderId: {}, createProviderServiceByRequestKey: {}, updateProviderServiceByKey: {}, deleteProviderServiceByKey: {} },
 }
 
 const catalogSlice = createSlice({
@@ -128,6 +140,29 @@ const catalogSlice = createSlice({
         state.mutationStatus.updateProviderServiceByKey[mapKey] = 'succeeded'; state.mutationError.updateProviderServiceByKey[mapKey] = null
       })
       .addCase(updateProviderService.rejected, (state, action) => { const { providerId, serviceId } = action.meta.arg; const key = providerServiceEntityKey(providerId, serviceId); if (state.latestRequestId.updateProviderServiceByKey[key] !== action.meta.requestId) return; state.mutationStatus.updateProviderServiceByKey[key] = 'failed'; state.mutationError.updateProviderServiceByKey[key] = action.payload ?? action.error.message })
+      .addCase(deleteProviderService.pending, (state, action) => {
+        const { providerId, serviceId } = action.meta.arg
+        const key = providerServiceEntityKey(providerId, serviceId)
+        state.latestRequestId.deleteProviderServiceByKey[key] = action.meta.requestId
+        state.mutationStatus.deleteProviderServiceByKey[key] = 'loading'
+        state.mutationError.deleteProviderServiceByKey[key] = null
+      })
+      .addCase(deleteProviderService.fulfilled, (state, action) => {
+        const { providerId, serviceId } = action.payload
+        const key = providerServiceEntityKey(providerId, serviceId)
+        if (state.latestRequestId.deleteProviderServiceByKey[key] !== action.meta.requestId) return
+        state.providerServicesByProviderId[providerId] = (state.providerServicesByProviderId[providerId] || []).filter((serviceKey) => serviceKey !== key)
+        delete state.providerServicesByKey[key]
+        state.mutationStatus.deleteProviderServiceByKey[key] = 'succeeded'
+        state.mutationError.deleteProviderServiceByKey[key] = null
+      })
+      .addCase(deleteProviderService.rejected, (state, action) => {
+        const { providerId, serviceId } = action.meta.arg
+        const key = providerServiceEntityKey(providerId, serviceId)
+        if (state.latestRequestId.deleteProviderServiceByKey[key] !== action.meta.requestId) return
+        state.mutationStatus.deleteProviderServiceByKey[key] = 'failed'
+        state.mutationError.deleteProviderServiceByKey[key] = action.payload ?? action.error.message
+      })
       .addCase(syncCatalog.pending, (state) => { state.mutationStatus.syncCatalog = 'loading'; state.mutationError.syncCatalog = null })
       .addCase(syncCatalog.fulfilled, (state) => { state.mutationStatus.syncCatalog = 'succeeded'; state.mutationError.syncCatalog = null })
       .addCase(syncCatalog.rejected, (state, action) => { state.mutationStatus.syncCatalog = 'failed'; state.mutationError.syncCatalog = action.payload ?? action.error.message })

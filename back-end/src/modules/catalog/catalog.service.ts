@@ -80,6 +80,14 @@ export class CatalogService {
     return service;
   }
 
+  deleteService(providerId: string, serviceId: string): any {
+    this.validateProviderId(providerId);
+    if (!serviceId || !serviceId.trim()) throw new BadRequestException('Service id is required.');
+    const service = this.catalogRepository.deleteService(providerId, serviceId);
+    if (!service) throw new NotFoundException(`Service with id "${serviceId}" was not found.`);
+    return service;
+  }
+
   private validateProviderId(providerId: string): void {
     if (!providerId || !providerId.trim()) throw new BadRequestException('Provider id is required.');
   }

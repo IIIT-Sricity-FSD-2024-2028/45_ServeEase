@@ -22,6 +22,10 @@ export const catalogApi = {
     `/catalog/providers/${encodeURIComponent(providerId)}/services/${encodeURIComponent(serviceId)}`,
     { method: 'PATCH', body: JSON.stringify(service) },
   ),
+  deleteProviderService: (providerId, serviceId) => apiRequest(
+    `/catalog/providers/${encodeURIComponent(providerId)}/services/${encodeURIComponent(serviceId)}`,
+    { method: 'DELETE' },
+  ),
 }
 
 export const bookingsApi = {
