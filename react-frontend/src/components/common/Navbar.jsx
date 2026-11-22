@@ -2,9 +2,19 @@ import { formatDisplayDateTime } from '../../features/customer/customerOperation
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
-import { bookingsApi, employeeOperationsApi } from '../../services/api'
+import { bookingsApi } from '../../services/api'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import { fetchCustomerTickets, fetchProviderTickets, fetchSupportTickets, selectTicketsForScope } from '../../store/tickets/ticketsSlice.js'
+import {
+  fetchEmployeeCustomerNotifications,
+  fetchEmployeeProviderNotifications,
+  selectEmployeeCustomerNotifications,
+  selectEmployeeCustomerNotificationsFetchError,
+  selectEmployeeCustomerNotificationsFetchStatus,
+  selectEmployeeProviderNotifications,
+  selectEmployeeProviderNotificationsFetchError,
+  selectEmployeeProviderNotificationsFetchStatus,
+} from '../../store/operations/operationsSlice.js'
 import { buildEmployeeNotifications, readEmployeeNotificationIds, saveEmployeeNotificationIds } from '../../features/employee/employeeNotifications'
 import { buildSupportNotifications, readSupportNotificationIds, saveSupportNotificationIds } from '../../features/support/supportNotifications'
 import { buildProviderNotifications, readProviderNotificationIds, saveProviderNotificationIds } from '../../features/provider/providerNotifications'
@@ -165,6 +175,12 @@ export function Navbar({ area = 'ServeEase' }) {
   const customerTickets = useAppSelector(selectTicketsForScope('customer'))
   const providerTickets = useAppSelector(selectTicketsForScope('provider'))
   const supportTickets = useAppSelector(selectTicketsForScope('support'))
+  const employeeCustomerNotificationData = useAppSelector(selectEmployeeCustomerNotifications)
+  const employeeCustomerNotificationStatus = useAppSelector(selectEmployeeCustomerNotificationsFetchStatus)
+  const employeeCustomerNotificationError = useAppSelector(selectEmployeeCustomerNotificationsFetchError)
+  const employeeProviderNotificationData = useAppSelector(selectEmployeeProviderNotifications)
+  const employeeProviderNotificationStatus = useAppSelector(selectEmployeeProviderNotificationsFetchStatus)
+  const employeeProviderNotificationError = useAppSelector(selectEmployeeProviderNotificationsFetchError)
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [openMenu, setOpenMenu] = useState(null)
@@ -201,9 +217,24 @@ export function Navbar({ area = 'ServeEase' }) {
   const customerNotificationIdentity = currentUser?.role === 'customer' || isSupportAgent || isProviderAccount || isOperationsEmployee
     ? String(currentUser.userId || currentUser.email || '')
     : ''
-  const selectorNotifications = notificationState !== 'ready' || notificationOwnerKey !== customerNotificationIdentity
-    ? null
-    : isSupportAgent
+  const employeeNotificationData = role === 'customer-operations' ? employeeCustomerNotificationData : employeeProviderNotificationData
+  const employeeNotificationRequestStatus = role === 'customer-operations' ? employeeCustomerNotificationStatus : employeeProviderNotificationStatus
+  const employeeNotificationRequestError = role === 'customer-operations' ? employeeCustomerNotificationError : employeeProviderNotificationError
+  const employeeNotificationRequestState = employeeNotificationRequestStatus === 'succeeded' ? 'ready'
+    : employeeNotificationRequestStatus === 'failed' ? 'error'
+      : employeeNotificationRequestStatus === 'loading' ? 'loading' : 'idle'
+  const selectorNotifications = isOperationsEmployee
+    ? employeeNotificationRequestState === 'ready' && notificationOwnerKey === customerNotificationIdentity
+      ? buildEmployeeNotifications({
+        department: role === 'customer-operations' ? 'Customer Operations' : 'Provider Operations',
+        tickets: Array.isArray(employeeNotificationData?.tickets) ? employeeNotificationData.tickets : [],
+        customers: Array.isArray(employeeNotificationData?.customers) ? employeeNotificationData.customers : [],
+        providers: Array.isArray(employeeNotificationData?.providers) ? employeeNotificationData.providers : [],
+      }, currentUser)
+      : null
+    : notificationState !== 'ready' || notificationOwnerKey !== customerNotificationIdentity
+      ? null
+      : isSupportAgent
       ? buildSupportNotifications(supportTickets, currentUser)
       : isProviderAccount
         ? buildProviderNotifications(notificationBookings, providerTickets, currentUser)
@@ -212,7 +243,10 @@ export function Navbar({ area = 'ServeEase' }) {
           : null
   const notificationRecords = selectorNotifications || notifications
   const customerNotifications = notificationOwnerKey === customerNotificationIdentity ? notificationRecords : []
-  const customerNotificationState = notificationOwnerKey === customerNotificationIdentity ? notificationState : 'idle'
+  const customerNotificationState = isOperationsEmployee
+    ? notificationOwnerKey === customerNotificationIdentity ? employeeNotificationRequestState : 'idle'
+    : notificationOwnerKey === customerNotificationIdentity ? notificationState : 'idle'
+  const customerNotificationError = isOperationsEmployee ? employeeNotificationRequestError : notificationError
   const activeNotifications = variant?.notifications === 'superuser' ? notifications : customerNotifications
   const notificationUnreadCount = activeNotifications.filter((notification) => notification.isUnread).length
 
@@ -270,28 +304,14 @@ export function Navbar({ area = 'ServeEase' }) {
       return
     }
     if (isOperationsEmployee) {
-      const requestId = ++notificationRequestRef.current
       const ownerKey = String(currentUser.userId || currentUser.email || '')
-      const department = role === 'customer-operations' ? 'Customer Operations' : 'Provider Operations'
-      if (!silent) { setNotificationOwnerKey(ownerKey); setNotificationState('loading'); setNotificationError('') }
+      ++notificationRequestRef.current
+      setNotificationOwnerKey(ownerKey)
       try {
-        const overview = await (role === 'customer-operations'
-          ? employeeOperationsApi.customerNotifications()
-          : employeeOperationsApi.providerNotifications())
-        if (requestId !== notificationRequestRef.current) return
-        setNotifications(buildEmployeeNotifications({
-          department,
-          tickets: Array.isArray(overview?.tickets) ? overview.tickets : [],
-          customers: Array.isArray(overview?.customers) ? overview.customers : [],
-          providers: Array.isArray(overview?.providers) ? overview.providers : [],
-        }, currentUser))
-        setNotificationOwnerKey(ownerKey)
-        setNotificationState('ready')
-      } catch (error) {
-        if (requestId !== notificationRequestRef.current || silent) return
-        setNotificationError(error.message || 'Notifications could not be loaded.')
-        setNotificationState('error')
-      }
+        await dispatch(role === 'customer-operations'
+          ? fetchEmployeeCustomerNotifications()
+          : fetchEmployeeProviderNotifications()).unwrap()
+      } catch { /* Request status and errors are selected from Redux. */ }
       return
     }
     if (isProviderAccount) {
@@ -499,10 +519,10 @@ export function Navbar({ area = 'ServeEase' }) {
           </div>
           {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'loading' && <p className="se-notification-panel__state" role="status">Loading notifications…</p>}
           {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'error' && <div className="se-notification-panel__error" role="alert">
-            <p>{notificationError}</p>
+            <p>{variant.notifications === 'superuser' ? notificationError : customerNotificationError}</p>
             <button className="se-notification-panel__action" onClick={() => void loadNotifications()} type="button">Retry</button>
           </div>}
-          {notificationError && (variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <p className="se-notification-panel__error-message" role="alert">{notificationError}</p>}
+          {(variant.notifications === 'superuser' ? notificationError : customerNotificationError) && (variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <p className="se-notification-panel__error-message" role="alert">{variant.notifications === 'superuser' ? notificationError : customerNotificationError}</p>}
           {customerNotificationState === 'signed-out' && <p className="se-notification-panel__state">Sign in to view notifications.</p>}
           {variant.notifications !== 'superuser' && customerNotificationState === 'unavailable' && <p className="se-notification-panel__state">Notifications are not available for this role in the React app yet.</p>}
           {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <>

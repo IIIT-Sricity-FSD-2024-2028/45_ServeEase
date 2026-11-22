@@ -1,6 +1,12 @@
-import { useCallback, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { employeeOperationsApi } from '../../services/api'
+import {
+  fetchEmployeeProviderById,
+  selectEmployeeProviderDetail,
+  selectEmployeeProviderDetailFetchError,
+  selectEmployeeProviderDetailFetchStatus,
+} from '../../store/operations/operationsSlice.js'
 import { Breadcrumb } from './EmployeeOpsParts'
 import { Chip, DocumentPreviewDialog, LoadState, ProviderNotFound } from './ProviderOpsParts'
 import { availabilityRows, countLabel, display, formatDate, formatExperience, formatPrice, hasVerificationDetails, providerDetailStats } from './providerOperations'
@@ -118,8 +124,11 @@ export default function EmployeeProviderDetailPage() {
   const { providerId } = useParams()
   const [params] = useSearchParams()
   const listing = params.get('listing') || undefined
-  const request = useCallback(() => employeeOperationsApi.provider(providerId, listing), [providerId, listing])
-  const { state, data, error, retry } = useOperationsData(request)
+  const requestArg = useMemo(() => ({ providerId, listing }), [providerId, listing])
+  const dataSelector = useMemo(() => selectEmployeeProviderDetail(providerId, listing), [providerId, listing])
+  const statusSelector = useMemo(() => selectEmployeeProviderDetailFetchStatus(providerId, listing), [providerId, listing])
+  const errorSelector = useMemo(() => selectEmployeeProviderDetailFetchError(providerId, listing), [providerId, listing])
+  const { state, data, error, retry } = useOperationsData(fetchEmployeeProviderById, requestArg, dataSelector, statusSelector, errorSelector)
   const [preview, setPreview] = useState(null)
   // The loader is created once per opened document so the dialog fetches the file exactly once.
   const openPreview = (document) => setPreview({ document, load: () => employeeOperationsApi.providerDocument(providerId, listing, document.documentId) })

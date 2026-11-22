@@ -1,27 +1,23 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 
-// Loads one API resource with retry; `request` must be stable (memoised by the caller). `update` replaces the
-// loaded data with a server-confirmed change.
-export function useOperationsData(request) {
-  const [result, setResult] = useState({ state: 'loading', data: null, error: '' })
-  const [attempt, setAttempt] = useState(0)
+// Employee server data and request state live in operations Redux; this hook only
+// coordinates a fetch and exposes its selectors to the existing page UI.
+export function useOperationsData(thunk, arg, dataSelector, statusSelector, errorSelector) {
+  const dispatch = useAppDispatch()
+  const data = useAppSelector(dataSelector)
+  const status = useAppSelector(statusSelector)
+  const error = useAppSelector(errorSelector)
 
+  const retry = useCallback(() => dispatch(thunk(arg)), [arg, dispatch, thunk])
   useEffect(() => {
-    let active = true
-    request()
-      .then((data) => { if (active) setResult({ state: 'ready', data, error: '' }) })
-      .catch((error) => { if (active) setResult({ state: 'error', data: null, error: error.message || 'The workspace could not be loaded.' }) })
-    return () => { active = false }
-  }, [attempt, request])
+    retry()
+  }, [retry])
 
-  const retry = useCallback(() => {
-    setResult((current) => ({ ...current, state: 'loading', error: '' }))
-    setAttempt((count) => count + 1)
-  }, [])
-
-  const update = useCallback((change) => {
-    setResult((current) => ({ ...current, data: change(current.data) }))
-  }, [])
-
-  return { ...result, retry, update }
+  return {
+    data,
+    state: status === 'succeeded' ? 'ready' : status === 'failed' ? 'error' : 'loading',
+    error: typeof error === 'string' ? error : error?.message || '',
+    retry,
+  }
 }

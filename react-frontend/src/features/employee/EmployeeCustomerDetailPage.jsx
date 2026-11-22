@@ -1,7 +1,17 @@
-import { useCallback, useReducer } from 'react'
+import { useMemo, useReducer } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { employeeOperationsApi } from '../../services/api'
+import {
+  fetchEmployeeCustomerById,
+  clearEmployeeMutationState,
+  selectEmployeeCustomerDetail,
+  selectEmployeeCustomerDetailFetchError,
+  selectEmployeeCustomerDetailFetchStatus,
+  selectEmployeeMutationError,
+  selectEmployeeMutationStatus,
+  setEmployeeCustomerStatus,
+} from '../../store/operations/operationsSlice.js'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import { formatPrice } from '../customer/customerOperations'
 import { CustomerStatusAction, CustomerStatusDialog } from './CustomerStatusControls'
 import { Breadcrumb, Chip, LoadState, Metric } from './EmployeeOpsParts'
@@ -17,8 +27,15 @@ function InfoField({ label, value }) {
 // PATCH .../customers/:id/status. The page shows a new status only after the server confirms it.
 export default function EmployeeCustomerDetailPage() {
   const { customerId } = useParams()
-  const request = useCallback(() => employeeOperationsApi.customer(customerId), [customerId])
-  const { state, data, error, retry, update } = useOperationsData(request)
+  const dataSelector = useMemo(() => selectEmployeeCustomerDetail(customerId), [customerId])
+  const statusSelector = useMemo(() => selectEmployeeCustomerDetailFetchStatus(customerId), [customerId])
+  const errorSelector = useMemo(() => selectEmployeeCustomerDetailFetchError(customerId), [customerId])
+  const { state, data, error, retry } = useOperationsData(fetchEmployeeCustomerById, customerId, dataSelector, statusSelector, errorSelector)
+  const dispatchStore = useAppDispatch()
+  const mutationStatusSelector = useMemo(() => selectEmployeeMutationStatus('setCustomerStatusById', customerId), [customerId])
+  const mutationErrorSelector = useMemo(() => selectEmployeeMutationError('setCustomerStatusById', customerId), [customerId])
+  const mutationStatus = useAppSelector(mutationStatusSelector)
+  const mutationError = useAppSelector(mutationErrorSelector)
   const [change, dispatch] = useReducer(statusChangeReducer, initialStatusChange)
   const { logout } = useAuth()
   const navigate = useNavigate()
@@ -33,11 +50,14 @@ export default function EmployeeCustomerDetailPage() {
   const confirmStatusChange = async ({ reason, remarks }) => {
     dispatch({ type: 'submit' })
     try {
-      const result = await employeeOperationsApi.setCustomerStatus(customer.id, { status: change.nextStatus, reason, remarks })
-      update((current) => ({ ...current, customer: result.customer }))
+      const result = await dispatchStore(setEmployeeCustomerStatus({
+        customerId: customer.id,
+        change: { status: change.nextStatus, reason, remarks },
+      })).unwrap()
       dispatch({ type: 'succeeded', message: statusChangeNotice(result) })
     } catch (requestError) {
-      dispatch({ type: 'failed', message: statusChangeError(requestError) })
+      const message = typeof requestError === 'string' ? requestError : requestError?.message
+      dispatch({ type: 'failed', message: statusChangeError({ message: mutationError || message }) })
     }
   }
   // The stored session is no longer accepted: clear it so the login page does not bounce back here.
@@ -72,13 +92,23 @@ export default function EmployeeCustomerDetailPage() {
           <InfoField label="Registration Date" value={customer.registrationDate && formatDate(customer.registrationDate)} />
           <InfoField label="Account Status" value={customer.status} />
         </div>
-        <CustomerStatusAction action={action} change={change} onOpen={() => dispatch({ type: 'open', nextStatus: action.nextStatus })} status={customer.status} />
+        <CustomerStatusAction action={action} change={change} onOpen={() => {
+          dispatchStore(clearEmployeeMutationState({ operation: 'setCustomerStatusById', key: customerId }))
+          dispatch({ type: 'open', nextStatus: action.nextStatus })
+        }} status={customer.status} />
       </section>
       {change.phase !== 'idle' && action && <CustomerStatusDialog
         action={action}
-        change={change}
+        change={{
+          ...change,
+          phase: mutationStatus === 'loading' ? 'submitting' : change.phase,
+          error: mutationStatus === 'failed' ? statusChangeError({ message: mutationError }) : change.error,
+        }}
         customerName={display(customer.fullName)}
-        onCancel={() => dispatch({ type: 'cancel' })}
+        onCancel={() => {
+          dispatchStore(clearEmployeeMutationState({ operation: 'setCustomerStatusById', key: customerId }))
+          dispatch({ type: 'cancel' })
+        }}
         onConfirm={confirmStatusChange}
         onInvalid={(message) => dispatch({ type: 'invalid', message })}
         onSignIn={signInAgain}
