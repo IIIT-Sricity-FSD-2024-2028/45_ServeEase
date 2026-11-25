@@ -1,7 +1,18 @@
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useMemo, useReducer, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { employeeOperationsApi } from '../../services/api'
+import {
+  clearEmployeeMutationState,
+  fetchEmployeeProviders,
+  selectEmployeeMutationError,
+  selectEmployeeMutationStatus,
+  selectEmployeeProviderList,
+  selectEmployeeProviderListFetchError,
+  selectEmployeeProviderListFetchStatus,
+  setEmployeeProviderStatus,
+  providerOperationEntityKey,
+} from '../../store/operations/operationsSlice.js'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import { initialStatusChange, statusChangeReducer } from './employeeOperations'
 import { Chip, LoadState, ProviderStatusModal } from './ProviderOpsParts'
 import { countLabel, display, filterProviders, formatDate, formatExperience, isPendingVerification, providerPath, providerStats, providerStatusAction, providerStatusError, providerStatusNotice, statusOptions } from './providerOperations'
@@ -77,7 +88,14 @@ export function ProviderOperationsList({ data, status, query, onStatus, onQuery,
 // Suspend/Activate goes through the original confirmation modal; the list reloads from the server only after
 // the change is confirmed.
 export default function EmployeeProviderOperationsPage() {
-  const { state, data, error, retry } = useOperationsData(employeeOperationsApi.providers)
+  const { state, data, error, retry } = useOperationsData(
+    fetchEmployeeProviders,
+    undefined,
+    selectEmployeeProviderList,
+    selectEmployeeProviderListFetchStatus,
+    selectEmployeeProviderListFetchError,
+  )
+  const dispatchStore = useAppDispatch()
   const [change, dispatch] = useReducer(statusChangeReducer, initialStatusChange)
   const [target, setTarget] = useState(null)
   const { logout } = useAuth()
@@ -88,17 +106,32 @@ export default function EmployeeProviderOperationsPage() {
   const [routeNotice] = useState(() => location.state?.notice || '')
   const notice = change.notice || routeNotice
   const action = target ? providerStatusAction(target) : null
+  const mutationKey = providerOperationEntityKey(target?.id, target?.sharedId ? target?.providerCatalogId : undefined)
+  const mutationStatusSelector = useMemo(() => selectEmployeeMutationStatus('setProviderStatusByKey', mutationKey), [mutationKey])
+  const mutationErrorSelector = useMemo(() => selectEmployeeMutationError('setProviderStatusByKey', mutationKey), [mutationKey])
+  const mutationStatus = useAppSelector(mutationStatusSelector)
+  const mutationError = useAppSelector(mutationErrorSelector)
+  const mutationBusy = mutationStatus === 'loading'
 
-  const openStatus = (provider) => { setTarget(provider); dispatch({ type: 'open', nextStatus: providerStatusAction(provider).nextStatus }) }
+  const openStatus = (provider) => {
+    const key = providerOperationEntityKey(provider.id, provider.sharedId ? provider.providerCatalogId : undefined)
+    dispatchStore(clearEmployeeMutationState({ operation: 'setProviderStatusByKey', key }))
+    setTarget(provider)
+    dispatch({ type: 'open', nextStatus: providerStatusAction(provider).nextStatus })
+  }
   const confirmStatus = async (body) => {
     dispatch({ type: 'submit' })
     try {
-      const result = await employeeOperationsApi.setProviderStatus(target.id, target.sharedId ? target.providerCatalogId : undefined, body)
+      const result = await dispatchStore(setEmployeeProviderStatus({
+        providerId: target.id,
+        listing: target.sharedId ? target.providerCatalogId : undefined,
+        change: body,
+      })).unwrap()
       dispatch({ type: 'succeeded', message: providerStatusNotice(result) })
       setTarget(null)
-      retry()
     } catch (requestError) {
-      dispatch({ type: 'failed', message: providerStatusError(requestError) })
+      const message = typeof requestError === 'string' ? requestError : requestError?.message
+      dispatch({ type: 'failed', message: providerStatusError({ message: mutationError || message }) })
     }
   }
   // The stored session is no longer accepted: clear it so the login page does not bounce back here.
@@ -132,11 +165,20 @@ export default function EmployeeProviderOperationsPage() {
     </section>
     {notice && <p className="provider-operations-notice" role="status">{notice}</p>}
     <LoadState error={error} loadingText="Loading provider records…" onRetry={retry} state={state} />
-    {state === 'ready' && <ProviderOperationsList busy={change.phase === 'submitting'} data={data} onQuery={(value) => setParam('q', value)} onStatus={(value) => setParam('status', value)} onStatusAction={openStatus} query={params.get('q') || ''} status={status} />}
+    {state === 'ready' && <ProviderOperationsList busy={mutationBusy} data={data} onQuery={(value) => setParam('q', value)} onStatus={(value) => setParam('status', value)} onStatusAction={openStatus} query={params.get('q') || ''} status={status} />}
     {change.phase !== 'idle' && action && <ProviderStatusModal
       action={action}
-      change={change}
-      onCancel={() => { dispatch({ type: 'cancel' }); if (change.phase !== 'submitting') setTarget(null) }}
+      change={{
+        ...change,
+        phase: mutationBusy ? 'submitting' : change.phase,
+        error: mutationStatus === 'failed' ? mutationError || change.error : change.error,
+      }}
+      onCancel={() => {
+        if (mutationBusy) return
+        dispatchStore(clearEmployeeMutationState({ operation: 'setProviderStatusByKey', key: mutationKey }))
+        dispatch({ type: 'cancel' })
+        setTarget(null)
+      }}
       onConfirm={confirmStatus}
       onInvalid={(message) => dispatch({ type: 'invalid', message })}
       onSignIn={signInAgain}

@@ -1,7 +1,20 @@
-import { useCallback, useReducer, useState } from 'react'
+import { useMemo, useReducer, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { employeeOperationsApi } from '../../services/api'
+import {
+  clearEmployeeMutationState,
+  decideEmployeeProviderVerification,
+  fetchEmployeeProviderNotifications,
+  fetchEmployeeProviderById,
+  providerOperationEntityKey,
+  selectEmployeeMutationError,
+  selectEmployeeMutationStatus,
+  selectEmployeeProviderDetail,
+  selectEmployeeProviderDetailFetchError,
+  selectEmployeeProviderDetailFetchStatus,
+} from '../../store/operations/operationsSlice.js'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import { Breadcrumb } from './EmployeeOpsParts'
 import { initialStatusChange, statusChangeReducer } from './employeeOperations'
 import { DecisionDialog, DocumentPreviewDialog, LoadState, ProviderNotFound } from './ProviderOpsParts'
@@ -63,8 +76,17 @@ export default function EmployeeProviderVerificationPage() {
   const { providerId } = useParams()
   const [params] = useSearchParams()
   const listing = params.get('listing') || undefined
-  const request = useCallback(() => employeeOperationsApi.provider(providerId, listing), [providerId, listing])
-  const { state, data, error, retry } = useOperationsData(request)
+  const requestArg = useMemo(() => ({ providerId, listing }), [providerId, listing])
+  const dataSelector = useMemo(() => selectEmployeeProviderDetail(providerId, listing), [providerId, listing])
+  const statusSelector = useMemo(() => selectEmployeeProviderDetailFetchStatus(providerId, listing), [providerId, listing])
+  const errorSelector = useMemo(() => selectEmployeeProviderDetailFetchError(providerId, listing), [providerId, listing])
+  const { state, data, error, retry } = useOperationsData(fetchEmployeeProviderById, requestArg, dataSelector, statusSelector, errorSelector)
+  const dispatchStore = useAppDispatch()
+  const mutationKey = providerOperationEntityKey(providerId, listing)
+  const mutationStatusSelector = useMemo(() => selectEmployeeMutationStatus('decideProviderVerificationByKey', mutationKey), [mutationKey])
+  const mutationErrorSelector = useMemo(() => selectEmployeeMutationError('decideProviderVerificationByKey', mutationKey), [mutationKey])
+  const mutationStatus = useAppSelector(mutationStatusSelector)
+  const mutationError = useAppSelector(mutationErrorSelector)
   const [change, dispatch] = useReducer(statusChangeReducer, initialStatusChange)
   const [preview, setPreview] = useState(null)
   // The loader is created once per opened document so the dialog fetches the file exactly once.
@@ -79,11 +101,13 @@ export default function EmployeeProviderVerificationPage() {
   const submit = async (decision) => {
     dispatch({ type: 'submit' })
     try {
-      const result = await employeeOperationsApi.decideProviderVerification(provider.id, listing, decision)
+      const result = await dispatchStore(decideEmployeeProviderVerification({ providerId: provider.id, listing, decision })).unwrap()
       dispatch({ type: 'succeeded', message: decisionNotice(result.provider, decision.decision) })
+      dispatchStore(fetchEmployeeProviderNotifications())
       navigate('/employee/provider-operations', { state: { notice: decisionNotice(result.provider, decision.decision) } })
     } catch (requestError) {
-      dispatch({ type: 'failed', message: decisionError(requestError) })
+      const message = typeof requestError === 'string' ? requestError : requestError?.message
+      dispatch({ type: 'failed', message: decisionError({ message: mutationError || message }) })
     }
   }
   // The stored session is no longer accepted: clear it so the login page does not bounce back here.
@@ -104,11 +128,22 @@ export default function EmployeeProviderVerificationPage() {
     </section>
     {notFound ? <ProviderNotFound message="The selected provider does not match an existing pending verification request." />
       : <LoadState error={error} loadingText="Loading verification request…" onRetry={retry} state={state} />}
-    {state === 'ready' && provider && <VerificationReview busy={change.phase === 'submitting'} data={data} onDecide={(decision) => dispatch({ type: 'open', nextStatus: decision })} onPreview={openPreview} />}
+    {state === 'ready' && provider && <VerificationReview busy={mutationStatus === 'loading'} data={data} onDecide={(decision) => {
+      dispatchStore(clearEmployeeMutationState({ operation: 'decideProviderVerificationByKey', key: mutationKey }))
+      dispatch({ type: 'open', nextStatus: decision })
+    }} onPreview={openPreview} />}
     {change.phase !== 'idle' && copy && <DecisionDialog
-      change={change}
+      change={{
+        ...change,
+        phase: mutationStatus === 'loading' ? 'submitting' : change.phase,
+        error: mutationStatus === 'failed' ? mutationError || change.error : change.error,
+      }}
       copy={copy}
-      onCancel={() => dispatch({ type: 'cancel' })}
+      onCancel={() => {
+        if (mutationStatus === 'loading') return
+        dispatchStore(clearEmployeeMutationState({ operation: 'decideProviderVerificationByKey', key: mutationKey }))
+        dispatch({ type: 'cancel' })
+      }}
       onConfirm={submit}
       onInvalid={(message) => dispatch({ type: 'invalid', message })}
       onSignIn={signInAgain}

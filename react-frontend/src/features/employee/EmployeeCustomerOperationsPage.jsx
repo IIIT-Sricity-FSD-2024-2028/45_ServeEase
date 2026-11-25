@@ -1,6 +1,11 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { employeeOperationsApi } from '../../services/api'
+import {
+  fetchEmployeeCustomers,
+  selectEmployeeCustomerList,
+  selectEmployeeCustomerListFetchError,
+  selectEmployeeCustomerListFetchStatus,
+} from '../../store/operations/operationsSlice.js'
 import { Chip, LoadState, Metric } from './EmployeeOpsParts'
 import { customerStats, display, filterCustomers } from './employeeOperations'
 import { useOperationsData } from './useOperationsData'
@@ -10,7 +15,13 @@ const statusOptions = [['all', 'All Status'], ['Active', 'Active'], ['Blocked', 
 
 // customer-operations.html: GET /employee/customer-operations/customers (Customer Operations department only).
 export default function EmployeeCustomerOperationsPage() {
-  const { state, data, error, retry } = useOperationsData(employeeOperationsApi.customers)
+  const { state, data, error, retry } = useOperationsData(
+    fetchEmployeeCustomers,
+    undefined,
+    selectEmployeeCustomerList,
+    selectEmployeeCustomerListFetchStatus,
+    selectEmployeeCustomerListFetchError,
+  )
   const [params, setParams] = useSearchParams()
   const query = params.get('q') || ''
   const status = statusOptions.some(([value]) => value === params.get('status')) ? params.get('status') : 'all'
