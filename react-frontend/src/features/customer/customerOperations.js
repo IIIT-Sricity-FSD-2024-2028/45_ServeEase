@@ -12,7 +12,7 @@ const upcomingStatuses = ['Accepted', 'Pending', 'Requested']
 const historyStatuses = ['Completed', 'Cancelled', 'Rejected']
 // BookingsService.updateForCaller: a customer may move only Pending or Accepted bookings to Cancelled.
 const customerCancellableStatuses = ['Pending', 'Accepted']
-const closedTicketStatuses = ['Resolved', 'Resolved by Support', 'Rejected', 'Closed']
+const closedTicketStatuses = ['Resolved', 'Rejected', 'Closed']
 
 export function hasValue(value) {
   return value !== undefined && value !== null && String(value).trim() !== ''

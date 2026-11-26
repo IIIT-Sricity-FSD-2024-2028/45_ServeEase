@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { reviewsApi } from '../../services/api'
+import { useAppDispatch } from '../../store/hooks.js'
+import { saveReview } from '../../store/slices/reviewsSlice.js'
 import { OpsModal } from '../customer/CustomerOpsParts'
 import { reviewStars } from './reviewFormat'
 import './reviews.css'
@@ -15,6 +16,7 @@ export function ReviewModal({ booking, existing, onClose, onSaved }) {
   const [feedback, setFeedback] = useState(existing?.feedback || '')
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
+  const dispatch = useAppDispatch()
 
   async function submit(event) {
     event.preventDefault()
@@ -22,7 +24,7 @@ export function ReviewModal({ booking, existing, onClose, onSaved }) {
     setSaving(true)
     setMessage('')
     try {
-      onSaved(await reviewsApi.save(booking.id, { rating, feedback: feedback.trim() }))
+      onSaved(await dispatch(saveReview({ bookingId: booking.id, review: { rating, feedback: feedback.trim() } })).unwrap())
     } catch (error) {
       setMessage(error.message || 'Unable to save this review. Please try again.')
       setSaving(false)

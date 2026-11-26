@@ -4,9 +4,9 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/common/Fe
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminPageHeader } from './AdminPageHeader'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
-import { fetchCatalog, saveCatalogCategories, selectCatalog, selectCatalogFetchError, selectCatalogFetchStatus, syncCatalog } from '../../store/catalog/catalogSlice.js'
+import { fetchCatalog, saveCatalogCategories, selectCatalog, selectCatalogFetchError, selectCatalogFetchStatus, syncCatalog } from '../../store/slices/catalogSlice.js'
 import { matchesAdminSearch, useAdminSearch } from './adminSearch'
-import { show } from './useAdminData'
+import { show } from './adminFormat'
 import './admin.css'
 
 function slugify(value) {

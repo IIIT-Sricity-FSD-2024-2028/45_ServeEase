@@ -26,6 +26,13 @@ export class TicketsRepository {
         if (!ticket.attachmentType && (source.attachmentType || source.fileType)) { ticket.attachmentType = String(source.attachmentType || source.fileType); enriched = true; }
         if (!ticket.attachmentSize && (source.attachmentSize || source.fileSize)) { ticket.attachmentSize = Number(source.attachmentSize || source.fileSize); enriched = true; }
       }
+      // Tickets saved with the former "Resolved by Support" status are shown as Resolved.
+      for (const ticket of this.tickets) {
+        if (String(ticket.status) === 'Resolved by Support') { ticket.status = 'Resolved'; ticket.resolvedBy = ticket.resolvedBy || 'Support'; enriched = true; }
+        for (const entry of ticket.statusHistory || []) {
+          if (String(entry.status) === 'Resolved by Support') { entry.status = 'Resolved'; enriched = true; }
+        }
+      }
       if (enriched) this.persist();
     } else {
       const legacy = state.findById('serveEaseSupportModuleData');
@@ -104,10 +111,9 @@ export class TicketsRepository {
   private normalizeStatus(value: unknown): TicketStatus {
     const status = String(value || '').trim().toLowerCase();
     if (status === 'in progress') return 'In Progress';
-    if (status === 'resolved by support') return 'Resolved by Support';
     if (status === 'escalated') return 'Escalated';
     if (status === 'under review') return 'Under Review';
-    if (status === 'resolved' || status === 'closed') return 'Resolved';
+    if (status === 'resolved' || status === 'resolved by support' || status === 'closed') return 'Resolved';
     if (status === 'rejected') return 'Rejected';
     return 'Pending';
   }

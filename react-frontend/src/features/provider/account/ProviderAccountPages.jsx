@@ -7,7 +7,7 @@ import {
   selectProviderBookings,
   selectProviderBookingsFetchError,
   selectProviderBookingsFetchStatus,
-} from '../../../store/bookings/bookingsSlice.js'
+} from '../../../store/slices/bookingsSlice.js'
 import { projectTransactions, summarizeTransactions } from './providerFinancials'
 import { PaymentMethod } from '../../finance/PaymentMethod'
 import { formatDisplayDate } from '../../customer/customerOperations'

@@ -5,9 +5,10 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import {
   fetchSupportTickets, selectTicketListFetchError, selectTicketListFetchStatus,
   selectTicketsForScope, ticketEntityKey,
-} from '../../store/tickets/ticketsSlice.js'
+} from '../../store/slices/ticketsSlice.js'
 import { useAuth } from '../../context/useAuth'
-import { buildSupportNotifications, readSupportNotificationIds, saveSupportNotificationIds } from './supportNotifications'
+import { markNotificationsRead } from '../../store/slices/notificationSlice.js'
+import { buildSupportNotifications } from './supportNotifications'
 import './support.css'
 export { default as SupportTicketDetailPage } from './SupportTicketDetailPage'
 
@@ -31,7 +32,7 @@ export function SupportDashboardPage() {
   const [queue, setQueue] = useState('all')
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
-  const [readVersion, setReadVersion] = useState(0)
+  const readVersion = useAppSelector((state) => state.notification.readVersion)
 
   useEffect(() => {
     const handleSearch = (event) => setQuery(String(event.detail || ''))
@@ -40,12 +41,7 @@ export function SupportDashboardPage() {
   }, [])
 
   function openNotification(notification) {
-    try {
-      const readIds = readSupportNotificationIds(currentUser)
-      readIds.add(notification.id)
-      saveSupportNotificationIds(currentUser, readIds)
-      setReadVersion((value) => value + 1)
-    } catch { /* read state is optional when storage is unavailable */ }
+    dispatch(markNotificationsRead({ kind: 'support', user: currentUser, ids: [notification.id] }))
   }
   useEffect(() => {
     let active = true
@@ -66,7 +62,7 @@ export function SupportDashboardPage() {
   return <section className="support-page support-dashboard">
     <h1 className="support-dashboard-title">Customer Support Dashboard</h1>
     <header className="support-hero"><h2>Welcome, Support Agent {currentUser?.fullName || 'Support Employee'}!</h2><span>Monitor and resolve customer issues efficiently.</span></header>
-    <div className="support-stats">{[['Open Tickets',count(['Open','Pending']),'open'],['Assigned Tickets',assigned,'assigned'],['Pending Tickets',count(['Open','Pending']),'pending'],['Resolved Tickets',count(['Resolved','Resolved by Support','Rejected']),'resolved']].map(([label,value,icon])=><article key={label}><span className={`support-stat-icon ${icon}`} aria-hidden="true">{icon==='open'?<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>:icon==='assigned'?<svg viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>:<svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>}</span><strong>{value}</strong><span>{label}</span></article>)}</div>
+    <div className="support-stats">{[['Open Tickets',count(['Open','Pending']),'open'],['Assigned Tickets',assigned,'assigned'],['Pending Tickets',count(['Open','Pending']),'pending'],['Resolved Tickets',count(['Resolved','Rejected']),'resolved']].map(([label,value,icon])=><article key={label}><span className={`support-stat-icon ${icon}`} aria-hidden="true">{icon==='open'?<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>:icon==='assigned'?<svg viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>:<svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>}</span><strong>{value}</strong><span>{label}</span></article>)}</div>
     <div className="support-overview-heading"><h2>Ticket Overview (<span>{visibleTickets.length}</span>)</h2></div>
     <div className="support-filter-row"><div className="support-queues" role="group" aria-label="Support queues">{['all','customer','provider','escalated'].map((item)=><button aria-pressed={queue===item} className={queue===item?'active':''} key={item} onClick={()=>setQueue(item)} type="button">{item[0].toUpperCase()+item.slice(1)}</button>)}</div><div className="support-selects"><select aria-label="Filter by status" onChange={(event)=>setStatus(event.target.value)} value={status}><option value="">All statuses</option>{[...new Set(tickets.map((ticket)=>ticket.status).filter(Boolean))].sort().map((item)=><option key={item}>{item}</option>)}</select><select aria-label="Filter by priority" onChange={(event)=>setPriority(event.target.value)} value={priority}><option value="">All priorities</option>{[...new Set(tickets.map((ticket)=>ticket.priority).filter(Boolean))].sort().map((item)=><option key={item}>{item}</option>)}</select></div></div>
     {loading&&<LoadingState message="Loading support tickets…"/>}{visibleFetchStatus === 'failed'&&<ErrorState message={fetchError || 'Support tickets could not be loaded.'}/>}

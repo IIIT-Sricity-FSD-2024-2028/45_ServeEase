@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
 import {
   fetchCustomerTickets, selectTicketListFetchError, selectTicketListFetchStatus, selectTicketsForScope, ticketEntityKey,
-} from '../../../store/tickets/ticketsSlice.js'
+} from '../../../store/slices/ticketsSlice.js'
 import { CustomerPageHeader, LoadState, OpsModal, TicketDetails, TicketStatus } from '../CustomerOpsParts'
 import { filterTickets, formatDisplayDate, sortNewestFirst } from '../customerOperations'
 import '../customerOperations.css'

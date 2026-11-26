@@ -1,12 +1,13 @@
 import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit'
 import { ticketsApi } from '../../services/api.js'
-import { nonEmptyKey, replaceFullRecord } from '../entityReconciliation.js'
+import { nonEmptyKey, replaceFullRecord } from './entityReconciliation.js'
 
 export function ticketEntityKey(ticket) {
   return nonEmptyKey(ticket?.ticketId) || nonEmptyKey(ticket?.id)
 }
 
 const attachmentFilesByRequestKey = new Map()
+// Support-only fields, stripped before a customer or provider view receives a ticket.
 const ownerOnlyFields = new Set(['supportRemarks', 'adminRemarks', 'escalationReason', 'assignedSupportId', 'assignedSupportName'])
 
 export function registerTicketAttachmentFile(requestKey, file) {

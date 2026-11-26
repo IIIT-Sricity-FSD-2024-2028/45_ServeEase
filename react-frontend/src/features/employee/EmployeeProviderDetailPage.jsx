@@ -6,7 +6,7 @@ import {
   selectEmployeeProviderDetail,
   selectEmployeeProviderDetailFetchError,
   selectEmployeeProviderDetailFetchStatus,
-} from '../../store/operations/operationsSlice.js'
+} from '../../store/slices/employeeOperationsSlice.js'
 import { Breadcrumb } from './EmployeeOpsParts'
 import { Chip, DocumentPreviewDialog, LoadState, ProviderNotFound } from './ProviderOpsParts'
 import { availabilityRows, countLabel, display, formatDate, formatExperience, formatPrice, hasVerificationDetails, providerDetailStats } from './providerOperations'

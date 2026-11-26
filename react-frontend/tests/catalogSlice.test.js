@@ -19,7 +19,7 @@ const {
   selectCatalog,
   syncCatalog,
   updateProviderService,
-} = await import('../src/store/catalog/catalogSlice.js')
+} = await import('../src/store/slices/catalogSlice.js')
 
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })

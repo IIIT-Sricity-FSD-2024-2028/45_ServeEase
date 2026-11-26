@@ -109,8 +109,8 @@ export class TicketsController {
 
   @Patch('support/tickets/:id/resolve')
   @Roles('support', 'admin', 'superuser')
-  supportResolve(@Param('id') id: string, @Body() data: TicketRemarksDto) {
-    return successResponse(this.ticketsService.resolveBySupport(id, data));
+  supportResolve(@Param('id') id: string, @Body() data: TicketRemarksDto, @Req() request: Request) {
+    return successResponse(this.ticketsService.resolveBySupport(id, data, String(request.headers.role || 'support')));
   }
 
   @Patch('support/tickets/:id/escalate')

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AuthContext } from './authContext'
 import { authApi } from '../services/api'
 import { SUSPENDED_EVENT, suspendedKind } from '../services/apiClient'
+import { useAppDispatch } from '../store/hooks'
+import { clearAuthSession, setAuthSession, setAuthSuspension } from '../store/slices/authSlice'
 const SESSION_KEY = 'serveEaseSession'
 const readSession = () => { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null') } catch { return null } }
 
@@ -21,6 +23,15 @@ export function AuthProvider({ children }) {
   const reportSuspension = useCallback((next) => setSuspension(next), [])
   const establishSession = useCallback((result) => { const user = { ...result.user, token: result.token, isLoggedIn: true, userId: result.user.id }; sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); setCurrentUser(user); return user }, [])
   const logout = useCallback(async () => { try { if (readSession()?.token) await authApi.logout() } finally { sessionStorage.removeItem(SESSION_KEY); setCurrentUser(null) } }, [])
+
+  // Copies the session into Redux. This context stays the owner of authentication.
+  const dispatch = useAppDispatch()
+  useEffect(() => {
+    if (!ready) return
+    if (currentUser) dispatch(setAuthSession(currentUser))
+    else dispatch(clearAuthSession())
+  }, [currentUser, ready, dispatch])
+  useEffect(() => { dispatch(setAuthSuspension(suspension)) }, [suspension, dispatch])
 
   const value = useMemo(() => ({
     currentUser,

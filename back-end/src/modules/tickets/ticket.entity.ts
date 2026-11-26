@@ -5,7 +5,6 @@ export type TicketPriority = 'Low' | 'Medium' | 'High' | 'Critical';
 export type TicketStatus =
   | 'Pending'
   | 'In Progress'
-  | 'Resolved by Support'
   | 'Escalated'
   | 'Under Review'
   | 'Resolved'

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { API_BASE_URL } from '../../services/apiClient'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
-import { fetchOwnerTicketById, selectTicketById, selectTicketDetailFetchError, selectTicketDetailFetchStatus } from '../../store/tickets/ticketsSlice.js'
+import { fetchOwnerTicketById, selectTicketById, selectTicketDetailFetchError, selectTicketDetailFetchStatus } from '../../store/slices/ticketsSlice.js'
 import { attachmentHref, formatDisplayDate, formatDisplayDateTime, hasValue, ticketStatusClass } from './customerOperations'
 
 // Breadcrumb + title block shared by the original customer pages (.breadcrumb-row, .page-title-block).

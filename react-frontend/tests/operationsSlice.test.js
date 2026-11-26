@@ -23,7 +23,7 @@ const {
   selectEmployeeProviderDetail,
   setEmployeeCustomerStatus,
   setEmployeeProviderStatus,
-} = await import('../src/store/operations/operationsSlice.js')
+} = await import('../src/store/slices/employeeOperationsSlice.js')
 
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })

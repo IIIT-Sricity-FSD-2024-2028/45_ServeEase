@@ -1,27 +1,32 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminPageHeader } from './AdminPageHeader'
-import { getBooking, listBookings, listCatalog } from './adminApi'
+import { useAdminResource, useAppDispatch, useAppSelector } from '../../store/hooks'
+import { fetchAdminBookingById, fetchAdminBookings } from '../../store/slices/adminSlice'
+import { fetchCatalog, selectCatalog } from '../../store/slices/catalogSlice'
 import { matchesAdminSearch, useAdminSearch } from './adminSearch'
-import { money, show, useAdminData } from './useAdminData'
+import { money, show } from './adminFormat'
 import './admin.css'
 
 const standardBookingGroups = [
-  { key: 'Requested', statuses: ['Requested', 'Pending'], className: 'requested', subtitle: 'bookings awaiting provider approval', icon: '◔' },
-  { key: 'Upcoming', statuses: ['Upcoming', 'Accepted', 'Scheduled', 'In Progress'], className: 'upcoming', subtitle: 'bookings scheduled', icon: '🕘' },
-  { key: 'Completed', statuses: ['Completed', 'Complete'], className: 'completed', subtitle: 'bookings successfully completed', icon: '✓' },
-  { key: 'Cancelled', statuses: ['Cancelled', 'Canceled'], className: 'cancelled', subtitle: 'bookings cancelled', icon: '⊗' },
+  { key: 'Pending', statuses: ['Pending'], className: 'requested', subtitle: 'bookings awaiting provider approval', icon: '◔' },
+  { key: 'Accepted', statuses: ['Accepted'], className: 'upcoming', subtitle: 'bookings scheduled', icon: '🕘' },
+  { key: 'Completed', statuses: ['Completed'], className: 'completed', subtitle: 'bookings successfully completed', icon: '✓' },
+  { key: 'Cancelled', statuses: ['Cancelled'], className: 'cancelled', subtitle: 'bookings cancelled', icon: '⊗' },
+  { key: 'Rejected', statuses: ['Rejected'], className: 'cancelled', subtitle: 'bookings rejected by providers', icon: '✕' },
 ]
 
-// superuser.js renderBookingsPage() summary: Completed, Upcoming, Requested, Cancelled (+ Other when present).
 const summaryCards = [
   { key: 'Completed', icon: '✔' },
-  { key: 'Upcoming', icon: '🕘' },
-  { key: 'Requested', icon: '!', attention: true },
+  { key: 'Accepted', icon: '🕘' },
+  { key: 'Pending', icon: '!', attention: true },
   { key: 'Cancelled', icon: '✕', attention: true },
+  { key: 'Rejected', icon: '✕', attention: true },
 ]
+
+const chipName = { Pending: 'pending', Accepted: 'upcoming', Completed: 'completed', Cancelled: 'cancelled', Rejected: 'cancelled' }
 
 // Bookings carry the catalog category id (e.g. home-cleaning); show the category's name.
 function categoryLabel(value, categoryNames) {
@@ -30,11 +35,8 @@ function categoryLabel(value, categoryNames) {
 }
 
 function normalizedStatus(booking) {
-  const rawStatus = String(booking.status || booking.bookingStatus || 'Requested').trim()
-  const key = rawStatus.toLowerCase()
-  const reason = booking.cancellationReason || booking.reason || booking.cancelReason
-  if (String(reason || '').startsWith('Automatically cancelled because the provider did not confirm')) return 'Requested'
-  const group = standardBookingGroups.find((item) => item.statuses.some((status) => status.toLowerCase() === key))
+  const rawStatus = String(booking.status || 'Pending').trim()
+  const group = standardBookingGroups.find((item) => item.statuses.some((status) => status.toLowerCase() === rawStatus.toLowerCase()))
   return group?.key || rawStatus
 }
 
@@ -96,7 +98,7 @@ function BookingCard({ booking, categoryNames, onView }) {
 
   return <article className="admin-booking-card">
     <div className="admin-booking-card-main">
-      <div className="admin-booking-card-title"><h3>{show(booking.id || booking.bookingId)}</h3><span className={`admin-booking-chip admin-booking-chip--${status.toLowerCase().replace(/\s+/g, '-')}`}>{status}</span><span className={`admin-booking-chip admin-booking-chip--${paymentTone(payment)}`}>{show(payment)}</span></div>
+      <div className="admin-booking-card-title"><h3>{show(booking.id || booking.bookingId)}</h3><span className={`admin-booking-chip admin-booking-chip--${chipName[status] || 'other'}`}>{status}</span><span className={`admin-booking-chip admin-booking-chip--${paymentTone(payment)}`}>{show(payment)}</span></div>
       <p className="admin-booking-card-service"><strong>{show(category)}</strong> - {show(service)}</p>
       <div className="admin-booking-card-meta">
         <span>Customer: {show(customer)}</span><span>Provider: {show(provider)}</span>
@@ -148,7 +150,7 @@ function BookingDetails({ booking, categoryNames, onClose }) {
     <section aria-labelledby="admin-booking-modal-title" aria-modal="true" className="admin-booking-modal" role="dialog">
       <header className="admin-booking-modal-header"><div><h2 id="admin-booking-modal-title">{show(booking.id || booking.bookingId)}</h2><p>Booking Details</p></div><button aria-label="Close booking details" className="admin-booking-modal-close" onClick={onClose} type="button">×</button></header>
       <div className="admin-booking-modal-body">
-        <div className="admin-booking-modal-badges"><span className={`admin-booking-chip admin-booking-chip--${status.toLowerCase().replace(/\s+/g, '-')}`}>{status}</span><span className={`admin-booking-chip admin-booking-chip--${paymentTone(payment)}`}>Payment: {show(payment)}</span></div>
+        <div className="admin-booking-modal-badges"><span className={`admin-booking-chip admin-booking-chip--${chipName[status] || 'other'}`}>{status}</span><span className={`admin-booking-chip admin-booking-chip--${paymentTone(payment)}`}>Payment: {show(payment)}</span></div>
         <section><h3>Service Information</h3><dl className="admin-booking-detail-grid">{serviceInfo.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{show(value)}</dd></div>)}</dl></section>
         <section><h3>Customer Information</h3><dl className="admin-booking-customer-info">{customerInfo.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{show(value)}</dd></div>)}</dl></section>
         <section><h3>Booking &amp; settlement record</h3><dl className="admin-booking-detail-grid">{lifecycleInfo.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{show(value)}</dd></div>)}</dl></section>
@@ -161,14 +163,15 @@ function BookingDetails({ booking, categoryNames, onClose }) {
 export default function AdminBookingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('booking')
-  const bookings = useAdminData(listBookings)
-  const catalog = useAdminData(listCatalog)
+  const dispatch = useAppDispatch()
+  const bookings = useAdminResource(fetchAdminBookings)
+  const catalog = useAppSelector(selectCatalog)
+  useEffect(() => { dispatch(fetchCatalog()) }, [dispatch])
   const searchTerm = useAdminSearch('/admin/bookings')
-  const categoryNames = useMemo(() => new Map((Array.isArray(catalog.data?.categories) ? catalog.data.categories : [])
+  const categoryNames = useMemo(() => new Map((Array.isArray(catalog?.categories) ? catalog.categories : [])
     .filter((category) => category?.id && category?.name)
-    .map((category) => [String(category.id).toLowerCase(), category.name])), [catalog.data])
-  const loadSelectedBooking = useCallback(() => selectedId ? getBooking(selectedId) : Promise.resolve(null), [selectedId])
-  const selectedBooking = useAdminData(loadSelectedBooking)
+    .map((category) => [String(category.id).toLowerCase(), category.name])), [catalog])
+  const selectedBooking = useAdminResource(fetchAdminBookingById, selectedId)
   const records = useMemo(() => Array.isArray(bookings.data) ? bookings.data : [], [bookings.data])
   const { rows, groups } = useMemo(() => groupBookings(records), [records])
   // superuser.js buildBookingSections(): the topbar term narrows every section; the summary counts stay whole.

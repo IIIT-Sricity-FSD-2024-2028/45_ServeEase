@@ -1,13 +1,14 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminChip } from './AdminChip'
 import { AdminNotifications } from './AdminNotifications'
 import { AdminPageHeader } from './AdminPageHeader'
-import { getCustomerAccount, listCustomerAccounts, updateCustomerAccountStatus } from './adminApi'
+import { useAdminResource, useAppDispatch } from '../../store/hooks'
+import { fetchCustomerAccountById, fetchCustomerAccounts, updateCustomerAccountStatus } from '../../store/slices/adminSlice'
 import { matchesAdminSearch, useAdminSearch } from './adminSearch'
-import { show, useAdminData } from './useAdminData'
+import { show } from './adminFormat'
 import './admin.css'
 
 function formatDate(value) {
@@ -28,10 +29,10 @@ export default function CustomerOperationsPage() {
   const [actionError, setActionError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
-  const accounts = useAdminData(listCustomerAccounts)
+  const dispatch = useAppDispatch()
+  const accounts = useAdminResource(fetchCustomerAccounts)
   const topbarSearch = useAdminSearch('/admin/customers')
-  const loadSelectedCustomer = useCallback(() => selectedId ? getCustomerAccount(selectedId) : Promise.resolve(null), [selectedId])
-  const detailsData = useAdminData(loadSelectedCustomer)
+  const detailsData = useAdminResource(fetchCustomerAccountById, selectedId)
   const customers = useMemo(() => Array.isArray(accounts.data?.customers) ? accounts.data.customers : [], [accounts.data])
   // superuser.js refreshManagementTables(): the topbar search and the table search both narrow the list.
   const searchTerm = [topbarSearch, query].filter((value) => value.trim()).join(' ')
@@ -75,11 +76,10 @@ export default function CustomerOperationsPage() {
     setActionError('')
     setSuccessMessage('')
     try {
-      await updateCustomerAccountStatus(details.id, { status: nextStatus, reason, remarks: statusRemarks.trim() || undefined })
+      await dispatch(updateCustomerAccountStatus({ customerId: selectedId, status: nextStatus, reason, remarks: statusRemarks.trim() || undefined })).unwrap()
       setSuccessMessage(`Customer ${nextStatus === 'Blocked' ? 'suspended' : 'activated'} successfully.`)
       setStatusReason('')
       setStatusRemarks('')
-      await Promise.all([accounts.reload(), detailsData.reload()])
     } catch (requestError) {
       setActionError(requestError?.message || 'Unable to update customer status.')
     } finally {

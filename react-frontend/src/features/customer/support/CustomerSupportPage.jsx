@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi } from '../../../services/api'
+import { fetchCustomerBookings, selectCustomerBookings, selectCustomerBookingsFetchError, selectCustomerBookingsFetchStatus } from '../../../store/slices/bookingsSlice.js'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
 import {
   createCustomerTicket, fetchCustomerTickets, registerTicketAttachmentFile, selectTicketById,
   selectTicketListFetchError, selectTicketListFetchStatus, selectTicketMutationError,
   selectTicketMutationStatus, selectTicketsForScope, ticketEntityKey, uploadTicketAttachment,
-} from '../../../store/tickets/ticketsSlice.js'
+} from '../../../store/slices/ticketsSlice.js'
 import { CustomerPageHeader, LoadState, OpsModal, TicketDetails, TicketStatus } from '../CustomerOpsParts'
 import { TicketChatModal } from '../../support/TicketChatModal'
 import {
@@ -49,37 +49,29 @@ export default function CustomerSupportPage() {
   const [createRequestKey, setCreateRequestKey] = useState('')
   const [openFaq, setOpenFaq] = useState(-1)
   const [chatTicket, setChatTicket] = useState(null)
-  const [bookingsLoad, setBookingsLoad] = useState({ state: 'loading', bookings: [], error: '' })
+  const serverBookings = useAppSelector(selectCustomerBookings)
+  const bookingsStatus = useAppSelector(selectCustomerBookingsFetchStatus)
+  const bookingsError = useAppSelector(selectCustomerBookingsFetchError)
+  const bookingsLoad = useMemo(() => ({
+    state: bookingsStatus === 'failed' ? 'error' : bookingsStatus === 'succeeded' ? 'ready' : 'loading',
+    bookings: serverBookings.filter((booking) => belongsToCustomer(booking, currentUser)),
+    error: bookingsError || 'Your bookings could not be loaded.',
+  }), [bookingsStatus, bookingsError, serverBookings, currentUser])
   const uploadStatus = useAppSelector(selectTicketMutationStatus('uploadAttachmentByRequestKey', uploadRequestKey))
   const uploadError = useAppSelector(selectTicketMutationError('uploadAttachmentByRequestKey', uploadRequestKey))
   const createStatus = useAppSelector(selectTicketMutationStatus('createCustomerTicketByRequestKey', createRequestKey))
   const createError = useAppSelector(selectTicketMutationError('createCustomerTicketByRequestKey', createRequestKey))
 
-  const fetchBookings = useCallback(async () => {
-    const records = await bookingsApi.list()
-    if (!Array.isArray(records)) throw new Error('The booking service returned an invalid response.')
-    return records.filter((booking) => belongsToCustomer(booking, currentUser))
-  }, [currentUser])
-
   const reloadTickets = useCallback(() => {
     return dispatch(fetchCustomerTickets())
   }, [dispatch])
 
-  const reloadBookings = useCallback(() => {
-    setBookingsLoad((current) => ({ ...current, state: 'loading', error: '' }))
-    fetchBookings()
-      .then((bookings) => setBookingsLoad({ state: 'ready', bookings, error: '' }))
-      .catch((error) => setBookingsLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }))
-  }, [fetchBookings])
+  const reloadBookings = useCallback(() => dispatch(fetchCustomerBookings()), [dispatch])
 
   useEffect(() => {
-    let active = true
     dispatch(fetchCustomerTickets())
-    fetchBookings()
-      .then((bookings) => { if (active) setBookingsLoad({ state: 'ready', bookings, error: '' }) })
-      .catch((error) => { if (active) setBookingsLoad({ state: 'error', bookings: [], error: error.message || 'Your bookings could not be loaded.' }) })
-    return () => { active = false }
-  }, [dispatch, fetchBookings])
+    dispatch(fetchCustomerBookings())
+  }, [dispatch])
 
   const prefillBooking = useMemo(() => bookingsLoad.bookings.find((booking) => String(booking.id).toLowerCase() === prefillRef.toLowerCase()), [bookingsLoad.bookings, prefillRef])
   const sortedTickets = useMemo(() => sortNewestFirst(tickets), [tickets])

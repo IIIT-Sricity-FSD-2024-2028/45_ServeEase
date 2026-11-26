@@ -10,7 +10,7 @@ const {
   saveSupportTicketSolution,
   sendSupportTicketMessage,
   ticketEntityKey,
-} = await import('../src/store/tickets/ticketsSlice.js')
+} = await import('../src/store/slices/ticketsSlice.js')
 
 test('ticket entities prefer a nonblank ticketId and safely fall back to the legacy id', () => {
   assert.equal(ticketEntityKey({ ticketId: ' TKT-1 ', id: 'legacy-1' }), 'TKT-1')

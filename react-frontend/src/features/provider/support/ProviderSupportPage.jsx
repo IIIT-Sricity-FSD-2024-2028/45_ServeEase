@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { bookingsApi } from '../../../services/api'
+import { fetchProviderBookings, selectProviderBookings, selectProviderBookingsFetchError } from '../../../store/slices/bookingsSlice.js'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
 import {
   createProviderTicket, fetchOwnerTicketById, fetchProviderTickets, registerTicketAttachmentFile,
@@ -9,7 +9,7 @@ import {
   selectTicketListFetchError, selectTicketListFetchStatus,
   selectTicketMutationError, selectTicketMutationStatus, selectTicketsForScope,
   ticketEntityKey, uploadTicketAttachment,
-} from '../../../store/tickets/ticketsSlice.js'
+} from '../../../store/slices/ticketsSlice.js'
 import { providerStatusPill } from '../providerStatus'
 import { TicketChatModal } from '../../support/TicketChatModal'
 import '../providerPortal.css'
@@ -66,7 +66,8 @@ export function ProviderSupportPage() {
   const tickets = useAppSelector(selectTicketsForScope('provider'))
   const ticketFetchStatus = useAppSelector(selectTicketListFetchStatus('provider'))
   const ticketFetchError = useAppSelector(selectTicketListFetchError('provider'))
-  const [bookings, setBookings] = useState([])
+  const bookings = useAppSelector(selectProviderBookings)
+  const bookingsError = useAppSelector(selectProviderBookingsFetchError)
   const [form, setForm] = useState(blankForm)
   const [attachment, setAttachment] = useState(null)
   const [attachmentInputKey, setAttachmentInputKey] = useState(0)
@@ -96,12 +97,7 @@ export function ProviderSupportPage() {
     dispatch(fetchProviderTickets()).then((action) => {
       if (active) setSettledTicketFetchStatus(action.meta.requestStatus === 'fulfilled' ? 'succeeded' : 'failed')
     })
-    bookingsApi.listForProvider().then((records) => {
-      if (active && Array.isArray(records)) setBookings(records)
-      else if (active) setError('The booking service returned an invalid response.')
-    }).catch((requestError) => {
-      if (active) setError(requestError.message || 'Your provider bookings could not be loaded.')
-    })
+    dispatch(fetchProviderBookings())
     return () => { active = false }
   }, [dispatch, isAuthenticated, role])
 
@@ -179,7 +175,7 @@ export function ProviderSupportPage() {
             <label htmlFor="providerTicketAttachment">Optional Attachment</label>
             <input accept=".pdf,.jpg,.jpeg,.png,.webp" id="providerTicketAttachment" key={attachmentInputKey} onChange={handleAttachment} type="file" />
             {attachment && <small className="support-form-hint">Selected: {attachment.name}</small>}
-            <small className="error" id="providerTicketError" role="alert">{error || createError || uploadError || selectedTicketFetchError}</small>
+            <small className="error" id="providerTicketError" role="alert">{error || createError || uploadError || selectedTicketFetchError || bookingsError}</small>
             <small className="success-message" id="providerTicketSuccess" role="status">{notice}</small>
             <button className="btn btn-primary btn-full" disabled={isSaving} type="submit">{isSaving ? 'Submitting…' : 'Submit Ticket'}</button>
           </form>

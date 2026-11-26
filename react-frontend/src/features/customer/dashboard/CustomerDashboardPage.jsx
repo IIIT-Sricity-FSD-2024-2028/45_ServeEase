@@ -5,13 +5,13 @@ import { ErrorState, LoadingState } from '../../../components/common/FeedbackSta
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
 import {
   fetchCustomerTickets, selectTicketListFetchError, selectTicketListFetchStatus, selectTicketsForScope,
-} from '../../../store/tickets/ticketsSlice.js'
+} from '../../../store/slices/ticketsSlice.js'
 import {
   fetchCustomerBookings,
   selectCustomerBookings,
   selectCustomerBookingsFetchError,
   selectCustomerBookingsFetchStatus,
-} from '../../../store/bookings/bookingsSlice.js'
+} from '../../../store/slices/bookingsSlice.js'
 import { formatDisplayDate, formatPrice, paymentTag, transactionId } from '../customerOperations'
 import { settleBooking } from '../../finance/revenueModel'
 import '../customerOperations.css'

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ServiceCard } from './ServiceCard'
 import { useAuth } from '../../../context/useAuth'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
-import { createProviderService, deleteProviderService, fetchProviderServices, providerServiceEntityKey, selectCatalogState, selectProviderServices, updateProviderService } from '../../../store/catalog/catalogSlice.js'
+import { createProviderService, deleteProviderService, fetchProviderServices, providerServiceEntityKey, selectCatalogState, selectProviderServices, updateProviderService } from '../../../store/slices/catalogSlice.js'
 import { ProviderAvailabilityPanel } from '../availability/ProviderAvailabilityPanel'
 import '../providerPortal.css'
 

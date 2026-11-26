@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { authApi, bookingsApi, catalogApi, providerPhotoApi, reviewsApi } from '../../../services/api'
+import { authApi, providerPhotoApi } from '../../../services/api'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
+import { fetchProviderBookings, selectProviderBookings, selectProviderBookingsFetchError, selectProviderBookingsFetchStatus } from '../../../store/slices/bookingsSlice.js'
+import { fetchProviderServices, selectProviderServices, selectProviderServicesFetchError, selectProviderServicesFetchStatus } from '../../../store/slices/catalogSlice.js'
+import { fetchProviderReviews } from '../../../store/slices/reviewsSlice.js'
 import { documentFileError } from '../../auth/providerDocuments'
 import { formatAverage } from '../../reviews/reviewFormat'
 import { categoryImageFor, cityIdFor, supportedCities, validateBank, validatePersonal, validateProfessional } from './providerProfile'
@@ -34,23 +38,29 @@ export function ProviderAccountPage() {
   const [bank, setBank] = useState(() => ({ bankName: text(user.bankName), accountHolder: text(user.accountHolder), accountNumber: text(user.accountNumber), ifsc: text(user.ifsc) }))
   const [errors, setErrors] = useState({ personal: {}, professional: {}, bank: {} })
   const [state, setState] = useState({ section: '', saved: '', error: '', errorSection: '' })
-  const [activity, setActivity] = useState({ services: null, bookings: null, reviews: null, error: '' })
+  const dispatch = useAppDispatch()
+  const servicesSelector = useMemo(() => selectProviderServices(providerId || ''), [providerId])
+  const services = useAppSelector(servicesSelector)
+  const servicesStatus = useAppSelector(selectProviderServicesFetchStatus(providerId))
+  const servicesError = useAppSelector(selectProviderServicesFetchError(providerId))
+  const bookings = useAppSelector(selectProviderBookings)
+  const bookingsStatus = useAppSelector(selectProviderBookingsFetchStatus)
+  const bookingsError = useAppSelector(selectProviderBookingsFetchError)
+  const { provider: reviews, providerStatus: reviewsStatus, providerError: reviewsError } = useAppSelector((state) => state.reviews)
+  const activity = {
+    services: !providerId ? 0 : servicesStatus === 'succeeded' ? services?.length ?? 0 : null,
+    bookings: bookingsStatus === 'succeeded' ? bookings.length : null,
+    reviews: reviewsStatus === 'succeeded' ? { total: Number(reviews?.total) || 0, average: Number(reviews?.average) || 0 } : null,
+    error: (servicesStatus === 'failed' && servicesError) || (bookingsStatus === 'failed' && bookingsError) || (reviewsStatus === 'failed' && reviewsError) || '',
+  }
   const [photo, setPhoto] = useState({ url: '', loading: true, error: '', pendingUrl: '', pendingFile: null })
   const photoUrls = useRef([])
 
   useEffect(() => {
-    let active = true
-    Promise.allSettled([providerId ? catalogApi.getProviderServices(providerId) : Promise.resolve([]), bookingsApi.listForProvider(), reviewsApi.forProvider()]).then(([services, bookings, reviews]) => {
-      if (!active) return
-      setActivity({
-        services: services.status === 'fulfilled' && Array.isArray(services.value) ? services.value.length : null,
-        bookings: bookings.status === 'fulfilled' && Array.isArray(bookings.value) ? bookings.value.length : null,
-        reviews: reviews.status === 'fulfilled' ? { total: Number(reviews.value?.total) || 0, average: Number(reviews.value?.average) || 0 } : null,
-        error: [services, bookings, reviews].find((result) => result.status === 'rejected')?.reason?.message || '',
-      })
-    })
-    return () => { active = false }
-  }, [providerId])
+    if (providerId) dispatch(fetchProviderServices(providerId))
+    dispatch(fetchProviderBookings())
+    dispatch(fetchProviderReviews())
+  }, [dispatch, providerId])
 
   // The current photo is read through the owner-only route; a 404 just means none was ever added.
   useEffect(() => {

@@ -4,7 +4,9 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { StateRepository } from '../state/state.repository';
 import { canonicalProviderId } from '../../common/provider-identity';
-import { canonicalPaymentStatus } from './booking-finance';
+import { appointmentStart, canonicalPaymentStatus, cancellationSettlement } from './booking-finance';
+
+export const UNCONFIRMED_CANCEL_REASON = 'Automatically cancelled because the provider did not accept the booking before the slot started.';
 
 @Injectable()
 export class BookingsRepository {
@@ -27,17 +29,17 @@ export class BookingsRepository {
   }
 
   findAll(): Booking[] {
-    this.autoCancelExpiredPending();
+    this.applyScheduleRules();
     return this.bookings;
   }
 
   findByCustomer(customerId: string): Booking[] {
-    this.autoCancelExpiredPending();
+    this.applyScheduleRules();
     return this.bookings.filter((booking) => String(booking.customerId || '') === customerId);
   }
 
   findByCustomerIdentity(customerId: string, email: string): Booking[] {
-    this.autoCancelExpiredPending();
+    this.applyScheduleRules();
     const normalizedEmail = String(email || '').toLowerCase();
     return this.bookings.filter((booking) =>
       Boolean((customerId && String(booking.customerId || '') === customerId) ||
@@ -46,18 +48,18 @@ export class BookingsRepository {
   }
 
   findById(id: string): Booking | undefined {
-    this.autoCancelExpiredPending();
+    this.applyScheduleRules();
     return this.bookings.find((booking) => booking.id === id);
   }
 
   findByProvider(providerId: string): Booking[] {
-    this.autoCancelExpiredPending();
+    this.applyScheduleRules();
     const canonicalId = canonicalProviderId(providerId);
     return this.bookings.filter((booking) => canonicalProviderId(booking.providerId) === canonicalId);
   }
 
   findByProviderAndDate(providerId: string, date: string): Booking[] {
-    this.autoCancelExpiredPending();
+    this.applyScheduleRules();
     const canonicalId = canonicalProviderId(providerId);
     return this.bookings.filter((booking) => canonicalProviderId(booking.providerId) === canonicalId && booking.date === date);
   }
@@ -168,21 +170,27 @@ export class BookingsRepository {
     return `BOOK-${date}-${time}-${String(next).padStart(4, '0')}`;
   }
 
-  private autoCancelExpiredPending(): void {
-    this.bookings.forEach((booking) => {
-      if (booking.cancellationReason === 'Automatically cancelled because the provider did not confirm the booking before the scheduled service date.') {
-        booking.status = 'Pending';
-        booking.category = 'Pending';
-        booking.paymentStatus = canonicalPaymentStatus(booking);
-        delete (booking as any).cancellationReason;
-      }
-    });
-  }
-
-  private parseServiceDate(value: string): Date | undefined {
-    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? undefined : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  // Runs before every read: an unaccepted booking is cancelled once its slot starts, and an
+  // accepted booking is completed from the day after its service date.
+  private applyScheduleRules(now = new Date()): void {
+    let changed = false;
+    for (const booking of this.bookings) {
+      const start = appointmentStart(booking.date, booking.time);
+      if (!start) continue;
+      const nextDay = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+      const timestamp = now.toISOString();
+      if (booking.status === 'Pending' && now >= start) {
+        Object.assign(booking, cancellationSettlement(booking, 'System', timestamp), {
+          status: 'Cancelled', cancellationActor: 'System', cancellationReason: UNCONFIRMED_CANCEL_REASON, cancelledAt: timestamp,
+        });
+      } else if (booking.status === 'Accepted' && now >= nextDay) {
+        Object.assign(booking, { status: 'Completed', payoutStatus: 'Paid', payoutDate: timestamp.slice(0, 10), receivedDate: booking.date });
+      } else continue;
+      booking.paymentStatus = canonicalPaymentStatus(booking);
+      booking.statusUpdatedAt = timestamp;
+      booking.stateVersion = (Number(booking.stateVersion) || 0) + 1;
+      changed = true;
+    }
+    if (changed) this.persist();
   }
 }

@@ -5,8 +5,9 @@ import { StatusBadge } from '../../components/common/StatusBadge'
 import { CANCELLATION_POLICY_LINES, REVENUE_RATES, roundCurrency, settleBooking } from '../finance/revenueModel'
 import { PaymentMethod } from '../finance/PaymentMethod'
 import { AdminAccessGate } from './AdminAccessGate'
-import { listBookings } from './adminApi'
-import { money, show, useAdminData } from './useAdminData'
+import { useAdminResource } from '../../store/hooks'
+import { fetchAdminBookings } from '../../store/slices/adminSlice'
+import { money, show } from './adminFormat'
 import './admin.css'
 
 const sum = (records, field) => roundCurrency(records.reduce((total, record) => total + record[field], 0))
@@ -67,7 +68,7 @@ function FinanceMetric({ icon, label, amount, tone }) {
 }
 
 export default function FinanceOverviewPage() {
-  const { data, isLoading, error, reload } = useAdminData(listBookings)
+  const { data, isLoading, error, reload } = useAdminResource(fetchAdminBookings)
   const [filters, setFilters] = useState({})
   const [globalSearch, setGlobalSearch] = useState('')
   useEffect(() => {

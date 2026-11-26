@@ -6,7 +6,7 @@ import {
   selectBookingById,
   selectBookingDetailFetchError,
   selectBookingDetailFetchStatus,
-} from '../../store/bookings/bookingsSlice.js'
+} from '../../store/slices/bookingsSlice.js'
 import { formatCurrency, formatDisplayDate } from './catalogModel'
 import { paymentTag } from '../customer/customerOperations'
 import { readJourney } from './journeyState'

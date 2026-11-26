@@ -13,7 +13,7 @@ import {
   selectEmployeeProviderDetail,
   selectEmployeeProviderDetailFetchError,
   selectEmployeeProviderDetailFetchStatus,
-} from '../../store/operations/operationsSlice.js'
+} from '../../store/slices/employeeOperationsSlice.js'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import { Breadcrumb } from './EmployeeOpsParts'
 import { initialStatusChange, statusChangeReducer } from './employeeOperations'

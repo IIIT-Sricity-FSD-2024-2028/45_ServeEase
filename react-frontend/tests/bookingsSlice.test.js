@@ -26,7 +26,7 @@ const {
   rescheduleBooking,
   selectBookingById,
   updateProviderBookingStatus,
-} = await import('../src/store/bookings/bookingsSlice.js')
+} = await import('../src/store/slices/bookingsSlice.js')
 
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })

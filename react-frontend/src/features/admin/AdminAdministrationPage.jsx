@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
-import { getEmployeeModuleData, saveEmployeeModuleData } from './adminApi'
+import { useAdminResource, useAppDispatch } from '../../store/hooks'
+import { fetchEmployeeModuleData, saveEmployeeModuleData } from '../../store/slices/adminSlice'
 import { matchesAdminSearch, useAdminSearch } from './adminSearch'
-import { show, useAdminData } from './useAdminData'
+import { show } from './adminFormat'
 import './admin.css'
 
 const departments = [
@@ -87,7 +88,8 @@ function DirectorySection({ kicker, title, links }) {
 }
 
 export default function AdminAdministrationPage() {
-  const moduleState = useAdminData(getEmployeeModuleData)
+  const dispatch = useAppDispatch()
+  const moduleState = useAdminResource(fetchEmployeeModuleData)
   const [activeDepartment, setActiveDepartment] = useState('All')
   const [formOpen, setFormOpen] = useState(false)
   const [draft, setDraft] = useState({ role: '', name: '', email: '', phone: '' })
@@ -141,8 +143,7 @@ export default function AdminAdministrationPage() {
   }
 
   async function persistEmployeeList(nextEmployees) {
-    await saveEmployeeModuleData({ ...moduleData, employees: nextEmployees }, Boolean(moduleState.data?.exists))
-    await moduleState.reload()
+    await dispatch(saveEmployeeModuleData({ value: { ...moduleData, employees: nextEmployees }, exists: Boolean(moduleState.data?.exists) })).unwrap()
   }
 
   async function createEmployee(event) {

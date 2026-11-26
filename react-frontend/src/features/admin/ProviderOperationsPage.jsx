@@ -1,25 +1,23 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminChip } from './AdminChip'
 import { AdminNotifications } from './AdminNotifications'
 import { AdminPageHeader } from './AdminPageHeader'
+import { getProviderDocumentPreview } from './adminApi'
+import { useAdminResource, useAppDispatch } from '../../store/hooks'
 import {
-  decideProviderAccountVerification,
-  getProviderAccount,
-  getProviderDocumentPreview,
-  listProviderAccounts,
-  updateProviderAccountStatus,
-} from './adminApi'
+  decideProviderAccountVerification, fetchProviderAccountById, fetchProviderAccounts, updateProviderAccountStatus,
+} from '../../store/slices/adminSlice'
 import { matchesAdminSearch, useAdminSearch } from './adminSearch'
-import { show, useAdminData } from './useAdminData'
+import { show } from './adminFormat'
 import './admin.css'
 
-const statusOptions = ['All Verification States', 'Active', 'Suspended', 'Under Verification', 'Verification Rejected', 'Pending', 'Verified', 'Rejected']
+const statusOptions = ['All','Active', 'Suspended', 'Under Verification', 'Verification Rejected']
 
 function matchesStatus(record, fields, filter) {
-  return filter === 'All statuses' || filter === 'All Verification States' || fields.some((field) => String(record?.[field] || '').toLocaleLowerCase() === filter.toLocaleLowerCase())
+  return filter === 'All' || fields.some((field) => String(record?.[field] || '').toLocaleLowerCase() === filter.toLocaleLowerCase())
 }
 
 function formatDate(value) {
@@ -33,7 +31,7 @@ export default function ProviderOperationsPage() {
   const selectedId = searchParams.get('account')
   const selectedListing = searchParams.get('listing')
   const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('All Verification States')
+  const [statusFilter, setStatusFilter] = useState('All')
   const [actionMode, setActionMode] = useState('')
   const [actionReason, setActionReason] = useState('')
   const [actionRemarks, setActionRemarks] = useState('')
@@ -44,10 +42,10 @@ export default function ProviderOperationsPage() {
   const [previewError, setPreviewError] = useState('')
   const [previewLoadingId, setPreviewLoadingId] = useState('')
 
-  const accounts = useAdminData(listProviderAccounts)
+  const dispatch = useAppDispatch()
+  const accounts = useAdminResource(fetchProviderAccounts)
   const topbarSearch = useAdminSearch('/admin/providers')
-  const loadSelectedProvider = useCallback(() => selectedId ? getProviderAccount(selectedId, selectedListing) : Promise.resolve(null), [selectedId, selectedListing])
-  const providerDetail = useAdminData(loadSelectedProvider)
+  const providerDetail = useAdminResource(fetchProviderAccountById, selectedId ? { providerId: selectedId, listing: selectedListing } : null)
   // superuser.js refreshManagementTables(): the topbar search and the table search both narrow the list.
   const searchTerm = [topbarSearch, query].filter((value) => value.trim()).join(' ')
   const providerRecords = Array.isArray(accounts.data?.providers) ? accounts.data.providers : []
@@ -108,20 +106,20 @@ export default function ProviderOperationsPage() {
     setSuccessMessage('')
     try {
       if (actionMode === 'approve' || actionMode === 'reject') {
-        await decideProviderAccountVerification(selectedId, {
+        await dispatch(decideProviderAccountVerification({
+          providerId: selectedId,
           decision: actionMode,
           ...(actionMode === 'reject' ? { reason } : {}),
           remarks: actionRemarks.trim() || undefined,
-          listing: selectedListing || undefined,
-        })
+          listing: selectedListing,
+        })).unwrap()
         setSuccessMessage(`Provider verification ${actionMode === 'approve' ? 'approved' : 'rejected'} successfully.`)
       } else {
         const status = actionMode === 'suspend' ? 'Suspended' : 'Active'
-        await updateProviderAccountStatus(selectedId, { status, reason, remarks: actionRemarks.trim() || undefined, listing: selectedListing || undefined })
+        await dispatch(updateProviderAccountStatus({ providerId: selectedId, status, reason, remarks: actionRemarks.trim() || undefined, listing: selectedListing })).unwrap()
         setSuccessMessage(`Provider ${actionMode === 'suspend' ? 'suspended' : 'activated'} successfully.`)
       }
       setActionMode('')
-      await Promise.all([accounts.reload(), providerDetail.reload()])
     } catch (requestError) {
       setActionError(requestError?.message || 'Unable to update provider account.')
     } finally {

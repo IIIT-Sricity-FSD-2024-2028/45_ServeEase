@@ -6,7 +6,6 @@
 import { getSuperuserModuleData, listEscalatedTickets, saveSuperuserModuleData } from './adminApi'
 
 export const SUPERUSER_NOTIFICATIONS_CHANGED = 'serveease:superuser-notifications-changed'
-export const OPEN_NOTIFICATION_PANEL = 'serveease:open-notification-panel'
 
 // Legacy pages stored actionPage as an .html file name; map those to the React admin routes.
 export function notificationDestination(actionPage) {
@@ -148,8 +147,4 @@ export function addSuperuserNotification(notification) {
     delete entry.kind
     return { ...moduleData, notifications: [entry, ...stored] }
   })
-}
-
-export function openNotificationPanel(showAll = true) {
-  window.dispatchEvent(new CustomEvent(OPEN_NOTIFICATION_PANEL, { detail: { showAll } }))
 }

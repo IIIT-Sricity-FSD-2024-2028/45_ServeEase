@@ -6,8 +6,13 @@ import { AdminAccessGate } from './AdminAccessGate'
 import { AdminChip } from './AdminChip'
 import { AdminNotifications } from './AdminNotifications'
 import { AdminPageHeader } from './AdminPageHeader'
-import { listBookings, listCatalog, listCustomerAccounts, listProviderAccounts, listVerificationRequests } from './adminApi'
-import { money, show, useAdminData, useSuperuserModuleData } from './useAdminData'
+import { useAdminResource, useAppDispatch, useAppSelector } from '../../store/hooks'
+import {
+  fetchAdminBookings, fetchCustomerAccounts, fetchProviderAccounts, fetchVerificationRequests,
+  selectAdminBookingRows, selectAdminBookingStatusCounts, selectAdminRevenue, selectAdminStats, selectPendingVerificationCount,
+} from '../../store/slices/adminSlice'
+import { fetchCatalog, selectCatalog, selectCatalogFetchError, selectCatalogFetchStatus } from '../../store/slices/catalogSlice'
+import { money, show } from './adminFormat'
 import './admin.css'
 
 const actions = [
@@ -89,16 +94,6 @@ function categoryBookings(bookings, catalog) {
     const count = bookings.filter((booking) => possibleNames.includes(String(categoryName(booking)).toLowerCase())).length
     return { ...category, count }
   }).sort((left, right) => right.count - left.count || left.name.localeCompare(right.name))
-}
-
-function statusGroups(bookings) {
-  const groups = new Map()
-  bookings.forEach((booking) => {
-    const status = booking.status
-    if (status === null || status === undefined || String(status).trim() === '') return
-    groups.set(String(status), (groups.get(String(status)) || 0) + 1)
-  })
-  return Array.from(groups.entries()).sort(([left], [right]) => left.localeCompare(right))
 }
 
 function pieGradient(groups) {
@@ -198,30 +193,32 @@ function RecentRegistrations({ customers, providers, customersLoading, providers
 }
 
 export default function AdminHubPage() {
-  const bookings = useAdminData(listBookings)
-  const catalog = useAdminData(listCatalog)
-  const customersData = useAdminData(listCustomerAccounts)
-  const providersData = useAdminData(listProviderAccounts)
-  const verifications = useAdminData(listVerificationRequests)
-  const moduleState = useSuperuserModuleData()
+  const dispatch = useAppDispatch()
   const [responseMetrics, setResponseMetrics] = useState(getResponseMetrics)
 
-  // Earlier dashboard bookings remain in the superuser module while new ones use the canonical bookings API.
-  // Combine both sources by booking id so the trend and totals cover the complete 2026 history.
-  const canonicalBookingRows = Array.isArray(bookings.data) ? bookings.data : []
-  const legacyBookingRows = Array.isArray(moduleState.data?.bookings) ? moduleState.data.bookings : []
-  const bookingRows = [...new Map([...legacyBookingRows, ...canonicalBookingRows].map((booking, index) => [String(booking.id || `legacy-${index}`), booking])).values()]
-  const customerAccounts = Array.isArray(customersData.data?.customers) ? customersData.data.customers : []
-  const providerAccounts = Array.isArray(providersData.data?.providers) ? providersData.data.providers : []
-  const requests = Array.isArray(verifications.data) ? verifications.data : []
-  const revenueRecords = bookingRows.filter((booking) => booking.platformRevenueAmount !== null && booking.platformRevenueAmount !== undefined && booking.platformRevenueAmount !== '')
-  const revenue = revenueRecords.reduce((total, booking) => total + (Number.isFinite(Number(booking.platformRevenueAmount)) ? Number(booking.platformRevenueAmount) : 0), 0)
-  const hasRevenue = revenueRecords.some((booking) => Number.isFinite(Number(booking.platformRevenueAmount)))
-  const statuses = statusGroups(bookingRows)
-  const pendingCount = requests.filter((request) => String(request.status || '').toLowerCase() === 'pending').length
+  const bookings = useAdminResource(fetchAdminBookings)
+  const customers = useAdminResource(fetchCustomerAccounts)
+  const providers = useAdminResource(fetchProviderAccounts)
+  const verifications = useAdminResource(fetchVerificationRequests)
+
+  const stats = useAppSelector(selectAdminStats)
+  const bookingRows = useAppSelector(selectAdminBookingRows)
+  const statuses = useAppSelector(selectAdminBookingStatusCounts)
+  const { total: revenue, hasRevenue } = useAppSelector(selectAdminRevenue)
+  const pendingCount = useAppSelector(selectPendingVerificationCount)
+
+  const catalog = useAppSelector(selectCatalog)
+  const catalogStatus = useAppSelector(selectCatalogFetchStatus)
+  const catalogError = useAppSelector(selectCatalogFetchError)
+  const catalogLoading = catalogStatus === 'idle' || catalogStatus === 'loading'
+  useEffect(() => { dispatch(fetchCatalog()) }, [dispatch])
+
+  const customerAccounts = customers.data?.customers ?? []
+  const providerAccounts = providers.data?.providers ?? []
+  const reloadBookings = bookings.reload
 
   // The average covers every request this tab has made, so it is re-read once the dashboard's own loads finish.
-  const dashboardLoading = bookings.isLoading || catalog.isLoading || customersData.isLoading || providersData.isLoading || verifications.isLoading || moduleState.isLoading
+  const dashboardLoading = [bookings, customers, providers, verifications].some((resource) => resource.isLoading) || catalogLoading
   useEffect(() => {
     if (dashboardLoading) return undefined
     const timer = window.setTimeout(() => setResponseMetrics(getResponseMetrics()), 0)
@@ -243,35 +240,35 @@ export default function AdminHubPage() {
         </section>
 
         <section aria-label="Platform summary" className="admin-grid admin-dashboard-stats">
-          <Metric caption="Registered Customers" error={customersData.error} isLoading={customersData.isLoading} label="Users" onRetry={customersData.reload} value={customersData.data ? (customersData.data.totals?.customers ?? customerAccounts.length) : 'Not available'} />
-          <Metric caption="Service Providers" error={providersData.error} isLoading={providersData.isLoading} label="Pros" onRetry={providersData.reload} value={providersData.data ? (providersData.data.totals?.providers ?? providerAccounts.length) : 'Not available'} />
-          <Metric caption="Total Bookings" error={bookings.error} isLoading={bookings.isLoading || moduleState.isLoading} label="Jobs" onRetry={() => { bookings.reload(); moduleState.reload() }} value={bookings.data ? bookingRows.length : 'Not available'} />
-          <Metric caption="Platform Revenue (15%)" error={bookings.error} isLoading={bookings.isLoading} label="INR" onRetry={bookings.reload} value={hasRevenue ? money(revenue) : 'Not available'} />
-          <Metric attention caption="Pending Verifications" error={verifications.error} isLoading={verifications.isLoading} label="Docs" onRetry={verifications.reload} value={verifications.data ? pendingCount : 'Not available'} />
+          <Metric caption="Registered Customers" error={customers.error} isLoading={customers.isLoading} label="Users" onRetry={customers.reload} value={stats.totalCustomers ?? 'Not available'} />
+          <Metric caption="Service Providers" error={providers.error} isLoading={providers.isLoading} label="Pros" onRetry={providers.reload} value={stats.totalProviders ?? 'Not available'} />
+          <Metric caption="Total Bookings" error={bookings.error} isLoading={bookings.isLoading} label="Jobs" onRetry={reloadBookings} value={stats.totalBookings ?? 'Not available'} />
+          <Metric caption="Platform Revenue (15%)" error={bookings.error} isLoading={bookings.isLoading} label="INR" onRetry={reloadBookings} value={hasRevenue ? money(revenue) : 'Not available'} />
+          <Metric attention caption="Pending Verifications" error={verifications.error} isLoading={verifications.isLoading} label="Docs" onRetry={verifications.reload} value={pendingCount ?? 'Not available'} />
         </section>
 
         <div className="admin-hub-columns">
           <div className="admin-hub-main">
             <section className="admin-panel admin-panel--compact">
               <h2>Monthly Bookings Trend</h2>
-              <MonthlyBookingsChart bookings={bookingRows} error={bookings.error} isLoading={bookings.isLoading || moduleState.isLoading} reload={() => { bookings.reload(); moduleState.reload() }} />
+              <MonthlyBookingsChart bookings={bookingRows} error={bookings.error} isLoading={bookings.isLoading} reload={reloadBookings} />
               <p className="admin-chart-legend">⤳ Bookings</p>
             </section>
             <section className="admin-panel admin-panel--compact">
               <h2>Bookings per Service Category</h2>
-              <CategoryBookingsChart bookings={bookingRows} catalog={catalog.data} error={bookings.error || catalog.error} isLoading={bookings.isLoading || catalog.isLoading} reload={() => { bookings.reload(); catalog.reload() }} />
+              <CategoryBookingsChart bookings={bookingRows} catalog={catalog} error={bookings.error || catalogError} isLoading={bookings.isLoading || catalogLoading} reload={() => { reloadBookings(); dispatch(fetchCatalog()) }} />
             </section>
             <section className="admin-panel admin-panel--compact">
               <h2>Recent Registrations</h2>
               <RecentRegistrations
                 customers={customerAccounts}
                 providers={providerAccounts}
-                customersLoading={customersData.isLoading}
-                providersLoading={providersData.isLoading}
-                customersError={customersData.error}
-                providersError={providersData.error}
-                reloadCustomers={customersData.reload}
-                reloadProviders={providersData.reload}
+                customersLoading={customers.isLoading}
+                providersLoading={providers.isLoading}
+                customersError={customers.error}
+                providersError={providers.error}
+                reloadCustomers={customers.reload}
+                reloadProviders={providers.reload}
               />
             </section>
           </div>
@@ -285,7 +282,7 @@ export default function AdminHubPage() {
             <section className="admin-panel admin-panel--compact">
               <h2>〽 Booking Status Distribution</h2>
               {bookings.isLoading && <LoadingState message="Loading booking records…" />}
-              {!bookings.isLoading && bookings.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={bookings.error} /><button className="admin-button admin-button--secondary admin-button--small" onClick={bookings.reload} type="button">Retry</button></div>}
+              {!bookings.isLoading && bookings.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={bookings.error} /><button className="admin-button admin-button--secondary admin-button--small" onClick={reloadBookings} type="button">Retry</button></div>}
               {!bookings.isLoading && !bookings.error && statuses.length === 0 && <EmptyState message="No booking status data available." />}
               {!bookings.isLoading && !bookings.error && statuses.length > 0 && <>
                 <div aria-label="Booking status chart" className="admin-status-pie" role="img" style={{ background: pieGradient(statuses) }} />

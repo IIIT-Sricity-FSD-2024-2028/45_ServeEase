@@ -28,7 +28,7 @@ describe('ticket conversation and support updates', () => {
     tickets.updateSupportRemarks(created.ticketId, { remarks: 'Internal: verified duplicate charge.' });
     tickets.resolveBySupport(created.ticketId, { remarks: 'We refunded the duplicate payment.' });
     const [mine] = tickets.findMyCustomerTickets(customer);
-    expect(mine.status).toBe('Resolved by Support');
+    expect(mine.status).toBe('Resolved');
     expect(mine.supportUpdate).toBe('We refunded the duplicate payment.');
     expect(mine.messages).toMatchObject([{ senderType: 'agent', text: 'We refunded the duplicate payment.' }]);
     expect(JSON.stringify(mine)).not.toContain('Internal: verified duplicate charge.');

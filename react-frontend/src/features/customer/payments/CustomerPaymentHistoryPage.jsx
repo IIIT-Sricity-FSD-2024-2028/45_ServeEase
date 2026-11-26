@@ -6,7 +6,7 @@ import {
   selectCustomerBookings,
   selectCustomerBookingsFetchError,
   selectCustomerBookingsFetchStatus,
-} from '../../../store/bookings/bookingsSlice.js'
+} from '../../../store/slices/bookingsSlice.js'
 import { CustomerPageHeader, InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
 import { formatDisplayDate, formatPrice, paymentTag, statusPillClass, summarizePayments, transactionId } from '../customerOperations'
 import { settleBooking } from '../../finance/revenueModel'

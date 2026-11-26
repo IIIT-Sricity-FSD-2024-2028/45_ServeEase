@@ -187,7 +187,8 @@ export class TicketsService {
     return this.ticketsRepository.update(ticket);
   }
 
-  resolveBySupport(id: string, data: TicketRemarksDto): SupportTicket {
+  resolveBySupport(id: string, data: TicketRemarksDto, role = 'support'): SupportTicket {
+    const resolver = role === 'support' ? 'Support' : 'Admin';
     const ticket = this.ensureSupportEditable(this.findById(id));
     if (ticket.status !== 'In Progress') {
       throw new BadRequestException('Support can resolve only tickets that are In Progress.');
@@ -196,10 +197,10 @@ export class TicketsService {
     // remarks are saved separately and never shown to them.
     ticket.supportUpdate = data.remarks;
     this.pushMessage(ticket, 'agent', ticket.assignedSupportName || 'Support Agent', data.remarks);
-    ticket.status = 'Resolved by Support';
+    ticket.status = 'Resolved';
     ticket.resolvedAt = new Date().toISOString();
-    ticket.resolvedBy = 'Support';
-    this.addHistory(ticket, 'Resolved by Support', data.remarks, 'Support');
+    ticket.resolvedBy = resolver;
+    this.addHistory(ticket, 'Resolved', data.remarks, resolver);
     return this.ticketsRepository.update(ticket);
   }
 
@@ -292,7 +293,7 @@ export class TicketsService {
   }
 
   private ensureSupportEditable(ticket: SupportTicket): SupportTicket {
-    if (['Resolved by Support', 'Escalated', 'Under Review', 'Resolved', 'Rejected'].includes(ticket.status)) {
+    if (['Escalated', 'Under Review', 'Resolved', 'Rejected'].includes(ticket.status)) {
       throw new BadRequestException('This ticket is no longer editable by support.');
     }
     return ticket;

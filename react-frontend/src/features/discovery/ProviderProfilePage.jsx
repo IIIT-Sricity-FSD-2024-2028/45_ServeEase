@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { catalogApi, reviewsApi } from '../../services/api'
+import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
+import { fetchCatalog, fetchProviderById, selectCatalog, selectCatalogFetchStatus, selectCatalogProviderById, selectCatalogProviderFetchError, selectCatalogProviderFetchStatus } from '../../store/slices/catalogSlice.js'
+import { fetchListingReviews } from '../../store/slices/reviewsSlice.js'
 import { reviewStars } from '../reviews/reviewFormat'
 import { availabilityProviderId, bookableServices, dateParts, formatCurrency, formatSlot, imageFallback, listingRow, providerDisplayImage, providerIsDiscoverable, ratingSummary } from './catalogModel'
 import { saveJourney } from './journeyState'
@@ -116,46 +118,48 @@ function reviewAge(value) {
   return days === 1 ? 'Yesterday' : `${days} days ago`
 }
 
+const noReviews = []
+
 export function ProviderProfilePage() {
   const { providerId } = useParams()
   const [params] = useSearchParams()
   const cityParam = params.get('city') || ''
-  const [attempt, setAttempt] = useState(0)
-  const [state, setState] = useState({ loading: true, provider: null, catalog: null, error: '' })
-  const [reviewState, setReviewState] = useState({ id: '', list: [] })
+  const dispatch = useAppDispatch()
+  const catalog = useAppSelector(selectCatalog)
+  const catalogStatus = useAppSelector(selectCatalogFetchStatus)
+  const providerRecord = useAppSelector(selectCatalogProviderById(providerId))
+  const providerStatus = useAppSelector(selectCatalogProviderFetchStatus(providerId))
+  const providerError = useAppSelector(selectCatalogProviderFetchError(providerId))
 
-  useEffect(() => {
-    let live = true
-    Promise.all([catalogApi.getProvider(providerId), catalogApi.getCatalog().catch(() => null)])
-      .then(([provider, catalog]) => live && setState({ loading: false, provider, catalog, error: '' }))
-      .catch((error) => live && setState({ loading: false, provider: null, catalog: null, error: error.message }))
-    return () => { live = false }
-  }, [providerId, attempt])
-  // The latest customer reviews of this listing. If they cannot be loaded the card falls back to "no reviews yet".
-  useEffect(() => {
-    const id = state.provider?.id
-    let live = true
-    if (id) reviewsApi.forListing(id).then((result) => live && setReviewState({ id, list: Array.isArray(result?.reviews) ? result.reviews : [] })).catch(() => {})
-    return () => { live = false }
-  }, [state.provider?.id])
-  const reviews = reviewState.id === state.provider?.id ? reviewState.list : []
-  const retry = useCallback(() => { setState({ loading: true, provider: null, catalog: null, error: '' }); setAttempt((value) => value + 1) }, [])
+  const load = useCallback(() => {
+    dispatch(fetchProviderById(providerId))
+    dispatch(fetchCatalog())
+  }, [dispatch, providerId])
+  useEffect(() => { load() }, [load])
 
-  const provider = state.provider
+  const loading = [providerStatus, catalogStatus].some((status) => status === 'idle' || status === 'loading')
+  const loadError = providerStatus === 'failed' ? providerError : ''
+  const provider = providerStatus === 'succeeded' ? providerRecord : null
+  // If reviews cannot be loaded the card falls back to "no reviews yet".
+  const listingId = provider?.id
+  useEffect(() => { if (listingId) dispatch(fetchListingReviews(listingId)) }, [dispatch, listingId])
+  const reviews = useAppSelector((root) => root.reviews.byListingId[listingId]) || noReviews
+  const retry = load
+
   const services = useMemo(() => bookableServices(provider), [provider])
-  const category = state.catalog?.categories?.find((item) => item.id === provider?.category)
-  const similar = useMemo(() => (state.catalog?.providers || [])
+  const category = catalog?.categories?.find((item) => item.id === provider?.category)
+  const similar = useMemo(() => (catalog?.providers || [])
     .filter((item) => provider && item.category === provider.category && item.id !== provider.id && providerIsDiscoverable(item))
     .map(listingRow)
     .filter((item) => item.serviceNames.length)
-    .slice(0, 3), [state.catalog, provider])
+    .slice(0, 3), [catalog, provider])
   const backTo = `/services?${new URLSearchParams({ ...(provider?.category ? { category: provider.category } : {}), ...(cityParam ? { city: cityParam } : {}) })}`
 
   let body
-  if (state.loading) body = <div className="empty-state-card" role="status">Loading provider…</div>
-  else if (state.error) body = <div className="empty-state-card" role="alert">
-    <p>{/not found/i.test(state.error) ? 'Provider not found.' : `We couldn't load this provider. ${state.error}`}</p>
-    {!/not found/i.test(state.error) && <button className="secondary-btn journey-retry-btn" type="button" onClick={retry}>Retry</button>}
+  if (loading) body = <div className="empty-state-card" role="status">Loading provider…</div>
+  else if (loadError) body = <div className="empty-state-card" role="alert">
+    <p>{/not found/i.test(loadError) ? 'Provider not found.' : `We couldn't load this provider. ${loadError}`}</p>
+    {!/not found/i.test(loadError) && <button className="secondary-btn journey-retry-btn" type="button" onClick={retry}>Retry</button>}
   </div>
   else {
     const rating = ratingSummary(provider)

@@ -7,7 +7,7 @@ import {
   selectTicketById, selectTicketDetailFetchError, selectTicketDetailFetchStatus,
   selectTicketMutationError, selectTicketMutationStatus, sendSupportTicketMessage,
   updateSupportTicketRemarks, updateSupportTicketStatus,
-} from '../../store/tickets/ticketsSlice.js'
+} from '../../store/slices/ticketsSlice.js'
 import { API_BASE_URL } from '../../services/apiClient'
 import { AttachmentPreview } from './AttachmentPreview'
 import './support.css'
@@ -26,11 +26,10 @@ const valueLabel = (value) => value === null || value === undefined || value ===
 const statusTone = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
 // Escalating is a separate Quick Action, so it is not a status that can be picked here.
 const statuses = ['Open', 'In Progress', 'Resolved']
-const lockedStatuses = ['Resolved by Support', 'Escalated', 'Under Review', 'Resolved', 'Rejected']
+const lockedStatuses = ['Escalated', 'Under Review', 'Resolved', 'Rejected']
 
 function displayStatus(status) {
   if (status === 'Pending') return 'Open'
-  if (status === 'Resolved by Support') return 'Resolved'
   return status
 }
 
