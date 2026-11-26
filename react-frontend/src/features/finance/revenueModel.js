@@ -7,6 +7,7 @@ export const CANCELLATION_POLICIES = {
   CUSTOMER_CANCEL_GT_24H: 'Customer cancelled more than 24 hours before: 100% service fee refund',
   CUSTOMER_CANCEL_24H_TO_3H: 'Customer cancelled 24 to 3 hours before: 70% service fee refund',
   CUSTOMER_CANCEL_LT_3H: 'Customer cancelled less than 3 hours before: no service fee refund',
+  UNCONFIRMED_AUTO_CANCEL: 'Not accepted in time: refund of amount paid except taxes',
 }
 
 export const CANCELLATION_POLICY_LINES = [
@@ -101,9 +102,12 @@ export function settleBooking(booking) {
   const retainedServiceFee = policy === 'CUSTOMER_CANCEL_LT_3H' ? serviceFee : policy === 'CUSTOMER_CANCEL_24H_TO_3H' ? roundCurrency(serviceFee * 0.3) : 0
   const providerCommissionAmount = roundCurrency(retainedServiceFee * rates.providerCommissionRate / 100)
   const providerPayout = roundCurrency(retainedServiceFee - providerCommissionAmount)
-  const keepsPlatformFee = !byProvider
+  const unconfirmed = policy === 'UNCONFIRMED_AUTO_CANCEL'
+  const keepsPlatformFee = !byProvider && !unconfirmed
   const taxRefundAmount = byProvider ? charges.taxAmount : 0
-  const refundAmount = byProvider ? charges.customerTotal : roundCurrency(serviceFee - retainedServiceFee)
+  const refundAmount = byProvider ? charges.customerTotal
+    : unconfirmed ? roundCurrency(serviceFee + charges.platformFeeAmount)
+      : roundCurrency(serviceFee - retainedServiceFee)
   return {
     ...settled,
     cancellationPolicy: policy,

@@ -6,7 +6,7 @@ import {
   selectProviderAvailability,
   selectProviderAvailabilityFetchError,
   selectProviderAvailabilityFetchStatus,
-} from '../../store/availability/availabilitySlice.js'
+} from '../../store/slices/availabilitySlice.js'
 
 // Customer-bookable availability (GET /availability/providers/:id) from the shared Redux cache.
 // Slots change as other customers book, so like useCatalog it refreshes on every mount; a request

@@ -1,20 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminChip } from './AdminChip'
 import { AdminPageHeader } from './AdminPageHeader'
+import { getProviderDocumentPreview } from './adminApi'
+import { useAdminResource, useAppDispatch } from '../../store/hooks'
 import {
-  approveProvider,
-  approveProviderDocument,
-  getProviderDocumentPreview,
-  getVerificationRequest,
-  listVerificationRequests,
-  rejectProvider,
-  rejectProviderDocument,
-} from './adminApi'
+  approveProvider, approveProviderDocument, fetchVerificationRequestById, fetchVerificationRequests,
+  rejectProvider, rejectProviderDocument,
+} from '../../store/slices/adminSlice'
 import { matchesAdminSearch, useAdminSearch } from './adminSearch'
-import { show, useAdminData } from './useAdminData'
+import { show } from './adminFormat'
 import './admin.css'
 
 const verificationStatuses = ['All', 'Pending', 'Verified', 'Rejected']
@@ -55,10 +52,10 @@ export default function ProviderVerificationPage() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const scrollToDocuments = useRef(false)
 
-  const requests = useAdminData(listVerificationRequests)
+  const dispatch = useAppDispatch()
+  const requests = useAdminResource(fetchVerificationRequests)
   const searchTerm = useAdminSearch('/admin/verification')
-  const loadSelectedProvider = useCallback(() => selectedId ? getVerificationRequest(selectedId) : Promise.resolve(null), [selectedId])
-  const provider = useAdminData(loadSelectedProvider)
+  const provider = useAdminResource(fetchVerificationRequestById, selectedId)
   const requestList = useMemo(() => Array.isArray(requests.data) ? requests.data : [], [requests.data])
   const categories = useMemo(() => [...new Set(requestList.map((request) => request.category).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b))), [requestList])
   const filteredRequests = useMemo(() => requestList.filter((request) => (statusFilter === 'All' || request.status === statusFilter)
@@ -101,10 +98,6 @@ export default function ProviderVerificationPage() {
     setSuccessMessage('')
   }
 
-  async function reloadPageData() {
-    await Promise.all([requests.reload(), provider.reload()])
-  }
-
   async function submitAction(event) {
     event.preventDefault()
     if (!selectedId || isSubmitting) return
@@ -118,14 +111,13 @@ export default function ProviderVerificationPage() {
     setSuccessMessage('')
     try {
       if (actionMode === 'approve') {
-        await approveProvider(selectedId, adminRemarks.trim() || undefined)
+        await dispatch(approveProvider({ providerId: selectedId, adminRemarks: adminRemarks.trim() || undefined })).unwrap()
         setSuccessMessage('Provider approved successfully.')
       } else if (actionMode === 'reject') {
-        await rejectProvider(selectedId, { rejectionReason: reason, adminRemarks: adminRemarks.trim() || undefined })
+        await dispatch(rejectProvider({ providerId: selectedId, rejectionReason: reason, adminRemarks: adminRemarks.trim() || undefined })).unwrap()
         setSuccessMessage('Provider rejected successfully.')
       }
       setActionMode('')
-      await reloadPageData()
     } catch (requestError) {
       setActionError(requestError?.message || 'Unable to update provider verification.')
     } finally {
@@ -139,9 +131,8 @@ export default function ProviderVerificationPage() {
     setActionError('')
     setSuccessMessage('')
     try {
-      await approveProviderDocument(selectedId, documentId)
+      await dispatch(approveProviderDocument({ providerId: selectedId, documentId })).unwrap()
       setSuccessMessage('Document approved successfully.')
-      await reloadPageData()
     } catch (requestError) {
       setActionError(requestError?.message || 'Unable to approve document.')
     } finally {
@@ -160,9 +151,8 @@ export default function ProviderVerificationPage() {
     setActionError('')
     setSuccessMessage('')
     try {
-      await rejectProviderDocument(selectedId, documentId, normalizedReason)
+      await dispatch(rejectProviderDocument({ providerId: selectedId, documentId, rejectionReason: normalizedReason })).unwrap()
       setSuccessMessage('Document rejected successfully.')
-      await reloadPageData()
     } catch (requestError) {
       setActionError(requestError?.message || 'Unable to reject document.')
     } finally {
@@ -210,7 +200,7 @@ export default function ProviderVerificationPage() {
   const pendingCount = requestList.filter((request) => request.status === 'Pending').length
   const verifiedCount = requestList.filter((request) => request.status === 'Verified').length
   const rejectedCount = requestList.filter((request) => request.status === 'Rejected').length
-  const requiredDocsApproved = Array.isArray(details?.documents) && details.documents.some((doc) => doc.required)
+  const requiredDocsApproved = Array.isArray(details?.documents) && details.documents.length > 0
     && details.documents.filter((doc) => doc.required).every((doc) => doc.documentStatus === 'Approved')
 
   return <AdminAccessGate>

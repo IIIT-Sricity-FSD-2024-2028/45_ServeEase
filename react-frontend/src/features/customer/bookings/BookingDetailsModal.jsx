@@ -5,7 +5,7 @@ import {
   selectBookingById,
   selectBookingDetailFetchError,
   selectBookingDetailFetchStatus,
-} from '../../../store/bookings/bookingsSlice.js'
+} from '../../../store/slices/bookingsSlice.js'
 import { InfoRow, LoadState, OpsModal } from '../CustomerOpsParts'
 import { ReviewRating } from '../../reviews/ReviewParts'
 import { formatDisplayDate, formatDisplayDateTime, formatPrice, hasValue, paymentTag, statusPillClass, transactionId } from '../customerOperations'

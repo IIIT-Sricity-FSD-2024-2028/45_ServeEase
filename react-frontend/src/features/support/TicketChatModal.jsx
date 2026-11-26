@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import {
   fetchOwnerTicketById, selectTicketById, selectTicketDetailFetchError,
   selectTicketMutationError, selectTicketMutationStatus, sendOwnerTicketMessage, ticketEntityKey,
-} from '../../store/tickets/ticketsSlice.js'
+} from '../../store/slices/ticketsSlice.js'
 import { OpsModal } from '../customer/CustomerOpsParts'
 
 // "Chat with Support" for the customer or provider who raised a ticket: the real conversation stored on the

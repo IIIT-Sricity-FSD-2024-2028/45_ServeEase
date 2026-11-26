@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { reviewsApi } from '../../../services/api'
+import { fetchMyReviews, selectMyReviewsByBooking } from '../../../store/slices/reviewsSlice.js'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
 import {
   cancelBooking,
@@ -9,7 +9,7 @@ import {
   selectCustomerBookings,
   selectCustomerBookingsFetchError,
   selectCustomerBookingsFetchStatus,
-} from '../../../store/bookings/bookingsSlice.js'
+} from '../../../store/slices/bookingsSlice.js'
 import { ReviewModal } from '../../reviews/ReviewParts'
 import { CustomerPageHeader, LoadState, OpsModal } from '../CustomerOpsParts'
 import { belongsToCustomer, bookingTabs, bookingTabView, formatDisplayDate, sortNewestFirst } from '../customerOperations'
@@ -31,7 +31,7 @@ export default function CustomerBookingsPage() {
   const [notice, setNotice] = useState('')
   const [cancelState, setCancelState] = useState(null)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
-  const [reviews, setReviews] = useState({})
+  const reviews = useAppSelector(selectMyReviewsByBooking)
   const [reviewTarget, setReviewTarget] = useState(null)
   const tabParam = searchParams.get('tab')
   const activeTab = bookingTabs.includes(tabParam) ? tabParam : 'All'
@@ -40,11 +40,8 @@ export default function CustomerBookingsPage() {
   const fetchStatus = useAppSelector(selectCustomerBookingsFetchStatus)
   const fetchError = useAppSelector(selectCustomerBookingsFetchError)
 
-  // The customer's own reviews, keyed by booking. A failure only hides ratings; bookings still load.
-  const loadReviews = useCallback(() => reviewsApi.mine()
-    .then((records) => setReviews(Object.fromEntries((Array.isArray(records) ? records : []).map((review) => [review.bookingId, review]))))
-    .catch(() => setReviews({})), [])
-  useEffect(() => { loadReviews() }, [loadReviews])
+  // A failure only hides ratings; bookings still load.
+  useEffect(() => { dispatch(fetchMyReviews()) }, [dispatch])
 
   const refresh = useCallback(() => dispatch(fetchCustomerBookings()), [dispatch])
 
@@ -116,7 +113,7 @@ export default function CustomerBookingsPage() {
     {selectedId && <BookingDetailsModal bookingId={selectedId} fallback={selectedBooking} key={selectedId} onClose={closeDetails} review={reviews[selectedId]} />}
     {rescheduleTarget && <RescheduleModal booking={rescheduleTarget} onClose={() => setRescheduleTarget(null)} onRescheduled={(saved) => { setRescheduleTarget(null); setNotice(`Booking ${saved.id} was rescheduled to ${formatDisplayDate(saved.date)}, ${formatSlot(saved.time)}.`); refresh() }} />}
 
-    {reviewTarget && <ReviewModal booking={reviewTarget} existing={reviews[reviewTarget.id]} onClose={() => setReviewTarget(null)} onSaved={(saved) => { setReviews((current) => ({ ...current, [saved.bookingId]: saved })); setNotice(`Your review of booking ${saved.bookingId} was saved.`); setReviewTarget(null) }} />}
+    {reviewTarget && <ReviewModal booking={reviewTarget} existing={reviews[reviewTarget.id]} onClose={() => setReviewTarget(null)} onSaved={(saved) => { setNotice(`Your review of booking ${saved.bookingId} was saved.`); setReviewTarget(null) }} />}
 
     {cancelState && <OpsModal labelId="cancel-booking-title" onClose={() => { if (!cancelState.saving) setCancelState(null) }} title="Cancel Booking" variant="confirm">
       <h3 id="cancel-booking-title">Cancel Booking</h3>

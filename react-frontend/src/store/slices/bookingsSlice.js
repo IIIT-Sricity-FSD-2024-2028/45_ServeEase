@@ -1,10 +1,7 @@
 import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit'
 import { bookingsApi } from '../../services/api.js'
-import { nonEmptyKey, replaceFullRecord } from '../entityReconciliation.js'
+import { nonEmptyKey, replaceFullRecord } from './entityReconciliation.js'
 
-// Bookings are normalized once by id. Customer and provider lists contain only ids, so the
-// same booking never has competing copies when both workspaces need to reference it.
-// The backend Booking model requires id and every booking endpoint returns that same reference.
 export function bookingEntityKey(booking) {
   return nonEmptyKey(booking?.id)
 }

@@ -2,25 +2,30 @@ import { Injectable } from '@nestjs/common';
 import { CreateProviderVerificationDto } from './dto/provider-action.dto';
 import { ProviderVerification, ProviderVerificationStatus, VerificationDocument } from './provider-verification.entity';
 import { StateRepository } from '../state/state.repository';
+import { VERIFICATION_DECISIONS, providerAccountStatus, providerVerificationStatus } from '../../common/provider-account-status';
+
+type Account = Record<string, any>;
+const ACCOUNTS_KEY = 'serveEaseData';
+const documentIdOf = (account: Account, document: Account, index: number): string => document.documentId || `DOC-${account.id}-${index + 1}`;
 
 @Injectable()
 export class ProviderVerificationRepository {
-  private readonly providers: ProviderVerification[];
+  // Requests submitted through this API that have not been decided yet.
+  private readonly submitted = new Map<string, ProviderVerification>();
 
-  constructor(state: StateRepository) {
-    const data = state.findById('serveEaseData')?.value as { users?: Array<Record<string, unknown>> } | undefined;
-    // The verification queue is the documented provider accounts, not a second set of demonstration rows.
-    this.providers = (Array.isArray(data?.users) ? data.users : [])
-      .filter((account) => account.role === 'provider' && Array.isArray(account.documents) && account.documents.length > 0)
-      .map((account) => this.fromAccount(account));
-  }
+  constructor(private readonly state: StateRepository) {}
 
+  // Read from the stored accounts on every call, so changes made elsewhere are always shown.
   findAll(): ProviderVerification[] {
-    return this.providers;
+    const providers = new Map(this.accounts()
+      .filter((account) => Array.isArray(account.documents) && account.documents.length > 0)
+      .map((account) => [String(account.id), this.fromAccount(account)]));
+    this.submitted.forEach((provider, id) => providers.set(id, provider));
+    return [...providers.values()];
   }
 
   findById(id: string): ProviderVerification | undefined {
-    return this.providers.find((provider) => provider.id === id);
+    return this.findAll().find((provider) => provider.id === id);
   }
 
   create(data: CreateProviderVerificationDto): ProviderVerification {
@@ -60,13 +65,9 @@ export class ProviderVerificationRepository {
       ],
     };
 
-    if (existing) {
-      Object.assign(existing, provider);
-      return existing;
-    }
-
-    this.providers.unshift(provider);
-    return provider;
+    const next = existing ? { ...existing, ...provider } : provider;
+    this.submitted.set(next.id, next);
+    return next;
   }
 
   resubmit(id: string, data: CreateProviderVerificationDto): ProviderVerification {
@@ -104,6 +105,7 @@ export class ProviderVerificationRepository {
     provider.suspendedAt = undefined;
     provider.rejectionReason = undefined;
     provider.documents = nextDocuments;
+    this.submitted.set(id, provider);
     provider.statusHistory.unshift({
       status: 'Pending',
       note: 'Provider resubmitted verification request.',
@@ -117,8 +119,51 @@ export class ProviderVerificationRepository {
     return this.findById(providerId)?.documents;
   }
 
+  // Saves an approve, reject or suspend decision on the provider account, which login and other pages read.
   update(provider: ProviderVerification): ProviderVerification {
+    const fields = provider.status === 'Verified' ? VERIFICATION_DECISIONS.approve
+      : provider.status === 'Rejected' ? VERIFICATION_DECISIONS.reject
+        : provider.status === 'Suspended'
+          ? { approvalStatus: 'Suspended', verificationStatus: 'Verified', accountStatus: 'Suspended', verified: true }
+          : { approvalStatus: 'Pending Approval', verificationStatus: 'Pending', accountStatus: 'Under Verification', verified: false };
+    const { approvalStatus, verificationStatus, accountStatus, verified } = fields;
+    this.save(provider, (record) => {
+      Object.assign(record, { approvalStatus, verificationStatus, accountStatus, status: accountStatus, verified });
+      record.adminRemarks = provider.adminRemarks;
+      record.rejectionReason = provider.rejectionReason;
+      record.verifiedAt = provider.verifiedAt;
+      record.statusHistory = provider.statusHistory;
+    });
     return provider;
+  }
+
+  saveDocument(provider: ProviderVerification, document: VerificationDocument): void {
+    this.save(provider, (record) => {
+      (Array.isArray(record.documents) ? record.documents : []).forEach((stored: Account, index: number) => {
+        if (documentIdOf(record, stored, index) !== document.documentId) return;
+        stored.documentStatus = document.documentStatus;
+        stored.rejectionReason = document.rejectionReason;
+      });
+      record.statusHistory = provider.statusHistory;
+    });
+  }
+
+  private accounts(): Account[] {
+    const data = this.state.findById(ACCOUNTS_KEY)?.value as { users?: Account[] } | undefined;
+    return (Array.isArray(data?.users) ? data!.users! : []).filter((account) => account.role === 'provider');
+  }
+
+  private save(provider: ProviderVerification, apply: (record: Account) => void): void {
+    const data = this.state.findById(ACCOUNTS_KEY)?.value as { users?: Account[]; providerApprovalRequests?: Account[] } | undefined;
+    const account = this.accounts().find((item) => String(item.id) === provider.id);
+    if (!data || !account) return;
+    apply(account);
+    const email = String(account.email || '').toLowerCase();
+    (data.providerApprovalRequests || [])
+      .filter((request) => String(request.id ?? request.providerId) === provider.id && (!request.email || String(request.email).toLowerCase() === email))
+      .forEach(apply);
+    this.submitted.delete(provider.id);
+    this.state.update(ACCOUNTS_KEY, { value: data as Record<string, unknown> });
   }
 
   private createSeedProvider(seed: Omit<ProviderVerification, 'documents' | 'statusHistory' | 'joinedDate'> & { approvedRequiredDocuments: number }): ProviderVerification {
@@ -151,11 +196,11 @@ export class ProviderVerificationRepository {
 
   private fromAccount(account: Record<string, any>): ProviderVerification {
     const submittedDate = account.submittedDate || account.registrationDate || new Date().toISOString();
-    const status: ProviderVerificationStatus = account.verificationStatus === 'Verified'
-      ? 'Verified' : account.verificationStatus === 'Rejected' || account.accountStatus === 'Verification Rejected' ? 'Rejected' : 'Pending';
+    // The same status rule as login and Provider Operations.
+    const status: ProviderVerificationStatus = providerVerificationStatus(providerAccountStatus(account)) || 'Pending';
     const documents = account.documents.map((document: Record<string, any>, index: number) => ({
       ...document,
-      documentId: document.documentId || `DOC-${account.id}-${index + 1}`,
+      documentId: documentIdOf(account, document, index),
       documentType: document.documentType || 'Verification Document',
       documentName: document.documentName || document.originalFilename || 'Uploaded document',
       documentStatus: document.documentStatus || (status === 'Verified' ? 'Approved' : 'Pending'),
@@ -168,7 +213,15 @@ export class ProviderVerificationRepository {
       category: account.serviceType || account.category || 'Not specified', experience: Number(account.experience) || 0,
       location: account.location || account.cityName || '', address: account.address || '', skills: account.skills || [], certifications: account.certifications || [],
       completedJobs: Number(account.completedJobs) || 0, rating: Number(account.rating) || 0, submittedDate, joinedDate: submittedDate,
-      status, documents, statusHistory: Array.isArray(account.statusHistory) ? account.statusHistory : [{ status, note: 'Provider verification record loaded.', updatedBy: 'System', updatedAt: submittedDate }],
+      status, documents, statusHistory: Array.isArray(account.statusHistory)
+        ? account.statusHistory.map((entry: Account) => ({
+          ...entry,
+          status: entry.status || entry.newStatus,
+          note: entry.note || entry.remarks || entry.reason || entry.action,
+          updatedBy: entry.updatedBy || entry.performedBy,
+          updatedAt: entry.updatedAt || entry.dateTime,
+        }))
+        : [{ status, note: 'Provider verification record loaded.', updatedBy: 'System', updatedAt: submittedDate }],
       rejectionReason: account.rejectionReason, adminRemarks: account.adminRemarks, verifiedAt: account.verifiedAt,
     };
   }

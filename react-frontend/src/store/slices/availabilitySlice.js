@@ -1,11 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { availabilityApi } from '../../services/api.js'
-import { nonEmptyKey, replaceFullRecord } from '../entityReconciliation.js'
+import { nonEmptyKey, replaceFullRecord } from './entityReconciliation.js'
 
-// Server-backed availability is keyed by provider and separated by endpoint resource. Temporary
-// date selections, form drafts, and modal visibility remain component state when pages migrate.
-// This key is the exact provider id sent to availabilityApi; callers resolve a catalog listing's
-// owner with the existing availabilityProviderId helper before using the store.
+// Keyed by availabilityProviderId(provider), which is not always the catalog listing id.
 export function availabilityProviderKey(providerId) {
   return nonEmptyKey(providerId)
 }
@@ -16,22 +13,11 @@ export function dateOverrideRequestKey(providerId, date) {
   return providerKey && dateKey ? JSON.stringify([providerKey, dateKey]) : null
 }
 
-// Verified response contracts (apiRequest unwraps the backend's { success, data } envelope):
-// - GET  /availability/providers/:id                         → ProviderAvailability (generated, read-only)
-// - GET  /availability/providers/:id/weekly-schedule         → WeeklySchedule (complete record)
-// - PUT  /availability/providers/:id/weekly-schedule         → WeeklySchedule (complete record) → replace
-// - GET  /availability/providers/:id/date-overrides          → DateOverride[] (complete list)
-// - PUT  /availability/providers/:id/date-overrides/:date    → DateOverride (complete record) → upsert by date
-// - DELETE /availability/providers/:id/date-overrides/:date  → the removed DateOverride → remove by date
-// The backend canonicalizes the provider id it echoes back, so caches use the key that was sent,
-// never the providerId inside a response.
-
 function errorText(error) { return error?.message || String(error ?? 'Request failed') }
 const reject = (error, api) => api.rejectWithValue(errorText(error))
 const missingProvider = (api) => api.rejectWithValue('Provider id is required.')
 const missingDate = (api) => api.rejectWithValue('Date is required.')
 
-// A fetch for a key already in flight is not repeated: the pending request fills the same cache.
 const notAlreadyLoading = (branch) => (providerId, { getState }) => {
   const key = availabilityProviderKey(providerId)
   return Boolean(key) && getState().availability?.fetchStatus[branch][key] !== 'loading'
@@ -101,8 +87,6 @@ export const initialAvailabilityState = {
     saveDateOverrideByKey: {},
     deleteDateOverrideByKey: {},
   },
-  // Status ownership: only the latest request started for a status key may settle that status,
-  // so an older response that arrives late cannot overwrite a newer request's state.
   latestRequestId: {
     availabilityByProviderId: {},
     weeklyScheduleByProviderId: {},
@@ -111,10 +95,6 @@ export const initialAvailabilityState = {
     saveDateOverrideByKey: {},
     deleteDateOverrideByKey: {},
   },
-  // Data ownership: a fetch and a mutation of the same cached resource race. The last request
-  // started for that resource owns its cached data, so a fetch that began before a save cannot
-  // replace the saved record with a pre-save response. `dateOverrideByKey` orders save/delete of
-  // the same provider date.
   latestWriteRequestId: {
     weeklyScheduleByProviderId: {},
     dateOverridesByProviderId: {},
@@ -140,7 +120,6 @@ function fetchCases(builder, thunk, branch, write) {
       const key = action.payload.providerKey
       if (state.latestRequestId[branch][key] !== action.meta.requestId) return
       const ownsData = !Object.hasOwn(state.latestWriteRequestId, branch) || state.latestWriteRequestId[branch][key] === action.meta.requestId
-      // A superseded fetch still fills an empty cache; it never replaces data written by a newer request.
       if (ownsData || !Object.hasOwn(state[branch], key)) write(state, key, action.payload)
       state.fetchStatus[branch][key] = 'succeeded'
       state.fetchError[branch][key] = null
@@ -148,7 +127,6 @@ function fetchCases(builder, thunk, branch, write) {
     .addCase(thunk.rejected, (state, action) => {
       const key = providerKeyOf(action)
       if (!key || state.latestRequestId[branch][key] !== action.meta.requestId) return
-      // Previously loaded data is retained; callers decide whether a failed refresh hides it.
       state.fetchStatus[branch][key] = 'failed'
       state.fetchError[branch][key] = rejection(action)
     })
@@ -187,8 +165,6 @@ function claimOverrideWrite(state, action) {
   state.latestWriteRequestId.dateOverrideByKey[overrideKeyOf(action)] = action.meta.requestId
 }
 
-// Override mutations patch one date in an already-loaded list. They never create a list that was
-// not fetched, because a single record is not the provider's complete override list.
 function patchOverride(state, action, patch) {
   const { providerKey, date } = action.payload
   if (state.latestWriteRequestId.dateOverrideByKey[dateOverrideRequestKey(providerKey, date)] !== action.meta.requestId) return
@@ -227,7 +203,6 @@ const availabilitySlice = createSlice({
 const byKey = (map, providerId) => map[availabilityProviderKey(providerId)]
 
 export const selectAvailabilityState = (state) => state.availability
-// Whole maps keyed by provider id, for pages that read many providers' availability at once.
 export const selectProviderAvailabilityMap = (state) => state.availability.availabilityByProviderId
 export const selectProviderAvailabilityFetchStatusMap = (state) => state.availability.fetchStatus.availabilityByProviderId
 
@@ -241,7 +216,6 @@ export const selectProviderWeeklyScheduleFetchError = (providerId) => (state) =>
 export const selectProviderDateOverridesFetchStatus = (providerId) => (state) => byKey(state.availability.fetchStatus.dateOverridesByProviderId, providerId) || 'idle'
 export const selectProviderDateOverridesFetchError = (providerId) => (state) => byKey(state.availability.fetchError.dateOverridesByProviderId, providerId) || null
 
-// Generic mutation selectors take a mutation branch name and its already-built key.
 export const selectAvailabilityMutationStatus = (operation, key) => (state) => state.availability.mutationStatus[operation]?.[key] || 'idle'
 export const selectAvailabilityMutationError = (operation, key) => (state) => state.availability.mutationError[operation]?.[key] || null
 export const selectSaveWeeklyScheduleMutationStatus = (providerId) => selectAvailabilityMutationStatus('saveWeeklyScheduleByProviderId', availabilityProviderKey(providerId))

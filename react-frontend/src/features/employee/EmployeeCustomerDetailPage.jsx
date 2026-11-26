@@ -10,7 +10,7 @@ import {
   selectEmployeeMutationError,
   selectEmployeeMutationStatus,
   setEmployeeCustomerStatus,
-} from '../../store/operations/operationsSlice.js'
+} from '../../store/slices/employeeOperationsSlice.js'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import { formatPrice } from '../customer/customerOperations'
 import { CustomerStatusAction, CustomerStatusDialog } from './CustomerStatusControls'

@@ -26,7 +26,7 @@ export function priceBreakdown(serviceFee: number) {
   };
 }
 
-function appointmentStart(date: string, time: string): Date | undefined {
+export function appointmentStart(date: string, time: string): Date | undefined {
   const day = String(date || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (!day) return undefined;
   const start = new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3]));
@@ -46,21 +46,24 @@ export function cancellationSettlement(booking: Booking, actor: string, cancelle
   const serviceFee = Number(booking.serviceFee ?? booking.amount) || 0;
   const charges = priceBreakdown(serviceFee);
   const byProvider = actor === 'Provider';
+  // The system cancels a request the provider never accepted.
+  const unconfirmed = actor === 'System';
   const start = appointmentStart(booking.date, booking.time);
   const hoursBefore = start ? (start.getTime() - new Date(cancelledAt).getTime()) / 3600000 : -Infinity;
 
   let policy = 'CUSTOMER_CANCEL_LT_3H';
   let retainedServiceFee = serviceFee;
   if (byProvider) { policy = 'PROVIDER_CANCEL_FULL_REFUND'; retainedServiceFee = 0; }
+  else if (unconfirmed) { policy = 'UNCONFIRMED_AUTO_CANCEL'; retainedServiceFee = 0; }
   else if (hoursBefore > 24) { policy = 'CUSTOMER_CANCEL_GT_24H'; retainedServiceFee = 0; }
   else if (hoursBefore >= 3) { policy = 'CUSTOMER_CANCEL_24H_TO_3H'; retainedServiceFee = round(serviceFee * 0.3); }
 
-  const keepsPlatformFee = !byProvider;
+  const keepsPlatformFee = !byProvider && !unconfirmed;
   const providerCommissionAmount = round(retainedServiceFee * charges.providerCommissionRate / 100);
   const providerPayout = round(retainedServiceFee - providerCommissionAmount);
   const refundServiceFee = round(serviceFee - retainedServiceFee);
   const refundTax = byProvider ? charges.taxAmount : 0;
-  const refundPlatformFee = byProvider ? charges.platformFeeAmount : 0;
+  const refundPlatformFee = keepsPlatformFee ? 0 : charges.platformFeeAmount;
   const refundAmount = round(refundServiceFee + refundTax + refundPlatformFee);
 
   return {

@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
-import { fetchCatalog, selectCatalog, selectCatalogFetchError, selectCatalogFetchStatus } from '../../store/catalog/catalogSlice.js'
+import { fetchCatalog, selectCatalog, selectCatalogFetchError, selectCatalogFetchStatus } from '../../store/slices/catalogSlice.js'
 import { normalizeCatalog } from './catalogModel.js'
 
 // Loads the shared GET /catalog cache on every mount. Consumers retain the original hook contract.

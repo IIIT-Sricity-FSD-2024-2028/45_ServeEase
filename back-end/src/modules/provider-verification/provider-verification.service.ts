@@ -83,6 +83,7 @@ export class ProviderVerificationService {
     document.documentStatus = 'Approved';
     document.rejectionReason = undefined;
     this.addHistory(provider, 'Approved', `${document.documentType} approved.`);
+    this.providerRepository.saveDocument(provider, document);
     return document;
   }
 
@@ -91,11 +92,14 @@ export class ProviderVerificationService {
     const document = this.findDocument(provider, documentId);
     document.documentStatus = 'Rejected';
     document.rejectionReason = data.rejectionReason;
-    if (provider.status === 'Verified') {
+    const reopened = provider.status === 'Verified';
+    if (reopened) {
       provider.status = 'Pending';
       provider.verifiedAt = undefined;
     }
     this.addHistory(provider, 'Rejected', `${document.documentType} rejected: ${data.rejectionReason}`);
+    this.providerRepository.saveDocument(provider, document);
+    if (reopened) this.providerRepository.update(provider);
     return document;
   }
 

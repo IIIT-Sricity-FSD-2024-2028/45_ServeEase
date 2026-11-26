@@ -29,7 +29,7 @@ const {
   selectSaveDateOverrideMutationStatus,
   selectSaveWeeklyScheduleMutationError,
   selectSaveWeeklyScheduleMutationStatus,
-} = await import('../src/store/availability/availabilitySlice.js')
+} = await import('../src/store/slices/availabilitySlice.js')
 const { availabilityProviderId } = await import('../src/features/discovery/catalogModel.js')
 
 const originalFetch = globalThis.fetch

@@ -11,7 +11,7 @@ import {
   selectEmployeeProviderListFetchStatus,
   setEmployeeProviderStatus,
   providerOperationEntityKey,
-} from '../../store/operations/operationsSlice.js'
+} from '../../store/slices/employeeOperationsSlice.js'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
 import { initialStatusChange, statusChangeReducer } from './employeeOperations'
 import { Chip, LoadState, ProviderStatusModal } from './ProviderOpsParts'

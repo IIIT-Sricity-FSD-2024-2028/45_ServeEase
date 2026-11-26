@@ -22,7 +22,7 @@ const { default: CustomerBookingsPage } = await import('../src/features/customer
 const { default: CustomerSupportPage } = await import('../src/features/customer/support/CustomerSupportPage.jsx')
 const { default: CustomerTicketsPage } = await import('../src/features/customer/tickets/CustomerTicketsPage.jsx')
 const { default: CustomerProfilePage } = await import('../src/features/customer/profile/CustomerProfilePage.jsx')
-const { default: availability } = await import('../src/store/availability/availabilitySlice.js')
+const { default: availability } = await import('../src/store/slices/availabilitySlice.js')
 const { store } = await import('../src/store/store.js')
 
 const customer = { userId: 'CUS001', email: 'abhi@example.test', role: 'customer' }

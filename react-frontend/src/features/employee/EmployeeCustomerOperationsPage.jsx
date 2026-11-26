@@ -5,7 +5,7 @@ import {
   selectEmployeeCustomerList,
   selectEmployeeCustomerListFetchError,
   selectEmployeeCustomerListFetchStatus,
-} from '../../store/operations/operationsSlice.js'
+} from '../../store/slices/employeeOperationsSlice.js'
 import { Chip, LoadState, Metric } from './EmployeeOpsParts'
 import { customerStats, display, filterCustomers } from './employeeOperations'
 import { useOperationsData } from './useOperationsData'

@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
 import {
   rescheduleBooking,
   selectRescheduleBookingMutationStatus,
-} from '../../../store/bookings/bookingsSlice.js'
+} from '../../../store/slices/bookingsSlice.js'
 import { formatSlot } from '../../discovery/catalogModel'
 import { useProviderAvailability } from '../../discovery/useProviderAvailability'
 import { formatDisplayDate } from '../customerOperations'

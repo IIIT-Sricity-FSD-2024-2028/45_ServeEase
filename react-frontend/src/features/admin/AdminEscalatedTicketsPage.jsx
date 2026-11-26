@@ -4,17 +4,14 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/common/Fe
 import { AdminAccessGate } from './AdminAccessGate'
 import { AdminChip } from './AdminChip'
 import { AdminPageHeader } from './AdminPageHeader'
+import { useAdminResource, useAppDispatch } from '../../store/hooks'
 import {
-  escalateAdminTicket,
-  getAdminTicket,
-  listAdminTickets,
-  resolveAdminTicket,
-  submitAdminTicketDecision,
-  updateAdminTicketStatus,
-} from './adminApi'
+  escalateAdminTicket, fetchAdminTicketById, fetchAdminTickets, resolveAdminTicket,
+  submitAdminTicketDecision, updateAdminTicketStatus,
+} from '../../store/slices/adminSlice'
+import { addSuperuserNotification } from '../../store/slices/notificationSlice'
 import { matchesAdminSearch, useAdminSearch } from './adminSearch'
-import { addSuperuserNotification } from './superuserNotifications'
-import { show, useAdminData } from './useAdminData'
+import { show } from './adminFormat'
 import { API_BASE_URL } from '../../services/apiBase'
 import './admin.css'
 
@@ -29,7 +26,7 @@ function queueFor(status) {
   if (status === 'Escalated' || status === 'Under Review') return 'Escalated'
   if (status === 'Open' || status === 'Pending') return 'Open'
   if (status === 'In Progress') return 'In Progress'
-  if (['Resolved', 'Resolved by Support', 'Rejected'].includes(status)) return 'Resolved'
+  if (['Resolved', 'Rejected'].includes(status)) return 'Resolved'
   return null
 }
 
@@ -43,7 +40,7 @@ function formatDate(value, withTime = false) {
 }
 
 function displayStatus(status) {
-  return status === 'Pending' ? 'Open' : status === 'Resolved by Support' ? 'Resolved' : status
+  return status === 'Pending' ? 'Open' : status
 }
 
 function TicketMeta({ label, children }) {
@@ -74,9 +71,9 @@ export default function AdminEscalatedTicketsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [actionError, setActionError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
-  const allTickets = useAdminData(listAdminTickets)
-  const loadSelectedTicket = useCallback(() => selectedId ? getAdminTicket(selectedId) : Promise.resolve(null), [selectedId])
-  const details = useAdminData(loadSelectedTicket)
+  const dispatch = useAppDispatch()
+  const allTickets = useAdminResource(fetchAdminTickets)
+  const details = useAdminResource(fetchAdminTicketById, selectedId)
   const records = useMemo(() => Array.isArray(allTickets.data) ? allTickets.data : [], [allTickets.data])
   const ticket = details.data
   const solution = solutionDraft && solutionDraft.ticketId === ticket?.ticketId
@@ -120,10 +117,6 @@ export default function AdminEscalatedTicketsPage() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [selectedId, closeTicket])
 
-  async function refreshData() {
-    await Promise.all([allTickets.reload(), details.reload()])
-  }
-
   // superuser.js updateTicketStatus() / resolveEscalatedTicket() also post a superuser notification.
   async function performAction(action, successText, notification) {
     if (!ticket || isSubmitting) return
@@ -131,13 +124,11 @@ export default function AdminEscalatedTicketsPage() {
     setActionError('')
     setSuccessMessage('')
     try {
-      await action()
+      await dispatch(action).unwrap()
       setSuccessMessage(successText)
       if (notification) {
-        await addSuperuserNotification({ ticketId: ticket.ticketId, referenceId: ticket.ticketId, actionPage: '/admin/escalated-tickets', ...notification })
-          .catch(() => null)
+        await dispatch(addSuperuserNotification({ ticketId: ticket.ticketId, referenceId: ticket.ticketId, actionPage: '/admin/escalated-tickets', ...notification }))
       }
-      await refreshData()
     } catch (error) {
       setActionError(error?.message || 'Unable to update this ticket.')
     } finally {
@@ -146,22 +137,22 @@ export default function AdminEscalatedTicketsPage() {
   }
 
   async function startProgress() {
-    await performAction(() => updateAdminTicketStatus(ticket.ticketId, 'In Progress'), 'Ticket moved to In Progress.',
+    await performAction(updateAdminTicketStatus({ ticketId: ticket.ticketId, status: 'In Progress' }), 'Ticket moved to In Progress.',
       { kind: 'ticket-in-progress', text: `${ticket.ticketId} moved to In Progress`, type: 'red' })
   }
 
   async function escalateTicket() {
-    await performAction(() => escalateAdminTicket(ticket.ticketId, 'Escalated by the superuser for admin review.'), 'Ticket escalated for admin review.',
+    await performAction(escalateAdminTicket({ ticketId: ticket.ticketId, remarks: 'Escalated by the superuser for admin review.' }), 'Ticket escalated for admin review.',
       { kind: 'ticket-escalated', text: `${ticket.ticketId} moved to Escalated`, type: 'red' })
   }
 
   async function resolveTicket(event) {
     event?.preventDefault()
     if (solution.trim().length < 10 || solution.trim().length > 600) return
-    await performAction(async () => {
-      if (canResolveEscalated) await submitAdminTicketDecision(ticket.ticketId, 'No Action Required', solution.trim())
-      else await resolveAdminTicket(ticket.ticketId, solution.trim())
-    }, 'Ticket resolved successfully.', { kind: 'ticket-resolved', text: `${ticket.ticketId} resolved by superuser`, type: 'blue' })
+    const resolveAction = canResolveEscalated
+      ? submitAdminTicketDecision({ ticketId: ticket.ticketId, finalDecision: 'No Action Required', adminRemarks: solution.trim() })
+      : resolveAdminTicket({ ticketId: ticket.ticketId, solution: solution.trim() })
+    await performAction(resolveAction, 'Ticket resolved successfully.', { kind: 'ticket-resolved', text: `${ticket.ticketId} resolved by superuser`, type: 'blue' })
   }
 
   async function resolveProgressTicket() {
@@ -172,7 +163,7 @@ export default function AdminEscalatedTicketsPage() {
       return
     }
     setSolutionDraft({ ticketId: ticket.ticketId, value: summary.trim() })
-    await performAction(() => resolveAdminTicket(ticket.ticketId, summary.trim()), 'Ticket resolved successfully.',
+    await performAction(resolveAdminTicket({ ticketId: ticket.ticketId, solution: summary.trim() }), 'Ticket resolved successfully.',
       { kind: 'ticket-resolved', text: `${ticket.ticketId} moved to Resolved`, type: 'blue' })
   }
 

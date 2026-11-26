@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/useAuth'
-import { reviewsApi } from '../../../services/api'
+import { fetchProviderReviews, selectProviderReviewsByBooking } from '../../../store/slices/reviewsSlice.js'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.js'
 import {
   fetchProviderBookings,
@@ -9,7 +9,7 @@ import {
   selectProviderBookingsFetchError,
   selectProviderBookingsFetchStatus,
   updateProviderBookingStatus,
-} from '../../../store/bookings/bookingsSlice.js'
+} from '../../../store/slices/bookingsSlice.js'
 import { ReviewRating } from '../../reviews/ReviewParts'
 import { formatDisplayDate } from '../../customer/customerOperations'
 import { providerStatusPill } from '../providerStatus'
@@ -67,7 +67,8 @@ export function ProviderBookingsPage() {
   const bookings = useAppSelector(selectProviderBookings)
   const fetchStatus = useAppSelector(selectProviderBookingsFetchStatus)
   const fetchError = useAppSelector(selectProviderBookingsFetchError)
-  const [reviews, setReviews] = useState({}); const [activeTab, setActiveTab] = useState('All'); const [selectedBookingId, setSelectedBookingId] = useState(null); const [pendingCancellationId, setPendingCancellationId] = useState(null); const [pendingRejectionId, setPendingRejectionId] = useState(null); const [rejectionReason, setRejectionReason] = useState(''); const [actionError, setActionError] = useState(''); const [actionNotice, setActionNotice] = useState(''); const [updatingId, setUpdatingId] = useState(null)
+  const reviews = useAppSelector(selectProviderReviewsByBooking)
+  const [activeTab, setActiveTab] = useState('All'); const [selectedBookingId, setSelectedBookingId] = useState(null); const [pendingCancellationId, setPendingCancellationId] = useState(null); const [pendingRejectionId, setPendingRejectionId] = useState(null); const [rejectionReason, setRejectionReason] = useState(''); const [actionError, setActionError] = useState(''); const [actionNotice, setActionNotice] = useState(''); const [updatingId, setUpdatingId] = useState(null)
   const isLoading = fetchStatus !== 'succeeded' && fetchStatus !== 'failed'
   const error = fetchError === 'Booking request failed.' ? 'Unable to load incoming bookings.' : fetchError || ''
   const selectedBooking = bookings.find((booking) => booking.id === selectedBookingId) || null
@@ -76,10 +77,9 @@ export function ProviderBookingsPage() {
 
   useEffect(() => {
     if (!isAuthenticated || role !== 'provider') return undefined
-    let active = true
-    reviewsApi.forProvider().then((result) => { if (active) setReviews(Object.fromEntries((Array.isArray(result?.reviews) ? result.reviews : []).map((review) => [review.bookingId, review]))) }).catch(() => {})
+    dispatch(fetchProviderReviews())
     dispatch(fetchProviderBookings())
-    return () => { active = false }
+    return undefined
   }, [dispatch, isAuthenticated, role])
 
   const counts = useMemo(() => Object.fromEntries(tabs.map((tab) => [tab, tab === 'All' ? bookings.length : bookings.filter((booking) => normalizeStatus(booking.status) === normalizeStatus(tab)).length])), [bookings])

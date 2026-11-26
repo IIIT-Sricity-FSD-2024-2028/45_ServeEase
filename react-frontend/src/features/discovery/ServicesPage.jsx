@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { availabilityProviderKey, fetchProviderAvailability, selectProviderAvailabilityFetchStatusMap, selectProviderAvailabilityMap } from '../../store/availability/availabilitySlice'
+import { availabilityProviderKey, fetchProviderAvailability, selectProviderAvailabilityFetchStatusMap, selectProviderAvailabilityMap } from '../../store/slices/availabilitySlice'
 import { PRICE_STEP, availabilityProviderId, categoryProviders, filterProviders, formatCurrency, priceBounds, resolveCategory, serviceOptions } from './catalogModel'
 import { DiscoveryResults } from './DiscoveryResults'
 import { PublicJourneyShell } from './PublicJourneyShell'

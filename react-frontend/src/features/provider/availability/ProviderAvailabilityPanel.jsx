@@ -16,7 +16,7 @@ import {
   selectProviderWeeklyScheduleFetchStatus,
   selectSaveDateOverrideMutationStatus,
   selectSaveWeeklyScheduleMutationStatus,
-} from '../../../store/availability/availabilitySlice'
+} from '../../../store/slices/availabilitySlice'
 import { availabilityDays } from './availabilityConstants'
 
 const slotPattern = /^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/

@@ -1,10 +1,8 @@
 import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit'
 import { catalogApi } from '../../services/api.js'
 import { saveCatalogCategories as apiSaveCatalogCategories, syncCatalog as apiSyncCatalog } from '../../features/admin/adminApi.js'
-import { replaceFullRecord } from '../entityReconciliation.js'
+import { replaceFullRecord } from './entityReconciliation.js'
 
-// Catalog ids are listing ids. A missing id or duplicate id receives a stable per-response
-// positional key so no provider is dropped; its original record (including original id) survives.
 export function catalogProviderEntityKey(provider) {
   const id = provider?.id
   return id === null || id === undefined || String(id) === '' ? null : String(id)
@@ -102,6 +100,7 @@ const catalogSlice = createSlice({
         if (state.latestRequestId.providerById[id] !== action.meta.requestId) return
         const key = catalogProviderEntityKey(provider) || String(id)
         state.providersById[key] = provider
+        state.providersById[id] = provider
         state.fetchStatus.providerById[id] = 'succeeded'; state.fetchError.providerById[id] = null
       })
       .addCase(fetchProviderById.rejected, (state, action) => { const id = action.meta.arg; if (state.latestRequestId.providerById[id] !== action.meta.requestId) return; state.fetchStatus.providerById[id] = 'failed'; state.fetchError.providerById[id] = action.payload ?? action.error.message })

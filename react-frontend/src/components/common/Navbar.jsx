@@ -1,25 +1,13 @@
 import { formatDisplayDateTime } from '../../features/customer/customerOperations'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context/useAuth'
-import { bookingsApi } from '../../services/api'
 import { useAppDispatch, useAppSelector } from '../../store/hooks.js'
-import { fetchCustomerTickets, fetchProviderTickets, fetchSupportTickets, selectTicketsForScope } from '../../store/tickets/ticketsSlice.js'
 import {
-  fetchEmployeeCustomerNotifications,
-  fetchEmployeeProviderNotifications,
-  selectEmployeeCustomerNotifications,
-  selectEmployeeCustomerNotificationsFetchError,
-  selectEmployeeCustomerNotificationsFetchStatus,
-  selectEmployeeProviderNotifications,
-  selectEmployeeProviderNotificationsFetchError,
-  selectEmployeeProviderNotificationsFetchStatus,
-} from '../../store/operations/operationsSlice.js'
-import { buildEmployeeNotifications, readEmployeeNotificationIds, saveEmployeeNotificationIds } from '../../features/employee/employeeNotifications'
-import { buildSupportNotifications, readSupportNotificationIds, saveSupportNotificationIds } from '../../features/support/supportNotifications'
-import { buildProviderNotifications, readProviderNotificationIds, saveProviderNotificationIds } from '../../features/provider/providerNotifications'
+  clearNotifications, closePanel, fetchNotifications, markNotificationsRead, notificationOwner, openPanel,
+  selectNotificationFeed, toggleShowAll,
+} from '../../store/slices/notificationSlice.js'
 import { applyProviderSearch, providerSearchPlaceholders } from './providerSearch'
-import { clearSuperuserNotifications, loadSuperuserNotifications, markSuperuserNotificationsRead, OPEN_NOTIFICATION_PANEL, SUPERUSER_NOTIFICATIONS_CHANGED } from '../../features/admin/superuserNotifications'
 import { adminSearchPlaceholder, applyAdminSearch } from '../../features/admin/adminSearch'
 import './Navbar.css'
 
@@ -95,75 +83,6 @@ const topbarVariants = {
 const employeeVariants = { 'Customer Operations': 'customer-operations', 'Provider Operations': 'provider-operations', Support: 'support' }
 const areaRoles = { Customer: 'customer', Provider: 'provider' }
 
-const notificationReadKey = (user) => `serveEaseCustomerNotificationReads:${user?.userId || user?.email || 'customer'}`
-
-function readNotificationIds(user) {
-  try {
-    const stored = JSON.parse(localStorage.getItem(notificationReadKey(user)) || '[]')
-    return new Set(Array.isArray(stored) ? stored : [])
-  } catch {
-    return new Set()
-  }
-}
-
-function belongsToCustomer(record, user) {
-  if (record.customerId && user?.userId) return String(record.customerId) === String(user.userId)
-  if (record.customerEmail && user?.email) return String(record.customerEmail).toLowerCase() === String(user.email).toLowerCase()
-  return false
-}
-
-function buildCustomerNotifications(bookings, tickets, user) {
-  const readIds = readNotificationIds(user)
-  const notifications = []
-
-  tickets.forEach((ticket) => {
-    if (!ticket.ticketId || !ticket.status) return
-    const status = String(ticket.status)
-    const statusKey = status.toLowerCase()
-    const id = `ticket:${ticket.ticketId.toLowerCase()}:${statusKey}`
-    const createdAt = ticket.updatedAt || ticket.createdAt
-    notifications.push({
-      id,
-      text: statusKey.startsWith('resolved')
-        ? `Support ticket ${ticket.ticketId} has been resolved.`
-        : `Support ticket ${ticket.ticketId} is ${statusKey}.`,
-      createdAt,
-      isUnread: statusKey === 'open' && !readIds.has(id),
-      to: '/customer/support',
-    })
-  })
-
-  bookings.filter((booking) => belongsToCustomer(booking, user)).forEach((booking) => {
-    if (!booking.id || !booking.status) return
-    const status = String(booking.status)
-    const statusKey = status.toLowerCase()
-    const createdAt = booking.statusUpdatedAt || booking.createdAt
-    const id = `booking:${String(booking.id).toLowerCase()}:${statusKey}`
-    notifications.push({
-      id,
-      text: `${booking.service || 'Your booking'} is ${statusKey}.`,
-      createdAt,
-      isUnread: ['pending', 'accepted'].includes(statusKey) && !readIds.has(id),
-      to: '/customer/bookings',
-    })
-
-    if (!booking.paymentStatus) return
-    const paymentStatus = String(booking.paymentStatus)
-    const paymentStatusKey = paymentStatus.toLowerCase()
-    const paymentId = booking.paymentId || booking.id
-    const paymentNotificationId = `payment:${String(paymentId).toLowerCase()}:${paymentStatusKey}`
-    notifications.push({
-      id: paymentNotificationId,
-      text: `Payment ${booking.paymentId ? `${booking.paymentId} ` : ''}for ${booking.service || 'your service'} is ${paymentStatusKey}.`,
-      createdAt: booking.paymentDate || booking.statusUpdatedAt || booking.createdAt,
-      isUnread: ['pending', 'failed'].includes(paymentStatusKey) && !readIds.has(paymentNotificationId),
-      to: '/customer/payments',
-    })
-  })
-
-  return notifications.sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0)).slice(0, 30)
-}
-
 // api.js ServeEaseDate.formatDateTime(): DD-MM-YYYY hh:mm AM/PM, as the original notification panel shows it.
 function formatNotificationTime(value) {
   return value ? formatDisplayDateTime(value) : 'Time unavailable'
@@ -172,39 +91,29 @@ function formatNotificationTime(value) {
 export function Navbar({ area = 'ServeEase' }) {
   const { currentUser, isAuthenticated, logout } = useAuth()
   const dispatch = useAppDispatch()
-  const customerTickets = useAppSelector(selectTicketsForScope('customer'))
-  const providerTickets = useAppSelector(selectTicketsForScope('provider'))
-  const supportTickets = useAppSelector(selectTicketsForScope('support'))
-  const employeeCustomerNotificationData = useAppSelector(selectEmployeeCustomerNotifications)
-  const employeeCustomerNotificationStatus = useAppSelector(selectEmployeeCustomerNotificationsFetchStatus)
-  const employeeCustomerNotificationError = useAppSelector(selectEmployeeCustomerNotificationsFetchError)
-  const employeeProviderNotificationData = useAppSelector(selectEmployeeProviderNotifications)
-  const employeeProviderNotificationStatus = useAppSelector(selectEmployeeProviderNotificationsFetchStatus)
-  const employeeProviderNotificationError = useAppSelector(selectEmployeeProviderNotificationsFetchError)
+  const { panelOpen, showAll: showAllNotifications } = useAppSelector((state) => state.notification)
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const [openMenu, setOpenMenu] = useState(null)
+  const [profileOpen, setProfileOpen] = useState(false)
   const isSupportPage = pathname.startsWith('/employee/support-tickets')
   const isSupportDashboard = pathname === '/employee/support-tickets'
   const [ticketSearch, setTicketSearch] = useState('')
-  const [notifications, setNotifications] = useState([])
-  const [notificationOwnerKey, setNotificationOwnerKey] = useState('')
-  const [notificationState, setNotificationState] = useState('idle')
-  const [notificationError, setNotificationError] = useState('')
-  const [notificationBookings, setNotificationBookings] = useState([])
-  const [, setReadVersion] = useState(0)
-  const [showAllNotifications, setShowAllNotifications] = useState(false)
   const actionsRef = useRef(null)
   const profileButtonRef = useRef(null)
   const notificationButtonRef = useRef(null)
-  const notificationRequestRef = useRef(0)
-  const [menuPathname, setMenuPathname] = useState(pathname)
+  const openMenu = panelOpen ? 'notifications' : profileOpen ? 'profile' : null
+  const setOpenMenu = useCallback((menu) => {
+    setProfileOpen(menu === 'profile')
+    dispatch(menu === 'notifications' ? openPanel() : closePanel())
+  }, [dispatch])
 
   // Route changes (including browser back/forward) always leave both menus closed.
+  const [menuPathname, setMenuPathname] = useState(pathname)
   if (menuPathname !== pathname) {
     setMenuPathname(pathname)
-    setOpenMenu(null)
+    setProfileOpen(false)
   }
+  useEffect(() => { dispatch(closePanel()) }, [pathname, dispatch])
 
   const accountVariant = currentUser?.role === 'support' ? employeeVariants[currentUser.department] || 'employee' : currentUser?.role
   const role = (isAuthenticated && topbarVariants[accountVariant] ? accountVariant : null) || areaRoles[area] || null
@@ -214,41 +123,15 @@ export function Navbar({ area = 'ServeEase' }) {
   const isSupportAgent = variant?.notifications === 'support' && currentUser?.role === 'support'
   const isOperationsEmployee = ['customer-operations', 'provider-operations'].includes(role) && currentUser?.role === 'support'
   const isProviderAccount = variant?.notifications === 'provider' && currentUser?.role === 'provider'
-  const customerNotificationIdentity = currentUser?.role === 'customer' || isSupportAgent || isProviderAccount || isOperationsEmployee
-    ? String(currentUser.userId || currentUser.email || '')
-    : ''
-  const employeeNotificationData = role === 'customer-operations' ? employeeCustomerNotificationData : employeeProviderNotificationData
-  const employeeNotificationRequestStatus = role === 'customer-operations' ? employeeCustomerNotificationStatus : employeeProviderNotificationStatus
-  const employeeNotificationRequestError = role === 'customer-operations' ? employeeCustomerNotificationError : employeeProviderNotificationError
-  const employeeNotificationRequestState = employeeNotificationRequestStatus === 'succeeded' ? 'ready'
-    : employeeNotificationRequestStatus === 'failed' ? 'error'
-      : employeeNotificationRequestStatus === 'loading' ? 'loading' : 'idle'
-  const selectorNotifications = isOperationsEmployee
-    ? employeeNotificationRequestState === 'ready' && notificationOwnerKey === customerNotificationIdentity
-      ? buildEmployeeNotifications({
-        department: role === 'customer-operations' ? 'Customer Operations' : 'Provider Operations',
-        tickets: Array.isArray(employeeNotificationData?.tickets) ? employeeNotificationData.tickets : [],
-        customers: Array.isArray(employeeNotificationData?.customers) ? employeeNotificationData.customers : [],
-        providers: Array.isArray(employeeNotificationData?.providers) ? employeeNotificationData.providers : [],
-      }, currentUser)
-      : null
-    : notificationState !== 'ready' || notificationOwnerKey !== customerNotificationIdentity
-      ? null
-      : isSupportAgent
-      ? buildSupportNotifications(supportTickets, currentUser)
-      : isProviderAccount
-        ? buildProviderNotifications(notificationBookings, providerTickets, currentUser)
-        : currentUser?.role === 'customer'
-          ? buildCustomerNotifications(notificationBookings, customerTickets, currentUser)
-          : null
-  const notificationRecords = selectorNotifications || notifications
-  const customerNotifications = notificationOwnerKey === customerNotificationIdentity ? notificationRecords : []
-  const customerNotificationState = isOperationsEmployee
-    ? notificationOwnerKey === customerNotificationIdentity ? employeeNotificationRequestState : 'idle'
-    : notificationOwnerKey === customerNotificationIdentity ? notificationState : 'idle'
-  const customerNotificationError = isOperationsEmployee ? employeeNotificationRequestError : notificationError
-  const activeNotifications = variant?.notifications === 'superuser' ? notifications : customerNotifications
-  const notificationUnreadCount = activeNotifications.filter((notification) => notification.isUnread).length
+  const isSuperuser = variant?.notifications === 'superuser' && currentUser?.role === 'superuser'
+  const isCustomer = variant?.notifications === 'customer' && currentUser?.role === 'customer'
+  // The kind of feed this account may load; null when the bell has nothing to show for it.
+  const kind = isSuperuser || isSupportAgent || isProviderAccount || isOperationsEmployee || isCustomer ? variant.notifications : null
+  const feed = useAppSelector((state) => selectNotificationFeed(state, notificationOwner(kind, currentUser)))
+  const activeNotifications = feed.items
+  const notificationUnreadCount = feed.unreadCount
+  const notificationState = !kind ? (isAuthenticated ? 'unavailable' : 'signed-out')
+    : feed.status === 'succeeded' ? 'ready' : feed.status === 'failed' ? 'error' : feed.status
 
   useEffect(() => {
     if (!openMenu) return undefined
@@ -269,201 +152,47 @@ export function Navbar({ area = 'ServeEase' }) {
       document.removeEventListener('mousedown', closeOnOutsideClick)
       document.removeEventListener('keydown', closeOnEscape)
     }
-  }, [openMenu])
+  }, [openMenu, setOpenMenu])
 
-  async function loadNotifications(silent = false) {
-    if (variant?.notifications === 'superuser') {
-      const requestId = ++notificationRequestRef.current
-      if (!silent) { setNotificationState('loading'); setNotificationError('') }
-      try {
-        const result = await loadSuperuserNotifications()
-        if (requestId !== notificationRequestRef.current) return
-        setNotifications(result.notifications)
-        setNotificationState('ready')
-      } catch (error) {
-        if (requestId !== notificationRequestRef.current || silent) return
-        setNotificationError(error.message || 'Notifications could not be loaded.')
-        setNotificationState('error')
-      }
-      return
-    }
-    if (isSupportAgent) {
-      const requestId = ++notificationRequestRef.current
-      const ownerKey = String(currentUser.userId || currentUser.email || '')
-      if (!silent) { setNotificationOwnerKey(ownerKey); setNotificationState('loading'); setNotificationError('') }
-      try {
-        await dispatch(fetchSupportTickets()).unwrap()
-        if (requestId !== notificationRequestRef.current) return
-        setNotificationOwnerKey(ownerKey)
-        setNotificationState('ready')
-      } catch (error) {
-        if (requestId !== notificationRequestRef.current || silent) return
-        setNotificationError(error.message || 'Notifications could not be loaded.')
-        setNotificationState('error')
-      }
-      return
-    }
-    if (isOperationsEmployee) {
-      const ownerKey = String(currentUser.userId || currentUser.email || '')
-      ++notificationRequestRef.current
-      setNotificationOwnerKey(ownerKey)
-      try {
-        await dispatch(role === 'customer-operations'
-          ? fetchEmployeeCustomerNotifications()
-          : fetchEmployeeProviderNotifications()).unwrap()
-      } catch { /* Request status and errors are selected from Redux. */ }
-      return
-    }
-    if (isProviderAccount) {
-      const requestId = ++notificationRequestRef.current
-      const ownerKey = String(currentUser.userId || currentUser.email || '')
-      if (!silent) { setNotificationOwnerKey(ownerKey); setNotificationState('loading'); setNotificationError('') }
-      try {
-        const [bookingRecords] = await Promise.all([
-          bookingsApi.listForProvider(),
-          dispatch(fetchProviderTickets()).unwrap(),
-        ])
-        if (requestId !== notificationRequestRef.current) return
-        if (!Array.isArray(bookingRecords)) throw new Error('Notification data returned an invalid response.')
-        setNotificationBookings(bookingRecords)
-        setNotificationOwnerKey(ownerKey)
-        setNotificationState('ready')
-      } catch (error) {
-        if (requestId !== notificationRequestRef.current || silent) return
-        setNotificationError(error.message || 'Notifications could not be loaded.')
-        setNotificationState('error')
-      }
-      return
-    }
-    if (!isAuthenticated || currentUser?.role !== 'customer') {
-      setNotificationOwnerKey('')
-      setNotificationState(isAuthenticated ? 'unavailable' : 'signed-out')
-      setNotifications([])
-      return
-    }
-
-    const requestId = ++notificationRequestRef.current
-    const ownerKey = String(currentUser.userId || currentUser.email || '')
-    setNotificationOwnerKey(ownerKey)
-    setNotifications([])
-    setNotificationState('loading')
-    setNotificationError('')
-    try {
-      const [bookingRecords] = await Promise.all([
-        bookingsApi.list(),
-        dispatch(fetchCustomerTickets()).unwrap(),
-      ])
-      if (requestId !== notificationRequestRef.current) return
-      if (!Array.isArray(bookingRecords)) throw new Error('Notification data returned an invalid response.')
-      setNotificationBookings(bookingRecords)
-      setNotificationOwnerKey(ownerKey)
-      setNotificationState('ready')
-    } catch (error) {
-      if (requestId !== notificationRequestRef.current) return
-      setNotificationError(error.message || 'Notifications could not be loaded.')
-      setNotificationState('error')
-    }
+  function loadNotifications(silent = false) {
+    if (kind) dispatch(fetchNotifications({ kind, user: currentUser, silent }))
   }
 
   function toggleNotifications() {
-    setShowAllNotifications(false)
     if (isNotificationsOpen) {
       setOpenMenu(null)
       return
     }
     setOpenMenu('notifications')
-    void loadNotifications()
+    loadNotifications()
   }
 
-  // The support and provider bells show a live unread count, so new work is checked for in the background.
+  // Every bell except the customer's shows a live unread count, so new work is checked for in the background.
   useEffect(() => {
-    if (!isSupportAgent && !isProviderAccount && !isOperationsEmployee) return undefined
-    const first = window.setTimeout(() => void loadNotifications(true), 0)
-    const timer = window.setInterval(() => void loadNotifications(true), 30000)
+    if (!kind || kind === 'customer') return undefined
+    const load = () => dispatch(fetchNotifications({ kind, user: currentUser, silent: true }))
+    const first = window.setTimeout(load, 0)
+    const timer = window.setInterval(load, 30000)
     return () => { window.clearTimeout(first); window.clearInterval(timer) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSupportAgent, isProviderAccount, isOperationsEmployee, currentUser?.userId])
-
-  const isSuperuser = variant?.notifications === 'superuser' && currentUser?.role === 'superuser'
-  useEffect(() => {
-    if (!isSuperuser) return undefined
-    const first = window.setTimeout(() => void loadNotifications(true), 0)
-    const timer = window.setInterval(() => void loadNotifications(true), 30000)
-    // The dashboard notification card saves through the same module; refresh the bell when it does, and let
-    // its "View All Notifications" open this panel.
-    const refresh = () => void loadNotifications(true)
-    const open = (event) => {
-      setShowAllNotifications(event.detail?.showAll !== false)
-      setOpenMenu('notifications')
-      void loadNotifications(true)
-    }
-    window.addEventListener(SUPERUSER_NOTIFICATIONS_CHANGED, refresh)
-    window.addEventListener(OPEN_NOTIFICATION_PANEL, open)
-    return () => {
-      window.clearTimeout(first)
-      window.clearInterval(timer)
-      window.removeEventListener(SUPERUSER_NOTIFICATIONS_CHANGED, refresh)
-      window.removeEventListener(OPEN_NOTIFICATION_PANEL, open)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSuperuser, currentUser?.userId])
+  }, [kind, currentUser, dispatch])
 
   function toggleProfile() {
     setOpenMenu(isProfileOpen ? null : 'profile')
   }
 
-  const readIdsFor = () => (isSupportAgent ? readSupportNotificationIds(currentUser) : isProviderAccount ? readProviderNotificationIds(currentUser) : isOperationsEmployee ? readEmployeeNotificationIds(currentUser, role === 'customer-operations' ? 'Customer Operations' : 'Provider Operations') : readNotificationIds(currentUser))
-  const saveReadIds = (ids) => (isSupportAgent ? saveSupportNotificationIds(currentUser, ids)
-    : isProviderAccount ? saveProviderNotificationIds(currentUser, ids)
-    : isOperationsEmployee ? saveEmployeeNotificationIds(currentUser, role === 'customer-operations' ? 'Customer Operations' : 'Provider Operations', ids)
-    : localStorage.setItem(notificationReadKey(currentUser), JSON.stringify([...ids])))
+  const markRead = (ids) => dispatch(markNotificationsRead({ kind, user: currentUser, ids }))
 
   async function markNotificationRead(notification) {
-    if (variant?.notifications === 'superuser') {
-      if (notification.isUnread && !(await saveSuperuserNotifications(() => markSuperuserNotificationsRead(notifications, [notification.id])))) return
-      setOpenMenu(null)
-      navigate(notification.to)
-      return
+    if (notification.isUnread || kind !== 'superuser') {
+      const result = await markRead([notification.id])
+      if (result.error) return
     }
-    try {
-      const readIds = readIdsFor()
-      readIds.add(notification.id)
-      saveReadIds(readIds)
-      if (isSupportAgent || isProviderAccount || currentUser?.role === 'customer') setReadVersion((version) => version + 1)
-      else setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, isUnread: false } : item))
-      setOpenMenu(null)
-      navigate(notification.to)
-    } catch {
-      setNotificationError('Read state could not be saved in this browser.')
-    }
+    setOpenMenu(null)
+    navigate(notification.to)
   }
 
   function markAllNotificationsRead() {
-    if (variant?.notifications === 'superuser') {
-      void saveSuperuserNotifications(() => markSuperuserNotificationsRead(notifications))
-      return
-    }
-    try {
-      const readIds = readIdsFor()
-      activeNotifications.forEach((notification) => readIds.add(notification.id))
-      saveReadIds(readIds)
-      if (isSupportAgent || isProviderAccount || currentUser?.role === 'customer') setReadVersion((version) => version + 1)
-      else setNotifications((current) => current.map((notification) => ({ ...notification, isUnread: false })))
-    } catch {
-      setNotificationError('Read state could not be saved in this browser.')
-    }
-  }
-
-  // `save` persists through superuserNotifications.js, which announces the change; the listener above reloads.
-  async function saveSuperuserNotifications(save) {
-    try {
-      await save()
-      setNotificationError('')
-      return true
-    } catch (error) {
-      setNotificationError(error.message || 'Notification changes could not be saved.')
-      return false
-    }
+    markRead(activeNotifications.map((notification) => notification.id))
   }
 
   async function handleLogout() {
@@ -515,25 +244,25 @@ export function Navbar({ area = 'ServeEase' }) {
         {isNotificationsOpen && <section aria-label="Notifications" className="se-notification-panel" id="se-topbar-notification-panel">
           <div className="se-notification-panel__head">
             <h3>Notifications</h3>
-          {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <span className="se-notification-panel__badge">{notificationUnreadCount} New</span>}
+          {notificationState === 'ready' && <span className="se-notification-panel__badge">{notificationUnreadCount} New</span>}
           </div>
-          {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'loading' && <p className="se-notification-panel__state" role="status">Loading notifications…</p>}
-          {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'error' && <div className="se-notification-panel__error" role="alert">
-            <p>{variant.notifications === 'superuser' ? notificationError : customerNotificationError}</p>
-            <button className="se-notification-panel__action" onClick={() => void loadNotifications()} type="button">Retry</button>
+          {notificationState === 'loading' && <p className="se-notification-panel__state" role="status">Loading notifications…</p>}
+          {notificationState === 'error' && <div className="se-notification-panel__error" role="alert">
+            <p>{feed.error}</p>
+            <button className="se-notification-panel__action" onClick={() => loadNotifications()} type="button">Retry</button>
           </div>}
-          {(variant.notifications === 'superuser' ? notificationError : customerNotificationError) && (variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <p className="se-notification-panel__error-message" role="alert">{variant.notifications === 'superuser' ? notificationError : customerNotificationError}</p>}
-          {customerNotificationState === 'signed-out' && <p className="se-notification-panel__state">Sign in to view notifications.</p>}
-          {variant.notifications !== 'superuser' && customerNotificationState === 'unavailable' && <p className="se-notification-panel__state">Notifications are not available for this role in the React app yet.</p>}
-          {(variant.notifications === 'superuser' ? notificationState : customerNotificationState) === 'ready' && <>
+          {feed.error && notificationState === 'ready' && <p className="se-notification-panel__error-message" role="alert">{feed.error}</p>}
+          {notificationState === 'signed-out' && <p className="se-notification-panel__state">Sign in to view notifications.</p>}
+          {notificationState === 'unavailable' && <p className="se-notification-panel__state">Notifications are not available for this role in the React app yet.</p>}
+          {notificationState === 'ready' && <>
             {activeNotifications.length === 0
               ? <div className="se-notification-panel__empty"><strong>No notifications yet</strong><span>{variant.notifications === 'superuser' ? 'Escalated tickets and platform updates will appear here.' : isOperationsEmployee ? 'Relevant support tickets, signups, and verification work will appear here.' : isSupportAgent ? 'New tickets and customer or provider messages will appear here.' : isProviderAccount ? 'New booking requests and support replies will appear here.' : 'New booking, payment, and support updates will appear here.'}</span></div>
               : <div className="se-notification-panel__list">{visibleNotifications.map((notification) => <article className={`se-notification-item${notification.isUnread ? ' is-unread' : ''}`} key={notification.id}>
                 <button className="se-notification-item__open" onClick={() => markNotificationRead(notification)} type="button"><p>{notification.text}</p><time dateTime={notification.createdAt || undefined}>{formatNotificationTime(notification.createdAt)}</time></button>
               </article>)}</div>}
             {notificationUnreadCount > 0 && <button className="se-notification-panel__action" onClick={markAllNotificationsRead} type="button">Mark All as Read</button>}
-            {variant.notifications === 'superuser' && activeNotifications.length > 0 && <button className="se-notification-panel__action" onClick={() => void saveSuperuserNotifications(() => clearSuperuserNotifications(notifications))} type="button">Clear All</button>}
-            {activeNotifications.length > 4 && <button className="se-notification-panel__action" onClick={() => setShowAllNotifications((shown) => !shown)} type="button">{showAllNotifications ? 'Show Recent' : 'View All Notifications'}</button>}
+            {variant.notifications === 'superuser' && activeNotifications.length > 0 && <button className="se-notification-panel__action" onClick={() => dispatch(clearNotifications(currentUser))} type="button">Clear All</button>}
+            {activeNotifications.length > 4 && <button className="se-notification-panel__action" onClick={() => dispatch(toggleShowAll())} type="button">{showAllNotifications ? 'Show Recent' : 'View All Notifications'}</button>}
           </>}
         </section>}
       </div>}
