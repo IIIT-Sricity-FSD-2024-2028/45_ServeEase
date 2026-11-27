@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/FeedbackStates'
 import { AdminAccessGate } from './AdminAccessGate'
@@ -15,7 +15,22 @@ import { show } from './adminFormat'
 import './admin.css'
 
 const verificationStatuses = ['All', 'Pending', 'Verified', 'Rejected']
-const documentNames = ['ID Proof', 'Address Proof', 'Skill Certificate', 'Experience Proof', 'Profile Photo']
+
+const documentLabels = {
+  idProof: 'ID Proof',
+  addressProof: 'Address Proof',
+  skillCertificate: 'Skill Certificate',
+  experienceProof: 'Experience Proof',
+  profilePhoto: 'Profile Photo',
+}
+
+function documentLabel(type) {
+  return documentLabels[type] || show(type)
+}
+
+function documentStatusLabel(status) {
+  return status === 'Pending selection' ? 'Pending' : show(status)
+}
 
 function formatDate(value) {
   if (!value) return 'Not available'
@@ -23,67 +38,84 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? show(value) : new Intl.DateTimeFormat('en-GB').format(date)
 }
 
-function SummaryCard({ label, count, attention = false }) {
-  return <article className={`admin-stat-card${attention ? ' admin-stat-card--attention' : ''}`}>
-    <span>{label}<span>SE</span></span><strong>{count}</strong><p>{label === 'Total' ? 'Total Providers Requests' : label === 'Pending' ? 'Pending Verification' : `${label} Providers Requests`}</p>
-  </article>
-}
-
 function isImageType(type = '') {
   return type.startsWith('image/')
+}
+
+function SummaryCard({ label, count, attention = false }) {
+  return (
+    <article className={`admin-stat-card${attention ? ' admin-stat-card--attention' : ''}`}>
+      <span>{label}<span>SE</span></span>
+      <strong>{count}</strong>
+      <p>
+        {label === 'Total' ? 'Total Providers Requests'
+          : label === 'Pending' ? 'Pending Verification'
+            : `${label} Providers Requests`}
+      </p>
+    </article>
+  )
 }
 
 export default function ProviderVerificationPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('provider')
+  const documentsOnly = searchParams.get('view') === 'documents'
+
   const [statusFilter, setStatusFilter] = useState('All')
   const [categoryFilter, setCategoryFilter] = useState('All Categories')
   const [sortOrder, setSortOrder] = useState('latest')
+
   const [actionMode, setActionMode] = useState('')
   const [adminRemarks, setAdminRemarks] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [actionError, setActionError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+
   const [previewDocument, setPreviewDocument] = useState(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewType, setPreviewType] = useState('')
   const [previewError, setPreviewError] = useState('')
   const [previewLoading, setPreviewLoading] = useState(false)
-  const scrollToDocuments = useRef(false)
 
   const dispatch = useAppDispatch()
   const requests = useAdminResource(fetchVerificationRequests)
   const searchTerm = useAdminSearch('/admin/verification')
   const provider = useAdminResource(fetchVerificationRequestById, selectedId)
-  const requestList = useMemo(() => Array.isArray(requests.data) ? requests.data : [], [requests.data])
-  const categories = useMemo(() => [...new Set(requestList.map((request) => request.category).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b))), [requestList])
-  const filteredRequests = useMemo(() => requestList.filter((request) => (statusFilter === 'All' || request.status === statusFilter)
-    && (categoryFilter === 'All Categories' || request.category === categoryFilter)
-    && matchesAdminSearch([request.id, request.name, request.organisationName, request.email, request.phone], searchTerm))
+
+  const requestList = useMemo(() => (Array.isArray(requests.data) ? requests.data : []), [requests.data])
+
+  const categories = useMemo(
+    () => [...new Set(requestList.map((request) => request.category).filter(Boolean))]
+      .sort((a, b) => String(a).localeCompare(String(b))),
+    [requestList],
+  )
+
+  const filteredRequests = useMemo(() => requestList
+    .filter((request) => (statusFilter === 'All' || request.status === statusFilter)
+      && (categoryFilter === 'All Categories' || request.category === categoryFilter)
+      && matchesAdminSearch([request.id, request.name, request.organisationName, request.email, request.phone], searchTerm))
     .sort((left, right) => {
       if (sortOrder === 'name') return String(left.name || '').localeCompare(String(right.name || ''))
       const dateDiff = Date.parse(left.submittedDate || '') - Date.parse(right.submittedDate || '')
       return sortOrder === 'oldest' ? dateDiff : -dateDiff
     }), [requestList, statusFilter, categoryFilter, sortOrder, searchTerm])
 
-  function selectProvider(id) {
+  function selectProvider(id, view) {
     const next = new URLSearchParams(searchParams)
     next.set('provider', id)
+    if (view) next.set('view', view)
+    else next.delete('view')
     setSearchParams(next)
     setActionMode('')
     setActionError('')
     setSuccessMessage('')
   }
 
-  function selectProviderDocuments(id) {
-    scrollToDocuments.current = true
-    selectProvider(id)
-  }
-
   function clearProvider() {
     const next = new URLSearchParams(searchParams)
     next.delete('provider')
+    next.delete('view')
     setSearchParams(next)
     setActionMode('')
     setActionError('')
@@ -111,10 +143,17 @@ export default function ProviderVerificationPage() {
     setSuccessMessage('')
     try {
       if (actionMode === 'approve') {
-        await dispatch(approveProvider({ providerId: selectedId, adminRemarks: adminRemarks.trim() || undefined })).unwrap()
+        await dispatch(approveProvider({
+          providerId: selectedId,
+          adminRemarks: adminRemarks.trim() || undefined,
+        })).unwrap()
         setSuccessMessage('Provider approved successfully.')
       } else if (actionMode === 'reject') {
-        await dispatch(rejectProvider({ providerId: selectedId, rejectionReason: reason, adminRemarks: adminRemarks.trim() || undefined })).unwrap()
+        await dispatch(rejectProvider({
+          providerId: selectedId,
+          rejectionReason: reason,
+          adminRemarks: adminRemarks.trim() || undefined,
+        })).unwrap()
         setSuccessMessage('Provider rejected successfully.')
       }
       setActionMode('')
@@ -151,7 +190,11 @@ export default function ProviderVerificationPage() {
     setActionError('')
     setSuccessMessage('')
     try {
-      await dispatch(rejectProviderDocument({ providerId: selectedId, documentId, rejectionReason: normalizedReason })).unwrap()
+      await dispatch(rejectProviderDocument({
+        providerId: selectedId,
+        documentId,
+        rejectionReason: normalizedReason,
+      })).unwrap()
       setSuccessMessage('Document rejected successfully.')
     } catch (requestError) {
       setActionError(requestError?.message || 'Unable to reject document.')
@@ -187,14 +230,6 @@ export default function ProviderVerificationPage() {
     if (previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
   }, [previewUrl])
 
-  useEffect(() => {
-    if (!scrollToDocuments.current || provider.isLoading || !provider.data) return
-    const content = document.querySelector('.admin-verification-modal-content')
-    const documents = content?.querySelector('.admin-provider-document-list')
-    if (content && documents) content.scrollTo({ top: documents.offsetTop - content.offsetTop, behavior: 'smooth' })
-    scrollToDocuments.current = false
-  }, [provider.data, provider.isLoading])
-
   const details = provider.data
   const detailsLoading = Boolean(selectedId) && provider.isLoading
   const pendingCount = requestList.filter((request) => request.status === 'Pending').length
@@ -202,106 +237,492 @@ export default function ProviderVerificationPage() {
   const rejectedCount = requestList.filter((request) => request.status === 'Rejected').length
   const requiredDocsApproved = Array.isArray(details?.documents) && details.documents.length > 0
     && details.documents.filter((doc) => doc.required).every((doc) => doc.documentStatus === 'Approved')
+  const unapprovedDocuments = (details?.documents || [])
+    .filter((doc) => doc.required && doc.documentStatus !== 'Approved')
 
-  return <AdminAccessGate>
-    <section className="admin-page admin-provider-verification">
-      <AdminPageHeader section="Provider Verification" title="Provider Verification" description="Review provider profiles, validate documents, and control onboarding status." />
+  return (
+    <AdminAccessGate>
+      <section className="admin-page admin-provider-verification">
+        <AdminPageHeader
+          section="Provider Verification"
+          title="Provider Verification"
+          description="Review provider profiles, validate documents, and control onboarding status."
+        />
 
-      {requests.isLoading && <LoadingState message="Loading provider summary…" />}
-      {!requests.isLoading && requests.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={requests.error} /><button className="admin-button" onClick={requests.reload} type="button">Retry</button></div>}
-      {!requests.isLoading && !requests.error && <div className="admin-grid admin-verification-summary">
-        <SummaryCard count={requestList.length} label="Total" />
-        <SummaryCard attention count={pendingCount} label="Pending" />
-        <SummaryCard count={verifiedCount} label="Verified" />
-        <SummaryCard attention count={rejectedCount} label="Rejected" />
-      </div>}
+        {requests.isLoading && <LoadingState message="Loading provider summary…" />}
+        {!requests.isLoading && requests.error && (
+          <div className="admin-feedback admin-feedback--error">
+            <ErrorState message={requests.error} />
+            <button className="admin-button" onClick={requests.reload} type="button">Retry</button>
+          </div>
+        )}
+        {!requests.isLoading && !requests.error && (
+          <div className="admin-grid admin-verification-summary">
+            <SummaryCard count={requestList.length} label="Total" />
+            <SummaryCard attention count={pendingCount} label="Pending" />
+            <SummaryCard count={verifiedCount} label="Verified" />
+            <SummaryCard attention count={rejectedCount} label="Rejected" />
+          </div>
+        )}
 
-      <section className="admin-panel admin-verification-filters">
-        <div className="admin-filter-grid">
-          <label className="admin-form">Status<select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>{verificationStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Status' : status}</option>)}</select></label>
-          <label className="admin-form">Category<select onChange={(event) => setCategoryFilter(event.target.value)} value={categoryFilter}><option>All Categories</option>{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
-          <label className="admin-form">Sort<select onChange={(event) => setSortOrder(event.target.value)} value={sortOrder}><option value="latest">Latest First</option><option value="oldest">Oldest First</option><option value="name">Name A to Z</option></select></label>
-        </div>
-      </section>
+        <section className="admin-panel admin-verification-filters">
+          <div className="admin-filter-grid">
+            <label className="admin-form">
+              Status
+              <select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
+                {verificationStatuses.map((status) => (
+                  <option key={status} value={status}>{status === 'All' ? 'All Status' : status}</option>
+                ))}
+              </select>
+            </label>
+            <label className="admin-form">
+              Category
+              <select onChange={(event) => setCategoryFilter(event.target.value)} value={categoryFilter}>
+                <option>All Categories</option>
+                {categories.map((category) => <option key={category}>{category}</option>)}
+              </select>
+            </label>
+            <label className="admin-form">
+              Sort
+              <select onChange={(event) => setSortOrder(event.target.value)} value={sortOrder}>
+                <option value="latest">Latest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name">Name A to Z</option>
+              </select>
+            </label>
+          </div>
+        </section>
 
-      <section className="admin-panel">
-        <div className="admin-panel-heading"><h2>Verification Requests ({requests.data && !requests.error ? filteredRequests.length : 'Not available'})</h2><button className="admin-button admin-button--secondary" disabled={requests.isLoading} onClick={requests.reload} type="button">Refresh</button></div>
-        {requests.isLoading && <LoadingState message="Loading verification requests…" />}
-        {!requests.isLoading && requests.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={requests.error} /><button className="admin-button" onClick={requests.reload} type="button">Retry</button></div>}
-        {!requests.isLoading && !requests.error && requestList.length === 0 && <EmptyState message="No verification requests are available." />}
-        {!requests.isLoading && !requests.error && requestList.length > 0 && filteredRequests.length === 0 && <EmptyState message="No requests match the selected filters." />}
-        {!requests.isLoading && !requests.error && filteredRequests.length > 0 && <div className="admin-table-wrap admin-verification-table-wrap"><table className="admin-table admin-verification-table">
-          <thead><tr><th>Provider ID</th><th>Name</th><th>Organisation</th><th>Email</th><th>Phone Number</th><th>Service Category</th><th>Experience</th><th>Location</th><th>Submitted Date</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>{filteredRequests.map((request, index) => <tr key={request.id ?? `${request.name || 'provider'}-${index}`}>
-            <td><strong>{show(request.id)}</strong></td><td>{show(request.name)}</td><td>{show(request.organisationName)}</td><td>{show(request.email)}</td><td>{show(request.phone)}</td><td>{show(request.category)}</td>
-            <td>{request.experience === null || request.experience === undefined ? 'Not available' : `${request.experience} years`}</td><td>{show(request.location)}</td><td>{formatDate(request.submittedDate)}</td>
-            <td><AdminChip>{show(request.status)}</AdminChip></td>
-            <td><div className="admin-provider-row-actions">
-              <button className="admin-inline-action" onClick={() => selectProvider(String(request.id))} type="button">View</button>
-              <button className="admin-inline-action admin-inline-action--documents" onClick={() => selectProviderDocuments(String(request.id))} type="button">Documents</button>
-              <button className="admin-inline-action admin-inline-action--approve" disabled={isSubmitting || request.status === 'Verified'} onClick={() => { selectProvider(String(request.id)); openAction('approve') }} type="button">Approve</button>
-              <button className="admin-inline-action admin-inline-action--danger" disabled={isSubmitting} onClick={() => { selectProvider(String(request.id)); openAction('reject') }} type="button">Reject</button>
-            </div></td>
-          </tr>)}</tbody>
-        </table></div>}
-      </section>
+        <section className="admin-panel">
+          <div className="admin-panel-heading">
+            <h2>Verification Requests ({requests.data && !requests.error ? filteredRequests.length : 'Not available'})</h2>
+            <button
+              className="admin-button admin-button--secondary"
+              disabled={requests.isLoading}
+              onClick={requests.reload}
+              type="button"
+            >
+              Refresh
+            </button>
+          </div>
 
-      {selectedId && <div className="admin-modal-backdrop admin-verification-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isSubmitting) clearProvider() }}>
-        <section aria-labelledby="provider-verification-modal-title" aria-modal="true" className="admin-document-modal admin-verification-modal" role="dialog">
-          {detailsLoading && <LoadingState message="Loading provider details…" />}
-          {!detailsLoading && provider.error && <div className="admin-feedback admin-feedback--error"><ErrorState message={provider.error} /><button className="admin-button" onClick={provider.reload} type="button">Retry</button></div>}
-          {!detailsLoading && !provider.error && !details && <EmptyState message="Provider details are not available." />}
-          {details && !detailsLoading && <>
-            <header className="admin-verification-modal-header"><div><h2 id="provider-verification-modal-title">{show(details.name)}</h2><p>{show(details.id)} - {show(details.status)}</p></div><button aria-label="Close provider details" className="admin-notification-close" disabled={isSubmitting} onClick={clearProvider} type="button">×</button></header>
-            <div className="admin-verification-modal-content">
-              {successMessage && <p className="admin-feedback" role="status">{successMessage}</p>}{actionError && <ErrorState message={actionError} />}
-              {actionMode ? <form className="admin-form admin-verification-action-form" onSubmit={submitAction}>
-                <h3>{actionMode === 'approve' ? 'Approve Provider' : 'Reject Provider'}</h3>
-                {actionMode === 'reject' && <label>Rejection reason (required, 5–300 characters)<textarea maxLength={300} minLength={5} onChange={(event) => setRejectionReason(event.target.value)} required value={rejectionReason} /></label>}
-                <label>Admin remarks (optional)<textarea maxLength={500} onChange={(event) => setAdminRemarks(event.target.value)} value={adminRemarks} /></label>
-                <div className="admin-verification-actions"><button className="admin-button" disabled={isSubmitting || (actionMode === 'approve' && !requiredDocsApproved) || (actionMode === 'reject' && rejectionReason.trim().length < 5)} title={actionMode === 'approve' && !requiredDocsApproved ? 'Approve all required documents first' : undefined} type="submit">{isSubmitting ? 'Submitting…' : 'Confirm'}</button><button className="admin-button admin-button--secondary" disabled={isSubmitting} onClick={() => setActionMode('')} type="button">Cancel</button></div>
-              </form> : <>
-                <div className="admin-verification-facts">
-                  <div><span>Category</span><strong>{show(details.category)}</strong></div><div><span>Location</span><strong>{show(details.location)}</strong></div><div><span>Email</span><strong>{show(details.email)}</strong></div><div><span>Phone</span><strong>{show(details.phone)}</strong></div>
-                  <div><span>Experience</span><strong>{details.experience == null ? 'Not available' : `${details.experience} years`}</strong></div><div><span>Address</span><strong>{show(details.address)}</strong></div><div><span>Joined Date</span><strong>{formatDate(details.joinedDate || details.submittedDate)}</strong></div><div><span>Skills</span><strong>{Array.isArray(details.skills) && details.skills.length ? details.skills.join(', ') : 'N/A'}</strong></div>
-                  <div><span>Certifications</span><strong>{Array.isArray(details.certifications) && details.certifications.length ? details.certifications.join(', ') : 'N/A'}</strong></div><div><span>Completed Jobs</span><strong>{details.completedJobs ?? 'N/A'}</strong></div><div><span>Rating</span><strong>{details.rating ?? 'N/A'}</strong></div>
-                </div>
-                <h3>Verification Documents</h3>
-                {Array.isArray(details.documents) && details.documents.length ? <div className="admin-provider-document-list">{details.documents.filter((doc) => documentNames.some((name) => String(doc.documentType || '').toLowerCase().startsWith(name.toLowerCase()))).map((document, index) => <ProviderDocumentCard key={document.documentId || `${document.documentType}-${index}`} document={document} isSubmitting={isSubmitting} onPreview={openDocumentPreview} onApprove={approveDocument} onReject={rejectDocument} />)}</div> : <EmptyState message="No documents uploaded." />}
-                <h3>Status History</h3>
-                {Array.isArray(details.statusHistory) && details.statusHistory.length ? <div className="admin-provider-history">{details.statusHistory.map((entry, index) => <article key={`${entry.updatedAt || entry.status}-${index}`}><AdminChip>{show(entry.status)}</AdminChip><div><strong>{show(entry.note)}</strong><p>{show(entry.updatedBy)} - {formatDate(entry.updatedAt)}</p></div></article>)}</div> : <EmptyState message="No status history available." />}
-                <h3>Admin Remarks</h3><p className="admin-provider-remarks">{show(details.adminRemarks || details.rejectionReason || 'No remarks added yet.')}</p>
-              </>}
+          {requests.isLoading && <LoadingState message="Loading verification requests…" />}
+          {!requests.isLoading && requests.error && (
+            <div className="admin-feedback admin-feedback--error">
+              <ErrorState message={requests.error} />
+              <button className="admin-button" onClick={requests.reload} type="button">Retry</button>
             </div>
-            {!actionMode && <footer className="admin-verification-modal-actions">
-              <button className="admin-button admin-provider-approve" disabled={isSubmitting || details.status === 'Verified' || !requiredDocsApproved} onClick={() => openAction('approve')} title={!requiredDocsApproved ? 'Approve all required documents first' : ''} type="button">Approve Provider</button>
-              <button className="admin-button admin-provider-reject" disabled={isSubmitting} onClick={() => openAction('reject')} type="button">Reject Provider</button>
-              <button className="admin-button admin-button--secondary admin-button--full" disabled={isSubmitting} onClick={clearProvider} type="button">Close</button>
-            </footer>}
-          </>}
-        </section>
-      </div>}
+          )}
+          {!requests.isLoading && !requests.error && requestList.length === 0 && (
+            <EmptyState message="No verification requests are available." />
+          )}
+          {!requests.isLoading && !requests.error && requestList.length > 0 && filteredRequests.length === 0 && (
+            <EmptyState message="No requests match the selected filters." />
+          )}
 
-      {previewDocument && <div className="admin-modal-backdrop admin-verification-preview-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setPreviewDocument(null) }}>
-        <section aria-labelledby="verification-document-preview-title" aria-modal="true" className="admin-document-modal admin-verification-preview" role="dialog">
-          <div className="admin-panel-heading"><div><h2 id="verification-document-preview-title">{show(previewDocument.documentType)}</h2><p className="admin-muted">{show(previewDocument.documentName)}</p></div><button aria-label="Close document preview" className="admin-button admin-button--secondary" onClick={() => setPreviewDocument(null)} type="button">Close</button></div>
-          {previewLoading && <LoadingState message="Loading document preview…" />}{previewError && <ErrorState message={previewError} />}
-          {!previewLoading && previewUrl && (isImageType(previewType) ? <img alt={show(previewDocument.documentType)} className="admin-document-preview-image" src={previewUrl} /> : <iframe className="admin-document-preview-frame" title={`${show(previewDocument.documentType)} preview`} src={previewUrl} />)}
+          {!requests.isLoading && !requests.error && filteredRequests.length > 0 && (
+            <div className="admin-table-wrap admin-verification-table-wrap">
+              <table className="admin-table admin-verification-table">
+                <thead>
+                  <tr>
+                    <th>Provider ID</th>
+                    <th>Name</th>
+                    <th>Organisation</th>
+                    <th>Email</th>
+                    <th>Phone Number</th>
+                    <th>Service Category</th>
+                    <th>Experience</th>
+                    <th>Location</th>
+                    <th>Submitted Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRequests.map((request, index) => (
+                    <tr key={request.id ?? `${request.name || 'provider'}-${index}`}>
+                      <td><strong>{show(request.id)}</strong></td>
+                      <td>{show(request.name)}</td>
+                      <td>{show(request.organisationName)}</td>
+                      <td>{show(request.email)}</td>
+                      <td>{show(request.phone)}</td>
+                      <td>{show(request.category)}</td>
+                      <td>{request.experience == null ? 'Not available' : `${request.experience} years`}</td>
+                      <td>{show(request.location)}</td>
+                      <td>{formatDate(request.submittedDate)}</td>
+                      <td><AdminChip>{show(request.status)}</AdminChip></td>
+                      <td>
+                        <div className="admin-provider-row-actions">
+                          <button
+                            className="admin-inline-action"
+                            onClick={() => selectProvider(String(request.id))}
+                            type="button"
+                          >
+                            View
+                          </button>
+                          <button
+                            className="admin-inline-action admin-inline-action--documents"
+                            onClick={() => selectProvider(String(request.id), 'documents')}
+                            type="button"
+                          >
+                            Documents
+                          </button>
+                          <button
+                            className="admin-inline-action admin-inline-action--approve"
+                            disabled={isSubmitting || request.status === 'Verified'}
+                            onClick={() => { selectProvider(String(request.id)); openAction('approve') }}
+                            type="button"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="admin-inline-action admin-inline-action--danger"
+                            disabled={isSubmitting}
+                            onClick={() => { selectProvider(String(request.id)); openAction('reject') }}
+                            type="button"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
-      </div>}
-    </section>
-  </AdminAccessGate>
+
+        {selectedId && (
+          <div
+            className="admin-modal-backdrop admin-verification-backdrop"
+            onMouseDown={(event) => { if (event.target === event.currentTarget && !isSubmitting) clearProvider() }}
+          >
+            <section
+              aria-labelledby="provider-verification-modal-title"
+              aria-modal="true"
+              className="admin-document-modal admin-verification-modal"
+              role="dialog"
+            >
+              {detailsLoading && <LoadingState message="Loading provider details…" />}
+              {!detailsLoading && provider.error && (
+                <div className="admin-feedback admin-feedback--error">
+                  <ErrorState message={provider.error} />
+                  <button className="admin-button" onClick={provider.reload} type="button">Retry</button>
+                </div>
+              )}
+              {!detailsLoading && !provider.error && !details && (
+                <EmptyState message="Provider details are not available." />
+              )}
+
+              {details && !detailsLoading && (
+                <>
+                  <header className="admin-verification-modal-header">
+                    <div>
+                      <h2 id="provider-verification-modal-title">{show(details.name)}</h2>
+                      <p>{show(details.id)} - {show(details.status)}{documentsOnly && ' - Documents'}</p>
+                    </div>
+                    <button
+                      aria-label="Close provider details"
+                      className="admin-notification-close"
+                      disabled={isSubmitting}
+                      onClick={clearProvider}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </header>
+
+                  <div className="admin-verification-modal-content">
+                    {successMessage && <p className="admin-feedback" role="status">{successMessage}</p>}
+                    {actionError && <ErrorState message={actionError} />}
+
+                    {actionMode ? (
+                      <form className="admin-form admin-verification-action-form" onSubmit={submitAction}>
+                        <h3>{actionMode === 'approve' ? 'Approve Provider' : 'Reject Provider'}</h3>
+
+                        {actionMode === 'reject' && (
+                          <label>
+                            Rejection reason (required, 5–300 characters)
+                            <textarea
+                              maxLength={300}
+                              minLength={5}
+                              onChange={(event) => setRejectionReason(event.target.value)}
+                              required
+                              value={rejectionReason}
+                            />
+                          </label>
+                        )}
+
+                        <label>
+                          Admin remarks (optional)
+                          <textarea
+                            maxLength={500}
+                            onChange={(event) => setAdminRemarks(event.target.value)}
+                            value={adminRemarks}
+                          />
+                        </label>
+
+                        {actionMode === 'approve' && !requiredDocsApproved && (
+                          <div className="admin-feedback admin-feedback--error" role="alert">
+                            <p>
+                              {unapprovedDocuments.length
+                                ? `Approve these required documents first: ${unapprovedDocuments.map((doc) => documentLabel(doc.documentType)).join(', ')}.`
+                                : 'No documents are recorded, so this provider cannot be approved.'}
+                            </p>
+                            <button
+                              className="admin-button admin-button--secondary admin-button--small"
+                              onClick={() => selectProvider(selectedId, 'documents')}
+                              type="button"
+                            >
+                              Review documents
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="admin-verification-actions">
+                          <button
+                            className="admin-button"
+                            disabled={isSubmitting
+                              || (actionMode === 'approve' && !requiredDocsApproved)
+                              || (actionMode === 'reject' && rejectionReason.trim().length < 5)}
+                            title={actionMode === 'approve' && !requiredDocsApproved ? 'Approve all required documents first' : undefined}
+                            type="submit"
+                          >
+                            {isSubmitting ? 'Submitting…' : 'Confirm'}
+                          </button>
+                          <button
+                            className="admin-button admin-button--secondary"
+                            disabled={isSubmitting}
+                            onClick={() => setActionMode('')}
+                            type="button"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        {!documentsOnly && (
+                          <div className="admin-verification-facts">
+                            <div><span>Category</span><strong>{show(details.category)}</strong></div>
+                            <div><span>Location</span><strong>{show(details.location)}</strong></div>
+                            <div><span>Email</span><strong>{show(details.email)}</strong></div>
+                            <div><span>Phone</span><strong>{show(details.phone)}</strong></div>
+                            <div><span>Experience</span><strong>{details.experience == null ? 'Not available' : `${details.experience} years`}</strong></div>
+                            <div><span>Address</span><strong>{show(details.address)}</strong></div>
+                            <div><span>Joined Date</span><strong>{formatDate(details.joinedDate || details.submittedDate)}</strong></div>
+                            <div><span>Skills</span><strong>{Array.isArray(details.skills) && details.skills.length ? details.skills.join(', ') : 'N/A'}</strong></div>
+                            <div><span>Certifications</span><strong>{Array.isArray(details.certifications) && details.certifications.length ? details.certifications.join(', ') : 'N/A'}</strong></div>
+                            <div><span>Completed Jobs</span><strong>{details.completedJobs ?? 'N/A'}</strong></div>
+                            <div><span>Rating</span><strong>{details.rating ?? 'N/A'}</strong></div>
+                          </div>
+                        )}
+
+                        <h3>Verification Documents</h3>
+                        {Array.isArray(details.documents) && details.documents.length ? (
+                          <div className="admin-provider-document-list">
+                            {details.documents.map((document, index) => (
+                              <ProviderDocumentCard
+                                key={document.documentId || `${document.documentType}-${index}`}
+                                document={document}
+                                isSubmitting={isSubmitting}
+                                onPreview={openDocumentPreview}
+                                onApprove={approveDocument}
+                                onReject={rejectDocument}
+                              />
+                            ))}
+                          </div>
+                        ) : <EmptyState message="No documents uploaded." />}
+
+                        {!documentsOnly && (
+                          <>
+                            <h3>Status History</h3>
+                            {Array.isArray(details.statusHistory) && details.statusHistory.length ? (
+                              <div className="admin-provider-history">
+                                {details.statusHistory.map((entry, index) => (
+                                  <article key={`${entry.updatedAt || entry.status}-${index}`}>
+                                    <AdminChip>{show(entry.status)}</AdminChip>
+                                    <div>
+                                      <strong>{show(entry.note)}</strong>
+                                      <p>{show(entry.updatedBy)} - {formatDate(entry.updatedAt)}</p>
+                                    </div>
+                                  </article>
+                                ))}
+                              </div>
+                            ) : <EmptyState message="No status history available." />}
+
+                            <h3>Admin Remarks</h3>
+                            <p className="admin-provider-remarks">
+                              {show(details.adminRemarks || details.rejectionReason || 'No remarks added yet.')}
+                            </p>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {!actionMode && (
+                    <footer className="admin-verification-modal-actions">
+                      <button
+                        className="admin-button admin-provider-approve"
+                        disabled={isSubmitting || details.status === 'Verified' || !requiredDocsApproved}
+                        onClick={() => openAction('approve')}
+                        title={!requiredDocsApproved ? 'Approve all required documents first' : ''}
+                        type="button"
+                      >
+                        Approve Provider
+                      </button>
+                      <button
+                        className="admin-button admin-provider-reject"
+                        disabled={isSubmitting}
+                        onClick={() => openAction('reject')}
+                        type="button"
+                      >
+                        Reject Provider
+                      </button>
+                      <button
+                        className="admin-button admin-button--secondary admin-button--full"
+                        disabled={isSubmitting}
+                        onClick={clearProvider}
+                        type="button"
+                      >
+                        Close
+                      </button>
+                    </footer>
+                  )}
+                </>
+              )}
+            </section>
+          </div>
+        )}
+
+        {previewDocument && (
+          <div
+            className="admin-modal-backdrop admin-verification-preview-backdrop"
+            onMouseDown={(event) => { if (event.target === event.currentTarget) setPreviewDocument(null) }}
+          >
+            <section
+              aria-labelledby="verification-document-preview-title"
+              aria-modal="true"
+              className="admin-document-modal admin-verification-preview"
+              role="dialog"
+            >
+              <div className="admin-panel-heading">
+                <div>
+                  <h2 id="verification-document-preview-title">{documentLabel(previewDocument.documentType)}</h2>
+                  <p className="admin-muted">{show(previewDocument.documentName)}</p>
+                </div>
+                <button
+                  aria-label="Close document preview"
+                  className="admin-button admin-button--secondary"
+                  onClick={() => setPreviewDocument(null)}
+                  type="button"
+                >
+                  Close
+                </button>
+              </div>
+
+              {previewLoading && <LoadingState message="Loading document preview…" />}
+              {previewError && <ErrorState message={previewError} />}
+              {!previewLoading && previewUrl && (
+                isImageType(previewType) ? (
+                  <img
+                    alt={documentLabel(previewDocument.documentType)}
+                    className="admin-document-preview-image"
+                    src={previewUrl}
+                  />
+                ) : (
+                  <iframe
+                    className="admin-document-preview-frame"
+                    title={`${documentLabel(previewDocument.documentType)} preview`}
+                    src={previewUrl}
+                  />
+                )
+              )}
+            </section>
+          </div>
+        )}
+      </section>
+    </AdminAccessGate>
+  )
 }
 
 function ProviderDocumentCard({ document, isSubmitting, onPreview, onApprove, onReject }) {
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState('')
-  return <article className="admin-provider-document-card">
-    <div className="admin-provider-document-info"><h4>{show(document.documentType)} {document.required && <span className="admin-provider-required">Required</span>}</h4><p>{show(document.documentName)}</p><AdminChip>{show(document.documentStatus)}</AdminChip>{document.rejectionReason && <small>Reason: {show(document.rejectionReason)}</small>}</div>
-    <div className="admin-provider-document-controls">
-      <button className="admin-button admin-button--secondary admin-button--small" disabled={isSubmitting} onClick={() => onPreview(document)} type="button">Preview</button>
-      <button className="admin-button admin-provider-approve admin-button--small" disabled={isSubmitting || document.documentStatus === 'Approved'} onClick={() => onApprove(document.documentId)} type="button">Approve</button>
-      {rejecting ? <form className="admin-provider-document-reject" onSubmit={(event) => { event.preventDefault(); onReject(document.documentId, reason); setRejecting(false) }}><label className="admin-sr-only" htmlFor={`reject-${document.documentId}`}>Rejection reason</label><input id={`reject-${document.documentId}`} maxLength={300} minLength={5} onChange={(event) => setReason(event.target.value)} placeholder="Reason for rejection" required value={reason} /><button className="admin-button admin-provider-reject admin-button--small" disabled={isSubmitting || reason.trim().length < 5} type="submit">Confirm</button><button className="admin-button admin-button--secondary admin-button--small" onClick={() => setRejecting(false)} type="button">Cancel</button></form> : <button className="admin-button admin-provider-reject admin-button--small" disabled={isSubmitting || document.documentStatus === 'Rejected'} onClick={() => setRejecting(true)} type="button">Reject</button>}
-    </div>
-  </article>
+
+  return (
+    <article className="admin-provider-document-card">
+      <div className="admin-provider-document-info">
+        <h4>
+          {documentLabel(document.documentType)}{' '}
+          {document.required && <span className="admin-provider-required">Required</span>}
+        </h4>
+        <p>{show(document.documentName)}</p>
+        <AdminChip>{documentStatusLabel(document.documentStatus)}</AdminChip>
+        {document.rejectionReason && <small>Reason: {show(document.rejectionReason)}</small>}
+      </div>
+
+      <div className="admin-provider-document-controls">
+        <button
+          className="admin-button admin-button--secondary admin-button--small"
+          disabled={isSubmitting}
+          onClick={() => onPreview(document)}
+          type="button"
+        >
+          Preview
+        </button>
+        <button
+          className="admin-button admin-provider-approve admin-button--small"
+          disabled={isSubmitting || document.documentStatus === 'Approved'}
+          onClick={() => onApprove(document.documentId)}
+          type="button"
+        >
+          Approve
+        </button>
+
+        {rejecting ? (
+          <form
+            className="admin-provider-document-reject"
+            onSubmit={(event) => { event.preventDefault(); onReject(document.documentId, reason); setRejecting(false) }}
+          >
+            <label className="admin-sr-only" htmlFor={`reject-${document.documentId}`}>Rejection reason</label>
+            <input
+              id={`reject-${document.documentId}`}
+              maxLength={300}
+              minLength={5}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Reason for rejection"
+              required
+              value={reason}
+            />
+            <button
+              className="admin-button admin-provider-reject admin-button--small"
+              disabled={isSubmitting || reason.trim().length < 5}
+              type="submit"
+            >
+              Confirm
+            </button>
+            <button
+              className="admin-button admin-button--secondary admin-button--small"
+              onClick={() => setRejecting(false)}
+              type="button"
+            >
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <button
+            className="admin-button admin-provider-reject admin-button--small"
+            disabled={isSubmitting || document.documentStatus === 'Rejected'}
+            onClick={() => setRejecting(true)}
+            type="button"
+          >
+            Reject
+          </button>
+        )}
+      </div>
+    </article>
+  )
 }
